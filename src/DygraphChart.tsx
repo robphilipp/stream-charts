@@ -1,7 +1,9 @@
 import React, {useEffect, useRef} from 'react';
 import Dygraph from 'dygraphs';
 
-const Chart: React.FC = () => {
+// todo multiple series on the same plot (connectSeparatedPoints: true) not ideal, and difficult to do for spikes
+// todo legend?
+const DygraphChart: React.FC = () => {
 
     const chartDivRef = useRef(null);
 
@@ -46,7 +48,7 @@ const Chart: React.FC = () => {
 function fakeData(numPoints: number, start: number): Array<[number, number]> {
     let points: Array<[number, number]> = [];
     for (let i = 0; i < numPoints; ++i) {
-        points.push([start + 1, Math.random()]);
+        points.push([start + i, Math.random()]);
     }
     return points;
 }
@@ -58,10 +60,10 @@ function lastNPoints(data: Array<[number, number]>, lastN: number): Array<[numbe
     return data;
 }
 
-function toCsv(data: Array<[number, number]>, lastN: number): string {
-    return lastNPoints(data, lastN)
-        .map(point => `${point[0]},${point[1]}\n`)
-        .reduce((a, b) => `${a}${b}`, '');
-}
+// function toCsv(data: Array<[number, number]>, lastN: number): string {
+//     return lastNPoints(data, lastN)
+//         .map(point => `${point[0]},${point[1]}\n`)
+//         .reduce((a, b) => `${a}${b}`, '');
+// }
 
-export default Chart;
+export default DygraphChart;

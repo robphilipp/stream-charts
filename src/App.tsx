@@ -1,11 +1,13 @@
 import React from 'react';
 import './App.css';
-import Chart from "./Chart";
+// import DygraphChart from "./DygraphChart";
+import PlotlyChart from "./PlotlyChart";
 
 const App: React.FC = () => {
   return (
     <div className="App">
-      <Chart/>
+      {/*<DygraphChart/>*/}
+      <PlotlyChart/>
     </div>
   );
 };
