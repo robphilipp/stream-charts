@@ -10,6 +10,7 @@
     "@types/node": "^12.12.25",
     "@types/react": "^16.9.19",
     "@types/react-dom": "^16.9.5",
+    "d3": "^5.15.0",
     "dygraphs": "^2.1.0",
     "plotly.js": "^1.52.1",
     "react": "^16.12.0",
@@ -39,6 +40,7 @@
     ]
   },
   "devDependencies": {
+    "@types/d3": "^5.7.2",
     "@types/dygraphs": "^1.1.10",
     "@types/plotly.js": "^1.44.24"
   }

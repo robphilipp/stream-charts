@@ -2,39 +2,6 @@ import React, {useEffect, useRef} from 'react';
 import * as Plotly from 'plotly.js/lib/core';
 import {Layout} from "plotly.js/lib/core";
 
-/*
-                    layout={{
-                        title: 'neuron spikes',
-                        titlefont: plotStyles.titleFont,
-                        autosize: true,
-                        paper_bgcolor: plotStyles.paperBackgroundColor,
-                        plot_bgcolor: plotStyles.plotBackgroundColor,
-                        yaxis: {
-                            range: [-0.5, numNeurons],
-                            nticks: numNeurons,
-                            zerolinecolor: plotStyles.gridLineColor,
-                            gridcolor: plotStyles.gridLineColor,
-                            dtick: 1,
-                            tickvals: Array.from(neuronIds.keys()),
-                            ticktext: neuronIds,
-                            title: 'Neurons',
-                            titlefont: plotStyles.tickFont,
-                            linecolor: plotStyles.axisLineColor,
-                            tickfont: plotStyles.tickFont,
-                            automargin: true
-                        },
-                        xaxis: {
-                            range: timeRange.interval.getOrElse([0, 1000]),
-                            title: 't (ms)',
-                            titlefont: plotStyles.tickFont,
-                            linecolor: plotStyles.axisLineColor,
-                            tickfont: plotStyles.tickFont,
-                            gridcolor: plotStyles.gridLineColor
-                        },
-                        margin: margins,
-                    }}
-
- */
 const PlotlyChart: React.FC = () => {
 
     const chartDivRef = useRef(null);
@@ -110,44 +77,11 @@ const PlotlyChart: React.FC = () => {
                         {x: [data.x], y: [data.y]},
                         [0]
                     );
-                    if(timeRef.current > 5000) {
+                    if(timeRef.current > 1000) {
                         clearInterval(intervalId);
                     }
-                }, 50);
+                }, 20);
             });
-
-            // chartRef.current = new Dygraph(
-            //     chartDivRef.current || '',
-            //     lastNPoints(dataRef.current, 200),
-            //     {
-            //         height: 500,
-            //         width: 1000,
-            //         drawGrid: false,
-            //         strokeWidth: 0,
-            //         drawPoints: true,
-            //         showRoller: true,
-            //         valueRange: [0.0, 1.2],
-            //         labels: ['Time', 'Random']
-            //     }
-            // );
-            // setInterval(
-            //     () => {
-            //         const numPoints = 1;
-            //
-            //         const data = fakeData(numPoints, timeRef.current);
-            //         dataRef.current.x = dataRef.current.x.concat(data.x);
-            //         dataRef.current.y = dataRef.current.x.concat(data.y);
-            //
-            //         timeRef.current = timeRef.current + numPoints;
-            //         // chartRef.current?.updateOptions({'file': lastNPoints(dataRef.current, 200)})
-            //         Plotly.update(
-            //             chartDivRef.current || '',
-            //             dataRef.current,
-            //             {margin: {t: 0}}
-            //         ).then(plot => chartRef.current = plot)
-            //     },
-            //     50
-            // );
         },
         []
     );
