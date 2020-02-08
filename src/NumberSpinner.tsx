@@ -16,6 +16,7 @@ function NumberSpinner(props: OwnProps): JSX.Element {
     const [liveData, setLiveData] = useState(props.data || [1, 2, 3]);
     const dataRef = useRef(props.data || [1, 2, 3]);
 
+    // called on mount to set up the <g> element into which to render
     useEffect(
         () => {
             if (d3ContainerRef.current) {
@@ -27,19 +28,18 @@ function NumberSpinner(props: OwnProps): JSX.Element {
                 ;
             }
 
+            // on mount, sets the timer that updates the data and sets the live data which causes a state change
+            // and so react will call the useEffect with the live data dependency and update d3
             intervalRef.current = setInterval(
                 () => {
                     const size = dataRef.current.length;
                     dataRef.current.push((dataRef.current[size - 2] + dataRef.current[size - 1]) % 10);
-                    // dataRef.current.push(dataRef.current[0]);
                     dataRef.current = dataRef.current.slice(1);
                     setLiveData(dataRef.current);
-                    // console.log(dataRef.current);
 
                     count.current += 1;
                     if (intervalRef.current && count.current > 1000) {
                         clearInterval(intervalRef.current);
-                        console.log('done');
                     }
                 },
                 10
@@ -47,23 +47,24 @@ function NumberSpinner(props: OwnProps): JSX.Element {
         }, []
     );
 
+    // called on mount, and also when the liveData state variable is updated
     useEffect(
         () => {
-            // if (props.data && d3ContainerRef.current) {
             if (d3ContainerRef.current) {
-                // enter new elements
+                // select the text elements and bind the data to them
                 const svg = d3
                     .select(d3ContainerRef.current)
                     .select('g')
                     .selectAll('text')
                     .data(liveData)
                 ;
+
+                // enter new elements
                 svg
-                    // .select(d3ContainerRef.current)
                     .enter()
                     .append('text')
                     .attr('x', (d, i) => i * 37)
-                    .attr('y', 40)
+                    .attr('y', (d, i) => 40 + d)
                     .style('font-size', 36)
                     .style('fill', 'red')
                     .text((d: number) => d)
@@ -72,6 +73,7 @@ function NumberSpinner(props: OwnProps): JSX.Element {
                 // update existing elements
                 svg
                     .attr('x', (d, i) => i * 37)
+                    .attr('y', (d, i) => 40 + d)
                     .text((d: number) => d)
                 ;
 
@@ -80,8 +82,6 @@ function NumberSpinner(props: OwnProps): JSX.Element {
                     .exit()
                     .remove()
                 ;
-
-                setLiveData(dataRef.current);
             }
         },
         [liveData]
