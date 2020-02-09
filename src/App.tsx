@@ -23,7 +23,7 @@ const App: React.FC = () => {
       {/*<PlotlyChart/>*/}
       {/*<NumberSpinner data={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}/>*/}
       {/*<NumberSpinnerDriver data={data}/>*/}
-      <NumberSpinnerDriver3 timeWindow={1000} data={genData(50, 10)}/>
+      <NumberSpinnerDriver3 timeWindow={1000} data={genData(2, 10)}/>
     </div>
   );
 };

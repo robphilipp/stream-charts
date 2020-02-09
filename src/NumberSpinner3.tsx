@@ -73,7 +73,7 @@ function NumberSpinnerDriver3(props: Props): JSX.Element {
 
     return (
         <div>
-            <NumberSpinner width={600} height={50} data={liveData} timeWindow={timeWindow}/>
+            <NumberSpinner width={1200} height={50} data={liveData} timeWindow={timeWindow}/>
         </div>
     );
 }
@@ -90,6 +90,7 @@ function NumberSpinner(props: PlotProps): JSX.Element {
                 d3
                     .select(d3ContainerRef.current)
                     .append('g')
+                    .attr("transform", (d, i) => `translate(0, ${0 * height})`)
                 ;
             }
         }, [height]
@@ -103,7 +104,7 @@ function NumberSpinner(props: PlotProps): JSX.Element {
                 // location on the screen (range)
                 const maxTime = data[data.length - 1].time;
                 const x = d3.scaleLinear()
-                    .domain([Math.max(0, maxTime - timeWindow), maxTime])
+                    .domain([Math.max(0, maxTime - timeWindow), Math.max(timeWindow, maxTime)])
                     .range([0, width]);
 
                 const y = d3.scaleLinear()
@@ -122,21 +123,19 @@ function NumberSpinner(props: PlotProps): JSX.Element {
                 svg
                     .enter()
                     .append('line')
-                    .attr("transform", (d, i) => `translate(0, ${0 * height})`)
                     .attr('x1', (d, i) => x(d.time))
                     .attr('x2', (d, i) => x(d.time))
-                    .attr('y1', (d, i) => y(0))
-                    .attr('y2', (d, i) => y(1))
+                    .attr('y1', (d, i) => y(0.1))
+                    .attr('y2', (d, i) => y(0.9))
                     .attr('stroke', 'red')
                 ;
 
                 // update existing elements
                 svg
-                    .attr("transform", (d, i) => `translate(0, ${0 * height})`)
                     .attr('x1', (d, i) => x(d.time))
                     .attr('x2', (d, i) => x(d.time))
-                    .attr('y1', (d, i) => y(0))
-                    .attr('y2', (d, i) => y(1))
+                    .attr('y1', (d, i) => y(0.1))
+                    .attr('y2', (d, i) => y(0.9))
                     .attr('stroke', 'red')
                 ;
 
