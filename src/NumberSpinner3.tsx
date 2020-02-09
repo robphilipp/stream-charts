@@ -15,6 +15,7 @@ interface Props {
 interface PlotProps {
     width: number;
     height: number;
+    spikesMargin?: number;
     timeWindow: number;
     data: Datum[];
 }
@@ -79,7 +80,7 @@ function NumberSpinnerDriver3(props: Props): JSX.Element {
 }
 
 function NumberSpinner(props: PlotProps): JSX.Element {
-    const {data, timeWindow, width, height} = props;
+    const {data, timeWindow, width, height, spikesMargin = 2} = props;
 
     const d3ContainerRef = useRef(null);
 
@@ -87,10 +88,19 @@ function NumberSpinner(props: PlotProps): JSX.Element {
     useEffect(
         () => {
             if (d3ContainerRef.current) {
-                d3
+                const mainG = d3
                     .select(d3ContainerRef.current)
+                    .append('g');
+
+                mainG
                     .append('g')
-                    .attr("transform", (d, i) => `translate(0, ${0 * height})`)
+                    .attr('class', 'series1')
+                    .attr("transform", (d, i) => `translate(0, ${0 * height / 2})`)
+                ;
+                mainG
+                    .append('g')
+                    .attr('class', 'series2')
+                    .attr("transform", (d, i) => `translate(0, ${1 * height / 2})`)
                 ;
             }
         }, [height]
@@ -112,41 +122,74 @@ function NumberSpinner(props: PlotProps): JSX.Element {
                     .range([height, 0]);
 
                 // select the text elements and bind the data to them
-                const svg = d3
-                    .select(d3ContainerRef.current)
-                    .select('g')
+                const svg = d3.select(d3ContainerRef.current);
+
+                const series1 = svg
+                    .select('g.series1')
                     .selectAll('line')
                     .data(data)
                 ;
 
                 // enter new elements
-                svg
+                series1
                     .enter()
                     .append('line')
                     .attr('x1', (d, i) => x(d.time))
                     .attr('x2', (d, i) => x(d.time))
-                    .attr('y1', (d, i) => y(0.1))
-                    .attr('y2', (d, i) => y(0.9))
+                    .attr('y1', (d, i) => spikesMargin)
+                    .attr('y2', (d, i) => height/2-spikesMargin)
                     .attr('stroke', 'red')
                 ;
 
                 // update existing elements
-                svg
+                series1
                     .attr('x1', (d, i) => x(d.time))
                     .attr('x2', (d, i) => x(d.time))
-                    .attr('y1', (d, i) => y(0.1))
-                    .attr('y2', (d, i) => y(0.9))
+                    .attr('y1', (d, i) => spikesMargin)
+                    .attr('y2', (d, i) => height/2-spikesMargin)
                     .attr('stroke', 'red')
                 ;
 
                 // exit old elements
-                svg
+                series1
+                    .exit()
+                    .remove()
+                ;
+
+                const series2 = svg
+                    .select('g.series2')
+                    .selectAll('line')
+                    .data(data)
+                ;
+
+                // enter new elements
+                series2
+                    .enter()
+                    .append('line')
+                    .attr('x1', (d, i) => x(d.time))
+                    .attr('x2', (d, i) => x(d.time))
+                    .attr('y1', (d, i) => spikesMargin)
+                    .attr('y2', (d, i) => height/2-spikesMargin)
+                    .attr('stroke', 'red')
+                ;
+
+                // update existing elements
+                series2
+                    .attr('x1', (d, i) => x(d.time))
+                    .attr('x2', (d, i) => x(d.time))
+                    .attr('y1', (d, i) => spikesMargin)
+                    .attr('y2', (d, i) => height/2-spikesMargin)
+                    .attr('stroke', 'red')
+                ;
+
+                // exit old elements
+                series2
                     .exit()
                     .remove()
                 ;
             }
         },
-        [data, timeWindow, height, width]
+        [data, timeWindow, width, height, spikesMargin]
     );
 
     return (
