@@ -5,7 +5,8 @@ import './App.css';
 // import NumberSpinner from "./NumberSpinner";
 // import NumberSpinnerDriver from "./NumberSpinner2";
 // import NumberSpinnerDriver3, {Datum, Series, seriesFrom} from "./NumberSpinner3";
-import NumberSpinner4, {Datum, Series, seriesFrom} from "./NumberSpinner4";
+// import NumberSpinner4, {Datum, Series, seriesFrom} from "./NumberSpinner4";
+import NumberSpinner5, {Datum, Series, seriesFrom} from "./NumberSpinner5";
 
 // const data = Array.from({length: 5000}, () => Math.floor(Math.random() * 10));
 
@@ -28,7 +29,8 @@ const App: React.FC = () => {
       {/*<NumberSpinnerDriver data={data}/>*/}
       {/*<NumberSpinnerDriver3 timeWindow={1000} data={genData(2, 10)}/>*/}
       {/*<NumberSpinnerDriver3 timeWindow={500} seriesList={data} seriesHeight={10} plotWidth={900}/>*/}
-      <NumberSpinner4 timeWindow={500} seriesList={data} seriesHeight={10} plotWidth={900}/>
+      {/*<NumberSpinner4 timeWindow={500} seriesList={data} seriesHeight={10} plotWidth={900}/>*/}
+      <NumberSpinner5 timeWindow={500} seriesList={data} seriesHeight={10} plotWidth={900}/>
     </div>
   );
 };
