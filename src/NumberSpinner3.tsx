@@ -75,14 +75,20 @@ function NumberSpinnerDriver3(props: Props): JSX.Element {
             intervalRef.current = setInterval(
                 () => {
                     const maxTime = calcMaxTime(seriesRef.current);
+
+                    // update all the series
                     seriesRef.current = seriesRef.current.map(series => {
-                        // const size = series.data.length;
+                        // create the next data point
                         const datum = nextDatum(maxTime, 10);
-                        // const datum = nextDatum(series.data[size - 1].time, 10);
+
+                        // drop any values that have fallen out of the beginning of the time window
                         while (series.data.length > 0 && series.data[0].time < datum.time - timeWindow) {
                             series.data.shift();
                         }
+
+                        // add the new data point
                         series.data.push(datum);
+
                         return series;
                     });
 
