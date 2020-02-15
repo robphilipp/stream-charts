@@ -1,15 +1,34 @@
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
 import * as d3 from "d3";
+import {Option} from "prelude-ts";
 
-interface Datum {
-    time: number;
-    value: number;
+export interface Datum {
+    readonly time: number;
+    readonly value: number;
+}
+
+export interface Series {
+    readonly name: string;
+    data: Datum[];
+    readonly last: () => Option<Datum>;
+    readonly length: () => number;
+}
+
+export function seriesFrom(name: string, data: Datum[]): Series {
+    return {
+        name: name,
+        data: data,
+        last: () => data ? (data.length > 0 ? Option.of(data[data.length - 1]) : Option.none()) : Option.none(),
+        length: () => data ? data.length : 0
+    }
 }
 
 interface Props {
     timeWindow?: number;
-    data?: Datum[];
+    seriesList?: Array<Series>;
+    seriesHeight?: number;
+    plotWidth?: number;
 }
 
 interface PlotProps {
@@ -17,26 +36,29 @@ interface PlotProps {
     height: number;
     spikesMargin?: number;
     timeWindow: number;
-    data: Datum[];
+    seriesList: Array<Series>;
 }
 
-const defaultData = [
-    {time: 1, value: 1},
-    {time: 2, value: 2},
-    {time: 3, value: 3}
+const defaultData: Array<Series> = [
+    seriesFrom('neuron-1', [{time: 1, value: 1}, {time: 2, value: 2}, {time: 3, value: 3}]),
+    seriesFrom('neuron-2', [{time: 1, value: 1}, {time: 2, value: 2}, {time: 3, value: 3}]),
 ];
 // const itemsPerRow = 75;
 // const itemWidth = 13;
 // const itemHeight = 10;
 
+function calcMaxTime(seriesList: Array<Series>): number {
+    return d3.max(seriesList.map(series => series.last().map(datum => datum.time).getOrElse(0))) || 0;
+}
+
 function NumberSpinnerDriver3(props: Props): JSX.Element {
-    const {data = defaultData, timeWindow = 100} = props;
+    const {seriesList = defaultData, timeWindow = 100, seriesHeight = 20, plotWidth = 500} = props;
 
     // const count = useRef<number>(0);
     const intervalRef = useRef<NodeJS.Timeout>();
 
-    const [liveData, setLiveData] = useState(data);
-    const dataRef = useRef<Array<Datum>>(data);
+    const [liveData, setLiveData] = useState(seriesList);
+    const seriesRef = useRef<Array<Series>>(seriesList);
 
     function nextDatum(time: number, maxDelta: number): Datum {
         return {
@@ -52,35 +74,41 @@ function NumberSpinnerDriver3(props: Props): JSX.Element {
             // and so react will call the useEffect with the live data dependency and update d3
             intervalRef.current = setInterval(
                 () => {
-                    const size = dataRef.current.length;
-                    const datum = nextDatum(dataRef.current[size-1].time, 10);
-                    while(dataRef.current.length > 0 && dataRef.current[0].time < datum.time - timeWindow) {
-                        dataRef.current.shift();
-                    }
-                    dataRef.current.push(datum);
+                    const maxTime = calcMaxTime(seriesRef.current);
+                    seriesRef.current = seriesRef.current.map(series => {
+                        // const size = series.data.length;
+                        const datum = nextDatum(maxTime, 10);
+                        // const datum = nextDatum(series.data[size - 1].time, 10);
+                        while (series.data.length > 0 && series.data[0].time < datum.time - timeWindow) {
+                            series.data.shift();
+                        }
+                        series.data.push(datum);
+                        return series;
+                    });
 
-                    dataRef.current = dataRef.current.slice();
-                    setLiveData(dataRef.current);
+                    // dataRef.current = dataRef.current.slice();
+                    setLiveData(seriesRef.current);
 
                     // count.current += 1;
-                    if (intervalRef.current && datum.time > 10000) {
+                    // const maxTime = d3.max(Array.from(seriesRef.current.values()).map(series => series.data[series.data.length - 1].time)) || 0;
+                    if (intervalRef.current && maxTime > 10000) {
                         clearInterval(intervalRef.current);
                     }
                 },
-                10
+                25
             );
         }, [timeWindow]
     );
 
     return (
         <div>
-            <NumberSpinner width={1200} height={50} data={liveData} timeWindow={timeWindow}/>
+            <NumberSpinner width={plotWidth} height={seriesList.length * seriesHeight} seriesList={liveData} timeWindow={timeWindow}/>
         </div>
     );
 }
 
 function NumberSpinner(props: PlotProps): JSX.Element {
-    const {data, timeWindow, width, height, spikesMargin = 2} = props;
+    const {seriesList, timeWindow, width, height, spikesMargin = 2} = props;
 
     const d3ContainerRef = useRef(null);
 
@@ -92,18 +120,16 @@ function NumberSpinner(props: PlotProps): JSX.Element {
                     .select(d3ContainerRef.current)
                     .append('g');
 
-                mainG
-                    .append('g')
-                    .attr('class', 'series1')
-                    .attr("transform", (d, i) => `translate(0, ${0 * height / 2})`)
-                ;
-                mainG
-                    .append('g')
-                    .attr('class', 'series2')
-                    .attr("transform", (d, i) => `translate(0, ${1 * height / 2})`)
-                ;
+                // create a container for each spike series
+                seriesList.forEach((series, index) => {
+                    mainG
+                        .append('g')
+                        .attr('class', series.name)
+                        .attr("transform", () => `translate(0, ${index * height / seriesList.length})`)
+                    ;
+                });
             }
-        }, [height]
+        }, [seriesList, height]
     );
 
     // called on mount, and also when the liveData state variable is updated
@@ -112,84 +138,55 @@ function NumberSpinner(props: PlotProps): JSX.Element {
             if (d3ContainerRef.current) {
                 // calculate the mapping between the times in the data (domain) and the display
                 // location on the screen (range)
-                const maxTime = data[data.length - 1].time;
+                // const maxTime: number = d3.max(seriesList.map(series => series.last().map(datum => datum.time).getOrElse(0))) || 0;
+                const maxTime = calcMaxTime(seriesList);
                 const x = d3.scaleLinear()
                     .domain([Math.max(0, maxTime - timeWindow), Math.max(timeWindow, maxTime)])
                     .range([0, width]);
 
-                const y = d3.scaleLinear()
-                    .domain([0, 1])
-                    .range([height, 0]);
+                // const y = d3.scaleLinear()
+                //     .domain([0, seriesList.length])
+                //     .range([height, 0]);
 
                 // select the text elements and bind the data to them
                 const svg = d3.select(d3ContainerRef.current);
 
-                const series1 = svg
-                    .select('g.series1')
-                    .selectAll('line')
-                    .data(data)
-                ;
+                seriesList.forEach(series => {
+                    const container = svg
+                        .select(`g.${series.name}`)
+                        .selectAll('line')
+                        .data(series.data)
+                    ;
 
-                // enter new elements
-                series1
-                    .enter()
-                    .append('line')
-                    .attr('x1', (d, i) => x(d.time))
-                    .attr('x2', (d, i) => x(d.time))
-                    .attr('y1', (d, i) => spikesMargin)
-                    .attr('y2', (d, i) => height/2-spikesMargin)
-                    .attr('stroke', 'red')
-                ;
+                    // enter new elements
+                    container
+                        .enter()
+                        .append('line')
+                        .attr('x1', d => x(d.time))
+                        .attr('x2', d => x(d.time))
+                        .attr('y1', () => spikesMargin)
+                        .attr('y2', () => height / seriesList.length - spikesMargin)
+                        .attr('stroke', 'red')
+                    ;
 
-                // update existing elements
-                series1
-                    .attr('x1', (d, i) => x(d.time))
-                    .attr('x2', (d, i) => x(d.time))
-                    .attr('y1', (d, i) => spikesMargin)
-                    .attr('y2', (d, i) => height/2-spikesMargin)
-                    .attr('stroke', 'red')
-                ;
+                    // update existing elements
+                    container
+                        .attr('x1', d => x(d.time))
+                        .attr('x2', d => x(d.time))
+                        .attr('y1', () => spikesMargin)
+                        .attr('y2', () => height / seriesList.length - spikesMargin)
+                        .attr('stroke', 'red')
+                    ;
 
-                // exit old elements
-                series1
-                    .exit()
-                    .remove()
-                ;
-
-                const series2 = svg
-                    .select('g.series2')
-                    .selectAll('line')
-                    .data(data)
-                ;
-
-                // enter new elements
-                series2
-                    .enter()
-                    .append('line')
-                    .attr('x1', (d, i) => x(d.time))
-                    .attr('x2', (d, i) => x(d.time))
-                    .attr('y1', (d, i) => spikesMargin)
-                    .attr('y2', (d, i) => height/2-spikesMargin)
-                    .attr('stroke', 'red')
-                ;
-
-                // update existing elements
-                series2
-                    .attr('x1', (d, i) => x(d.time))
-                    .attr('x2', (d, i) => x(d.time))
-                    .attr('y1', (d, i) => spikesMargin)
-                    .attr('y2', (d, i) => height/2-spikesMargin)
-                    .attr('stroke', 'red')
-                ;
-
-                // exit old elements
-                series2
-                    .exit()
-                    .remove()
-                ;
-            }
+                    // exit old elements
+                    container
+                        .exit()
+                        .remove()
+                    ;
+                });
+           }
         },
-        [data, timeWindow, width, height, spikesMargin]
+        [seriesList, timeWindow, width, height, spikesMargin]
     );
 
     return (
