@@ -30,7 +30,7 @@ const App: React.FC = () => {
       {/*<NumberSpinnerDriver3 timeWindow={1000} data={genData(2, 10)}/>*/}
       {/*<NumberSpinnerDriver3 timeWindow={500} seriesList={data} seriesHeight={10} plotWidth={900}/>*/}
       {/*<NumberSpinner4 timeWindow={500} seriesList={data} seriesHeight={10} plotWidth={900}/>*/}
-      <NumberSpinner5 timeWindow={500} seriesList={data} seriesHeight={10} plotWidth={900}/>
+      <NumberSpinner5 timeWindow={1000} seriesList={data} seriesHeight={10} plotWidth={900}/>
     </div>
   );
 };
