@@ -95,9 +95,7 @@ function NumberSpinnerDriver3(props: Props): JSX.Element {
                     // dataRef.current = dataRef.current.slice();
                     setLiveData(seriesRef.current);
 
-                    // count.current += 1;
-                    // const maxTime = d3.max(Array.from(seriesRef.current.values()).map(series => series.data[series.data.length - 1].time)) || 0;
-                    if (intervalRef.current && maxTime > 10000) {
+                    if (intervalRef.current && maxTime > 5000) {
                         clearInterval(intervalRef.current);
                     }
                 },
@@ -118,30 +116,21 @@ function NumberSpinner(props: PlotProps): JSX.Element {
 
     const d3ContainerRef = useRef(null);
 
-    // called on mount to set up the <g> element into which to render
+    // called when:
+    // 1. component mounts to set up the main <g> element and a <g> element for each series
+    //    into which d3 renders the series
+    // 2. series data changes
+    // 3. time-window changes
+    // 4. plot attributes change
     useEffect(
         () => {
             if (d3ContainerRef.current) {
-                const mainG = d3
-                    .select(d3ContainerRef.current)
-                    .append('g');
+                // create or grab the main <g> container for svg
+                const mainG = d3.select(d3ContainerRef.current).append('g');
 
                 // create a container for each spike series
-                seriesList.forEach((series, index) => {
-                    mainG
-                        .append('g')
-                        .attr('class', series.name)
-                        .attr("transform", () => `translate(0, ${index * height / seriesList.length})`)
-                    ;
-                });
-            }
-        }, [seriesList, height]
-    );
+                seriesList.forEach(series => mainG.append('g').attr('class', series.name));
 
-    // called on mount, and also when the liveData state variable is updated
-    useEffect(
-        () => {
-            if (d3ContainerRef.current) {
                 // calculate the mapping between the times in the data (domain) and the display
                 // location on the screen (range)
                 // const maxTime: number = d3.max(seriesList.map(series => series.last().map(datum => datum.time).getOrElse(0))) || 0;
@@ -150,9 +139,10 @@ function NumberSpinner(props: PlotProps): JSX.Element {
                     .domain([Math.max(0, maxTime - timeWindow), Math.max(timeWindow, maxTime)])
                     .range([0, width]);
 
-                // const y = d3.scaleLinear()
-                //     .domain([0, seriesList.length])
-                //     .range([height, 0]);
+                const lineHeight = height / seriesList.length;
+                const y = d3.scaleBand()
+                    .domain(seriesList.map(series => series.name))
+                    .range([1, lineHeight * (seriesList.length + 1)]);
 
                 // select the text elements and bind the data to them
                 const svg = d3.select(d3ContainerRef.current);
@@ -170,8 +160,8 @@ function NumberSpinner(props: PlotProps): JSX.Element {
                         .append('line')
                         .attr('x1', d => x(d.time))
                         .attr('x2', d => x(d.time))
-                        .attr('y1', () => spikesMargin)
-                        .attr('y2', () => height / seriesList.length - spikesMargin)
+                        .attr('y1', () => (y(series.name) || 0) + spikesMargin)
+                        .attr('y2', () => (y(series.name) || 0) + lineHeight - spikesMargin)
                         .attr('stroke', 'red')
                     ;
 
@@ -179,8 +169,8 @@ function NumberSpinner(props: PlotProps): JSX.Element {
                     container
                         .attr('x1', d => x(d.time))
                         .attr('x2', d => x(d.time))
-                        .attr('y1', () => spikesMargin)
-                        .attr('y2', () => height / seriesList.length - spikesMargin)
+                        .attr('y1', () => (y(series.name) || 0) + spikesMargin)
+                        .attr('y2', () => (y(series.name) || 0) + lineHeight - spikesMargin)
                         .attr('stroke', 'red')
                     ;
 
@@ -199,7 +189,7 @@ function NumberSpinner(props: PlotProps): JSX.Element {
         <svg
             className="d3-component"
             width={width}
-            height={height}
+            height={height * seriesList.length}
             ref={d3ContainerRef}
         />
     );

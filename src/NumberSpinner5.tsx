@@ -63,7 +63,7 @@ function NumberSpinner5(props: Props): JSX.Element {
                 mainG
                     .append('g')
                     .attr('class', series.name)
-                    .attr("transform", () => `translate(0, ${index * seriesHeight})`)
+                    // .attr("transform", () => `translate(0, ${index * seriesHeight})`)
                 ;
             });
 
@@ -96,6 +96,10 @@ function NumberSpinner5(props: Props): JSX.Element {
                         .domain([Math.max(0, maxTime - timeWindow), Math.max(timeWindow, updatedMaxTime)])
                         .range([0, plotWidth]);
 
+                    const y = d3.scaleBand()
+                        .domain(seriesList.map(series => series.name))
+                        .range([1, seriesHeight * (seriesList.length + 1)]);
+
                     // select the text elements and bind the data to them
                     const svg = d3.select(d3ContainerRef.current);
 
@@ -112,8 +116,8 @@ function NumberSpinner5(props: Props): JSX.Element {
                             .append('line')
                             .attr('x1', d => x(d.time))
                             .attr('x2', d => x(d.time))
-                            .attr('y1', () => spikesMargin)
-                            .attr('y2', () => seriesHeight - spikesMargin)
+                            .attr('y1', () => (y(series.name) || 0) + spikesMargin)
+                            .attr('y2', () => (y(series.name) || 0) + seriesHeight - spikesMargin)
                             .attr('stroke', 'red')
                         ;
 
@@ -121,8 +125,8 @@ function NumberSpinner5(props: Props): JSX.Element {
                         container
                             .attr('x1', d => x(d.time))
                             .attr('x2', d => x(d.time))
-                            .attr('y1', () => spikesMargin)
-                            .attr('y2', () => seriesHeight - spikesMargin)
+                            .attr('y1', () => (y(series.name) || 0) + spikesMargin)
+                            .attr('y2', () => (y(series.name) || 0) + seriesHeight - spikesMargin)
                             .attr('stroke', 'red')
                         ;
 
@@ -134,7 +138,7 @@ function NumberSpinner5(props: Props): JSX.Element {
                     });
 
                     // stop running after 10 seconds
-                    if (intervalRef.current && maxTime > 10000) {
+                    if (intervalRef.current && maxTime > 5000) {
                         clearInterval(intervalRef.current);
                     }
                 },
