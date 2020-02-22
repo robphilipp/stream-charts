@@ -106,12 +106,12 @@ function NumberSpinnerDriver3(props: Props): JSX.Element {
 
     return (
         <div>
-            <NumberSpinner width={plotWidth} height={seriesList.length * seriesHeight} seriesList={liveData} timeWindow={timeWindow}/>
+            <RasterChart width={plotWidth} height={seriesList.length * seriesHeight} seriesList={liveData} timeWindow={timeWindow}/>
         </div>
     );
 }
 
-function NumberSpinner(props: PlotProps): JSX.Element {
+function RasterChart(props: PlotProps): JSX.Element {
     const {seriesList, timeWindow, width, height, spikesMargin = 2} = props;
 
     const d3ContainerRef = useRef(null);

@@ -5,8 +5,9 @@ import './App.css';
 // import NumberSpinner from "./NumberSpinner";
 // import NumberSpinnerDriver from "./NumberSpinner2";
 // import NumberSpinnerDriver3, {Datum, Series, seriesFrom} from "./NumberSpinner3";
+import RasterChartDriver, {Datum, Series, seriesFrom} from "./RasterChartDriver";
 // import NumberSpinner4, {Datum, Series, seriesFrom} from "./NumberSpinner4";
-import NumberSpinner5, {Datum, Series, seriesFrom} from "./NumberSpinner5";
+// import NumberSpinner5, {Datum, Series, seriesFrom} from "./NumberSpinner5";
 // import NumberSpinner5 from "./NumberSpinner5";
 
 // const data = Array.from({length: 5000}, () => Math.floor(Math.random() * 10));
@@ -19,7 +20,7 @@ function genData(length: number, timeDelta: number): Array<Datum> {
     return data;
 }
 
-const data: Array<Series> = Array.from({length: 100}, (_, i) => seriesFrom(`neuron-${i}`, genData(2, 10)));
+const data: Array<Series> = Array.from({length: 50}, (_, i) => seriesFrom(`neuron-${i}`, genData(2, 10)));
 
 const App: React.FC = () => {
   return (
@@ -29,11 +30,11 @@ const App: React.FC = () => {
       {/*<NumberSpinner data={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}/>*/}
       {/*<NumberSpinnerDriver data={data}/>*/}
       {/*<NumberSpinnerDriver3 timeWindow={1000} data={genData(2, 10)}/>*/}
-      {/*  <p>Spinner 3</p>*/}
-      {/*<NumberSpinnerDriver3 timeWindow={500} seriesList={data} seriesHeight={10} plotWidth={900}/>*/}
+        <p>Raster Chart</p>
+      <RasterChartDriver timeWindow={500} seriesList={data} seriesHeight={15} plotWidth={900}/>
       {/*<NumberSpinner4 timeWindow={500} seriesList={data} seriesHeight={10} plotWidth={900}/>*/}
-      <p>Spinner 5</p>
-      <NumberSpinner5 timeWindow={1000} seriesList={data} seriesHeight={10} plotWidth={900}/>
+      {/*<p>Spinner 5</p>*/}
+      {/*<NumberSpinner5 timeWindow={1000} seriesList={data} seriesHeight={10} plotWidth={900}/>*/}
     </div>
   );
 };
