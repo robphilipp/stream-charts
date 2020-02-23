@@ -1,6 +1,7 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
-import {Series} from "./RasterChartDriver";
+import {Datum, Series} from "./RasterChartDriver";
+import { ContainerElement } from "d3";
 
 export interface Sides {
     top: number;
@@ -53,6 +54,47 @@ function RasterChart(props: Props): JSX.Element {
     const d3ContainerRef = useRef(null);
     const d3AxesRef = useRef<{xAxisElement: any, yAxisElement: any}>();
 
+
+    const tooltip = d3.select("#div_template")
+        .append("div")
+        .style("opacity", 0)
+        .attr("class", "tooltip")
+        .style("background-color", "white")
+        .style("border", "solid")
+        .style("border-width", "2px")
+        .style("border-radius", "5px")
+        .style("padding", "5px");
+
+    function handleMouseOver(d: Datum, seriesName: string, x: d3.ScaleLinear<number, number>, y: d3.ScaleBand<string>) {
+        // Use D3 to select element, change color and size
+        // @ts-ignore
+        d3.select(this)
+            .attr('stroke', 'white')
+            .attr('stroke-width', 4);
+
+        // Specify where to put label of text
+        // svg
+        d3.select(d3ContainerRef.current)
+            .append("text")
+            .attr('id', `t${d.time}-${seriesName}`)
+            .attr('x', () => x(d.time) - 30)
+            .attr('y', () => y(seriesName) || 0 - 15)
+            .attr('stroke', 'white')
+            .text(function() {
+                return `(${seriesName}) ${d.time} ms, ${d3.format(".2")(d.value)} mV`;  // Value of the text
+            });
+    }
+
+    function handleMouseleave(d: Datum, seriesName: string) {
+        // Use D3 to select element, change color and size
+        // @ts-ignore
+        d3.select(this)
+            .attr('stroke', spikesStyle.color)
+            .attr('stroke-width', spikesStyle.lineWidth);
+
+        d3.select(`#t${d.time}-${seriesName}`).remove();
+    }
+
     // called when:
     // 1. component mounts to set up the main <g> element and a <g> element for each series
     //    into which d3 renders the series
@@ -81,13 +123,13 @@ function RasterChart(props: Props): JSX.Element {
                 // calculate the mapping between the times in the data (domain) and the display
                 // location on the screen (range)
                 const maxTime = calcMaxTime(seriesList);
-                const x = d3.scaleLinear()
+                const x: d3.ScaleLinear<number, number> = d3.scaleLinear()
                     .domain([Math.max(0, maxTime - timeWindow), Math.max(timeWindow, maxTime)])
                     .range([0, plotDimensions.width]);
 
                 // const lineHeight = height / seriesList.length;
                 const lineHeight = plotDimensions.height / seriesList.length;
-                const y = d3.scaleBand()
+                const y: d3.ScaleBand<string> = d3.scaleBand()
                     .domain(seriesList.map(series => series.name))
                     .range([0, lineHeight * seriesList.length - margin.top]);
 
@@ -165,6 +207,8 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('y2', () => (y(series.name) || 0) + lineHeight - spikesStyle.margin)
                         .attr('stroke', spikesStyle.color)
                         .attr('stroke-width', spikesStyle.lineWidth)
+                        .on("mouseover", (d, i) => handleMouseOver(d, series.name, x, y))
+                        .on("mouseleave", d => handleMouseleave(d, series.name))
                     ;
 
                     // update existing elements
