@@ -17,6 +17,7 @@ interface Props {
     axisLabelFont?: {size: number, color: string, family: string, weight: number};
     axisStyle?: {color: string};
     backgroundColor?: string;
+    plotGridLines?: {visible: boolean, color: string}
 
     timeWindow: number;
     seriesList: Array<Series>;
@@ -43,7 +44,8 @@ function RasterChart(props: Props): JSX.Element {
         spikesStyle = {margin: 2, color: '#c95d15', lineWidth: 1},
         axisLabelFont = {size: 12, color: '#d2933f', weight: 300, family: 'sans-serif'},
         axisStyle = {color: '#d2933f'},
-        backgroundColor = '#202020'
+        backgroundColor = '#202020',
+        plotGridLines = {visible: true, color: 'rgba(210,147,63,0.15)'}
     } = props;
 
     const plotDimensions = adjustedDimensions(width, height, margin);
@@ -92,7 +94,7 @@ function RasterChart(props: Props): JSX.Element {
                 // select the text elements and bind the data to them
                 const svg = d3.select(d3ContainerRef.current);
 
-                // create and add the axes
+                // create and add the axes, grid-lines, and mouse-over functions
                 if(!d3AxesRef.current) {
                     const xAxis = d3.axisBottom(x) as d3.Axis<number>;
                     const yAxis = d3.axisLeft(y);
@@ -121,6 +123,23 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('font-weight', axisLabelFont.weight)
                         .attr('transform', `translate(${margin.left + plotDimensions.width / 2}, ${plotDimensions.height + margin.top + (margin.bottom / 3)})`)
                         .text("t (ms)");
+
+                    if(plotGridLines.visible) {
+                        const gridLines = svg
+                            .select('g')
+                            .selectAll('grid-line')
+                            .data(seriesList.map(series => series.name));
+
+                        gridLines
+                            .enter()
+                            .append('line')
+                            .attr('x1', margin.left)
+                            .attr('x2', margin.left + plotDimensions.width)
+                            .attr('y1', d => (y(d) || 0) + margin.top + lineHeight / 2)
+                            .attr('y2', d => (y(d) || 0) + margin.top + lineHeight / 2)
+                            .attr('stroke', plotGridLines.color)
+                        ;
+                    }
 
                 }
                 // update the scales
