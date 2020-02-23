@@ -36,6 +36,8 @@ const defaultData: Array<Series> = [
     seriesFrom('neuron-2', [{time: 1, value: 1}, {time: 2, value: 2}, {time: 3, value: 3}]),
 ];
 
+const UPDATE_PERIOD_MS = 25;
+
 function RasterChartDriver(props: Props): JSX.Element {
     const {seriesList = defaultData, timeWindow = 100, seriesHeight = 20, plotWidth = 500} = props;
 
@@ -64,10 +66,11 @@ function RasterChartDriver(props: Props): JSX.Element {
                     // update all the series
                     seriesRef.current = seriesRef.current.map(series => {
                         // create the next data point
-                        const datum = nextDatum(maxTime, 10);
+                        const datum = nextDatum(maxTime, UPDATE_PERIOD_MS);
 
                         // drop any values that have fallen out of the beginning of the time window
                         while (series.data.length > 0 && series.data[0].time <= datum.time - timeWindow) {
+                        // while (series.data.length > 0 && series.data[0].time <= maxTime - timeWindow) {
                             series.data.shift();
                         }
 
@@ -84,7 +87,7 @@ function RasterChartDriver(props: Props): JSX.Element {
                         clearInterval(intervalRef.current);
                     }
                 },
-                25
+                UPDATE_PERIOD_MS
             );
         }, [timeWindow]
     );
@@ -96,7 +99,7 @@ function RasterChartDriver(props: Props): JSX.Element {
                 height={seriesList.length * seriesHeight + 30 + 30}
                 seriesList={liveData}
                 timeWindow={timeWindow}
-                plotMargins={{top: 30, right: 20, bottom: 30, left: 75}}
+                margin={{top: 30, right: 20, bottom: 30, left: 75}}
             />
         </div>
     );

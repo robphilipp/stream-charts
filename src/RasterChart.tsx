@@ -2,7 +2,7 @@ import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import {Series} from "./RasterChartDriver";
 
-export interface Margins {
+export interface Sides {
     top: number;
     right: number;
     bottom: number;
@@ -12,8 +12,12 @@ export interface Margins {
 interface Props {
     width: number;
     height: number;
-    plotMargins?: Margins;
+    margin?: Sides;
     spikesMargin?: number;
+    axisLabelFont?: {size: number, color: string, family: string, weight: number};
+    axisStyle?: {color: string};
+    backgroundColor?: string;
+
     timeWindow: number;
     seriesList: Array<Series>;
 }
@@ -22,7 +26,7 @@ export function calcMaxTime(seriesList: Array<Series>): number {
     return d3.max(seriesList.map(series => series.last().map(datum => datum.time).getOrElse(0))) || 0;
 }
 
-function adjustedDimensions(width:  number, height: number, margins: Margins): {width: number, height: number} {
+function adjustedDimensions(width:  number, height: number, margins: Sides): {width: number, height: number} {
     return {
         width: width - margins.left - margins.right,
         height: height - margins.top - margins.top
@@ -35,14 +39,17 @@ function RasterChart(props: Props): JSX.Element {
         timeWindow,
         width,
         height,
-        plotMargins = {top: 30, right: 20, bottom: 30, left: 50},
-        spikesMargin = 2
+        margin = {top: 30, right: 20, bottom: 30, left: 50},
+        spikesMargin = 2,
+        axisLabelFont = {size: 12, color: 'grey', weight: 300, family: 'sans-serif'},
+        axisStyle = {color: '#00ff00'},
+        backgroundColor = '#030303'
     } = props;
 
-    const plotDimensions = adjustedDimensions(width, height, plotMargins);
+    const plotDimensions = adjustedDimensions(width, height, margin);
 
     const d3ContainerRef = useRef(null);
-    const d3AxesRef = useRef<{x: d3.Axis<number>, y: d3.Axis<string>, xAxisElement: any, yAxisElement: any}>();
+    const d3AxesRef = useRef<{xAxisElement: any, yAxisElement: any}>();
 
     // called when:
     // 1. component mounts to set up the main <g> element and a <g> element for each series
@@ -58,60 +65,66 @@ function RasterChart(props: Props): JSX.Element {
                 const mainG = d3.select(d3ContainerRef.current)
                     .attr('width', width)
                     .attr('height', height)
+                    .attr('color', axisStyle.color)
                     .append('g')
-                    // .attr('transform', `translate(${plotMargins.left}, ${plotMargins.top})`)
                 ;
 
                 // create a container for each spike series
                 seriesList.forEach(series => mainG
                     .append('g')
                     .attr('class', series.name)
-                    .attr('transform', `translate(${plotMargins.left}, 0)`)
+                    .attr('transform', `translate(${margin.left}, ${margin.top})`)
                 );
 
                 // calculate the mapping between the times in the data (domain) and the display
                 // location on the screen (range)
-                // const maxTime: number = d3.max(seriesList.map(series => series.last().map(datum => datum.time).getOrElse(0))) || 0;
                 const maxTime = calcMaxTime(seriesList);
                 const x = d3.scaleLinear()
                     .domain([Math.max(0, maxTime - timeWindow), Math.max(timeWindow, maxTime)])
                     .range([0, plotDimensions.width]);
-                    // .range([0, width]);
 
                 // const lineHeight = height / seriesList.length;
                 const lineHeight = plotDimensions.height / seriesList.length;
                 const y = d3.scaleBand()
                     .domain(seriesList.map(series => series.name))
-                    .range([0, lineHeight * (seriesList.length)]);
+                    .range([0, lineHeight * seriesList.length - margin.top]);
 
                 // select the text elements and bind the data to them
                 const svg = d3.select(d3ContainerRef.current);
 
-                // the axes
+                // create and add the axes
                 if(!d3AxesRef.current) {
                     const xAxis = d3.axisBottom(x) as d3.Axis<number>;
                     const yAxis = d3.axisLeft(y);
                     const xAxisElem = svg
                         .append('g')
                         .attr('class', 'x-axis')
-                        .attr('transform', `translate(${plotMargins.left}, ${plotDimensions.height})`)
+                        .attr('transform', `translate(${margin.left}, ${plotDimensions.height})`)
                         .call(xAxis);
 
                     const yAxisElem = svg
                         .append('g')
                         .attr('class', 'y-axis')
-                        .attr('transform', `translate(${plotMargins.left}, 0)`)
+                        .attr('transform', `translate(${margin.left}, ${margin.top})`)
                         .call(yAxis);
 
                     d3AxesRef.current = {
-                        x: xAxis,
-                        y: yAxis,
                         xAxisElement: xAxisElem,
                         yAxisElement: yAxisElem
                     };
+
+                    svg.append('text')
+                        .attr('text-anchor', 'middle')
+                        .attr('font-size', axisLabelFont.size)
+                        .attr('fill', axisLabelFont.color)
+                        .attr('font-family', axisLabelFont.family)
+                        .attr('font-weight', axisLabelFont.weight)
+                        .attr('transform', `translate(${margin.left + plotDimensions.width / 2}, ${plotDimensions.height + margin.top + (margin.bottom / 3)})`)
+                        .text("t (ms)");
+
                 }
+                // update the scales
                 else {
-                    // d3AxesRef.current = {x: d3.axisBottom(x), y: d3.axisLeft(y), ...d3AxesRef.current};
                     d3AxesRef.current.xAxisElement.call(d3.axisBottom(x));
                     d3AxesRef.current.yAxisElement.call(d3.axisLeft(y));
                 }
@@ -149,52 +162,6 @@ function RasterChart(props: Props): JSX.Element {
                         .remove()
                     ;
                 });
-
-                // if(d3AxesRef.current) {
-                //     d3AxesRef.current.xAxisElement.call(d3AxesRef.current.x);
-                //     d3AxesRef.current.yAxisElement.call(d3AxesRef.current.y);
-                // }
-
-                    // const xAxisElem = svg
-                //     .append('g')
-                //     .attr('class', 'x-axis');
-                //
-                //     xAxisElem//.enter()
-                //     .attr('transform', `translate(0, ${plotDimensions.height})`)
-                //     // @ts-ignore
-                //     .call(xAxis);
-                //
-                // const yAxisElem = svg
-                //     .select('g.y-axis')
-                //     // .attr('class', 'y-axis')
-                //     // @ts-ignore
-                //     .call(yAxis);
-                // const xAxisElem = svg
-                //     .append('g')
-                //     .attr('class', 'x-axis')
-                //     .attr('transform', `translate(0, ${plotDimensions.height})`)
-                //     .call(xAxis);
-                //
-                // const yAxisElem = svg
-                //     .append('g')
-                //     .attr('class', 'y-axis')
-                //     .call(yAxis);
-
-
-                // const xAxisElement = svg.select('g.xAxis');
-                //
-                // xAxisElement
-                //     .enter()
-                //     // .append('g')
-                //     // .attr('class', 'x-axis')
-                //     .attr('transform', `translate(0, ${plotDimensions.height})`)
-                //     .call(xAxis);
-                //
-                // xAxisElement.call(xAxis);
-                //
-                // xAxisElement.exit().remove();
-                //
-                // svg.append('g').attr('class', 'y-axis').call(yAxis);
             }
         },
         [seriesList, timeWindow, width, height, spikesMargin]
@@ -205,6 +172,7 @@ function RasterChart(props: Props): JSX.Element {
             className="d3-component"
             width={width}
             height={height * seriesList.length}
+            style={{backgroundColor: backgroundColor}}
             ref={d3ContainerRef}
         />
     );

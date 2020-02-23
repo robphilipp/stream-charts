@@ -31,7 +31,7 @@ const App: React.FC = () => {
       {/*<NumberSpinnerDriver data={data}/>*/}
       {/*<NumberSpinnerDriver3 timeWindow={1000} data={genData(2, 10)}/>*/}
         <p>Raster Chart</p>
-      <RasterChartDriver timeWindow={500} seriesList={data} seriesHeight={15} plotWidth={900}/>
+      <RasterChartDriver timeWindow={1000} seriesList={data} seriesHeight={15} plotWidth={900}/>
       {/*<NumberSpinner4 timeWindow={500} seriesList={data} seriesHeight={10} plotWidth={900}/>*/}
       {/*<p>Spinner 5</p>*/}
       {/*<NumberSpinner5 timeWindow={1000} seriesList={data} seriesHeight={10} plotWidth={900}/>*/}
