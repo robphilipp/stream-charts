@@ -13,7 +13,7 @@ interface Props {
     width: number;
     height: number;
     margin?: Sides;
-    spikesMargin?: number;
+    spikesStyle?: {margin: number, color: string, lineWidth: number};
     axisLabelFont?: {size: number, color: string, family: string, weight: number};
     axisStyle?: {color: string};
     backgroundColor?: string;
@@ -40,10 +40,10 @@ function RasterChart(props: Props): JSX.Element {
         width,
         height,
         margin = {top: 30, right: 20, bottom: 30, left: 50},
-        spikesMargin = 2,
-        axisLabelFont = {size: 12, color: 'grey', weight: 300, family: 'sans-serif'},
-        axisStyle = {color: '#00ff00'},
-        backgroundColor = '#030303'
+        spikesStyle = {margin: 2, color: '#c95d15', lineWidth: 1},
+        axisLabelFont = {size: 12, color: '#d2933f', weight: 300, family: 'sans-serif'},
+        axisStyle = {color: '#d2933f'},
+        backgroundColor = '#202020'
     } = props;
 
     const plotDimensions = adjustedDimensions(width, height, margin);
@@ -142,18 +142,20 @@ function RasterChart(props: Props): JSX.Element {
                         .append('line')
                         .attr('x1', d => x(d.time))
                         .attr('x2', d => x(d.time))
-                        .attr('y1', () => (y(series.name) || 0) + spikesMargin)
-                        .attr('y2', () => (y(series.name) || 0) + lineHeight - spikesMargin)
-                        .attr('stroke', 'red')
+                        .attr('y1', () => (y(series.name) || 0) + spikesStyle.margin)
+                        .attr('y2', () => (y(series.name) || 0) + lineHeight - spikesStyle.margin)
+                        .attr('stroke', spikesStyle.color)
+                        .attr('stroke-width', spikesStyle.lineWidth)
                     ;
 
                     // update existing elements
                     container
                         .attr('x1', d => x(d.time))
                         .attr('x2', d => x(d.time))
-                        .attr('y1', () => (y(series.name) || 0) + spikesMargin)
-                        .attr('y2', () => (y(series.name) || 0) + lineHeight - spikesMargin)
-                        .attr('stroke', 'red')
+                        .attr('y1', () => (y(series.name) || 0) + spikesStyle.margin)
+                        .attr('y2', () => (y(series.name) || 0) + lineHeight - spikesStyle.margin)
+                        .attr('stroke', spikesStyle.color)
+                        .attr('stroke-width', spikesStyle.lineWidth)
                     ;
 
                     // exit old elements
@@ -164,7 +166,7 @@ function RasterChart(props: Props): JSX.Element {
                 });
             }
         },
-        [seriesList, timeWindow, width, height, spikesMargin]
+        [seriesList, timeWindow, width, height, spikesStyle]
     );
 
     return (
