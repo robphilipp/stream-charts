@@ -1,7 +1,6 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import {Datum, Series} from "./RasterChartDriver";
-import { ContainerElement } from "d3";
 
 export interface Sides {
     top: number;
@@ -14,7 +13,7 @@ interface Props {
     width: number;
     height: number;
     margin?: Sides;
-    spikesStyle?: {margin: number, color: string, lineWidth: number};
+    spikesStyle?: {margin: number, color: string, lineWidth: number, highlightColor: string, highlightWidth: number};
     axisLabelFont?: {size: number, color: string, family: string, weight: number};
     axisStyle?: {color: string};
     backgroundColor?: string;
@@ -42,11 +41,11 @@ function RasterChart(props: Props): JSX.Element {
         width,
         height,
         margin = {top: 30, right: 20, bottom: 30, left: 50},
-        spikesStyle = {margin: 2, color: '#c95d15', lineWidth: 2},
+        spikesStyle = {margin: 2, color: '#c95d15', lineWidth: 2, highlightColor: '#d2933f', highlightWidth: 4},
         axisLabelFont = {size: 12, color: '#d2933f', weight: 300, family: 'sans-serif'},
         axisStyle = {color: '#d2933f'},
         backgroundColor = '#202020',
-        plotGridLines = {visible: true, color: 'rgba(210,147,63,0.15)'}
+        plotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'}
     } = props;
 
     const plotDimensions = adjustedDimensions(width, height, margin);
@@ -58,8 +57,8 @@ function RasterChart(props: Props): JSX.Element {
         // Use D3 to select element, change color and size
         // @ts-ignore
         d3.select(line)
-            .attr('stroke', '#d2933f')
-            .attr('stroke-width', 4)
+            .attr('stroke', spikesStyle.highlightColor)
+            .attr('stroke-width', spikesStyle.highlightWidth)
             .attr('stroke-linecap', "round")
         ;
 
@@ -71,9 +70,9 @@ function RasterChart(props: Props): JSX.Element {
             .attr('rx', 5)
             .attr('width', 200)
             .attr('height', 35)
-            .attr('fill', 'rgb(32,32,32)')
+            .attr('fill', backgroundColor)
             .attr('fill-opacity', 0.8)
-            .attr('stroke', '#d2933f')
+            .attr('stroke', axisStyle.color)
         ;
 
         d3.select(d3ContainerRef.current)
@@ -81,9 +80,9 @@ function RasterChart(props: Props): JSX.Element {
             .attr('id', `tn${d.time}-${seriesName}`)
             .attr('x', () => x(d.time) - 30)
             .attr('y', () => (y(seriesName) || 0) + 8)
-            .attr('fill', '#d2933f')
+            .attr('fill', axisLabelFont.color)
             .attr('font-family', 'sans-serif')
-            .attr('font-size', '12px')
+            .attr('font-size', axisLabelFont.size)
             .attr('font-weight', 100)
             .text(function() {
                 return seriesName;  // Value of the text
@@ -94,9 +93,9 @@ function RasterChart(props: Props): JSX.Element {
             .attr('id', `t${d.time}-${seriesName}`)
             .attr('x', () => x(d.time) - 30)
             .attr('y', () => (y(seriesName) || 0) + 25)
-            .attr('fill', '#d2933f')
+            .attr('fill', axisLabelFont.color)
             .attr('font-family', 'sans-serif')
-            .attr('font-size', '14px')
+            .attr('font-size', axisLabelFont.size + 2)
             .attr('font-weight', 350)
             .text(function() {
                 return `${d.time} ms, ${d3.format(".2")(d.value)} mV`;  // Value of the text
@@ -105,7 +104,6 @@ function RasterChart(props: Props): JSX.Element {
 
     function handleMouseleave(d: Datum, seriesName: string, line: SVGLineElement) {
         // Use D3 to select element, change color and size
-        // @ts-ignore
         d3.select(line)
             .attr('stroke', spikesStyle.color)
             .attr('stroke-width', spikesStyle.lineWidth);
@@ -113,7 +111,6 @@ function RasterChart(props: Props): JSX.Element {
         d3.select(`#t${d.time}-${seriesName}`).remove();
         d3.select(`#tn${d.time}-${seriesName}`).remove();
         d3.select(`#r${d.time}-${seriesName}`).remove();
-        // tooltip.style('opacity', 0);
     }
 
     // called when:
