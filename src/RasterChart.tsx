@@ -42,7 +42,7 @@ function RasterChart(props: Props): JSX.Element {
         width,
         height,
         margin = {top: 30, right: 20, bottom: 30, left: 50},
-        spikesStyle = {margin: 2, color: '#c95d15', lineWidth: 1},
+        spikesStyle = {margin: 2, color: '#c95d15', lineWidth: 2},
         axisLabelFont = {size: 12, color: '#d2933f', weight: 300, family: 'sans-serif'},
         axisStyle = {color: '#d2933f'},
         backgroundColor = '#202020',
@@ -54,45 +54,66 @@ function RasterChart(props: Props): JSX.Element {
     const d3ContainerRef = useRef(null);
     const d3AxesRef = useRef<{xAxisElement: any, yAxisElement: any}>();
 
-
-    const tooltip = d3.select("#div_template")
-        .append("div")
-        .style("opacity", 0)
-        .attr("class", "tooltip")
-        .style("background-color", "white")
-        .style("border", "solid")
-        .style("border-width", "2px")
-        .style("border-radius", "5px")
-        .style("padding", "5px");
-
-    function handleMouseOver(d: Datum, seriesName: string, x: d3.ScaleLinear<number, number>, y: d3.ScaleBand<string>) {
+    function handleMouseOver(d: Datum, seriesName: string, x: d3.ScaleLinear<number, number>, y: d3.ScaleBand<string>, line: SVGLineElement) {
         // Use D3 to select element, change color and size
         // @ts-ignore
-        d3.select(this)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 4);
+        d3.select(line)
+            .attr('stroke', '#d2933f')
+            .attr('stroke-width', 4)
+            .attr('stroke-linecap', "round")
+        ;
 
-        // Specify where to put label of text
-        // svg
+        d3.select(d3ContainerRef.current)
+            .append('rect')
+            .attr('id', `r${d.time}-${seriesName}`)
+            .attr('x', () => x(d.time) - 50)
+            .attr('y', () => (y(seriesName) || 0) - 5)
+            .attr('rx', 5)
+            .attr('width', 200)
+            .attr('height', 35)
+            .attr('fill', 'rgb(32,32,32)')
+            .attr('fill-opacity', 0.8)
+            .attr('stroke', '#d2933f')
+        ;
+
+        d3.select(d3ContainerRef.current)
+            .append("text")
+            .attr('id', `tn${d.time}-${seriesName}`)
+            .attr('x', () => x(d.time) - 30)
+            .attr('y', () => (y(seriesName) || 0) + 8)
+            .attr('fill', '#d2933f')
+            .attr('font-family', 'sans-serif')
+            .attr('font-size', '12px')
+            .attr('font-weight', 100)
+            .text(function() {
+                return seriesName;  // Value of the text
+            });
+
         d3.select(d3ContainerRef.current)
             .append("text")
             .attr('id', `t${d.time}-${seriesName}`)
             .attr('x', () => x(d.time) - 30)
-            .attr('y', () => y(seriesName) || 0 - 15)
-            .attr('stroke', 'white')
+            .attr('y', () => (y(seriesName) || 0) + 25)
+            .attr('fill', '#d2933f')
+            .attr('font-family', 'sans-serif')
+            .attr('font-size', '14px')
+            .attr('font-weight', 350)
             .text(function() {
-                return `(${seriesName}) ${d.time} ms, ${d3.format(".2")(d.value)} mV`;  // Value of the text
+                return `${d.time} ms, ${d3.format(".2")(d.value)} mV`;  // Value of the text
             });
     }
 
-    function handleMouseleave(d: Datum, seriesName: string) {
+    function handleMouseleave(d: Datum, seriesName: string, line: SVGLineElement) {
         // Use D3 to select element, change color and size
         // @ts-ignore
-        d3.select(this)
+        d3.select(line)
             .attr('stroke', spikesStyle.color)
             .attr('stroke-width', spikesStyle.lineWidth);
 
         d3.select(`#t${d.time}-${seriesName}`).remove();
+        d3.select(`#tn${d.time}-${seriesName}`).remove();
+        d3.select(`#r${d.time}-${seriesName}`).remove();
+        // tooltip.style('opacity', 0);
     }
 
     // called when:
@@ -207,8 +228,9 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('y2', () => (y(series.name) || 0) + lineHeight - spikesStyle.margin)
                         .attr('stroke', spikesStyle.color)
                         .attr('stroke-width', spikesStyle.lineWidth)
-                        .on("mouseover", (d, i) => handleMouseOver(d, series.name, x, y))
-                        .on("mouseleave", d => handleMouseleave(d, series.name))
+                        .attr('stroke-linecap', "round")
+                        .on("mouseover", (d, i, group) => handleMouseOver(d, series.name, x, y, group[i]))
+                        .on("mouseleave", (d, i, group) => handleMouseleave(d, series.name, group[i]))
                     ;
 
                     // update existing elements
@@ -219,6 +241,7 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('y2', () => (y(series.name) || 0) + lineHeight - spikesStyle.margin)
                         .attr('stroke', spikesStyle.color)
                         .attr('stroke-width', spikesStyle.lineWidth)
+                        .attr('stroke-linecap', "round")
                     ;
 
                     // exit old elements
