@@ -10,6 +10,13 @@ export interface Sides {
     left: number;
 }
 
+export interface TooltipStyle {
+    visible?: boolean;
+    font: {size: number, color: string, family: string, weight: number};
+    background: {color: string, opacity: number};
+    border: {color: string, strokeWidth: number, radius: number};
+}
+
 interface Props {
     width: number;
     height: number;
@@ -18,14 +25,15 @@ interface Props {
     axisLabelFont?: {size: number, color: string, family: string, weight: number};
     axisStyle?: {color: string};
     backgroundColor?: string;
-    plotGridLines?: {visible: boolean, color: string}
+    plotGridLines?: {visible: boolean, color: string};
+    tooltip?: TooltipStyle;
 
     timeWindow: number;         // the width of the time-range in ms
     seriesList: Array<Series>;
 }
 
 // the axis-element type return when calling the ".call(axis)" function
-type AxisElementType = Selection<SVGGElement, unknown, null, undefined>;
+type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 
 /**
  * Renders a raster chart
@@ -44,7 +52,13 @@ function RasterChart(props: Props): JSX.Element {
         axisLabelFont = {size: 12, color: '#d2933f', weight: 300, family: 'sans-serif'},
         axisStyle = {color: '#d2933f'},
         backgroundColor = '#202020',
-        plotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'}
+        plotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'},
+        tooltip = {
+            visible: true,
+            font: {size: 12, color: '#d2933f', weight: 250},
+            background: {color: '#202020', opacity: 0.8},
+            border: {color: '#d2933f', strokeWidth: 1, radius: 5}
+        }
     } = props;
 
     const plotDimensions = adjustedDimensions(width, height, margin);
@@ -53,7 +67,7 @@ function RasterChart(props: Props): JSX.Element {
     const containerRef = useRef(null);
 
     // reference to the axes for the plot
-    const axesRef = useRef<{xAxisElement: AxisElementType, yAxisElement: AxisElementType}>();
+    const axesRef = useRef<{xAxisElement: AxisElementSelection, yAxisElement: AxisElementSelection}>();
 
     // the scaling that converts the x-values (time in ms) of the datum into the pixel coordinates.
     const xScalingRef = useRef<ScaleLinear<number, number>>(d3.scaleLinear());
@@ -81,12 +95,13 @@ function RasterChart(props: Props): JSX.Element {
             .attr('class', 'tooltip')
             .attr('x', () => xScalingRef.current(datum.time) - 50)
             .attr('y', () => (yScalingRef.current(seriesName) || 0) - 5)
-            .attr('rx', 5)
+            .attr('rx', tooltip.border.radius)
             .attr('width', 200)
             .attr('height', 35)
-            .attr('fill', backgroundColor)
-            .attr('fill-opacity', 0.8)
-            .attr('stroke', axisStyle.color)
+            .attr('fill', tooltip.background.color)
+            .attr('fill-opacity', tooltip.background.opacity)
+            .attr('stroke', tooltip.border.color)
+            .attr('stroke-width', tooltip.border.strokeWidth)
         ;
 
         // display the neuron ID in the tooltip
@@ -96,10 +111,10 @@ function RasterChart(props: Props): JSX.Element {
             .attr('class', 'tooltip')
             .attr('x', () => xScalingRef.current(datum.time) - 30)
             .attr('y', () => (yScalingRef.current(seriesName) || 0) + 8)
-            .attr('fill', axisLabelFont.color)
+            .attr('fill', tooltip.font.color)
             .attr('font-family', 'sans-serif')
-            .attr('font-size', axisLabelFont.size)
-            .attr('font-weight', 100)
+            .attr('font-size', tooltip.font.size)
+            .attr('font-weight', tooltip.font.weight)
             .text(() => seriesName)
         ;
 
@@ -110,10 +125,10 @@ function RasterChart(props: Props): JSX.Element {
             .attr('class', 'tooltip')
             .attr('x', () => xScalingRef.current(datum.time) - 30)
             .attr('y', () => (yScalingRef.current(seriesName) || 0) + 25)
-            .attr('fill', axisLabelFont.color)
+            .attr('fill', tooltip.font.color)
             .attr('font-family', 'sans-serif')
-            .attr('font-size', axisLabelFont.size + 2)
-            .attr('font-weight', 350)
+            .attr('font-size', tooltip.font.size + 2)
+            .attr('font-weight', tooltip.font.weight + 150)
             .text(() => `${datum.time} ms, ${d3.format(".2")(datum.value)} mV`)
         ;
     }
@@ -266,8 +281,7 @@ function RasterChart(props: Props): JSX.Element {
                     ;
                 });
             }
-        },
-        // [seriesList, timeWindow, width, height, spikesStyle, axisLabelFont, axisStyle, margin, plotDimensions, plotGridLines]
+        }
     );
 
     return (
