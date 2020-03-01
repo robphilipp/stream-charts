@@ -10,23 +10,59 @@ export interface Sides {
     left: number;
 }
 
-export interface TooltipStyle {
-    visible?: boolean;
-    font: {size: number, color: string, family: string, weight: number};
-    background: {color: string, opacity: number};
-    border: {color: string, strokeWidth: number, radius: number};
+const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
+
+const defaultSpikesStyle = {
+    margin: 2,
+    color: '#c95d15',
+    lineWidth: 2,
+    highlightColor: '#d2933f',
+    highlightWidth: 4
+};
+
+const defaultAxesStyle = {color: '#d2933f'};
+const defaultAxesLabelFont = {
+    size: 12,
+    color: '#d2933f',
+    weight: 300,
+    family: 'sans-serif'
+};
+
+const defaultPlotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'};
+
+export interface TooltipProps {
+    visible: boolean;
+    font: Partial<{ size: number, color: string, family: string, weight: number }>;
+    background: Partial<{ color: string, opacity: number }>;
+    border: Partial<{ color: string, strokeWidth: number, radius: number }>;
+    [key: string]: any;
 }
+
+interface TooltipStyle {
+    visible: boolean;
+    font: { size: number, color: string, family: string, weight: number };
+    background: { color: string, opacity: number };
+    border: { color: string, strokeWidth: number, radius: number };
+    [key: string]: any;
+}
+
+const defaultTooltipStyle: TooltipStyle = {
+    visible: true,
+    font: {size: 12, color: '#d2933f', weight: 250, family: 'sans-serif'},
+    background: {color: '#202020', opacity: 0.8},
+    border: {color: '#d2933f', strokeWidth: 1, radius: 5}
+};
 
 interface Props {
     width: number;
     height: number;
-    margin?: Sides;
-    spikesStyle?: {margin: number, color: string, lineWidth: number, highlightColor: string, highlightWidth: number};
-    axisLabelFont?: {size: number, color: string, family: string, weight: number};
-    axisStyle?: {color: string};
+    margin?: Partial<Sides>;
+    spikesStyle?: Partial<{ margin: number, color: string, lineWidth: number, highlightColor: string, highlightWidth: number }>;
+    axisLabelFont?: Partial<{ size: number, color: string, family: string, weight: number }>;
+    axisStyle?: Partial<{ color: string }>;
     backgroundColor?: string;
-    plotGridLines?: {visible: boolean, color: string};
-    tooltip?: TooltipStyle;
+    plotGridLines?: Partial<{ visible: boolean, color: string }>;
+    tooltip?: Partial<TooltipProps>;
 
     timeWindow: number;         // the width of the time-range in ms
     seriesList: Array<Series>;
@@ -47,19 +83,21 @@ function RasterChart(props: Props): JSX.Element {
         timeWindow,
         width,
         height,
-        margin = {top: 30, right: 20, bottom: 30, left: 50},
-        spikesStyle = {margin: 2, color: '#c95d15', lineWidth: 2, highlightColor: '#d2933f', highlightWidth: 4},
-        axisLabelFont = {size: 12, color: '#d2933f', weight: 300, family: 'sans-serif'},
-        axisStyle = {color: '#d2933f'},
         backgroundColor = '#202020',
-        plotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'},
-        tooltip = {
-            visible: true,
-            font: {size: 12, color: '#d2933f', weight: 250},
-            background: {color: '#202020', opacity: 0.8},
-            border: {color: '#d2933f', strokeWidth: 1, radius: 5}
-        }
     } = props;
+
+    // override the defaults with the parent's properties, leaving any unset values as the default value
+    const margin = {...defaultMargin, ...props.margin};
+    const spikesStyle = {...defaultSpikesStyle, ...props.spikesStyle};
+    const axisStyle = {...defaultAxesStyle, ...props.axisStyle};
+    const axisLabelFont = {...defaultAxesLabelFont, ...props.axisLabelFont};
+    const plotGridLines = {...defaultPlotGridLines, ...props.plotGridLines};
+    const tooltip: TooltipStyle = {
+        ...defaultTooltipStyle, ...props.tooltip,
+        font: {...defaultTooltipStyle.font, ...props.tooltip?.font},
+        background: {...defaultTooltipStyle.background, ...props.tooltip?.background},
+        border: {...defaultTooltipStyle.border, ...props.tooltip?.border},
+    };
 
     const plotDimensions = adjustedDimensions(width, height, margin);
 
@@ -67,7 +105,7 @@ function RasterChart(props: Props): JSX.Element {
     const containerRef = useRef(null);
 
     // reference to the axes for the plot
-    const axesRef = useRef<{xAxisElement: AxisElementSelection, yAxisElement: AxisElementSelection}>();
+    const axesRef = useRef<{ xAxisElement: AxisElementSelection, yAxisElement: AxisElementSelection }>();
 
     // the scaling that converts the x-values (time in ms) of the datum into the pixel coordinates.
     const xScalingRef = useRef<ScaleLinear<number, number>>(d3.scaleLinear());
@@ -88,49 +126,51 @@ function RasterChart(props: Props): JSX.Element {
             .attr('stroke-linecap', "round")
         ;
 
-        // create the rounded rectangle for the tooltip's background
-        d3.select(containerRef.current)
-            .append('rect')
-            .attr('id', `r${datum.time}-${seriesName}`)
-            .attr('class', 'tooltip')
-            .attr('x', () => xScalingRef.current(datum.time) - 50)
-            .attr('y', () => (yScalingRef.current(seriesName) || 0) - 5)
-            .attr('rx', tooltip.border.radius)
-            .attr('width', 200)
-            .attr('height', 35)
-            .attr('fill', tooltip.background.color)
-            .attr('fill-opacity', tooltip.background.opacity)
-            .attr('stroke', tooltip.border.color)
-            .attr('stroke-width', tooltip.border.strokeWidth)
-        ;
+        if (tooltip.visible) {
+            // create the rounded rectangle for the tooltip's background
+            d3.select(containerRef.current)
+                .append('rect')
+                .attr('id', `r${datum.time}-${seriesName}`)
+                .attr('class', 'tooltip')
+                .attr('x', () => xScalingRef.current(datum.time) - 50)
+                .attr('y', () => (yScalingRef.current(seriesName) || 0) - 5)
+                .attr('rx', tooltip.border.radius)
+                .attr('width', 200)
+                .attr('height', 35)
+                .attr('fill', tooltip.background.color)
+                .attr('fill-opacity', tooltip.background.opacity)
+                .attr('stroke', tooltip.border.color)
+                .attr('stroke-width', tooltip.border.strokeWidth)
+            ;
 
-        // display the neuron ID in the tooltip
-        d3.select(containerRef.current)
-            .append("text")
-            .attr('id', `tn${datum.time}-${seriesName}`)
-            .attr('class', 'tooltip')
-            .attr('x', () => xScalingRef.current(datum.time) - 30)
-            .attr('y', () => (yScalingRef.current(seriesName) || 0) + 8)
-            .attr('fill', tooltip.font.color)
-            .attr('font-family', 'sans-serif')
-            .attr('font-size', tooltip.font.size)
-            .attr('font-weight', tooltip.font.weight)
-            .text(() => seriesName)
-        ;
+            // display the neuron ID in the tooltip
+            d3.select(containerRef.current)
+                .append("text")
+                .attr('id', `tn${datum.time}-${seriesName}`)
+                .attr('class', 'tooltip')
+                .attr('x', () => xScalingRef.current(datum.time) - 30)
+                .attr('y', () => (yScalingRef.current(seriesName) || 0) + 8)
+                .attr('fill', tooltip.font.color)
+                .attr('font-family', 'sans-serif')
+                .attr('font-size', tooltip.font.size)
+                .attr('font-weight', tooltip.font.weight)
+                .text(() => seriesName)
+            ;
 
-        // display the time (ms) and spike strength (mV) in the tooltip
-        d3.select(containerRef.current)
-            .append("text")
-            .attr('id', `t${datum.time}-${seriesName}`)
-            .attr('class', 'tooltip')
-            .attr('x', () => xScalingRef.current(datum.time) - 30)
-            .attr('y', () => (yScalingRef.current(seriesName) || 0) + 25)
-            .attr('fill', tooltip.font.color)
-            .attr('font-family', 'sans-serif')
-            .attr('font-size', tooltip.font.size + 2)
-            .attr('font-weight', tooltip.font.weight + 150)
-            .text(() => `${datum.time} ms, ${d3.format(".2")(datum.value)} mV`)
-        ;
+            // display the time (ms) and spike strength (mV) in the tooltip
+            d3.select(containerRef.current)
+                .append("text")
+                .attr('id', `t${datum.time}-${seriesName}`)
+                .attr('class', 'tooltip')
+                .attr('x', () => xScalingRef.current(datum.time) - 30)
+                .attr('y', () => (yScalingRef.current(seriesName) || 0) + 25)
+                .attr('fill', tooltip.font.color)
+                .attr('font-family', 'sans-serif')
+                .attr('font-size', tooltip.font.size + 2)
+                .attr('font-weight', tooltip.font.weight + 150)
+                .text(() => `${datum.time} ms, ${d3.format(".2")(datum.value)} mV`)
+            ;
+        }
     }
 
     /**
@@ -145,7 +185,9 @@ function RasterChart(props: Props): JSX.Element {
             .attr('stroke', spikesStyle.color)
             .attr('stroke-width', spikesStyle.lineWidth);
 
-        d3.selectAll('.tooltip').remove();
+        if(tooltip.visible) {
+            d3.selectAll('.tooltip').remove();
+        }
     }
 
     // called when:
@@ -190,7 +232,7 @@ function RasterChart(props: Props): JSX.Element {
                 const svg = d3.select(containerRef.current);
 
                 // create and add the axes, grid-lines, and mouse-over functions
-                if(!axesRef.current) {
+                if (!axesRef.current) {
                     const xAxis = d3.axisBottom(xScalingRef.current);
                     const yAxis = d3.axisLeft(yScalingRef.current);
                     const xAxisElem = svg
@@ -219,7 +261,7 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('transform', `translate(${margin.left + plotDimensions.width / 2}, ${plotDimensions.height + margin.top + (margin.bottom / 3)})`)
                         .text("t (ms)");
 
-                    if(plotGridLines.visible) {
+                    if (plotGridLines.visible) {
                         const gridLines = svg
                             .select('g')
                             .selectAll('grid-line')
@@ -313,7 +355,7 @@ export function calcMaxTime(seriesList: Array<Series>): number {
  * @return {{width: number, height: number}} The dimensions of the actual plots adjusted for the margins
  * from the overall dimensions
  */
-function adjustedDimensions(width:  number, height: number, margins: Sides): {width: number, height: number} {
+function adjustedDimensions(width: number, height: number, margins: Sides): { width: number, height: number } {
     return {
         width: width - margins.left - margins.right,
         height: height - margins.top - margins.top

@@ -99,6 +99,8 @@ function RasterChartDriver(props: Props): JSX.Element {
                 seriesList={liveData}
                 timeWindow={timeWindow}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
+                // spikesStyle={{color: '#ffffff'}}
+                // tooltip={{visible: true, font: {size: 20}}}
             />
         </div>
     );
