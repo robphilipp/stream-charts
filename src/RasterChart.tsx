@@ -72,6 +72,7 @@ function RasterChart(props: Props): JSX.Element {
         d3.select(d3ContainerRef.current)
             .append('rect')
             .attr('id', `r${datum.time}-${seriesName}`)
+            .attr('class', 'tooltip')
             .attr('x', () => xScalingRef.current(datum.time) - 50)
             .attr('y', () => (yScalingRef.current(seriesName) || 0) - 5)
             .attr('rx', 5)
@@ -86,6 +87,7 @@ function RasterChart(props: Props): JSX.Element {
         d3.select(d3ContainerRef.current)
             .append("text")
             .attr('id', `tn${datum.time}-${seriesName}`)
+            .attr('class', 'tooltip')
             .attr('x', () => xScalingRef.current(datum.time) - 30)
             .attr('y', () => (yScalingRef.current(seriesName) || 0) + 8)
             .attr('fill', axisLabelFont.color)
@@ -99,6 +101,7 @@ function RasterChart(props: Props): JSX.Element {
         d3.select(d3ContainerRef.current)
             .append("text")
             .attr('id', `t${datum.time}-${seriesName}`)
+            .attr('class', 'tooltip')
             .attr('x', () => xScalingRef.current(datum.time) - 30)
             .attr('y', () => (yScalingRef.current(seriesName) || 0) + 25)
             .attr('fill', axisLabelFont.color)
@@ -121,9 +124,7 @@ function RasterChart(props: Props): JSX.Element {
             .attr('stroke', spikesStyle.color)
             .attr('stroke-width', spikesStyle.lineWidth);
 
-        d3.select(`#t${datum.time}-${seriesName}`).remove();
-        d3.select(`#tn${datum.time}-${seriesName}`).remove();
-        d3.select(`#r${datum.time}-${seriesName}`).remove();
+        d3.selectAll('.tooltip').remove();
     }
 
     // called when:
