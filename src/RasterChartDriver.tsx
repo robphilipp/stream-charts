@@ -70,7 +70,6 @@ function RasterChartDriver(props: Props): JSX.Element {
 
                         // drop any values that have fallen out of the beginning of the time window
                         while (series.data.length > 0 && series.data[0].time <= datum.time - timeWindow) {
-                        // while (series.data.length > 0 && series.data[0].time <= maxTime - timeWindow) {
                             series.data.shift();
                         }
 
@@ -83,7 +82,7 @@ function RasterChartDriver(props: Props): JSX.Element {
                     // dataRef.current = dataRef.current.slice();
                     setLiveData(seriesRef.current);
 
-                    if (intervalRef.current && maxTime > 1000) {
+                    if (intervalRef.current && maxTime > 5000) {
                         clearInterval(intervalRef.current);
                     }
                 },

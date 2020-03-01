@@ -1,5 +1,6 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
+import {ScaleBand, ScaleLinear, Axis} from "d3";
 import {Datum, Series} from "./RasterChartDriver";
 
 export interface Sides {
@@ -23,17 +24,12 @@ interface Props {
     seriesList: Array<Series>;
 }
 
-export function calcMaxTime(seriesList: Array<Series>): number {
-    return d3.max(seriesList.map(series => series.last().map(datum => datum.time).getOrElse(0))) || 0;
-}
-
-function adjustedDimensions(width:  number, height: number, margins: Sides): {width: number, height: number} {
-    return {
-        width: width - margins.left - margins.right,
-        height: height - margins.top - margins.top
-    };
-}
-
+/**
+ * Renders a raster chart
+ * @param {Props} props The properties from the parent
+ * @return {JSX.Element} The raster chart
+ * @constructor
+ */
 function RasterChart(props: Props): JSX.Element {
     const {
         seriesList,
@@ -53,20 +49,31 @@ function RasterChart(props: Props): JSX.Element {
     const d3ContainerRef = useRef(null);
     const d3AxesRef = useRef<{xAxisElement: any, yAxisElement: any}>();
 
-    function handleMouseOver(d: Datum, seriesName: string, x: d3.ScaleLinear<number, number>, y: d3.ScaleBand<string>, line: SVGLineElement) {
+    // the scaling that converts the x-values (time in ms) of the datum into the pixel coordinates.
+    const xScalingRef = useRef<ScaleLinear<number, number>>(d3.scaleLinear());
+    // the scaling that converts the y-values (neuron IDs) into pixel coordinates.
+    const yScalingRef = useRef<ScaleBand<string>>(d3.scaleBand());
+
+    /**
+     * Renders a tooltip showing the neuron, spike time, and the spike strength when the mouse hovers over a spike.
+     * @param {Datum} datum The spike datum (t ms, s mV)
+     * @param {string} seriesName The name of the series (i.e. the neuron ID)
+     * @param {SVGLineElement} spike The SVG line element representing the spike, over which the mouse is hovering.
+     */
+    function handleMouseOver(datum: Datum, seriesName: string, spike: SVGLineElement) {
         // Use D3 to select element, change color and size
-        // @ts-ignore
-        d3.select(line)
+        d3.select(spike)
             .attr('stroke', spikesStyle.highlightColor)
             .attr('stroke-width', spikesStyle.highlightWidth)
             .attr('stroke-linecap', "round")
         ;
 
+        // create the rounded rectangle for the tooltip's background
         d3.select(d3ContainerRef.current)
             .append('rect')
-            .attr('id', `r${d.time}-${seriesName}`)
-            .attr('x', () => x(d.time) - 50)
-            .attr('y', () => (y(seriesName) || 0) - 5)
+            .attr('id', `r${datum.time}-${seriesName}`)
+            .attr('x', () => xScalingRef.current(datum.time) - 50)
+            .attr('y', () => (yScalingRef.current(seriesName) || 0) - 5)
             .attr('rx', 5)
             .attr('width', 200)
             .attr('height', 35)
@@ -75,42 +82,48 @@ function RasterChart(props: Props): JSX.Element {
             .attr('stroke', axisStyle.color)
         ;
 
+        // display the neuron ID in the tooltip
         d3.select(d3ContainerRef.current)
             .append("text")
-            .attr('id', `tn${d.time}-${seriesName}`)
-            .attr('x', () => x(d.time) - 30)
-            .attr('y', () => (y(seriesName) || 0) + 8)
+            .attr('id', `tn${datum.time}-${seriesName}`)
+            .attr('x', () => xScalingRef.current(datum.time) - 30)
+            .attr('y', () => (yScalingRef.current(seriesName) || 0) + 8)
             .attr('fill', axisLabelFont.color)
             .attr('font-family', 'sans-serif')
             .attr('font-size', axisLabelFont.size)
             .attr('font-weight', 100)
-            .text(function() {
-                return seriesName;  // Value of the text
-            });
+            .text(() => seriesName)
+        ;
 
+        // display the time (ms) and spike strength (mV) in the tooltip
         d3.select(d3ContainerRef.current)
             .append("text")
-            .attr('id', `t${d.time}-${seriesName}`)
-            .attr('x', () => x(d.time) - 30)
-            .attr('y', () => (y(seriesName) || 0) + 25)
+            .attr('id', `t${datum.time}-${seriesName}`)
+            .attr('x', () => xScalingRef.current(datum.time) - 30)
+            .attr('y', () => (yScalingRef.current(seriesName) || 0) + 25)
             .attr('fill', axisLabelFont.color)
             .attr('font-family', 'sans-serif')
             .attr('font-size', axisLabelFont.size + 2)
             .attr('font-weight', 350)
-            .text(function() {
-                return `${d.time} ms, ${d3.format(".2")(d.value)} mV`;  // Value of the text
-            });
+            .text(() => `${datum.time} ms, ${d3.format(".2")(datum.value)} mV`)
+        ;
     }
 
-    function handleMouseleave(d: Datum, seriesName: string, line: SVGLineElement) {
+    /**
+     * Removes the tooltip when the mouse has moved away from the spike
+     * @param {Datum} datum The spike datum (t ms, s mV)
+     * @param {string} seriesName The name of the series (i.e. the neuron ID)
+     * @param {SVGLineElement} spike The SVG line element representing the spike, over which the mouse is hovering.
+     */
+    function handleMouseleave(datum: Datum, seriesName: string, spike: SVGLineElement) {
         // Use D3 to select element, change color and size
-        d3.select(line)
+        d3.select(spike)
             .attr('stroke', spikesStyle.color)
             .attr('stroke-width', spikesStyle.lineWidth);
 
-        d3.select(`#t${d.time}-${seriesName}`).remove();
-        d3.select(`#tn${d.time}-${seriesName}`).remove();
-        d3.select(`#r${d.time}-${seriesName}`).remove();
+        d3.select(`#t${datum.time}-${seriesName}`).remove();
+        d3.select(`#tn${datum.time}-${seriesName}`).remove();
+        d3.select(`#r${datum.time}-${seriesName}`).remove();
     }
 
     // called when:
@@ -141,13 +154,13 @@ function RasterChart(props: Props): JSX.Element {
                 // calculate the mapping between the times in the data (domain) and the display
                 // location on the screen (range)
                 const maxTime = calcMaxTime(seriesList);
-                const x: d3.ScaleLinear<number, number> = d3.scaleLinear()
+                xScalingRef.current = d3.scaleLinear()
                     .domain([Math.max(0, maxTime - timeWindow), Math.max(timeWindow, maxTime)])
                     .range([0, plotDimensions.width]);
 
                 // const lineHeight = height / seriesList.length;
                 const lineHeight = plotDimensions.height / seriesList.length;
-                const y: d3.ScaleBand<string> = d3.scaleBand()
+                yScalingRef.current = d3.scaleBand()
                     .domain(seriesList.map(series => series.name))
                     .range([0, lineHeight * seriesList.length - margin.top]);
 
@@ -156,9 +169,9 @@ function RasterChart(props: Props): JSX.Element {
 
                 // create and add the axes, grid-lines, and mouse-over functions
                 if(!d3AxesRef.current) {
-                    const xAxis = d3.axisBottom(x) as d3.Axis<number>;
-                    const yAxis = d3.axisLeft(y);
-                    const xAxisElem = svg
+                    const xAxis: Axis<number | {valueOf: () => number}> = d3.axisBottom(xScalingRef.current);
+                    const yAxis = d3.axisLeft(yScalingRef.current) as Axis<string>;
+                    const xAxisElem: d3.Selection<SVGGElement, unknown, null, undefined> = svg
                         .append('g')
                         .attr('class', 'x-axis')
                         .attr('transform', `translate(${margin.left}, ${plotDimensions.height})`)
@@ -195,8 +208,8 @@ function RasterChart(props: Props): JSX.Element {
                             .append('line')
                             .attr('x1', margin.left)
                             .attr('x2', margin.left + plotDimensions.width)
-                            .attr('y1', d => (y(d) || 0) + margin.top + lineHeight / 2)
-                            .attr('y2', d => (y(d) || 0) + margin.top + lineHeight / 2)
+                            .attr('y1', d => (yScalingRef.current(d) || 0) + margin.top + lineHeight / 2)
+                            .attr('y2', d => (yScalingRef.current(d) || 0) + margin.top + lineHeight / 2)
                             .attr('stroke', plotGridLines.color)
                         ;
                     }
@@ -204,8 +217,8 @@ function RasterChart(props: Props): JSX.Element {
                 }
                 // update the scales
                 else {
-                    d3AxesRef.current.xAxisElement.call(d3.axisBottom(x));
-                    d3AxesRef.current.yAxisElement.call(d3.axisLeft(y));
+                    d3AxesRef.current.xAxisElement.call(d3.axisBottom(xScalingRef.current));
+                    d3AxesRef.current.yAxisElement.call(d3.axisLeft(yScalingRef.current));
                 }
 
                 seriesList.forEach(series => {
@@ -219,37 +232,35 @@ function RasterChart(props: Props): JSX.Element {
                     container
                         .enter()
                         .append('line')
-                        .attr('x1', d => x(d.time))
-                        .attr('x2', d => x(d.time))
-                        .attr('y1', () => (y(series.name) || 0) + spikesStyle.margin)
-                        .attr('y2', () => (y(series.name) || 0) + lineHeight - spikesStyle.margin)
+                        .attr('x1', d => xScalingRef.current(d.time))
+                        .attr('x2', d => xScalingRef.current(d.time))
+                        .attr('y1', () => (yScalingRef.current(series.name) || 0) + spikesStyle.margin)
+                        .attr('y2', () => (yScalingRef.current(series.name) || 0) + lineHeight - spikesStyle.margin)
                         .attr('stroke', spikesStyle.color)
                         .attr('stroke-width', spikesStyle.lineWidth)
                         .attr('stroke-linecap', "round")
-                        .on("mouseover", (d, i, group) => handleMouseOver(d, series.name, x, y, group[i]))
+                        .on("mouseover", (d, i, group) => handleMouseOver(d, series.name, group[i]))
                         .on("mouseleave", (d, i, group) => handleMouseleave(d, series.name, group[i]))
                     ;
 
                     // update existing elements
                     container
-                        .attr('x1', d => x(d.time))
-                        .attr('x2', d => x(d.time))
-                        .attr('y1', () => (y(series.name) || 0) + spikesStyle.margin)
-                        .attr('y2', () => (y(series.name) || 0) + lineHeight - spikesStyle.margin)
+                        .attr('x1', d => xScalingRef.current(d.time))
+                        .attr('x2', d => xScalingRef.current(d.time))
+                        .attr('y1', () => (yScalingRef.current(series.name) || 0) + spikesStyle.margin)
+                        .attr('y2', () => (yScalingRef.current(series.name) || 0) + lineHeight - spikesStyle.margin)
                         .attr('stroke', spikesStyle.color)
                         .attr('stroke-width', spikesStyle.lineWidth)
                         .attr('stroke-linecap', "round")
                     ;
 
                     // exit old elements
-                    container
-                        .exit()
-                        .remove()
+                    container.exit().remove()
                     ;
                 });
             }
         },
-        [seriesList, timeWindow, width, height, spikesStyle]
+        // [seriesList, timeWindow, width, height, spikesStyle, axisLabelFont, axisStyle, margin, plotDimensions, plotGridLines]
     );
 
     return (
@@ -261,6 +272,31 @@ function RasterChart(props: Props): JSX.Element {
             ref={d3ContainerRef}
         />
     );
+}
+
+/**
+ * Calculates the maximum time found in the specified list of time-series
+ * @param {Array<Series>} seriesList An array of time-series
+ * @return {number} The maximum time
+ */
+export function calcMaxTime(seriesList: Array<Series>): number {
+    return d3.max(seriesList.map(series => series.last().map(datum => datum.time).getOrElse(0))) || 0;
+}
+
+/**
+ * Given the overall dimensions of the plot (width, height) and the margins, calculates the dimensions
+ * of the actual plot by subtracting the margins.
+ * @param {number} width The overall width (plot and margins)
+ * @param {number} height The overall height (plot and margins)
+ * @param {Sides} margins The margins around the plot (top, bottom, left, right)
+ * @return {{width: number, height: number}} The dimensions of the actual plots adjusted for the margins
+ * from the overall dimensions
+ */
+function adjustedDimensions(width:  number, height: number, margins: Sides): {width: number, height: number} {
+    return {
+        width: width - margins.left - margins.right,
+        height: height - margins.top - margins.top
+    };
 }
 
 export default RasterChart;
