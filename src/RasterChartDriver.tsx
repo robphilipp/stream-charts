@@ -82,7 +82,7 @@ function RasterChartDriver(props: Props): JSX.Element {
                     // dataRef.current = dataRef.current.slice();
                     setLiveData(seriesRef.current);
 
-                    if (intervalRef.current && maxTime > 5000) {
+                    if (intervalRef.current && maxTime > 1500) {
                         clearInterval(intervalRef.current);
                     }
                 },

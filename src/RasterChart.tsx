@@ -1,6 +1,6 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
-import {ScaleBand, ScaleLinear, Axis} from "d3";
+import {ScaleBand, ScaleLinear, Selection} from "d3";
 import {Datum, Series} from "./RasterChartDriver";
 
 export interface Sides {
@@ -20,9 +20,12 @@ interface Props {
     backgroundColor?: string;
     plotGridLines?: {visible: boolean, color: string}
 
-    timeWindow: number;
+    timeWindow: number;         // the width of the time-range in ms
     seriesList: Array<Series>;
 }
+
+// the axis-element type return when calling the ".call(axis)" function
+type AxisElementType = Selection<SVGGElement, unknown, null, undefined>;
 
 /**
  * Renders a raster chart
@@ -46,8 +49,11 @@ function RasterChart(props: Props): JSX.Element {
 
     const plotDimensions = adjustedDimensions(width, height, margin);
 
-    const d3ContainerRef = useRef(null);
-    const d3AxesRef = useRef<{xAxisElement: any, yAxisElement: any}>();
+    // the container that holds the d3 svg element
+    const containerRef = useRef(null);
+
+    // reference to the axes for the plot
+    const axesRef = useRef<{xAxisElement: AxisElementType, yAxisElement: AxisElementType}>();
 
     // the scaling that converts the x-values (time in ms) of the datum into the pixel coordinates.
     const xScalingRef = useRef<ScaleLinear<number, number>>(d3.scaleLinear());
@@ -69,7 +75,7 @@ function RasterChart(props: Props): JSX.Element {
         ;
 
         // create the rounded rectangle for the tooltip's background
-        d3.select(d3ContainerRef.current)
+        d3.select(containerRef.current)
             .append('rect')
             .attr('id', `r${datum.time}-${seriesName}`)
             .attr('class', 'tooltip')
@@ -84,7 +90,7 @@ function RasterChart(props: Props): JSX.Element {
         ;
 
         // display the neuron ID in the tooltip
-        d3.select(d3ContainerRef.current)
+        d3.select(containerRef.current)
             .append("text")
             .attr('id', `tn${datum.time}-${seriesName}`)
             .attr('class', 'tooltip')
@@ -98,7 +104,7 @@ function RasterChart(props: Props): JSX.Element {
         ;
 
         // display the time (ms) and spike strength (mV) in the tooltip
-        d3.select(d3ContainerRef.current)
+        d3.select(containerRef.current)
             .append("text")
             .attr('id', `t${datum.time}-${seriesName}`)
             .attr('class', 'tooltip')
@@ -135,10 +141,10 @@ function RasterChart(props: Props): JSX.Element {
     // 4. plot attributes change
     useEffect(
         () => {
-            if (d3ContainerRef.current) {
+            if (containerRef.current) {
 
                 // create or grab the main <g> container for svg and translate it based on the margins
-                const mainG = d3.select(d3ContainerRef.current)
+                const mainG = d3.select(containerRef.current)
                     .attr('width', width)
                     .attr('height', height)
                     .attr('color', axisStyle.color)
@@ -166,13 +172,13 @@ function RasterChart(props: Props): JSX.Element {
                     .range([0, lineHeight * seriesList.length - margin.top]);
 
                 // select the text elements and bind the data to them
-                const svg = d3.select(d3ContainerRef.current);
+                const svg = d3.select(containerRef.current);
 
                 // create and add the axes, grid-lines, and mouse-over functions
-                if(!d3AxesRef.current) {
-                    const xAxis: Axis<number | {valueOf: () => number}> = d3.axisBottom(xScalingRef.current);
-                    const yAxis = d3.axisLeft(yScalingRef.current) as Axis<string>;
-                    const xAxisElem: d3.Selection<SVGGElement, unknown, null, undefined> = svg
+                if(!axesRef.current) {
+                    const xAxis = d3.axisBottom(xScalingRef.current);
+                    const yAxis = d3.axisLeft(yScalingRef.current);
+                    const xAxisElem = svg
                         .append('g')
                         .attr('class', 'x-axis')
                         .attr('transform', `translate(${margin.left}, ${plotDimensions.height})`)
@@ -184,7 +190,7 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('transform', `translate(${margin.left}, ${margin.top})`)
                         .call(yAxis);
 
-                    d3AxesRef.current = {
+                    axesRef.current = {
                         xAxisElement: xAxisElem,
                         yAxisElement: yAxisElem
                     };
@@ -218,8 +224,8 @@ function RasterChart(props: Props): JSX.Element {
                 }
                 // update the scales
                 else {
-                    d3AxesRef.current.xAxisElement.call(d3.axisBottom(xScalingRef.current));
-                    d3AxesRef.current.yAxisElement.call(d3.axisLeft(yScalingRef.current));
+                    axesRef.current.xAxisElement.call(d3.axisBottom(xScalingRef.current));
+                    axesRef.current.yAxisElement.call(d3.axisLeft(yScalingRef.current));
                 }
 
                 seriesList.forEach(series => {
@@ -270,7 +276,7 @@ function RasterChart(props: Props): JSX.Element {
             width={width}
             height={height * seriesList.length}
             style={{backgroundColor: backgroundColor}}
-            ref={d3ContainerRef}
+            ref={containerRef}
         />
     );
 }
