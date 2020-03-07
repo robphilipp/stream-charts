@@ -64,7 +64,9 @@ interface Props {
     plotGridLines?: Partial<{ visible: boolean, color: string }>;
     tooltip?: Partial<TooltipProps>;
 
-    timeWindow: number;         // the width of the time-range in ms
+    // timeWindow: number;         // the width of the time-range in ms
+    minTime: number;
+    maxTime: number;
     seriesList: Array<Series>;
 }
 
@@ -80,7 +82,8 @@ type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 function RasterChart(props: Props): JSX.Element {
     const {
         seriesList,
-        timeWindow,
+        // timeWindow,
+        minTime, maxTime,
         width,
         height,
         backgroundColor = '#202020',
@@ -99,6 +102,7 @@ function RasterChart(props: Props): JSX.Element {
         border: {...defaultTooltipStyle.border, ...props.tooltip?.border},
     };
 
+    // grab the dimensions of the actual plot after removing the margins from the specified width and height
     const plotDimensions = adjustedDimensions(width, height, margin);
 
     // the container that holds the d3 svg element
@@ -217,9 +221,10 @@ function RasterChart(props: Props): JSX.Element {
 
                 // calculate the mapping between the times in the data (domain) and the display
                 // location on the screen (range)
-                const maxTime = calcMaxTime(seriesList);
+                // const maxTime = calcMaxTime(seriesList);
                 xScalingRef.current = d3.scaleLinear()
-                    .domain([Math.max(0, maxTime - timeWindow), Math.max(timeWindow, maxTime)])
+                    // .domain([Math.max(0, maxTime - timeWindow), Math.max(timeWindow, maxTime)])
+                    .domain([minTime, maxTime])
                     .range([0, plotDimensions.width]);
 
                 // const lineHeight = height / seriesList.length;
@@ -309,6 +314,7 @@ function RasterChart(props: Props): JSX.Element {
 
                     // update existing elements
                     container
+                        .filter(datum => datum.time >= minTime)
                         .attr('x1', d => xScalingRef.current(d.time))
                         .attr('x2', d => xScalingRef.current(d.time))
                         .attr('y1', () => (yScalingRef.current(series.name) || 0) + spikesStyle.margin)

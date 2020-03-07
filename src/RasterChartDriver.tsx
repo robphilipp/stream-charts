@@ -46,10 +46,11 @@ function RasterChartDriver(props: Props): JSX.Element {
 
     const [liveData, setLiveData] = useState(seriesList);
     const seriesRef = useRef<Array<Series>>(seriesList);
+    const currentTimeRef = useRef<number>(0);
 
     function nextDatum(time: number, maxDelta: number): Datum {
         return {
-            time: time + Math.ceil(Math.random() * maxDelta),
+            time: time - Math.ceil(Math.random() * maxDelta),
             value: Math.random()
         };
     }
@@ -61,14 +62,15 @@ function RasterChartDriver(props: Props): JSX.Element {
             // and so react will call the useEffect with the live data dependency and update d3
             intervalRef.current = setInterval(
                 () => {
-                    const maxTime = calcMaxTime(seriesRef.current);
+                    currentTimeRef.current += UPDATE_PERIOD_MS;
 
                     // update all the series
                     seriesRef.current = seriesRef.current.map(series => {
                         // create the next data point
-                        const datum = nextDatum(maxTime, UPDATE_PERIOD_MS);
+                        const datum = nextDatum(currentTimeRef.current, UPDATE_PERIOD_MS);
 
                         // drop any values that have fallen out of the beginning of the time window
+                        // while (series.data.length > 0 && series.data[0].time <= datum.time - timeWindow) {
                         while (series.data.length > 0 && series.data[0].time <= datum.time - timeWindow) {
                             series.data.shift();
                         }
@@ -82,7 +84,7 @@ function RasterChartDriver(props: Props): JSX.Element {
                     // dataRef.current = dataRef.current.slice();
                     setLiveData(seriesRef.current);
 
-                    if (intervalRef.current && maxTime > 1500) {
+                    if (intervalRef.current && currentTimeRef.current > 5000) {
                         clearInterval(intervalRef.current);
                     }
                 },
@@ -97,7 +99,9 @@ function RasterChartDriver(props: Props): JSX.Element {
                 width={plotWidth}
                 height={seriesList.length * seriesHeight + 30 + 30}
                 seriesList={liveData}
-                timeWindow={timeWindow}
+                // timeWindow={timeWindow}
+                minTime={Math.max(0, currentTimeRef.current - timeWindow)}
+                maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 // spikesStyle={{color: '#ffffff'}}
                 // tooltip={{visible: true, font: {size: 20}}}
