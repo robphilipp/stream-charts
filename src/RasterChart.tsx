@@ -174,29 +174,66 @@ function RasterChart(props: Props): JSX.Element {
             // calculate the max width and height of the text
             const tooltipWidth = Math.max(header.node()?.getBBox()?.width || 0, text.node()?.getBBox()?.width || 0);
             const headerTextHeight = header.node()?.getBBox()?.height || 0;
-            const textHeight = text.node()?.getBBox()?.height || 0;
-            const tooltipHeight = headerTextHeight + textHeight;
+            const idHeight = text.node()?.getBBox()?.height || 0;
+            const textHeight = headerTextHeight + idHeight;
 
             // set the header text location
             header
-                .attr('x', () => xScalingRef.current(datum.time) + margin.left - tooltipWidth / 2)
-                .attr('y', () => (yScalingRef.current(seriesName) || 0) + margin.top - textHeight - tooltip.padding.bottom)
+                .attr('x', () => tooltipX(datum.time, tooltipWidth) + tooltip.padding.left)
+                .attr('y', () => tooltipY(seriesName, textHeight) - idHeight + textHeight + tooltip.padding.top)
             ;
 
             // set the tooltip text (i.e. neuron ID) location
             text
-                .attr('x', () => xScalingRef.current(datum.time) + margin.left - tooltipWidth / 2)
-                .attr('y', () => (yScalingRef.current(seriesName) || 0) + margin.top - tooltip.padding.bottom)
+                .attr('x', () => tooltipX(datum.time, tooltipWidth) + tooltip.padding.left)
+                .attr('y', () => tooltipY(seriesName, textHeight) + textHeight + tooltip.padding.top)
             ;
 
             // set the position, width, and height of the tooltip rect based on the text height and width and the padding
-            rect.attr('x', () => xScalingRef.current(datum.time) + margin.left - tooltipWidth / 2 - tooltip.padding.left)
-                .attr('y', () => (yScalingRef.current(seriesName) || 0) + margin.top - tooltipHeight - tooltip.padding.top - tooltip.padding.bottom)
+            rect.attr('x', () => tooltipX(datum.time, tooltipWidth))
+                .attr('y', () => tooltipY(seriesName, textHeight))
                 .attr('width', tooltipWidth + tooltip.padding.left + tooltip.padding.right)
-                .attr('height', tooltipHeight + tooltip.padding.top + tooltip.padding.bottom)
+                .attr('height', textHeight + tooltip.padding.top + tooltip.padding.bottom)
             ;
 
         }
+    }
+
+    /**
+     * Calculates the x-coordinate of the lower left-hand side of the tooltip rectangle (obviously without
+     * "rounded corners"). Adjusts the x-coordinate so that tooltip is visible on the edges of the plot.
+     * @param {number} time The spike time
+     * @param {number} textWidth The width of the tooltip text
+     * @return {number} The x-coordinate of the lower left-hand side of the tooltip rectangle
+     */
+    function tooltipX(time: number, textWidth: number): number {
+        return Math
+            .min(
+                Math.max(
+                    xScalingRef.current(time),
+                    textWidth / 2
+                ),
+                plotDimensions.width - textWidth / 2
+            ) + margin.left - textWidth / 2 - tooltip.padding.left;
+    }
+
+    /**
+     * Calculates the y-coordinate of the lower-left-hand corner of the tooltip rectangle. Adjusts the y-coordinate
+     * so that the tooltip is visible on the upper edge of the plot
+     * @param {string} seriesName The name of the series
+     * @param {number} textHeight The height of the header and neuron ID text
+     * @return {number} The y-coordinate of the lower-left-hand corner of the tooltip rectangle
+     */
+    function tooltipY(seriesName: string, textHeight: number): number {
+        const y = (yScalingRef.current(seriesName) || 0) + margin.top - tooltip.padding.bottom - textHeight - tooltip.padding.top;
+        return y > 0 ? y : y + tooltip.padding.bottom + textHeight + tooltip.padding.top + spikeLineHeight();
+    }
+
+    /**
+     * @return {number} The height of the spikes line
+     */
+    function spikeLineHeight(): number {
+        return plotDimensions.height / seriesList.length;
     }
 
     /**
@@ -250,7 +287,7 @@ function RasterChart(props: Props): JSX.Element {
                     .range([0, plotDimensions.width]);
 
                 // const lineHeight = height / seriesList.length;
-                const lineHeight = plotDimensions.height / seriesList.length;
+                const lineHeight = spikeLineHeight();
                 yScalingRef.current = d3.scaleBand()
                     .domain(seriesList.map(series => series.name))
                     .range([0, lineHeight * seriesList.length - margin.top]);
