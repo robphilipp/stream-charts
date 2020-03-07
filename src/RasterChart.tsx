@@ -176,13 +176,14 @@ function RasterChart(props: Props): JSX.Element {
             const headerTextHeight = header.node()?.getBBox()?.height || 0;
             const textHeight = text.node()?.getBBox()?.height || 0;
             const tooltipHeight = headerTextHeight + textHeight;
-            // const padding = {left: 10, right: 10, top: 5, bottom: 10};
 
+            // set the header text location
             header
                 .attr('x', () => xScalingRef.current(datum.time) + margin.left - tooltipWidth / 2)
                 .attr('y', () => (yScalingRef.current(seriesName) || 0) + margin.top - textHeight - tooltip.padding.bottom)
             ;
 
+            // set the tooltip text (i.e. neuron ID) location
             text
                 .attr('x', () => xScalingRef.current(datum.time) + margin.left - tooltipWidth / 2)
                 .attr('y', () => (yScalingRef.current(seriesName) || 0) + margin.top - tooltip.padding.bottom)
