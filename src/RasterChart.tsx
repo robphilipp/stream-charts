@@ -43,14 +43,17 @@ interface TooltipStyle {
     font: { size: number, color: string, family: string, weight: number };
     background: { color: string, opacity: number };
     border: { color: string, strokeWidth: number, radius: number };
-    [key: string]: any;
+    padding: {left: number, right: number, top: number, bottom: number};
+
+[key: string]: any;
 }
 
 const defaultTooltipStyle: TooltipStyle = {
     visible: true,
     font: {size: 12, color: '#d2933f', weight: 250, family: 'sans-serif'},
     background: {color: '#202020', opacity: 0.8},
-    border: {color: '#d2933f', strokeWidth: 1, radius: 5}
+    border: {color: '#d2933f', strokeWidth: 1, radius: 5},
+    padding: {left: 10, right: 10, top: 5, bottom: 10}
 };
 
 interface Props {
@@ -100,6 +103,7 @@ function RasterChart(props: Props): JSX.Element {
         font: {...defaultTooltipStyle.font, ...props.tooltip?.font},
         background: {...defaultTooltipStyle.background, ...props.tooltip?.background},
         border: {...defaultTooltipStyle.border, ...props.tooltip?.border},
+        padding: {...defaultTooltipStyle.padding, ...props.tooltip?.padding}
     };
 
     // grab the dimensions of the actual plot after removing the margins from the specified width and height
@@ -132,15 +136,11 @@ function RasterChart(props: Props): JSX.Element {
 
         if (tooltip.visible) {
             // create the rounded rectangle for the tooltip's background
-            d3.select(containerRef.current)
+            const rect = d3.select(containerRef.current)
                 .append('rect')
                 .attr('id', `r${datum.time}-${seriesName}`)
                 .attr('class', 'tooltip')
-                .attr('x', () => xScalingRef.current(datum.time) - 50)
-                .attr('y', () => (yScalingRef.current(seriesName) || 0) - 5)
                 .attr('rx', tooltip.border.radius)
-                .attr('width', 200)
-                .attr('height', 35)
                 .attr('fill', tooltip.background.color)
                 .attr('fill-opacity', tooltip.background.opacity)
                 .attr('stroke', tooltip.border.color)
@@ -148,12 +148,10 @@ function RasterChart(props: Props): JSX.Element {
             ;
 
             // display the neuron ID in the tooltip
-            d3.select(containerRef.current)
+            const header = d3.select(containerRef.current)
                 .append("text")
                 .attr('id', `tn${datum.time}-${seriesName}`)
                 .attr('class', 'tooltip')
-                .attr('x', () => xScalingRef.current(datum.time) - 30)
-                .attr('y', () => (yScalingRef.current(seriesName) || 0) + 8)
                 .attr('fill', tooltip.font.color)
                 .attr('font-family', 'sans-serif')
                 .attr('font-size', tooltip.font.size)
@@ -162,18 +160,41 @@ function RasterChart(props: Props): JSX.Element {
             ;
 
             // display the time (ms) and spike strength (mV) in the tooltip
-            d3.select(containerRef.current)
+            const text = d3.select(containerRef.current)
                 .append("text")
                 .attr('id', `t${datum.time}-${seriesName}`)
                 .attr('class', 'tooltip')
-                .attr('x', () => xScalingRef.current(datum.time) - 30)
-                .attr('y', () => (yScalingRef.current(seriesName) || 0) + 25)
                 .attr('fill', tooltip.font.color)
                 .attr('font-family', 'sans-serif')
                 .attr('font-size', tooltip.font.size + 2)
                 .attr('font-weight', tooltip.font.weight + 150)
                 .text(() => `${datum.time} ms, ${d3.format(".2")(datum.value)} mV`)
             ;
+
+            // calculate the max width and height of the text
+            const tooltipWidth = Math.max(header.node()?.getBBox()?.width || 0, text.node()?.getBBox()?.width || 0);
+            const headerTextHeight = header.node()?.getBBox()?.height || 0;
+            const textHeight = text.node()?.getBBox()?.height || 0;
+            const tooltipHeight = headerTextHeight + textHeight;
+            // const padding = {left: 10, right: 10, top: 5, bottom: 10};
+
+            header
+                .attr('x', () => xScalingRef.current(datum.time) + margin.left - tooltipWidth / 2)
+                .attr('y', () => (yScalingRef.current(seriesName) || 0) + margin.top - textHeight - tooltip.padding.bottom)
+            ;
+
+            text
+                .attr('x', () => xScalingRef.current(datum.time) + margin.left - tooltipWidth / 2)
+                .attr('y', () => (yScalingRef.current(seriesName) || 0) + margin.top - tooltip.padding.bottom)
+            ;
+
+            // set the position, width, and height of the tooltip rect based on the text height and width and the padding
+            rect.attr('x', () => xScalingRef.current(datum.time) + margin.left - tooltipWidth / 2 - tooltip.padding.left)
+                .attr('y', () => (yScalingRef.current(seriesName) || 0) + margin.top - tooltipHeight - tooltip.padding.top - tooltip.padding.bottom)
+                .attr('width', tooltipWidth + tooltip.padding.left + tooltip.padding.right)
+                .attr('height', tooltipHeight + tooltip.padding.top + tooltip.padding.bottom)
+            ;
+
         }
     }
 
