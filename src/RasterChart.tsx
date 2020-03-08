@@ -35,7 +35,8 @@ export interface TooltipProps {
     font: Partial<{ size: number, color: string, family: string, weight: number }>;
     background: Partial<{ color: string, opacity: number }>;
     border: Partial<{ color: string, strokeWidth: number, radius: number }>;
-    [key: string]: any;
+    padding: Partial<{ left: number, right: number, top: number, bottom: number }>;
+    // [key: string]: any;
 }
 
 interface TooltipStyle {
@@ -43,17 +44,33 @@ interface TooltipStyle {
     font: { size: number, color: string, family: string, weight: number };
     background: { color: string, opacity: number };
     border: { color: string, strokeWidth: number, radius: number };
-    padding: {left: number, right: number, top: number, bottom: number};
+    padding: { left: number, right: number, top: number, bottom: number };
 
-[key: string]: any;
+    // [key: string]: any;
 }
 
 const defaultTooltipStyle: TooltipStyle = {
-    visible: true,
+    visible: false,
     font: {size: 12, color: '#d2933f', weight: 250, family: 'sans-serif'},
     background: {color: '#202020', opacity: 0.8},
     border: {color: '#d2933f', strokeWidth: 1, radius: 5},
     padding: {left: 10, right: 10, top: 5, bottom: 10}
+};
+
+interface LineMagnifierStyle {
+    visible: boolean;
+    timeWindow: number;
+    magnification: number;
+    color: string,
+    lineWidth: number,
+}
+
+const defaultLineMagnifierStyle: LineMagnifierStyle = {
+    visible: false,
+    timeWindow: 50,
+    magnification: 1,
+    color: '#d2933f',
+    lineWidth: 2,
 };
 
 interface Props {
@@ -66,6 +83,7 @@ interface Props {
     backgroundColor?: string;
     plotGridLines?: Partial<{ visible: boolean, color: string }>;
     tooltip?: Partial<TooltipProps>;
+    magnifier?: Partial<LineMagnifierStyle>;
 
     // timeWindow: number;         // the width of the time-range in ms
     minTime: number;
@@ -105,12 +123,15 @@ function RasterChart(props: Props): JSX.Element {
         border: {...defaultTooltipStyle.border, ...props.tooltip?.border},
         padding: {...defaultTooltipStyle.padding, ...props.tooltip?.padding}
     };
+    const magnifier = {...defaultLineMagnifierStyle, ...props.magnifier};
 
     // grab the dimensions of the actual plot after removing the margins from the specified width and height
     const plotDimensions = adjustedDimensions(width, height, margin);
 
     // the container that holds the d3 svg element
-    const containerRef = useRef(null);
+    const containerRef = useRef<SVGSVGElement>(null);
+    const mainGRef = useRef<Selection<SVGGElement, unknown, null, undefined>>();
+    const magnifierRef = useRef<Selection<SVGLineElement, unknown, null, undefined>>();
 
     // reference to the axes for the plot
     const axesRef = useRef<{ xAxisElement: AxisElementSelection, yAxisElement: AxisElementSelection }>();
@@ -126,7 +147,11 @@ function RasterChart(props: Props): JSX.Element {
      * @param {string} seriesName The name of the series (i.e. the neuron ID)
      * @param {SVGLineElement} spike The SVG line element representing the spike, over which the mouse is hovering.
      */
-    function handleMouseOver(datum: Datum, seriesName: string, spike: SVGLineElement) {
+    function handleShowTooltip(datum: Datum, seriesName: string, spike: SVGLineElement): void {
+        if(!tooltip.visible) {
+            console.log("tooltip not visible");
+        }
+
         // Use D3 to select element, change color and size
         d3.select(spike)
             .attr('stroke', spikesStyle.highlightColor)
@@ -242,7 +267,7 @@ function RasterChart(props: Props): JSX.Element {
      * @param {string} seriesName The name of the series (i.e. the neuron ID)
      * @param {SVGLineElement} spike The SVG line element representing the spike, over which the mouse is hovering.
      */
-    function handleMouseleave(datum: Datum, seriesName: string, spike: SVGLineElement) {
+    function handleHideTooltip(datum: Datum, seriesName: string, spike: SVGLineElement) {
         // Use D3 to select element, change color and size
         d3.select(spike)
             .attr('stroke', spikesStyle.color)
@@ -253,6 +278,23 @@ function RasterChart(props: Props): JSX.Element {
         }
     }
 
+    function handleShowMagnify(path: d3.Selection<SVGLineElement, unknown, null, undefined> | undefined) {
+        if(containerRef.current && path) {
+            const [x, y] = d3.mouse(containerRef.current);
+            path
+                .attr('x1', x)
+                .attr('x2', x)
+                .attr('opacity', () => pointInPlotArea(x, y) ? 1 : 0)
+            ;
+        }
+    }
+
+    function pointInPlotArea(x: number, y: number): boolean {
+        return  x > margin.left && x < width - margin.right &&
+            y > margin.top && y < height - margin.bottom;
+    }
+
+
     // called when:
     // 1. component mounts to set up the main <g> element and a <g> element for each series
     //    into which d3 renders the series
@@ -262,17 +304,41 @@ function RasterChart(props: Props): JSX.Element {
     useEffect(
         () => {
             if (containerRef.current) {
+                // select the text elements and bind the data to them
+                const svg = d3.select(containerRef.current);
 
-                // create or grab the main <g> container for svg and translate it based on the margins
-                const mainG = d3.select(containerRef.current)
-                    .attr('width', width)
-                    .attr('height', height)
-                    .attr('color', axisStyle.color)
-                    .append('g')
-                ;
+                // set up the main <g> container for svg and translate it based on the margins, but do it only
+                // once
+                if(mainGRef.current === undefined) {
+                    mainGRef.current = svg
+                        .attr('width', width)
+                        .attr('height', height)
+                        .attr('color', axisStyle.color)
+                        .append('g')
+                    ;
+                }
+
+                // set up the magnifier once
+                if(magnifier.visible && magnifierRef.current === undefined) {
+                    magnifierRef.current = svg
+                        .append('line')
+                        .attr('class', 'magnifier')
+                        .attr('y1', margin.top)
+                        .attr('y2', plotDimensions.height)
+                        .attr('stroke', tooltip.border.color)
+                        .attr('stroke-width', tooltip.border.strokeWidth)
+                        .attr('opacity', 0)
+                    ;
+
+                    svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
+                }
+                // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier
+                else if(!magnifier.visible && magnifierRef.current) {
+                    magnifierRef.current = undefined;
+                }
 
                 // create a container for each spike series
-                seriesList.forEach(series => mainG
+                seriesList.forEach(series => mainGRef.current!
                     .append('g')
                     .attr('class', series.name)
                     .attr('transform', `translate(${margin.left}, ${margin.top})`)
@@ -291,9 +357,6 @@ function RasterChart(props: Props): JSX.Element {
                 yScalingRef.current = d3.scaleBand()
                     .domain(seriesList.map(series => series.name))
                     .range([0, lineHeight * seriesList.length - margin.top]);
-
-                // select the text elements and bind the data to them
-                const svg = d3.select(containerRef.current);
 
                 // create and add the axes, grid-lines, and mouse-over functions
                 if (!axesRef.current) {
@@ -357,7 +420,7 @@ function RasterChart(props: Props): JSX.Element {
                     ;
 
                     // enter new elements
-                    container
+                    const enter = container
                         .enter()
                         .append('line')
                         .attr('x1', d => xScalingRef.current(d.time))
@@ -367,9 +430,13 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('stroke', spikesStyle.color)
                         .attr('stroke-width', spikesStyle.lineWidth)
                         .attr('stroke-linecap', "round")
-                        .on("mouseover", (d, i, group) => handleMouseOver(d, series.name, group[i]))
-                        .on("mouseleave", (d, i, group) => handleMouseleave(d, series.name, group[i]))
                     ;
+                    // if(tooltip.visible) {
+                        enter
+                            .on("mouseover", (d, i, group) => handleShowTooltip(d, series.name, group[i]))
+                            .on("mouseleave", (d, i, group) => handleHideTooltip(d, series.name, group[i]))
+                        ;
+                    // }
 
                     // update existing elements
                     container
@@ -382,6 +449,13 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('stroke-width', spikesStyle.lineWidth)
                         .attr('stroke-linecap', "round")
                     ;
+
+                    // if(!tooltip.visible) {
+                    //     container
+                    //         .on("mouseover", null)
+                    //         .on("mouseleave", null)
+                    //     ;
+                    // }
 
                     // exit old elements
                     container.exit().remove()

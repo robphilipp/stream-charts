@@ -41,12 +41,14 @@ const UPDATE_PERIOD_MS = 25;
 function RasterChartDriver(props: Props): JSX.Element {
     const {seriesList = defaultData, timeWindow = 100, seriesHeight = 20, plotWidth = 500} = props;
 
-    // const count = useRef<number>(0);
     const intervalRef = useRef<NodeJS.Timeout>();
 
     const [liveData, setLiveData] = useState(seriesList);
     const seriesRef = useRef<Array<Series>>(seriesList);
     const currentTimeRef = useRef<number>(0);
+
+    const [magnifierVisible, setMagnifierVisible] = useState(false);
+    const [tooltipVisible, setTooltipVisible] = useState(false);
 
     function nextDatum(time: number, maxDelta: number): Datum {
         return {
@@ -95,6 +97,10 @@ function RasterChartDriver(props: Props): JSX.Element {
 
     return (
         <div>
+            <p>
+                <label>magnifier <input type="checkbox" checked={magnifierVisible} onChange={() => setMagnifierVisible(!magnifierVisible)}/></label>
+                <label>tooltip <input type="checkbox" checked={tooltipVisible} onChange={() => setTooltipVisible(!tooltipVisible)}/></label>
+            </p>
             <RasterChart
                 width={plotWidth}
                 height={seriesList.length * seriesHeight + 30 + 30}
@@ -104,7 +110,8 @@ function RasterChartDriver(props: Props): JSX.Element {
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 // spikesStyle={{color: '#ffffff'}}
-                // tooltip={{visible: true, font: {size: 20}}}
+                tooltip={{visible: tooltipVisible}}
+                magnifier={{visible: magnifierVisible}}
             />
         </div>
     );
