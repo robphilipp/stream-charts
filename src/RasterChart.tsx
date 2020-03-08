@@ -30,31 +30,46 @@ const defaultAxesLabelFont = {
 
 const defaultPlotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'};
 
-export interface TooltipProps {
-    visible: boolean;
-    font: Partial<{ size: number, color: string, family: string, weight: number }>;
-    background: Partial<{ color: string, opacity: number }>;
-    border: Partial<{ color: string, strokeWidth: number, radius: number }>;
-    padding: Partial<{ left: number, right: number, top: number, bottom: number }>;
-    // [key: string]: any;
-}
-
 interface TooltipStyle {
     visible: boolean;
-    font: { size: number, color: string, family: string, weight: number };
-    background: { color: string, opacity: number };
-    border: { color: string, strokeWidth: number, radius: number };
-    padding: { left: number, right: number, top: number, bottom: number };
 
-    // [key: string]: any;
+    fontSize: number;
+    fontColor: string;
+    fontFamily: string;
+    fontWeight: number;
+
+    backgroundColor: string;
+    backgroundOpacity: number;
+
+    borderColor: string;
+    borderWidth: number;
+    borderRadius: number;
+
+    paddingLeft: number;
+    paddingRight: number;
+    paddingTop: number;
+    paddingBottom: number;
 }
 
 const defaultTooltipStyle: TooltipStyle = {
     visible: false,
-    font: {size: 12, color: '#d2933f', weight: 250, family: 'sans-serif'},
-    background: {color: '#202020', opacity: 0.8},
-    border: {color: '#d2933f', strokeWidth: 1, radius: 5},
-    padding: {left: 10, right: 10, top: 5, bottom: 10}
+
+    fontSize: 12,
+    fontColor: '#d2933f',
+    fontFamily: 'sans-serif',
+    fontWeight: 250,
+    
+    backgroundColor: '#202020',
+    backgroundOpacity: 0.8,
+    
+    borderColor: '#d2933f',
+    borderWidth: 1,
+    borderRadius: 5,
+    
+    paddingLeft: 10,
+    paddingRight: 10,
+    paddingTop: 5,
+    paddingBottom: 10,
 };
 
 interface LineMagnifierStyle {
@@ -82,7 +97,7 @@ interface Props {
     axisStyle?: Partial<{ color: string }>;
     backgroundColor?: string;
     plotGridLines?: Partial<{ visible: boolean, color: string }>;
-    tooltip?: Partial<TooltipProps>;
+    tooltip?: Partial<TooltipStyle>;
     magnifier?: Partial<LineMagnifierStyle>;
 
     // timeWindow: number;         // the width of the time-range in ms
@@ -116,13 +131,7 @@ function RasterChart(props: Props): JSX.Element {
     const axisStyle = {...defaultAxesStyle, ...props.axisStyle};
     const axisLabelFont = {...defaultAxesLabelFont, ...props.axisLabelFont};
     const plotGridLines = {...defaultPlotGridLines, ...props.plotGridLines};
-    const tooltip: TooltipStyle = {
-        ...defaultTooltipStyle, ...props.tooltip,
-        font: {...defaultTooltipStyle.font, ...props.tooltip?.font},
-        background: {...defaultTooltipStyle.background, ...props.tooltip?.background},
-        border: {...defaultTooltipStyle.border, ...props.tooltip?.border},
-        padding: {...defaultTooltipStyle.padding, ...props.tooltip?.padding}
-    };
+    const tooltip: TooltipStyle = {...defaultTooltipStyle, ...props.tooltip};
     const magnifier = {...defaultLineMagnifierStyle, ...props.magnifier};
 
     // grab the dimensions of the actual plot after removing the margins from the specified width and height
@@ -141,6 +150,11 @@ function RasterChart(props: Props): JSX.Element {
     // the scaling that converts the y-values (neuron IDs) into pixel coordinates.
     const yScalingRef = useRef<ScaleBand<string>>(d3.scaleBand());
 
+    // unlike the magnifier, the handler forms a closure on the tooltip properties, and so if they change in this
+    // component, the closed properties are unchanged. using a ref allows the properties to which the reference
+    // points to change.
+    const tooltipRef = useRef(tooltip);
+
     /**
      * Renders a tooltip showing the neuron, spike time, and the spike strength when the mouse hovers over a spike.
      * @param {Datum} datum The spike datum (t ms, s mV)
@@ -148,8 +162,8 @@ function RasterChart(props: Props): JSX.Element {
      * @param {SVGLineElement} spike The SVG line element representing the spike, over which the mouse is hovering.
      */
     function handleShowTooltip(datum: Datum, seriesName: string, spike: SVGLineElement): void {
-        if(!tooltip.visible) {
-            console.log("tooltip not visible");
+        if(!tooltipRef.current.visible) {
+            return;
         }
 
         // Use D3 to select element, change color and size
@@ -159,17 +173,17 @@ function RasterChart(props: Props): JSX.Element {
             .attr('stroke-linecap', "round")
         ;
 
-        if (tooltip.visible) {
+        if (tooltipRef.current.visible) {
             // create the rounded rectangle for the tooltip's background
             const rect = d3.select(containerRef.current)
                 .append('rect')
                 .attr('id', `r${datum.time}-${seriesName}`)
                 .attr('class', 'tooltip')
-                .attr('rx', tooltip.border.radius)
-                .attr('fill', tooltip.background.color)
-                .attr('fill-opacity', tooltip.background.opacity)
-                .attr('stroke', tooltip.border.color)
-                .attr('stroke-width', tooltip.border.strokeWidth)
+                .attr('rx', tooltipRef.current.borderRadius)
+                .attr('fill', tooltipRef.current.backgroundColor)
+                .attr('fill-opacity', tooltipRef.current.backgroundOpacity)
+                .attr('stroke', tooltipRef.current.borderColor)
+                .attr('stroke-width', tooltipRef.current.borderWidth)
             ;
 
             // display the neuron ID in the tooltip
@@ -177,10 +191,10 @@ function RasterChart(props: Props): JSX.Element {
                 .append("text")
                 .attr('id', `tn${datum.time}-${seriesName}`)
                 .attr('class', 'tooltip')
-                .attr('fill', tooltip.font.color)
+                .attr('fill', tooltipRef.current.fontColor)
                 .attr('font-family', 'sans-serif')
-                .attr('font-size', tooltip.font.size)
-                .attr('font-weight', tooltip.font.weight)
+                .attr('font-size', tooltipRef.current.fontSize)
+                .attr('font-weight', tooltipRef.current.fontWeight)
                 .text(() => seriesName)
             ;
 
@@ -189,10 +203,10 @@ function RasterChart(props: Props): JSX.Element {
                 .append("text")
                 .attr('id', `t${datum.time}-${seriesName}`)
                 .attr('class', 'tooltip')
-                .attr('fill', tooltip.font.color)
+                .attr('fill', tooltipRef.current.fontColor)
                 .attr('font-family', 'sans-serif')
-                .attr('font-size', tooltip.font.size + 2)
-                .attr('font-weight', tooltip.font.weight + 150)
+                .attr('font-size', tooltipRef.current.fontSize + 2)
+                .attr('font-weight', tooltipRef.current.fontWeight + 150)
                 .text(() => `${datum.time} ms, ${d3.format(".2")(datum.value)} mV`)
             ;
 
@@ -204,21 +218,21 @@ function RasterChart(props: Props): JSX.Element {
 
             // set the header text location
             header
-                .attr('x', () => tooltipX(datum.time, tooltipWidth) + tooltip.padding.left)
-                .attr('y', () => tooltipY(seriesName, textHeight) - idHeight + textHeight + tooltip.padding.top)
+                .attr('x', () => tooltipX(datum.time, tooltipWidth) + tooltipRef.current.paddingLeft)
+                .attr('y', () => tooltipY(seriesName, textHeight) - idHeight + textHeight + tooltipRef.current.paddingTop)
             ;
 
             // set the tooltip text (i.e. neuron ID) location
             text
-                .attr('x', () => tooltipX(datum.time, tooltipWidth) + tooltip.padding.left)
-                .attr('y', () => tooltipY(seriesName, textHeight) + textHeight + tooltip.padding.top)
+                .attr('x', () => tooltipX(datum.time, tooltipWidth) + tooltipRef.current.paddingLeft)
+                .attr('y', () => tooltipY(seriesName, textHeight) + textHeight + tooltipRef.current.paddingTop)
             ;
 
             // set the position, width, and height of the tooltip rect based on the text height and width and the padding
             rect.attr('x', () => tooltipX(datum.time, tooltipWidth))
                 .attr('y', () => tooltipY(seriesName, textHeight))
-                .attr('width', tooltipWidth + tooltip.padding.left + tooltip.padding.right)
-                .attr('height', textHeight + tooltip.padding.top + tooltip.padding.bottom)
+                .attr('width', tooltipWidth + tooltipRef.current.paddingLeft + tooltipRef.current.paddingRight)
+                .attr('height', textHeight + tooltipRef.current.paddingTop + tooltipRef.current.paddingBottom)
             ;
 
         }
@@ -239,7 +253,7 @@ function RasterChart(props: Props): JSX.Element {
                     textWidth / 2
                 ),
                 plotDimensions.width - textWidth / 2
-            ) + margin.left - textWidth / 2 - tooltip.padding.left;
+            ) + margin.left - textWidth / 2 - tooltip.paddingLeft;
     }
 
     /**
@@ -250,8 +264,8 @@ function RasterChart(props: Props): JSX.Element {
      * @return {number} The y-coordinate of the lower-left-hand corner of the tooltip rectangle
      */
     function tooltipY(seriesName: string, textHeight: number): number {
-        const y = (yScalingRef.current(seriesName) || 0) + margin.top - tooltip.padding.bottom - textHeight - tooltip.padding.top;
-        return y > 0 ? y : y + tooltip.padding.bottom + textHeight + tooltip.padding.top + spikeLineHeight();
+        const y = (yScalingRef.current(seriesName) || 0) + margin.top - tooltip.paddingBottom - textHeight - tooltip.paddingTop;
+        return y > 0 ? y : y + tooltip.paddingBottom + textHeight + tooltip.paddingTop + spikeLineHeight();
     }
 
     /**
@@ -273,7 +287,7 @@ function RasterChart(props: Props): JSX.Element {
             .attr('stroke', spikesStyle.color)
             .attr('stroke-width', spikesStyle.lineWidth);
 
-        if(tooltip.visible) {
+        if(tooltipRef.current.visible) {
             d3.selectAll('.tooltip').remove();
         }
     }
@@ -303,6 +317,8 @@ function RasterChart(props: Props): JSX.Element {
     // 4. plot attributes change
     useEffect(
         () => {
+            tooltipRef.current = tooltip;
+
             if (containerRef.current) {
                 // select the text elements and bind the data to them
                 const svg = d3.select(containerRef.current);
@@ -325,8 +341,8 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('class', 'magnifier')
                         .attr('y1', margin.top)
                         .attr('y2', plotDimensions.height)
-                        .attr('stroke', tooltip.border.color)
-                        .attr('stroke-width', tooltip.border.strokeWidth)
+                        .attr('stroke', tooltip.borderColor)
+                        .attr('stroke-width', tooltip.borderWidth)
                         .attr('opacity', 0)
                     ;
 
@@ -420,7 +436,7 @@ function RasterChart(props: Props): JSX.Element {
                     ;
 
                     // enter new elements
-                    const enter = container
+                    container
                         .enter()
                         .append('line')
                         .attr('x1', d => xScalingRef.current(d.time))
@@ -430,13 +446,11 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('stroke', spikesStyle.color)
                         .attr('stroke-width', spikesStyle.lineWidth)
                         .attr('stroke-linecap', "round")
+                        // even though the tooltip is may not be set to show up on the mouseover, we want to attach the handler
+                        // so that when the use enables tooltips the handlers will show the the tooltip
+                        .on("mouseover", (d, i, group) => handleShowTooltip(d, series.name, group[i]))
+                        .on("mouseleave", (d, i, group) => handleHideTooltip(d, series.name, group[i]))
                     ;
-                    // if(tooltip.visible) {
-                        enter
-                            .on("mouseover", (d, i, group) => handleShowTooltip(d, series.name, group[i]))
-                            .on("mouseleave", (d, i, group) => handleHideTooltip(d, series.name, group[i]))
-                        ;
-                    // }
 
                     // update existing elements
                     container
@@ -449,14 +463,6 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('stroke-width', spikesStyle.lineWidth)
                         .attr('stroke-linecap', "round")
                     ;
-
-                    // if(!tooltip.visible) {
-                    //     container
-                    //         .on("mouseover", null)
-                    //         .on("mouseleave", null)
-                    //     ;
-                    // }
-
                     // exit old elements
                     container.exit().remove()
                     ;
