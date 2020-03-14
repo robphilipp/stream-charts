@@ -88,6 +88,22 @@ const defaultLineMagnifierStyle: LineMagnifierStyle = {
     lineWidth: 2,
 };
 
+interface TrackerStyle {
+    visible: boolean;
+    timeWindow: number;
+    magnification: number;
+    color: string,
+    lineWidth: number,
+}
+
+const defaultTrackerStyle: TrackerStyle = {
+    visible: false,
+    timeWindow: 50,
+    magnification: 1,
+    color: '#d2933f',
+    lineWidth: 2,
+};
+
 interface Props {
     width: number;
     height: number;
@@ -99,6 +115,7 @@ interface Props {
     plotGridLines?: Partial<{ visible: boolean, color: string }>;
     tooltip?: Partial<TooltipStyle>;
     magnifier?: Partial<LineMagnifierStyle>;
+    tracker?: Partial<TrackerStyle>;
 
     // timeWindow: number;         // the width of the time-range in ms
     minTime: number;
@@ -133,6 +150,7 @@ function RasterChart(props: Props): JSX.Element {
     const plotGridLines = {...defaultPlotGridLines, ...props.plotGridLines};
     const tooltip: TooltipStyle = {...defaultTooltipStyle, ...props.tooltip};
     const magnifier = {...defaultLineMagnifierStyle, ...props.magnifier};
+    const tracker = {...defaultTrackerStyle, ...props.tracker};
 
     // grab the dimensions of the actual plot after removing the margins from the specified width and height
     const plotDimensions = adjustedDimensions(width, height, margin);
@@ -141,6 +159,7 @@ function RasterChart(props: Props): JSX.Element {
     const containerRef = useRef<SVGSVGElement>(null);
     const mainGRef = useRef<Selection<SVGGElement, unknown, null, undefined>>();
     const magnifierRef = useRef<Selection<SVGLineElement, unknown, null, undefined>>();
+    const trackerRef = useRef<Selection<SVGLineElement, unknown, null, undefined>>();
 
     // reference to the axes for the plot
     const axesRef = useRef<{ xAxisElement: AxisElementSelection, yAxisElement: AxisElementSelection }>();
@@ -298,12 +317,23 @@ function RasterChart(props: Props): JSX.Element {
             path
                 .attr('x1', x)
                 .attr('x2', x)
-                .attr('opacity', () => pointInPlotArea(x, y) ? 1 : 0)
+                .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
             ;
         }
     }
 
-    function pointInPlotArea(x: number, y: number): boolean {
+    function handleShowTracker(path: d3.Selection<SVGLineElement, unknown, null, undefined> | undefined) {
+        if(containerRef.current && path) {
+            const [x, y] = d3.mouse(containerRef.current);
+            path
+                .attr('x1', x)
+                .attr('x2', x)
+                .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
+            ;
+        }
+    }
+
+    function mouseInPlotArea(x: number, y: number): boolean {
         return  x > margin.left && x < width - margin.right &&
             y > margin.top && y < height - margin.bottom;
     }
@@ -348,10 +378,30 @@ function RasterChart(props: Props): JSX.Element {
 
                     svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
                 }
-                // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier
+                // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
                 else if(!magnifier.visible && magnifierRef.current) {
                     magnifierRef.current = undefined;
                 }
+
+                // set up the tracker-line once
+                if(tracker.visible && trackerRef.current === undefined) {
+                    trackerRef.current = svg
+                        .append('line')
+                        .attr('class', 'tracker')
+                        .attr('y1', margin.top)
+                        .attr('y2', plotDimensions.height)
+                        .attr('stroke', tooltip.borderColor)
+                        .attr('stroke-width', tooltip.borderWidth)
+                        .attr('opacity', 0)
+                    ;
+
+                    svg.on('mousemove', () => handleShowTracker(trackerRef.current));
+                }
+                // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
+                else if(!tracker.visible && trackerRef.current) {
+                    trackerRef.current = undefined;
+                }
+
 
                 // create a container for each spike series
                 seriesList.forEach(series => mainGRef.current!

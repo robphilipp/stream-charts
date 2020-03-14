@@ -47,8 +47,9 @@ function RasterChartDriver(props: Props): JSX.Element {
     const seriesRef = useRef<Array<Series>>(seriesList);
     const currentTimeRef = useRef<number>(0);
 
-    const [magnifierVisible, setMagnifierVisible] = useState(false);
     const [tooltipVisible, setTooltipVisible] = useState(false);
+    const [magnifierVisible, setMagnifierVisible] = useState(false);
+    const [trackerVisible, setTrackerVisible] = useState(false);
 
     function nextDatum(time: number, maxDelta: number): Datum {
         return {
@@ -98,8 +99,9 @@ function RasterChartDriver(props: Props): JSX.Element {
     return (
         <div>
             <p>
-                <label>magnifier <input type="checkbox" checked={magnifierVisible} onChange={() => setMagnifierVisible(!magnifierVisible)}/></label>
-                <label>tooltip <input type="checkbox" checked={tooltipVisible} onChange={() => setTooltipVisible(!tooltipVisible)}/></label>
+                <label>tooltip <input type="checkbox" checked={tooltipVisible} onChange={() => setTooltipVisible(!tooltipVisible)}/></label>&nbsp;&nbsp;
+                <label>magnifier <input type="checkbox" checked={magnifierVisible} onChange={() => setMagnifierVisible(!magnifierVisible)}/></label>&nbsp;&nbsp;
+                <label>tracker <input type="checkbox" checked={trackerVisible} onChange={() => setTrackerVisible(!trackerVisible)}/></label>
             </p>
             <RasterChart
                 width={plotWidth}
@@ -112,6 +114,7 @@ function RasterChartDriver(props: Props): JSX.Element {
                 // spikesStyle={{color: '#ffffff'}}
                 tooltip={{visible: tooltipVisible}}
                 magnifier={{visible: magnifierVisible}}
+                tracker={{visible: trackerVisible}}
             />
         </div>
     );
