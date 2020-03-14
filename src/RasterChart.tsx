@@ -157,7 +157,7 @@ function RasterChart(props: Props): JSX.Element {
 
     // the container that holds the d3 svg element
     const containerRef = useRef<SVGSVGElement>(null);
-    const mainGRef = useRef<Selection<SVGGElement, unknown, null, undefined>>();
+    const mainGRef = useRef<Selection<SVGGElement, any, null, undefined>>();
     const magnifierRef = useRef<Selection<SVGRectElement, Datum, null, undefined>>();
     const trackerRef = useRef<Selection<SVGLineElement, Datum, null, undefined>>();
 
@@ -188,7 +188,7 @@ function RasterChart(props: Props): JSX.Element {
         }
 
         // Use D3 to select element, change color and size
-        d3.select(spike)
+        d3.select<SVGLineElement, Datum>(spike)
             .attr('stroke', spikesStyle.highlightColor)
             .attr('stroke-width', spikesStyle.highlightWidth)
             .attr('stroke-linecap', "round")
@@ -196,8 +196,8 @@ function RasterChart(props: Props): JSX.Element {
 
         if (tooltipRef.current.visible) {
             // create the rounded rectangle for the tooltip's background
-            const rect = d3.select(containerRef.current)
-                .append('rect')
+            const rect = d3.select<SVGSVGElement | null, any>(containerRef.current)
+                .append<SVGRectElement>('rect')
                 .attr('id', `r${datum.time}-${seriesName}`)
                 .attr('class', 'tooltip')
                 .attr('rx', tooltipRef.current.borderRadius)
@@ -208,8 +208,8 @@ function RasterChart(props: Props): JSX.Element {
             ;
 
             // display the neuron ID in the tooltip
-            const header = d3.select(containerRef.current)
-                .append("text")
+            const header = d3.select<SVGSVGElement | null, any>(containerRef.current)
+                .append<SVGTextElement>("text")
                 .attr('id', `tn${datum.time}-${seriesName}`)
                 .attr('class', 'tooltip')
                 .attr('fill', tooltipRef.current.fontColor)
@@ -220,8 +220,8 @@ function RasterChart(props: Props): JSX.Element {
             ;
 
             // display the time (ms) and spike strength (mV) in the tooltip
-            const text = d3.select(containerRef.current)
-                .append("text")
+            const text = d3.select<SVGSVGElement | null, any>(containerRef.current)
+                .append<SVGTextElement>("text")
                 .attr('id', `t${datum.time}-${seriesName}`)
                 .attr('class', 'tooltip')
                 .attr('fill', tooltipRef.current.fontColor)
@@ -309,7 +309,7 @@ function RasterChart(props: Props): JSX.Element {
             .attr('stroke-width', spikesStyle.lineWidth);
 
         if(tooltipRef.current.visible) {
-            d3.selectAll('.tooltip').remove();
+            d3.selectAll<SVGLineElement, Datum>('.tooltip').remove();
         }
     }
 
@@ -330,12 +330,6 @@ function RasterChart(props: Props): JSX.Element {
 
         if(containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
-            const xPrev = mouseCoordsRef.current;
-            if(Math.abs(x - xPrev) < 5) {
-                return;
-            }
-            mouseCoordsRef.current = x;
-
             const isMouseInPlot = mouseInPlotArea(x, y);
             const deltaTime = 50;
             const deltaX = Math.abs(xScalingRef.current(deltaTime) - xScalingRef.current(0));
@@ -345,7 +339,7 @@ function RasterChart(props: Props): JSX.Element {
                 .attr('opacity', () => isMouseInPlot ? 1 : 0)
             ;
 
-            if(isMouseInPlot) {
+            if(isMouseInPlot && Math.abs(x - mouseCoordsRef.current) > 5) {
                 const barMagnifierF = barMagnifier(deltaX, 3, x - margin.left);
                 d3.select<SVGSVGElement, Datum>(containerRef.current)
                     .selectAll<SVGSVGElement, Datum>('.spikes-lines')
@@ -355,12 +349,14 @@ function RasterChart(props: Props): JSX.Element {
                     .attr('x1', datum => barMagnifierF(xFrom(datum)))
                     .attr('x2', datum => barMagnifierF(xFrom(datum)))
                 ;
+                mouseCoordsRef.current = x;
             }
-            else {
+            else if(!isMouseInPlot) {
                 d3.select<SVGSVGElement, Datum>(containerRef.current)
                     .selectAll<SVGSVGElement, Datum>('.spikes-lines')
                     .attr('x1', datum => xFrom(datum))
                     .attr('x2', datum => xFrom(datum))
+                mouseCoordsRef.current = 0;
             }
         }
     }
