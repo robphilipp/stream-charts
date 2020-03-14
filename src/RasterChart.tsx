@@ -161,6 +161,8 @@ function RasterChart(props: Props): JSX.Element {
     const magnifierRef = useRef<Selection<SVGRectElement, unknown, null, undefined>>();
     const trackerRef = useRef<Selection<SVGLineElement, unknown, null, undefined>>();
 
+    const mouseCoordsRef = useRef<[number, number]>([0, 0]);
+
     // reference to the axes for the plot
     const axesRef = useRef<{ xAxisElement: AxisElementSelection, yAxisElement: AxisElementSelection }>();
 
@@ -312,24 +314,52 @@ function RasterChart(props: Props): JSX.Element {
     }
 
     function handleShowMagnify(path: d3.Selection<SVGRectElement, unknown, null, undefined> | undefined) {
+
+        function inMagnifier(datum: Datum, x: number, offsets: number): boolean {
+            const mouseTime = xScalingRef.current.invert(x - margin.left);
+            return datum.time > mouseTime - offsets && datum.time < mouseTime + offsets;
+        }
+
+        function xFrom(datum: Datum): number {
+            return xScalingRef.current((datum as Datum).time);
+        }
+
         if(containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
-            const deltaX = Math.abs(xScalingRef.current(20) - xScalingRef.current(0));
+            const [xPrev, yPrev] = mouseCoordsRef.current;
+            if(Math.sqrt((x - xPrev) * (x - xPrev) + (y - yPrev) * (y - yPrev)) < 5) {
+                return;
+            }
+            mouseCoordsRef.current = [x, y];
+
+            const isMouseInPlot = mouseInPlotArea(x, y);
+            const deltaTime = 50;
+            const deltaX = Math.abs(xScalingRef.current(deltaTime) - xScalingRef.current(0));
             path
                 .attr('x', x - deltaX)
                 .attr('width', 2 * deltaX)
-                .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
-                // .style('fill', 'url(#magnifier-gradient')
-                // .style('fill', tooltip.backgroundColor)
-
+                .attr('opacity', () => isMouseInPlot ? 1 : 0)
             ;
+
+            if(isMouseInPlot) {
+                const barMagnifierF = barMagnifier(deltaX, 3, x - margin.left);
+                d3.select(containerRef.current)
+                    .selectAll('.spikes-lines')
+                    .filter(datum => inMagnifier(datum as Datum, x, 4 * deltaTime))
+                    // .attr('x1', datum => xFrom(datum as Datum) + (inMagnifier(datum as Datum, x, deltaTime) ? 10 : 0))
+                    // .attr('x2', datum => xFrom(datum as Datum) + (inMagnifier(datum as Datum, x, deltaTime) ? -10 : 0))
+                    .attr('x1', datum => barMagnifierF(xFrom(datum as Datum)))
+                    .attr('x2', datum => barMagnifierF(xFrom(datum as Datum)))
+                ;
+            }
+            else {
+                d3.select(containerRef.current)
+                    .selectAll('.spikes-lines')
+                    .attr('x1', datum => xFrom(datum as Datum))
+                    .attr('x2', datum => xFrom(datum as Datum))
+            }
         }
     }
-
-    // function magnifierMouseInPlotArea(x: number, y: number, deltaX: number) {
-    //     return  x - deltaX > margin.left && x + deltaX < width - margin.right &&
-    //         y > margin.top && y < height - margin.bottom;
-    // }
 
     function handleShowTracker(path: d3.Selection<SVGLineElement, unknown, null, undefined> | undefined) {
         if(containerRef.current && path) {
@@ -385,7 +415,7 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('y2', '0%')
                     ;
 
-                    const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3).hex();
+                    const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
                     linearGradient
                         .append('stop')
                         .attr('offset', '0%')
@@ -394,14 +424,17 @@ function RasterChart(props: Props): JSX.Element {
 
                     linearGradient
                         .append('stop')
-                        .attr('offset', '35%')
+                        .attr('offset', '30%')
                         .attr('stop-color', tooltip.backgroundColor)
+                        .attr('stop-opacity', 0)
                     ;
 
                     linearGradient
                         .append('stop')
-                        .attr('offset', '65%')
-                        .attr('stop-color', tooltip.backgroundColor);
+                        .attr('offset', '70%')
+                        .attr('stop-color', tooltip.backgroundColor)
+                        .attr('stop-opacity', 0)
+                    ;
 
                     linearGradient
                         .append('stop')
@@ -416,7 +449,7 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('height', plotDimensions.height - margin.top)
                         .attr('stroke', tooltip.borderColor)
                         .attr('stroke-width', tooltip.borderWidth)
-                        .attr('opacity', 0)
+                        // .attr('opacity', 0)
                         .style('fill', 'url(#magnifier-gradient')
                     ;
 
@@ -533,6 +566,7 @@ function RasterChart(props: Props): JSX.Element {
                     container
                         .enter()
                         .append('line')
+                        .attr('class', 'spikes-lines')
                         .attr('x1', d => xScalingRef.current(d.time))
                         .attr('x2', d => xScalingRef.current(d.time))
                         .attr('y1', () => (yScalingRef.current(series.name) || 0) + spikesStyle.margin)
@@ -599,6 +633,45 @@ function adjustedDimensions(width: number, height: number, margins: Sides): { wi
         width: width - margins.left - margins.right,
         height: height - margins.top - margins.top
     };
+}
+
+function barMagnifier(radius: number, power: number, center: number) {
+    let k0: number, k1: number;
+
+    function barMagnifier(d: number): number {
+        const dx = d - center;
+        const dd = Math.abs(dx);
+        if (dd >= radius) return d;
+        const k = k0 * (1 - Math.exp(-dd * k1)) / dd * .75 + .25;
+        return center + dx * k;
+    }
+
+    function rescale() {
+        k0 = Math.exp(power);
+        k0 = k0 / (k0 - 1) * radius;
+        k1 = power / radius;
+        return barMagnifier;
+    }
+
+    barMagnifier.radius = function (_: number) {
+        if (!arguments.length) return radius;
+        radius = +_;
+        return rescale();
+    };
+
+    barMagnifier.power = function (_: number) {
+        if (!arguments.length) return power;
+        power = +_;
+        return rescale();
+    };
+
+    barMagnifier.center = function (_: number) {
+        if (!arguments.length) return center;
+        center = _;
+        return barMagnifier;
+    };
+
+    return rescale();
 }
 
 export default RasterChart;
