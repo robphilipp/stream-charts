@@ -158,7 +158,7 @@ function RasterChart(props: Props): JSX.Element {
     // the container that holds the d3 svg element
     const containerRef = useRef<SVGSVGElement>(null);
     const mainGRef = useRef<Selection<SVGGElement, unknown, null, undefined>>();
-    const magnifierRef = useRef<Selection<SVGLineElement, unknown, null, undefined>>();
+    const magnifierRef = useRef<Selection<SVGRectElement, unknown, null, undefined>>();
     const trackerRef = useRef<Selection<SVGLineElement, unknown, null, undefined>>();
 
     // reference to the axes for the plot
@@ -311,16 +311,25 @@ function RasterChart(props: Props): JSX.Element {
         }
     }
 
-    function handleShowMagnify(path: d3.Selection<SVGLineElement, unknown, null, undefined> | undefined) {
+    function handleShowMagnify(path: d3.Selection<SVGRectElement, unknown, null, undefined> | undefined) {
         if(containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
+            const deltaX = Math.abs(xScalingRef.current(20) - xScalingRef.current(0));
             path
-                .attr('x1', x)
-                .attr('x2', x)
+                .attr('x', x - deltaX)
+                .attr('width', 2 * deltaX)
                 .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
+                // .style('fill', 'url(#magnifier-gradient')
+                // .style('fill', tooltip.backgroundColor)
+
             ;
         }
     }
+
+    // function magnifierMouseInPlotArea(x: number, y: number, deltaX: number) {
+    //     return  x - deltaX > margin.left && x + deltaX < width - margin.right &&
+    //         y > margin.top && y < height - margin.bottom;
+    // }
 
     function handleShowTracker(path: d3.Selection<SVGLineElement, unknown, null, undefined> | undefined) {
         if(containerRef.current && path) {
@@ -366,14 +375,49 @@ function RasterChart(props: Props): JSX.Element {
 
                 // set up the magnifier once
                 if(magnifier.visible && magnifierRef.current === undefined) {
+                    const linearGradient = svg
+                        .append('defs')
+                        .append('linearGradient')
+                        .attr('id', 'magnifier-gradient')
+                        .attr('x1', '0%')
+                        .attr('x2', '100%')
+                        .attr('y1', '0%')
+                        .attr('y2', '0%')
+                    ;
+
+                    const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3).hex();
+                    linearGradient
+                        .append('stop')
+                        .attr('offset', '0%')
+                        .attr('stop-color', borderColor)
+                    ;
+
+                    linearGradient
+                        .append('stop')
+                        .attr('offset', '35%')
+                        .attr('stop-color', tooltip.backgroundColor)
+                    ;
+
+                    linearGradient
+                        .append('stop')
+                        .attr('offset', '65%')
+                        .attr('stop-color', tooltip.backgroundColor);
+
+                    linearGradient
+                        .append('stop')
+                        .attr('offset', '100%')
+                        .attr('stop-color', borderColor)
+                    ;
+
                     magnifierRef.current = svg
-                        .append('line')
+                        .append('rect')
                         .attr('class', 'magnifier')
-                        .attr('y1', margin.top)
-                        .attr('y2', plotDimensions.height)
+                        .attr('y', margin.top)
+                        .attr('height', plotDimensions.height - margin.top)
                         .attr('stroke', tooltip.borderColor)
                         .attr('stroke-width', tooltip.borderWidth)
                         .attr('opacity', 0)
+                        .style('fill', 'url(#magnifier-gradient')
                     ;
 
                     svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));

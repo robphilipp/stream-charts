@@ -100,8 +100,14 @@ function RasterChartDriver(props: Props): JSX.Element {
         <div>
             <p>
                 <label>tooltip <input type="checkbox" checked={tooltipVisible} onChange={() => setTooltipVisible(!tooltipVisible)}/></label>&nbsp;&nbsp;
-                <label>magnifier <input type="checkbox" checked={magnifierVisible} onChange={() => setMagnifierVisible(!magnifierVisible)}/></label>&nbsp;&nbsp;
-                <label>tracker <input type="checkbox" checked={trackerVisible} onChange={() => setTrackerVisible(!trackerVisible)}/></label>
+                <label>magnifier <input type="checkbox" checked={magnifierVisible} onChange={() => {
+                    setMagnifierVisible(!magnifierVisible);
+                    if(trackerVisible) setTrackerVisible(false);
+                }}/></label>&nbsp;&nbsp;
+                <label>tracker <input type="checkbox" checked={trackerVisible} onChange={() => {
+                    setTrackerVisible(!trackerVisible);
+                    if(magnifierVisible) setMagnifierVisible(false);
+                }}/></label>
             </p>
             <RasterChart
                 width={plotWidth}
