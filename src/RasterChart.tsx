@@ -104,6 +104,18 @@ const defaultTrackerStyle: TrackerStyle = {
     lineWidth: 2,
 };
 
+
+interface LensTransformation {
+    // transformed location of the x-coordinate
+    xPrime: number;
+    // the amount by which the spike is magnified at that location
+    scale: number;
+}
+
+interface MagnifiedDatum extends Datum {
+    lens: LensTransformation
+}
+
 interface Props {
     width: number;
     height: number;
@@ -315,7 +327,8 @@ function RasterChart(props: Props): JSX.Element {
 
     /**
      *
-     * @param {Selection<SVGRectElement, unknown, null, undefined> | undefined} path
+     * @param {Selection<SVGRectElement, Datum, null, undefined> | undefined} path The path selection
+     * holding the magnifier whose properties need to be updated.
      */
     function handleShowMagnify(path: Selection<SVGRectElement, Datum, null, undefined> | undefined) {
 
@@ -339,23 +352,29 @@ function RasterChart(props: Props): JSX.Element {
                 .attr('opacity', () => isMouseInPlot ? 1 : 0)
             ;
 
-            if(isMouseInPlot && Math.abs(x - mouseCoordsRef.current) > 5) {
-                const barMagnifierF = barMagnifier(deltaX, 3, x - margin.left);
-                d3.select<SVGSVGElement, Datum>(containerRef.current)
-                    .selectAll<SVGSVGElement, Datum>('.spikes-lines')
-                    .filter(datum => inMagnifier(datum , x, 4 * deltaTime))
-                    // .attr('x1', datum => xFrom(datum as Datum) + (inMagnifier(datum as Datum, x, deltaTime) ? 10 : 0))
-                    // .attr('x2', datum => xFrom(datum as Datum) + (inMagnifier(datum as Datum, x, deltaTime) ? -10 : 0))
-                    .attr('x1', datum => barMagnifierF(xFrom(datum)))
-                    .attr('x2', datum => barMagnifierF(xFrom(datum)))
+            if(isMouseInPlot && Math.abs(x - mouseCoordsRef.current) > 1) {
+                const barMagnifier = BarMagnifier(deltaX, 3, x - margin.left);
+                d3.select<SVGSVGElement, MagnifiedDatum>(containerRef.current)
+                    // select all the spikes and keep only those that are within ±4∆t of the x-position of the mouse
+                    .selectAll<SVGSVGElement, MagnifiedDatum>('.spikes-lines')
+                    .filter(datum => inMagnifier(datum , x, 4 * deltaTime) && datum.time > minTime)
+                    // supplement the lens transformation information (new x and scale)
+                    .each(datum => {datum.lens = barMagnifier(xFrom(datum))})
+                    // update each spikes line with it's new x-coordinate and the magnified line-width
+                    .attr('x1', datum => datum.lens.xPrime)
+                    .attr('x2', datum => datum.lens.xPrime)
+                    .attr('stroke-width', datum => spikesStyle.lineWidth * Math.max(datum.lens.scale, 1))
                 ;
                 mouseCoordsRef.current = x;
             }
             else if(!isMouseInPlot) {
                 d3.select<SVGSVGElement, Datum>(containerRef.current)
                     .selectAll<SVGSVGElement, Datum>('.spikes-lines')
+                    .filter(datum => datum.time > minTime)
                     .attr('x1', datum => xFrom(datum))
                     .attr('x2', datum => xFrom(datum))
+                    .attr('stroke-width', datum => spikesStyle.lineWidth)
+                ;
                 mouseCoordsRef.current = 0;
             }
         }
@@ -636,17 +655,42 @@ function adjustedDimensions(width: number, height: number, margins: Sides): { wi
     };
 }
 
-function barMagnifier(radius: number, power: number, center: number) {
+/**
+ * Vertical bar magnifier transformation function generator. For example, given a 2-dimensional
+ * Cartesian coordinate system, transforms the x-values as if a vertical bar lens were placed over
+ * the data. The lens, in this example, would sit on the x-y plane with its center value at x = center,
+ * and its outer edges at x = center ± radius.
+ * @param {number} radius The radius of the lens.
+ * @param {number} power The optical magnification of the lens (i.e. ratio of magnified size to "true" size)
+ * @param {number} center The center of the lens
+ * @return {(x: number) => number} A function that takes an x-value and transforms it to the value that
+ * would appear under such a bar magnifier lens
+ */
+function BarMagnifier(radius: number, power: number, center: number) {
     let k0: number, k1: number;
 
-    function barMagnifier(d: number): number {
-        const dx = d - center;
+    /**
+     * Transforms the x-value to where it would appear under a bar lens
+     * @param {number} x The x-value of the point
+     * @return {number} The transformed value
+     */
+    function barMagnifier(x: number): LensTransformation {
+        // calculate the distance from the center of the lens
+        const dx = x - center;
         const dd = Math.abs(dx);
-        if (dd >= radius) return d;
+
+        // when the distance is further than the radius, the point is outside of the
+        // lens and so there is no magnification
+        if (dd >= radius) return {xPrime: x, scale: 1};
+
         const k = k0 * (1 - Math.exp(-dd * k1)) / dd * .75 + .25;
-        return center + dx * k;
+        return {xPrime: center + dx * k, scale: k};
     }
 
+    /**
+     *
+     * @return {(x: number) => number}
+     */
     function rescale() {
         k0 = Math.exp(power);
         k0 = k0 / (k0 - 1) * radius;
