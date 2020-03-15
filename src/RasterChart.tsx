@@ -359,23 +359,26 @@ function RasterChart(props: Props): JSX.Element {
                 .attr('opacity', () => isMouseInPlot ? 1 : 0)
             ;
 
+            const svg = d3.select<SVGSVGElement, MagnifiedDatum>(containerRef.current);
+
             if(isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
                 const barMagnifier: (x: number) => LensTransformation = BarMagnifier(deltaX, 3, x - margin.left);
-                d3.select<SVGSVGElement, MagnifiedDatum>(containerRef.current)
+                svg
                     // select all the spikes and keep only those that are within ±4∆t of the x-position of the mouse
                     .selectAll<SVGSVGElement, MagnifiedDatum>('.spikes-lines')
                     .filter(datum => inMagnifier(datum , x, 4 * deltaTime) && datum.time > minTime)
-                    // supplement the lens transformation information (new x and scale)
+                    // supplement the datum with lens transformation information (new x and scale)
                     .each(datum => {datum.lens = barMagnifier(xFrom(datum))})
                     // update each spikes line with it's new x-coordinate and the magnified line-width
                     .attr('x1', datum => datum.lens.xPrime)
                     .attr('x2', datum => datum.lens.xPrime)
                     .attr('stroke-width', datum => spikesStyle.lineWidth * Math.max(datum.lens.magnification, 1))
+                    .attr('shape-rendering', 'crispEdges')
                 ;
                 mouseCoordsRef.current = x;
             }
             else if(!isMouseInPlot) {
-                d3.select<SVGSVGElement, Datum>(containerRef.current)
+                svg
                     .selectAll<SVGSVGElement, Datum>('.spikes-lines')
                     .filter(datum => datum.time > minTime)
                     .attr('x1', datum => xFrom(datum))
