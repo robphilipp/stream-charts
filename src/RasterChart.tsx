@@ -383,7 +383,7 @@ function RasterChart(props: Props): JSX.Element {
                     .filter(datum => datum.time > minTime)
                     .attr('x1', datum => xFrom(datum))
                     .attr('x2', datum => xFrom(datum))
-                    .attr('stroke-width', datum => spikesStyle.lineWidth)
+                    .attr('stroke-width', spikesStyle.lineWidth)
                 ;
                 mouseCoordsRef.current = 0;
             }
