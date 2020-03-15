@@ -105,9 +105,13 @@ const defaultTrackerStyle: TrackerStyle = {
     lineWidth: 2,
 };
 
-
 interface MagnifiedDatum extends Datum {
     lens: LensTransformation
+}
+
+interface PixelDatum extends Datum {
+    x: number;
+    y: number;
 }
 
 interface Props {
@@ -599,19 +603,22 @@ function RasterChart(props: Props): JSX.Element {
                 seriesList.forEach(series => {
                     const container = svg
                         .select<SVGGElement>(`g.${series.name}`)
-                        .selectAll<SVGLineElement, Datum>('line')
-                        .data(series.data)
+                        .selectAll<SVGLineElement, PixelDatum>('line')
+                        .data(series.data as PixelDatum[])
                     ;
 
                     // enter new elements
+                    const y = (yScalingRef.current(series.name) || 0);
                     container
                         .enter()
                         .append<SVGLineElement>('line')
+                        .filter(datum => datum.time >= minTime)
+                        .each(datum => {datum.x = xScalingRef.current(datum.time)})
                         .attr('class', 'spikes-lines')
-                        .attr('x1', d => xScalingRef.current(d.time))
-                        .attr('x2', d => xScalingRef.current(d.time))
-                        .attr('y1', () => (yScalingRef.current(series.name) || 0) + spikesStyle.margin)
-                        .attr('y2', () => (yScalingRef.current(series.name) || 0) + lineHeight - spikesStyle.margin)
+                        .attr('x1', datum => datum.x)
+                        .attr('x2', datum => datum.x)
+                        .attr('y1', datum => y + spikesStyle.margin)
+                        .attr('y2', datum => y + lineHeight - spikesStyle.margin)
                         .attr('stroke', spikesStyle.color)
                         .attr('stroke-width', spikesStyle.lineWidth)
                         .attr('stroke-linecap', "round")
@@ -624,13 +631,11 @@ function RasterChart(props: Props): JSX.Element {
                     // update existing elements
                     container
                         .filter(datum => datum.time >= minTime)
-                        .attr('x1', d => xScalingRef.current(d.time))
-                        .attr('x2', d => xScalingRef.current(d.time))
-                        .attr('y1', () => (yScalingRef.current(series.name) || 0) + spikesStyle.margin)
-                        .attr('y2', () => (yScalingRef.current(series.name) || 0) + lineHeight - spikesStyle.margin)
-                        .attr('stroke', spikesStyle.color)
-                        .attr('stroke-width', spikesStyle.lineWidth)
-                        .attr('stroke-linecap', "round")
+                        .each(datum => {datum.x = xScalingRef.current(datum.time)})
+                        .attr('x1', datum => datum.x)
+                        .attr('x2', datum => datum.x)
+                        .attr('y1', datum => y + spikesStyle.margin)
+                        .attr('y2', datum => y + lineHeight - spikesStyle.margin)
                     ;
                     // exit old elements
                     container.exit().remove()
