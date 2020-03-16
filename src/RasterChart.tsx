@@ -168,6 +168,7 @@ function RasterChart(props: Props): JSX.Element {
     // the container that holds the d3 svg element
     const containerRef = useRef<SVGSVGElement>(null);
     const mainGRef = useRef<Selection<SVGGElement, any, null, undefined>>();
+    const spikesRef = useRef<Selection<SVGGElement, Series, SVGGElement, any>>();
     const magnifierRef = useRef<Selection<SVGRectElement, Datum, null, undefined>>();
     const trackerRef = useRef<Selection<SVGLineElement, Datum, null, undefined>>();
 
@@ -436,17 +437,6 @@ function RasterChart(props: Props): JSX.Element {
                 // select the text elements and bind the data to them
                 const svg = d3.select<SVGSVGElement, any>(containerRef.current);
 
-                // set up the main <g> container for svg and translate it based on the margins, but do it only
-                // once
-                if(mainGRef.current === undefined) {
-                    mainGRef.current = svg
-                        .attr('width', width)
-                        .attr('height', height)
-                        .attr('color', axisStyle.color)
-                        .append<SVGGElement>('g')
-                    ;
-                }
-
                 // set up the magnifier once
                 if(magnifier.visible && magnifierRef.current === undefined) {
                     const linearGradient = svg
@@ -523,13 +513,32 @@ function RasterChart(props: Props): JSX.Element {
                     trackerRef.current = undefined;
                 }
 
-
-                // create a container for each spike series
-                seriesList.forEach(series => mainGRef.current!
-                    .append<SVGGElement>('g')
-                    .attr('class', series.name)
-                    .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                );
+                // set up the main <g> container for svg and translate it based on the margins, but do it only
+                // once
+                if(mainGRef.current === undefined) {
+                    mainGRef.current = svg
+                        .attr('width', width)
+                        .attr('height', height)
+                        .attr('color', axisStyle.color)
+                        .append<SVGGElement>('g')
+                    ;
+                }
+                else {
+                    spikesRef.current = mainGRef.current!
+                        .selectAll<SVGGElement, Series>('g')
+                        .data<Series>(seriesList)
+                        .enter()
+                            .append('g')
+                            .attr('class', 'spikes-series')
+                            .attr('id', series => series.name)
+                            .attr('transform', `translate(${margin.left}, ${margin.top})`);
+                    // // create a container for each spike series
+                    // seriesList.forEach(series => mainGRef.current!
+                    //     .append<SVGGElement>('g')
+                    //     .attr('class', series.name)
+                    //     .attr('transform', `translate(${margin.left}, ${margin.top})`)
+                    // );
+                }
 
                 // calculate the mapping between the times in the data (domain) and the display
                 // location on the screen (range)
@@ -600,11 +609,64 @@ function RasterChart(props: Props): JSX.Element {
                     axesRef.current.yAxisElement.call(d3.axisLeft(yScalingRef.current));
                 }
 
+                // svg
+                //     .select<SVGGElement>('series')
+                //     .data<Series>(seriesList)
+                // //         .select<SVGGElement>(series => `g.${series.name}`)
+                // //         .selectAll<SVGLineElement, PixelDatum>('line')
+                // //         .data<PixelDatum>((series: Series) => series.data)
+                // ;
+
+                // mainGRef.current!
+                //     .selectAll('spikes-series')
+                //     .data(seriesList)
+                //     .select(series => `#${series.name}`)
+                //     .selectAll<SVGLineElement, PixelDatum>('line')
+                //     .data(series => series.data as PixelDatum[])
+                // const container = spikesRef.current!
+                //     .selectAll('.spikes-series')
+                //     .data(seriesList.map(series => series.data as PixelDatum[]))
+                //     .
+                // ;
+                // // enter new elements
+                // const y = (yScalingRef.current(series.name) || 0);
+                // container
+                //     .enter()
+                //     .append<SVGLineElement>('line')
+                //     .filter(datum => datum.time >= minTime)
+                //     .each(datum => {datum.x = xScalingRef.current(datum.time)})
+                //     .attr('class', 'spikes-lines')
+                //     .attr('x1', datum => datum.x)
+                //     .attr('x2', datum => datum.x)
+                //     .attr('y1', datum => y + spikesStyle.margin)
+                //     .attr('y2', datum => y + lineHeight - spikesStyle.margin)
+                //     .attr('stroke', spikesStyle.color)
+                //     .attr('stroke-width', spikesStyle.lineWidth)
+                //     .attr('stroke-linecap', "round")
+                //     // even though the tooltip is may not be set to show up on the mouseover, we want to attach the handler
+                //     // so that when the use enables tooltips the handlers will show the the tooltip
+                //     .on("mouseover", (d, i, group) => handleShowTooltip(d, series.name, group[i]))
+                //     .on("mouseleave", (d, i, group) => handleHideTooltip(d, series.name, group[i]))
+                // ;
+                //
+                // // update existing elements
+                // container
+                //     .filter(datum => datum.time >= minTime)
+                //     .each(datum => {datum.x = xScalingRef.current(datum.time)})
+                //     .attr('x1', datum => datum.x)
+                //     .attr('x2', datum => datum.x)
+                //     .attr('y1', datum => y + spikesStyle.margin)
+                //     .attr('y2', datum => y + lineHeight - spikesStyle.margin)
+                // ;
+                // // exit old elements
+                // container.exit().remove()
+                // ;
+
                 seriesList.forEach(series => {
                     const container = svg
-                        .select<SVGGElement>(`g.${series.name}`)
+                        .select<SVGGElement>(`#${series.name}`)
                         .selectAll<SVGLineElement, PixelDatum>('line')
-                        .data(series.data as PixelDatum[])
+                        .data(series.data.filter(datum => datum.time >= minTime && datum.time <= maxTime) as PixelDatum[])
                     ;
 
                     // enter new elements
@@ -637,6 +699,7 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('y1', datum => y + spikesStyle.margin)
                         .attr('y2', datum => y + lineHeight - spikesStyle.margin)
                     ;
+
                     // exit old elements
                     container.exit().remove()
                     ;
