@@ -390,6 +390,11 @@ function RasterChart(props: Props): JSX.Element {
                     .attr('x2', datum => xFrom(datum))
                     .attr('stroke-width', spikesStyle.lineWidth)
                 ;
+
+                path
+                    .attr('x', minTime)
+                    .attr('width', 0)
+                ;
                 mouseCoordsRef.current = 0;
             }
         }
