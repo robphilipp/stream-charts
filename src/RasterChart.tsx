@@ -1,6 +1,6 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
-import {ScaleBand, ScaleLinear, Selection} from "d3";
+import {ScaleBand, ScaleLinear, Selection, Axis, ZoomTransform} from "d3";
 import {Datum, Series} from "./RasterChartDriver";
 import {BarMagnifier, LensTransformation} from "./BarMagnifier";
 
@@ -114,6 +114,13 @@ interface PixelDatum extends Datum {
     y: number;
 }
 
+interface Axes {
+    xAxis: Axis<number | {valueOf(): number}>;
+    yAxis: Axis<string>;
+    xAxisSelection: AxisElementSelection;
+    yAxisSelection: AxisElementSelection;
+}
+
 interface Props {
     width: number;
     height: number;
@@ -127,7 +134,8 @@ interface Props {
     magnifier?: Partial<LineMagnifierStyle>;
     tracker?: Partial<TrackerStyle>;
 
-    // timeWindow: number;         // the width of the time-range in ms
+    // data to plot: min-time is the earliest time for which to plot the data; max-time is the latest
+    // and series list is a list of time-series to plot
     minTime: number;
     maxTime: number;
     seriesList: Array<Series>;
@@ -175,7 +183,7 @@ function RasterChart(props: Props): JSX.Element {
     const mouseCoordsRef = useRef<number>(0);
 
     // reference to the axes for the plot
-    const axesRef = useRef<{ xAxisElement: AxisElementSelection, yAxisElement: AxisElementSelection }>();
+    const axesRef = useRef<Axes>();
 
     // the scaling that converts the x-values (time in ms) of the datum into the pixel coordinates.
     const xScalingRef = useRef<ScaleLinear<number, number>>(d3.scaleLinear());
@@ -186,6 +194,20 @@ function RasterChart(props: Props): JSX.Element {
     // component, the closed properties are unchanged. using a ref allows the properties to which the reference
     // points to change.
     const tooltipRef = useRef(tooltip);
+
+    function constrain(transform: ZoomTransform): string {
+        const trans = transform.translate(0, -transform.y / transform.k);
+        return `translate(${trans.x}, 0)scale(${trans.k}, 1)`;
+    }
+
+    // todo need to adjust the min and max times
+
+    function onZoom(): void {
+        mainGRef.current!.attr("transform", constrain(d3.event.transform));
+        const xScale = d3.event.transform.rescaleX(xScalingRef.current);
+        axesRef.current!.xAxis.scale(xScale);
+        axesRef.current!.xAxisSelection.call(axesRef.current!.xAxis);
+    }
 
     /**
      * Renders a tooltip showing the neuron, spike time, and the spike strength when the mouse hovers over a spike.
@@ -325,9 +347,10 @@ function RasterChart(props: Props): JSX.Element {
     }
 
     /**
-     *
+     * Called when the magnifier is enabled to set up the vertical bar magnifier lens
      * @param {Selection<SVGRectElement, Datum, null, undefined> | undefined} path The path selection
      * holding the magnifier whose properties need to be updated.
+     * @callback
      */
     function handleShowMagnify(path: Selection<SVGRectElement, Datum, null, undefined> | undefined) {
 
@@ -537,13 +560,16 @@ function RasterChart(props: Props): JSX.Element {
                             .attr('class', 'spikes-series')
                             .attr('id', series => series.name)
                             .attr('transform', `translate(${margin.left}, ${margin.top})`);
-                    // // create a container for each spike series
-                    // seriesList.forEach(series => mainGRef.current!
-                    //     .append<SVGGElement>('g')
-                    //     .attr('class', series.name)
-                    //     .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                    // );
                 }
+
+                // set up for zooming
+                const zoom = d3.zoom<SVGSVGElement, Datum>()
+                    // .constrain(constrain)
+                    .scaleExtent([0, 10])
+                    .translateExtent([[margin.left, margin.top], [width - margin.right, height]])
+                    .on("zoom", () => onZoom());
+
+                svg.call(zoom);
 
                 // calculate the mapping between the times in the data (domain) and the display
                 // location on the screen (range)
@@ -563,21 +589,23 @@ function RasterChart(props: Props): JSX.Element {
                 if (!axesRef.current) {
                     const xAxis = d3.axisBottom(xScalingRef.current);
                     const yAxis = d3.axisLeft(yScalingRef.current);
-                    const xAxisElem = svg
+                    const xAxisSelection = svg
                         .append<SVGGElement>('g')
                         .attr('class', 'x-axis')
                         .attr('transform', `translate(${margin.left}, ${plotDimensions.height})`)
                         .call(xAxis);
 
-                    const yAxisElem = svg
+                    const yAxisSelection = svg
                         .append<SVGGElement>('g')
                         .attr('class', 'y-axis')
                         .attr('transform', `translate(${margin.left}, ${margin.top})`)
                         .call(yAxis);
 
                     axesRef.current = {
-                        xAxisElement: xAxisElem,
-                        yAxisElement: yAxisElem
+                        xAxis: xAxis,
+                        yAxis: yAxis,
+                        xAxisSelection: xAxisSelection,
+                        yAxisSelection: yAxisSelection
                     };
 
                     svg
@@ -610,62 +638,9 @@ function RasterChart(props: Props): JSX.Element {
                 }
                 // update the scales
                 else {
-                    axesRef.current.xAxisElement.call(d3.axisBottom(xScalingRef.current));
-                    axesRef.current.yAxisElement.call(d3.axisLeft(yScalingRef.current));
+                    axesRef.current.xAxisSelection.call(d3.axisBottom(xScalingRef.current));
+                    axesRef.current.yAxisSelection.call(d3.axisLeft(yScalingRef.current));
                 }
-
-                // svg
-                //     .select<SVGGElement>('series')
-                //     .data<Series>(seriesList)
-                // //         .select<SVGGElement>(series => `g.${series.name}`)
-                // //         .selectAll<SVGLineElement, PixelDatum>('line')
-                // //         .data<PixelDatum>((series: Series) => series.data)
-                // ;
-
-                // mainGRef.current!
-                //     .selectAll('spikes-series')
-                //     .data(seriesList)
-                //     .select(series => `#${series.name}`)
-                //     .selectAll<SVGLineElement, PixelDatum>('line')
-                //     .data(series => series.data as PixelDatum[])
-                // const container = spikesRef.current!
-                //     .selectAll('.spikes-series')
-                //     .data(seriesList.map(series => series.data as PixelDatum[]))
-                //     .
-                // ;
-                // // enter new elements
-                // const y = (yScalingRef.current(series.name) || 0);
-                // container
-                //     .enter()
-                //     .append<SVGLineElement>('line')
-                //     .filter(datum => datum.time >= minTime)
-                //     .each(datum => {datum.x = xScalingRef.current(datum.time)})
-                //     .attr('class', 'spikes-lines')
-                //     .attr('x1', datum => datum.x)
-                //     .attr('x2', datum => datum.x)
-                //     .attr('y1', datum => y + spikesStyle.margin)
-                //     .attr('y2', datum => y + lineHeight - spikesStyle.margin)
-                //     .attr('stroke', spikesStyle.color)
-                //     .attr('stroke-width', spikesStyle.lineWidth)
-                //     .attr('stroke-linecap', "round")
-                //     // even though the tooltip is may not be set to show up on the mouseover, we want to attach the handler
-                //     // so that when the use enables tooltips the handlers will show the the tooltip
-                //     .on("mouseover", (d, i, group) => handleShowTooltip(d, series.name, group[i]))
-                //     .on("mouseleave", (d, i, group) => handleHideTooltip(d, series.name, group[i]))
-                // ;
-                //
-                // // update existing elements
-                // container
-                //     .filter(datum => datum.time >= minTime)
-                //     .each(datum => {datum.x = xScalingRef.current(datum.time)})
-                //     .attr('x1', datum => datum.x)
-                //     .attr('x2', datum => datum.x)
-                //     .attr('y1', datum => y + spikesStyle.margin)
-                //     .attr('y2', datum => y + lineHeight - spikesStyle.margin)
-                // ;
-                // // exit old elements
-                // container.exit().remove()
-                // ;
 
                 seriesList.forEach(series => {
                     const container = svg
@@ -684,15 +659,15 @@ function RasterChart(props: Props): JSX.Element {
                         .attr('class', 'spikes-lines')
                         .attr('x1', datum => datum.x)
                         .attr('x2', datum => datum.x)
-                        .attr('y1', datum => y + spikesStyle.margin)
-                        .attr('y2', datum => y + lineHeight - spikesStyle.margin)
+                        .attr('y1', _ => y + spikesStyle.margin)
+                        .attr('y2', _ => y + lineHeight - spikesStyle.margin)
                         .attr('stroke', spikesStyle.color)
                         .attr('stroke-width', spikesStyle.lineWidth)
                         .attr('stroke-linecap', "round")
                         // even though the tooltip is may not be set to show up on the mouseover, we want to attach the handler
                         // so that when the use enables tooltips the handlers will show the the tooltip
-                        .on("mouseover", (d, i, group) => handleShowTooltip(d, series.name, group[i]))
-                        .on("mouseleave", (d, i, group) => handleHideTooltip(d, series.name, group[i]))
+                        .on("mouseover", (datum, i, group) => handleShowTooltip(datum, series.name, group[i]))
+                        .on("mouseleave", (datum, i, group) => handleHideTooltip(datum, series.name, group[i]))
                     ;
 
                     // update existing elements
@@ -701,8 +676,8 @@ function RasterChart(props: Props): JSX.Element {
                         .each(datum => {datum.x = xScalingRef.current(datum.time)})
                         .attr('x1', datum => datum.x)
                         .attr('x2', datum => datum.x)
-                        .attr('y1', datum => y + spikesStyle.margin)
-                        .attr('y2', datum => y + lineHeight - spikesStyle.margin)
+                        .attr('y1', _ => y + spikesStyle.margin)
+                        .attr('y2', _ => y + lineHeight - spikesStyle.margin)
                     ;
 
                     // exit old elements
