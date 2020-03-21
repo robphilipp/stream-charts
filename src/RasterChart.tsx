@@ -114,6 +114,51 @@ interface PixelDatum extends Datum {
     y: number;
 }
 
+class TimeRange {
+    private _start: number;
+    private _end: number;
+    private readonly originalStart: number;
+    private readonly originalEnd: number;
+    private readonly  midpoint: number;
+
+
+    private constructor(_start: number, _end: number) {
+        this._start = Math.min(_start, _end);
+        this._end = Math.max(_start, _end);
+        this.originalStart = this._start;
+        this.originalEnd = this._end;
+        this.midpoint = (this.originalStart + this.originalEnd) / 2;
+
+    }
+
+    static of(_start: number, _end: number) {
+        return new TimeRange(_start, _end);
+    }
+
+    get start() {
+        return this._start;
+    }
+
+    get end() {
+        return this._end;
+    }
+
+    get length() {
+        return Math.abs(this._end - this._start);
+    };
+
+    matches(start: number, end: number) {
+        return this.originalStart === start && this.originalEnd === end;
+    }
+
+    scale(factor: number): void {
+        // const expanded = this.length * factor;
+        const expanded = Math.abs(this.originalEnd - this.originalStart) * factor;
+        this._start = Math.max(0, this.midpoint - expanded / 2);
+        this._end = this.midpoint + expanded / 2;
+    };
+}
+
 interface Axes {
     xAxis: Axis<number | {valueOf(): number}>;
     yAxis: Axis<string>;
@@ -181,32 +226,33 @@ function RasterChart(props: Props): JSX.Element {
     const trackerRef = useRef<Selection<SVGLineElement, Datum, null, undefined>>();
 
     const mouseCoordsRef = useRef<number>(0);
+    const zoomScaleRef = useRef<number>(1);
 
     // reference to the axes for the plot
     const axesRef = useRef<Axes>();
 
-    // the scaling that converts the x-values (time in ms) of the datum into the pixel coordinates.
-    const xScalingRef = useRef<ScaleLinear<number, number>>(d3.scaleLinear());
-    // the scaling that converts the y-values (neuron IDs) into pixel coordinates.
-    const yScalingRef = useRef<ScaleBand<string>>(d3.scaleBand());
+    // // the scaling that converts the x-values (time in ms) of the datum into the pixel coordinates.
+    // const xScalingRef = useRef<ScaleLinear<number, number>>(d3.scaleLinear());
+    // // the scaling that converts the y-values (neuron IDs) into pixel coordinates.
+    // const yScalingRef = useRef<ScaleBand<string>>(d3.scaleBand());
 
     // unlike the magnifier, the handler forms a closure on the tooltip properties, and so if they change in this
     // component, the closed properties are unchanged. using a ref allows the properties to which the reference
     // points to change.
     const tooltipRef = useRef(tooltip);
 
-    function constrain(transform: ZoomTransform): string {
-        const trans = transform.translate(0, -transform.y / transform.k);
-        return `translate(${trans.x}, 0)scale(${trans.k}, 1)`;
-    }
+    // const timeRangeRef = useRef<TimeRange>({start: minTime, end: maxTime});
+    const timeRangeRef = useRef<TimeRange>(TimeRange.of(minTime, maxTime));
 
-    // todo need to adjust the min and max times
-
-    function onZoom(): void {
-        mainGRef.current!.attr("transform", constrain(d3.event.transform));
-        const xScale = d3.event.transform.rescaleX(xScalingRef.current);
-        axesRef.current!.xAxis.scale(xScale);
-        axesRef.current!.xAxisSelection.call(axesRef.current!.xAxis);
+    function onZoom(transform: ZoomTransform): void {
+        // timeRangeRef.current = timeRangeRef.current!.scale(d3.event.transform.k);
+        console.log(transform.k);
+        if(Math.abs(transform.k - zoomScaleRef.current) > 0.0) {
+            timeRangeRef.current!.scale(transform.k);
+            // timeRangeRef.current = timeRangeRef.current!.scale(transform.k);
+            updatePlot(timeRangeRef.current);
+            zoomScaleRef.current = transform.k;
+        }
     }
 
     /**
@@ -303,7 +349,7 @@ function RasterChart(props: Props): JSX.Element {
         return Math
             .min(
                 Math.max(
-                    xScalingRef.current(time),
+                    axesRef.current!.xAxis.scale<ScaleLinear<number, number>>()(time),
                     textWidth / 2
                 ),
                 plotDimensions.width - textWidth / 2
@@ -318,7 +364,8 @@ function RasterChart(props: Props): JSX.Element {
      * @return {number} The y-coordinate of the lower-left-hand corner of the tooltip rectangle
      */
     function tooltipY(seriesName: string, textHeight: number): number {
-        const y = (yScalingRef.current(seriesName) || 0) + margin.top - tooltip.paddingBottom - textHeight - tooltip.paddingTop;
+        const scale = axesRef.current!.yAxis.scale<ScaleBand<string>>();
+        const y = (scale(seriesName) || 0) + margin.top - tooltip.paddingBottom - textHeight - tooltip.paddingTop;
         return y > 0 ? y : y + tooltip.paddingBottom + textHeight + tooltip.paddingTop + spikeLineHeight();
     }
 
@@ -363,7 +410,8 @@ function RasterChart(props: Props): JSX.Element {
          * @return {boolean} `true` if the datum is in the interval; `false` otherwise
          */
         function inMagnifier(datum: Datum, x: number, timeInterval: number): boolean {
-            const mouseTime = xScalingRef.current.invert(x - margin.left);
+            const scale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
+            const mouseTime = scale.invert(x - margin.left);
             return datum.time > mouseTime - timeInterval && datum.time < mouseTime + timeInterval;
         }
 
@@ -373,14 +421,16 @@ function RasterChart(props: Props): JSX.Element {
          * @return {number} The x-coordinate corresponding to its time
          */
         function xFrom(datum: Datum): number {
-            return xScalingRef.current(datum.time);
+            const scale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
+            return scale(datum.time);
         }
 
         if(containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
             const isMouseInPlot = mouseInPlotArea(x, y);
             const deltaTime = 50;
-            const deltaX = Math.abs(xScalingRef.current(deltaTime) - xScalingRef.current(0));
+            const scale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
+            const deltaX = Math.abs(scale(deltaTime) - scale(0));
             path
                 .attr('x', x - deltaX)
                 .attr('width', 2 * deltaX)
@@ -450,6 +500,238 @@ function RasterChart(props: Props): JSX.Element {
             y > margin.top && y < height - margin.bottom;
     }
 
+    function updatePlot(timeRange: TimeRange) {
+        tooltipRef.current = tooltip;
+        // timeRangeRef.current = {start: minTime, end: maxTime};
+        timeRangeRef.current = timeRange;
+
+        if (containerRef.current) {
+            // select the text elements and bind the data to them
+            const svg = d3.select<SVGSVGElement, any>(containerRef.current);
+
+            // set up the magnifier once
+            if(magnifier.visible && magnifierRef.current === undefined) {
+                const linearGradient = svg
+                    .append<SVGDefsElement>('defs')
+                    .append<SVGLinearGradientElement>('linearGradient')
+                    .attr('id', 'magnifier-gradient')
+                    .attr('x1', '0%')
+                    .attr('x2', '100%')
+                    .attr('y1', '0%')
+                    .attr('y2', '0%')
+                ;
+
+                const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
+                linearGradient
+                    .append<SVGStopElement>('stop')
+                    .attr('offset', '0%')
+                    .attr('stop-color', borderColor)
+                ;
+
+                linearGradient
+                    .append<SVGStopElement>('stop')
+                    .attr('offset', '30%')
+                    .attr('stop-color', tooltip.backgroundColor)
+                    .attr('stop-opacity', 0)
+                ;
+
+                linearGradient
+                    .append<SVGStopElement>('stop')
+                    .attr('offset', '70%')
+                    .attr('stop-color', tooltip.backgroundColor)
+                    .attr('stop-opacity', 0)
+                ;
+
+                linearGradient
+                    .append<SVGStopElement>('stop')
+                    .attr('offset', '100%')
+                    .attr('stop-color', borderColor)
+                ;
+
+                magnifierRef.current = svg
+                    .append<SVGRectElement>('rect')
+                    .attr('class', 'magnifier')
+                    .attr('y', margin.top)
+                    .attr('height', plotDimensions.height - margin.top)
+                    .attr('stroke', tooltip.borderColor)
+                    .attr('stroke-width', tooltip.borderWidth)
+                    // .attr('opacity', 0)
+                    .style('fill', 'url(#magnifier-gradient')
+                ;
+
+                svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
+            }
+            // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
+            else if(!magnifier.visible && magnifierRef.current) {
+                magnifierRef.current = undefined;
+            }
+
+            // set up the tracker-line once
+            if(tracker.visible && trackerRef.current === undefined) {
+                trackerRef.current = svg
+                    .append<SVGLineElement>('line')
+                    .attr('class', 'tracker')
+                    .attr('y1', margin.top)
+                    .attr('y2', plotDimensions.height)
+                    .attr('stroke', tooltip.borderColor)
+                    .attr('stroke-width', tooltip.borderWidth)
+                    .attr('opacity', 0) as Selection<SVGLineElement, Datum, null, undefined>
+                ;
+
+                svg.on('mousemove', () => handleShowTracker(trackerRef.current));
+            }
+            // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
+            else if(!tracker.visible && trackerRef.current) {
+                trackerRef.current = undefined;
+            }
+
+            // set up the main <g> container for svg and translate it based on the margins, but do it only
+            // once
+            if(mainGRef.current === undefined) {
+                mainGRef.current = svg
+                    .attr('width', width)
+                    .attr('height', height)
+                    .attr('color', axisStyle.color)
+                    .append<SVGGElement>('g')
+                ;
+            }
+            else {
+                spikesRef.current = mainGRef.current!
+                    .selectAll<SVGGElement, Series>('g')
+                    .data<Series>(seriesList)
+                    .enter()
+                    .append('g')
+                    .attr('class', 'spikes-series')
+                    .attr('id', series => series.name)
+                    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+            }
+
+            // set up for zooming
+            const zoom = d3.zoom<SVGSVGElement, Datum>()
+                // .constrain(constrain)
+                .scaleExtent([0, 10])
+                .translateExtent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
+                .on("zoom", () => onZoom(d3.event.transform));
+
+            svg.call(zoom);
+
+            // calculate the mapping between the times in the data (domain) and the display
+            // location on the screen (range)
+            // const maxTime = calcMaxTime(seriesList);
+            const xScale = d3.scaleLinear()
+                // .domain([Math.max(0, maxTime - timeWindow), Math.max(timeWindow, maxTime)])
+                .domain([timeRangeRef.current.start, timeRangeRef.current.end])
+                .range([0, plotDimensions.width]);
+
+            // const lineHeight = height / seriesList.length;
+            const lineHeight = spikeLineHeight();
+            const yScale = d3.scaleBand()
+                .domain(seriesList.map(series => series.name))
+                .range([0, lineHeight * seriesList.length - margin.top]);
+
+            // create and add the axes, grid-lines, and mouse-over functions
+            if (!axesRef.current) {
+                const xAxis = d3.axisBottom(xScale);
+                const yAxis = d3.axisLeft(yScale);
+                const xAxisSelection = svg
+                    .append<SVGGElement>('g')
+                    .attr('class', 'x-axis')
+                    .attr('transform', `translate(${margin.left}, ${plotDimensions.height})`)
+                    .call(xAxis);
+
+                const yAxisSelection = svg
+                    .append<SVGGElement>('g')
+                    .attr('class', 'y-axis')
+                    .attr('transform', `translate(${margin.left}, ${margin.top})`)
+                    .call(yAxis);
+
+                axesRef.current = {
+                    xAxis: xAxis,
+                    yAxis: yAxis,
+                    xAxisSelection: xAxisSelection,
+                    yAxisSelection: yAxisSelection
+                };
+
+                svg
+                    .append<SVGTextElement>('text')
+                    .attr('text-anchor', 'middle')
+                    .attr('font-size', axisLabelFont.size)
+                    .attr('fill', axisLabelFont.color)
+                    .attr('font-family', axisLabelFont.family)
+                    .attr('font-weight', axisLabelFont.weight)
+                    .attr('transform', `translate(${margin.left + plotDimensions.width / 2}, ${plotDimensions.height + margin.top + (margin.bottom / 3)})`)
+                    .text("t (ms)");
+
+                if (plotGridLines.visible) {
+                    const gridLines = svg
+                        .select<SVGGElement>('g')
+                        .selectAll('grid-line')
+                        .data(seriesList.map(series => series.name));
+
+                    gridLines
+                        .enter()
+                        .append<SVGLineElement>('line')
+                        .attr('x1', margin.left)
+                        .attr('x2', margin.left + plotDimensions.width)
+                        .attr('y1', d => (yScale(d) || 0) + margin.top + lineHeight / 2)
+                        .attr('y2', d => (yScale(d) || 0) + margin.top + lineHeight / 2)
+                        .attr('stroke', plotGridLines.color)
+                    ;
+                }
+
+            }
+            // update the scales
+            else {
+                axesRef.current.xAxis = d3.axisBottom(xScale);
+                axesRef.current.xAxisSelection.call(axesRef.current.xAxis);
+                axesRef.current.yAxis = d3.axisLeft(yScale);
+                axesRef.current.yAxisSelection.call(axesRef.current.yAxis);
+            }
+
+            seriesList.forEach(series => {
+                const container = svg
+                    .select<SVGGElement>(`#${series.name}`)
+                    .selectAll<SVGLineElement, PixelDatum>('line')
+                    .data(series.data.filter(datum => datum.time >= timeRangeRef.current.start && datum.time <= timeRangeRef.current.end) as PixelDatum[])
+                ;
+
+                // enter new elements
+                const y = (yScale(series.name) || 0);
+                container
+                    .enter()
+                    .append<SVGLineElement>('line')
+                    .filter(datum => datum.time >= timeRangeRef.current.start)
+                    .each(datum => {datum.x = xScale(datum.time)})
+                    .attr('class', 'spikes-lines')
+                    .attr('x1', datum => datum.x)
+                    .attr('x2', datum => datum.x)
+                    .attr('y1', _ => y + spikesStyle.margin)
+                    .attr('y2', _ => y + lineHeight - spikesStyle.margin)
+                    .attr('stroke', spikesStyle.color)
+                    .attr('stroke-width', spikesStyle.lineWidth)
+                    .attr('stroke-linecap', "round")
+                    // even though the tooltip is may not be set to show up on the mouseover, we want to attach the handler
+                    // so that when the use enables tooltips the handlers will show the the tooltip
+                    .on("mouseover", (datum, i, group) => handleShowTooltip(datum, series.name, group[i]))
+                    .on("mouseleave", (datum, i, group) => handleHideTooltip(datum, series.name, group[i]))
+                ;
+
+                // update existing elements
+                container
+                    .filter(datum => datum.time >= timeRangeRef.current.start)
+                    .each(datum => {datum.x = xScale(datum.time)})
+                    .attr('x1', datum => datum.x)
+                    .attr('x2', datum => datum.x)
+                    .attr('y1', _ => y + spikesStyle.margin)
+                    .attr('y2', _ => y + lineHeight - spikesStyle.margin)
+                ;
+
+                // exit old elements
+                container.exit().remove()
+                ;
+            });
+        }
+    }
 
     // called when:
     // 1. component mounts to set up the main <g> element and a <g> element for each series
@@ -459,232 +741,8 @@ function RasterChart(props: Props): JSX.Element {
     // 4. plot attributes change
     useEffect(
         () => {
-            tooltipRef.current = tooltip;
-
-            if (containerRef.current) {
-                // select the text elements and bind the data to them
-                const svg = d3.select<SVGSVGElement, any>(containerRef.current);
-
-                // set up the magnifier once
-                if(magnifier.visible && magnifierRef.current === undefined) {
-                    const linearGradient = svg
-                        .append<SVGDefsElement>('defs')
-                        .append<SVGLinearGradientElement>('linearGradient')
-                        .attr('id', 'magnifier-gradient')
-                        .attr('x1', '0%')
-                        .attr('x2', '100%')
-                        .attr('y1', '0%')
-                        .attr('y2', '0%')
-                    ;
-
-                    const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
-                    linearGradient
-                        .append<SVGStopElement>('stop')
-                        .attr('offset', '0%')
-                        .attr('stop-color', borderColor)
-                    ;
-
-                    linearGradient
-                        .append<SVGStopElement>('stop')
-                        .attr('offset', '30%')
-                        .attr('stop-color', tooltip.backgroundColor)
-                        .attr('stop-opacity', 0)
-                    ;
-
-                    linearGradient
-                        .append<SVGStopElement>('stop')
-                        .attr('offset', '70%')
-                        .attr('stop-color', tooltip.backgroundColor)
-                        .attr('stop-opacity', 0)
-                    ;
-
-                    linearGradient
-                        .append<SVGStopElement>('stop')
-                        .attr('offset', '100%')
-                        .attr('stop-color', borderColor)
-                    ;
-
-                    magnifierRef.current = svg
-                        .append<SVGRectElement>('rect')
-                        .attr('class', 'magnifier')
-                        .attr('y', margin.top)
-                        .attr('height', plotDimensions.height - margin.top)
-                        .attr('stroke', tooltip.borderColor)
-                        .attr('stroke-width', tooltip.borderWidth)
-                        // .attr('opacity', 0)
-                        .style('fill', 'url(#magnifier-gradient')
-                    ;
-
-                    svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
-                }
-                // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
-                else if(!magnifier.visible && magnifierRef.current) {
-                    magnifierRef.current = undefined;
-                }
-
-                // set up the tracker-line once
-                if(tracker.visible && trackerRef.current === undefined) {
-                    trackerRef.current = svg
-                        .append<SVGLineElement>('line')
-                        .attr('class', 'tracker')
-                        .attr('y1', margin.top)
-                        .attr('y2', plotDimensions.height)
-                        .attr('stroke', tooltip.borderColor)
-                        .attr('stroke-width', tooltip.borderWidth)
-                        .attr('opacity', 0) as Selection<SVGLineElement, Datum, null, undefined>
-                    ;
-
-                    svg.on('mousemove', () => handleShowTracker(trackerRef.current));
-                }
-                // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
-                else if(!tracker.visible && trackerRef.current) {
-                    trackerRef.current = undefined;
-                }
-
-                // set up the main <g> container for svg and translate it based on the margins, but do it only
-                // once
-                if(mainGRef.current === undefined) {
-                    mainGRef.current = svg
-                        .attr('width', width)
-                        .attr('height', height)
-                        .attr('color', axisStyle.color)
-                        .append<SVGGElement>('g')
-                    ;
-                }
-                else {
-                    spikesRef.current = mainGRef.current!
-                        .selectAll<SVGGElement, Series>('g')
-                        .data<Series>(seriesList)
-                        .enter()
-                            .append('g')
-                            .attr('class', 'spikes-series')
-                            .attr('id', series => series.name)
-                            .attr('transform', `translate(${margin.left}, ${margin.top})`);
-                }
-
-                // set up for zooming
-                const zoom = d3.zoom<SVGSVGElement, Datum>()
-                    // .constrain(constrain)
-                    .scaleExtent([0, 10])
-                    .translateExtent([[margin.left, margin.top], [width - margin.right, height]])
-                    .on("zoom", () => onZoom());
-
-                svg.call(zoom);
-
-                // calculate the mapping between the times in the data (domain) and the display
-                // location on the screen (range)
-                // const maxTime = calcMaxTime(seriesList);
-                xScalingRef.current = d3.scaleLinear()
-                    // .domain([Math.max(0, maxTime - timeWindow), Math.max(timeWindow, maxTime)])
-                    .domain([minTime, maxTime])
-                    .range([0, plotDimensions.width]);
-
-                // const lineHeight = height / seriesList.length;
-                const lineHeight = spikeLineHeight();
-                yScalingRef.current = d3.scaleBand()
-                    .domain(seriesList.map(series => series.name))
-                    .range([0, lineHeight * seriesList.length - margin.top]);
-
-                // create and add the axes, grid-lines, and mouse-over functions
-                if (!axesRef.current) {
-                    const xAxis = d3.axisBottom(xScalingRef.current);
-                    const yAxis = d3.axisLeft(yScalingRef.current);
-                    const xAxisSelection = svg
-                        .append<SVGGElement>('g')
-                        .attr('class', 'x-axis')
-                        .attr('transform', `translate(${margin.left}, ${plotDimensions.height})`)
-                        .call(xAxis);
-
-                    const yAxisSelection = svg
-                        .append<SVGGElement>('g')
-                        .attr('class', 'y-axis')
-                        .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                        .call(yAxis);
-
-                    axesRef.current = {
-                        xAxis: xAxis,
-                        yAxis: yAxis,
-                        xAxisSelection: xAxisSelection,
-                        yAxisSelection: yAxisSelection
-                    };
-
-                    svg
-                        .append<SVGTextElement>('text')
-                        .attr('text-anchor', 'middle')
-                        .attr('font-size', axisLabelFont.size)
-                        .attr('fill', axisLabelFont.color)
-                        .attr('font-family', axisLabelFont.family)
-                        .attr('font-weight', axisLabelFont.weight)
-                        .attr('transform', `translate(${margin.left + plotDimensions.width / 2}, ${plotDimensions.height + margin.top + (margin.bottom / 3)})`)
-                        .text("t (ms)");
-
-                    if (plotGridLines.visible) {
-                        const gridLines = svg
-                            .select<SVGGElement>('g')
-                            .selectAll('grid-line')
-                            .data(seriesList.map(series => series.name));
-
-                        gridLines
-                            .enter()
-                            .append<SVGLineElement>('line')
-                            .attr('x1', margin.left)
-                            .attr('x2', margin.left + plotDimensions.width)
-                            .attr('y1', d => (yScalingRef.current(d) || 0) + margin.top + lineHeight / 2)
-                            .attr('y2', d => (yScalingRef.current(d) || 0) + margin.top + lineHeight / 2)
-                            .attr('stroke', plotGridLines.color)
-                        ;
-                    }
-
-                }
-                // update the scales
-                else {
-                    axesRef.current.xAxisSelection.call(d3.axisBottom(xScalingRef.current));
-                    axesRef.current.yAxisSelection.call(d3.axisLeft(yScalingRef.current));
-                }
-
-                seriesList.forEach(series => {
-                    const container = svg
-                        .select<SVGGElement>(`#${series.name}`)
-                        .selectAll<SVGLineElement, PixelDatum>('line')
-                        .data(series.data.filter(datum => datum.time >= minTime && datum.time <= maxTime) as PixelDatum[])
-                    ;
-
-                    // enter new elements
-                    const y = (yScalingRef.current(series.name) || 0);
-                    container
-                        .enter()
-                        .append<SVGLineElement>('line')
-                        .filter(datum => datum.time >= minTime)
-                        .each(datum => {datum.x = xScalingRef.current(datum.time)})
-                        .attr('class', 'spikes-lines')
-                        .attr('x1', datum => datum.x)
-                        .attr('x2', datum => datum.x)
-                        .attr('y1', _ => y + spikesStyle.margin)
-                        .attr('y2', _ => y + lineHeight - spikesStyle.margin)
-                        .attr('stroke', spikesStyle.color)
-                        .attr('stroke-width', spikesStyle.lineWidth)
-                        .attr('stroke-linecap', "round")
-                        // even though the tooltip is may not be set to show up on the mouseover, we want to attach the handler
-                        // so that when the use enables tooltips the handlers will show the the tooltip
-                        .on("mouseover", (datum, i, group) => handleShowTooltip(datum, series.name, group[i]))
-                        .on("mouseleave", (datum, i, group) => handleHideTooltip(datum, series.name, group[i]))
-                    ;
-
-                    // update existing elements
-                    container
-                        .filter(datum => datum.time >= minTime)
-                        .each(datum => {datum.x = xScalingRef.current(datum.time)})
-                        .attr('x1', datum => datum.x)
-                        .attr('x2', datum => datum.x)
-                        .attr('y1', _ => y + spikesStyle.margin)
-                        .attr('y2', _ => y + lineHeight - spikesStyle.margin)
-                    ;
-
-                    // exit old elements
-                    container.exit().remove()
-                    ;
-                });
-            }
+            const timeRange = timeRangeRef.current.matches(minTime, maxTime) ? timeRangeRef.current : TimeRange.of(minTime, maxTime);
+            updatePlot(timeRange);
         }
     );
 
