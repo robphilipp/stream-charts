@@ -3,6 +3,7 @@ import * as d3 from "d3";
 import {ScaleBand, ScaleLinear, Selection, Axis, ZoomTransform} from "d3";
 import {Datum, Series} from "./RasterChartDriver";
 import {BarMagnifier, LensTransformation} from "./BarMagnifier";
+import {TimeRange} from "./TimeRange";
 
 export interface Sides {
     top: number;
@@ -114,50 +115,6 @@ interface PixelDatum extends Datum {
     y: number;
 }
 
-class TimeRange {
-    private _start: number;
-    private _end: number;
-    private readonly originalStart: number;
-    private readonly originalEnd: number;
-    private readonly  midpoint: number;
-
-
-    private constructor(_start: number, _end: number) {
-        this._start = Math.min(_start, _end);
-        this._end = Math.max(_start, _end);
-        this.originalStart = this._start;
-        this.originalEnd = this._end;
-        this.midpoint = (this.originalStart + this.originalEnd) / 2;
-
-    }
-
-    static of(_start: number, _end: number) {
-        return new TimeRange(_start, _end);
-    }
-
-    get start() {
-        return this._start;
-    }
-
-    get end() {
-        return this._end;
-    }
-
-    get length() {
-        return Math.abs(this._end - this._start);
-    };
-
-    matches(start: number, end: number) {
-        return this.originalStart === start && this.originalEnd === end;
-    }
-
-    scale(factor: number): void {
-        // const expanded = this.length * factor;
-        const expanded = Math.abs(this.originalEnd - this.originalStart) * factor;
-        this._start = Math.max(0, this.midpoint - expanded / 2);
-        this._end = this.midpoint + expanded / 2;
-    };
-}
 
 interface Axes {
     xAxis: Axis<number | {valueOf(): number}>;
@@ -226,15 +183,9 @@ function RasterChart(props: Props): JSX.Element {
     const trackerRef = useRef<Selection<SVGLineElement, Datum, null, undefined>>();
 
     const mouseCoordsRef = useRef<number>(0);
-    const zoomScaleRef = useRef<number>(1);
 
     // reference to the axes for the plot
     const axesRef = useRef<Axes>();
-
-    // // the scaling that converts the x-values (time in ms) of the datum into the pixel coordinates.
-    // const xScalingRef = useRef<ScaleLinear<number, number>>(d3.scaleLinear());
-    // // the scaling that converts the y-values (neuron IDs) into pixel coordinates.
-    // const yScalingRef = useRef<ScaleBand<string>>(d3.scaleBand());
 
     // unlike the magnifier, the handler forms a closure on the tooltip properties, and so if they change in this
     // component, the closed properties are unchanged. using a ref allows the properties to which the reference
@@ -244,15 +195,16 @@ function RasterChart(props: Props): JSX.Element {
     // const timeRangeRef = useRef<TimeRange>({start: minTime, end: maxTime});
     const timeRangeRef = useRef<TimeRange>(TimeRange.of(minTime, maxTime));
 
-    function onZoom(transform: ZoomTransform): void {
-        // timeRangeRef.current = timeRangeRef.current!.scale(d3.event.transform.k);
-        console.log(transform.k);
-        if(Math.abs(transform.k - zoomScaleRef.current) > 0.0) {
-            timeRangeRef.current!.scale(transform.k);
-            // timeRangeRef.current = timeRangeRef.current!.scale(transform.k);
-            updatePlot(timeRangeRef.current);
-            zoomScaleRef.current = transform.k;
-        }
+    /**
+     * Called when the user uses the scroll wheel (or scroll gesture) to zoom in or out. Zooms in/out
+     * at the location of the mouse when the scroll wheel or gesture was applied.
+     * @param {ZoomTransform} transform The d3 zoom transformation information
+     * @param {number} x The x-position of the mouse when the scroll wheel or gesture is used
+     */
+    function onZoom(transform: ZoomTransform, x: number): void {
+        const time = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>().invert(x);
+        timeRangeRef.current!.scale(transform.k, time);
+        updatePlot(timeRangeRef.current);
     }
 
     /**
@@ -611,7 +563,10 @@ function RasterChart(props: Props): JSX.Element {
                 // .constrain(constrain)
                 .scaleExtent([0, 10])
                 .translateExtent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
-                .on("zoom", () => onZoom(d3.event.transform));
+                .on("zoom", () => {
+                    console.log(d3.event);
+                    onZoom(d3.event.transform, d3.event.sourceEvent.offsetX -  margin.left);
+                });
 
             svg.call(zoom);
 
@@ -741,7 +696,7 @@ function RasterChart(props: Props): JSX.Element {
     // 4. plot attributes change
     useEffect(
         () => {
-            const timeRange = timeRangeRef.current.matches(minTime, maxTime) ? timeRangeRef.current : TimeRange.of(minTime, maxTime);
+            const timeRange = timeRangeRef.current.matchesOriginal(minTime, maxTime) ? timeRangeRef.current : TimeRange.of(minTime, maxTime);
             updatePlot(timeRange);
         }
     );

@@ -72,10 +72,10 @@ function RasterChartDriver(props: Props): JSX.Element {
                         // create the next data point
                         const datum = nextDatum(currentTimeRef.current, UPDATE_PERIOD_MS);
 
-                        // drop any values that have fallen out of the beginning of the time window
-                        while (series.data.length > 0 && series.data[0].time <= datum.time - timeWindow) {
-                            series.data.shift();
-                        }
+                        // // drop any values that have fallen out of the beginning of the time window
+                        // while (series.data.length > 0 && series.data[0].time <= datum.time - timeWindow) {
+                        //     series.data.shift();
+                        // }
 
                         // add the new data point
                         series.data.push(datum);
