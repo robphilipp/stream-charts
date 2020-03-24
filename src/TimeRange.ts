@@ -85,4 +85,13 @@ export class TimeRange {
         this._start = time - dts * factor / oldScale;
         this._end = time + dte * factor / oldScale;
     };
+
+    /**
+     * Translates the time-range by the sepecified amount
+     * @param {number} x The amount by which to translate the time-range
+     */
+    translate(x: number): void {
+        this._start += x;
+        this._end += x;
+    }
 }

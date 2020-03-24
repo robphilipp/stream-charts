@@ -162,6 +162,7 @@ function RasterChart(props: Props): JSX.Element {
         backgroundColor = '#202020',
     } = props;
 
+
     // override the defaults with the parent's properties, leaving any unset values as the default value
     const margin = {...defaultMargin, ...props.margin};
     const spikesStyle = {...defaultSpikesStyle, ...props.spikesStyle};
@@ -200,10 +201,25 @@ function RasterChart(props: Props): JSX.Element {
      * at the location of the mouse when the scroll wheel or gesture was applied.
      * @param {ZoomTransform} transform The d3 zoom transformation information
      * @param {number} x The x-position of the mouse when the scroll wheel or gesture is used
+     * @callback
      */
     function onZoom(transform: ZoomTransform, x: number): void {
         const time = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>().invert(x);
         timeRangeRef.current!.scale(transform.k, time);
+        updatePlot(timeRangeRef.current);
+    }
+
+    /**
+     * Adjusts the time-range and updates the plot when the plot is dragged to the left or right
+     * @param {number} deltaX The amount that the plot is dragged
+     * @callback
+     */
+    function onPan(deltaX: number): void {
+        const scale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
+        const currentTime = timeRangeRef!.current.start;
+        const x = scale(currentTime);
+        const deltaTime = scale.invert(x + deltaX) - currentTime;
+        timeRangeRef.current!.translate(-deltaTime);
         updatePlot(timeRangeRef.current);
     }
 
@@ -459,7 +475,11 @@ function RasterChart(props: Props): JSX.Element {
 
         if (containerRef.current) {
             // select the text elements and bind the data to them
-            const svg = d3.select<SVGSVGElement, any>(containerRef.current);
+            const svg = d3
+                .select<SVGSVGElement, any>(containerRef.current)
+                // .on("mousedown.drag", () => onPan())
+                // .on("touchstart.drag", () => onPan())
+            ;
 
             // set up the magnifier once
             if(magnifier.visible && magnifierRef.current === undefined) {
@@ -558,15 +578,24 @@ function RasterChart(props: Props): JSX.Element {
                     .attr('transform', `translate(${margin.left}, ${margin.top})`);
             }
 
+            // set up panning
+            const drag = d3.drag<SVGSVGElement, Datum>()
+                .on("start", () => d3.select(containerRef.current).style("cursor", "move"))
+                .on("drag", () => onPan(d3.event.dx))
+                .on("end", () => d3.select(containerRef.current).style("cursor", "auto"))
+            ;
+
+            svg.call(drag);
+
             // set up for zooming
             const zoom = d3.zoom<SVGSVGElement, Datum>()
-                // .constrain(constrain)
                 .scaleExtent([0, 10])
                 .translateExtent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
                 .on("zoom", () => {
                     console.log(d3.event);
                     onZoom(d3.event.transform, d3.event.sourceEvent.offsetX -  margin.left);
-                });
+                })
+            ;
 
             svg.call(zoom);
 
@@ -736,5 +765,26 @@ function adjustedDimensions(width: number, height: number, margins: Sides): { wi
         height: height - margins.top - margins.top
     };
 }
+
+function registerKeyboardHandler(callback: any) {
+    d3.select(window).on("keydown", callback);
+}
+
+// function keydown() {
+//     return function() {
+//         if (!selected) return;
+//         switch (d3.event.keyCode) {
+//             case 8: // backspace
+//             case 46: { // delete
+//                 var i = self.points.indexOf(self.selected);
+//                 self.points.splice(i, 1);
+//                 self.selected = self.points.length ? self.points[i > 0 ? i - 1 : 0] : null;
+//                 self.update();
+//                 break;
+//             }
+//         }
+//     }
+// }
+
 
 export default RasterChart;
