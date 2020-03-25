@@ -69,24 +69,14 @@ function RasterChartDriver(props: Props): JSX.Element {
 
                     // update all the series
                     seriesRef.current = seriesRef.current.map(series => {
-                        // create the next data point
-                        const datum = nextDatum(currentTimeRef.current, UPDATE_PERIOD_MS);
-
-                        // // drop any values that have fallen out of the beginning of the time window
-                        // while (series.data.length > 0 && series.data[0].time <= datum.time - timeWindow) {
-                        //     series.data.shift();
-                        // }
-
                         // add the new data point
-                        series.data.push(datum);
-
+                        series.data.push(nextDatum(currentTimeRef.current, UPDATE_PERIOD_MS));
                         return series;
                     });
 
-                    // dataRef.current = dataRef.current.slice();
                     setLiveData(seriesRef.current);
 
-                    if (intervalRef.current && currentTimeRef.current > 1500) {
+                    if (intervalRef.current && currentTimeRef.current > 15000) {
                         clearInterval(intervalRef.current);
                     }
                 },
@@ -112,11 +102,9 @@ function RasterChartDriver(props: Props): JSX.Element {
                 width={plotWidth}
                 height={seriesList.length * seriesHeight + 30 + 30}
                 seriesList={liveData}
-                // timeWindow={timeWindow}
                 minTime={Math.max(0, currentTimeRef.current - timeWindow)}
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
-                // spikesStyle={{color: '#ffffff'}}
                 tooltip={{visible: tooltipVisible}}
                 magnifier={{visible: magnifierVisible}}
                 tracker={{visible: trackerVisible}}

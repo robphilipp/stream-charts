@@ -155,7 +155,6 @@ type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 function RasterChart(props: Props): JSX.Element {
     const {
         seriesList,
-        // timeWindow,
         minTime, maxTime,
         width,
         height,
@@ -184,6 +183,7 @@ function RasterChart(props: Props): JSX.Element {
     const trackerRef = useRef<Selection<SVGLineElement, Datum, null, undefined>>();
 
     const mouseCoordsRef = useRef<number>(0);
+    const zoomFactorRef = useRef<number>(1);
 
     // reference to the axes for the plot
     const axesRef = useRef<Axes>();
@@ -206,6 +206,7 @@ function RasterChart(props: Props): JSX.Element {
     function onZoom(transform: ZoomTransform, x: number): void {
         const time = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>().invert(x);
         timeRangeRef.current!.scale(transform.k, time);
+        zoomFactorRef.current = transform.k;
         updatePlot(timeRangeRef.current);
     }
 
