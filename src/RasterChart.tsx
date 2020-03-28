@@ -413,7 +413,7 @@ function RasterChart(props: Props): JSX.Element {
                 svg
                     // select all the spikes and keep only those that are within ±4∆t of the x-position of the mouse
                     .selectAll<SVGSVGElement, MagnifiedDatum>('.spikes-lines')
-                    .filter(datum => inMagnifier(datum , x, 4 * deltaTime) && datum.time > minTime)
+                    .filter(datum => inMagnifier(datum , x, 4 * deltaTime) && datum.time > timeRangeRef.current.start)
                     // supplement the datum with lens transformation information (new x and scale)
                     .each(datum => {datum.lens = barMagnifier(xFrom(datum))})
                     // update each spikes line with it's new x-coordinate and the magnified line-width
