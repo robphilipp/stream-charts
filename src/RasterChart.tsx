@@ -76,7 +76,7 @@ const defaultTooltipStyle: TooltipStyle = {
 
 interface LineMagnifierStyle {
     visible: boolean;
-    timeWindow: number;
+    width: number;
     magnification: number;
     color: string,
     lineWidth: number,
@@ -84,7 +84,7 @@ interface LineMagnifierStyle {
 
 const defaultLineMagnifierStyle: LineMagnifierStyle = {
     visible: false,
-    timeWindow: 50,
+    width: 75,
     magnification: 1,
     color: '#d2933f',
     lineWidth: 2,
@@ -375,13 +375,13 @@ function RasterChart(props: Props): JSX.Element {
          * mouse position
          * @param {Datum} datum The datum
          * @param {number} x The x-coordinate of the current mouse position
-         * @param {number} timeInterval The time-interval for which transformations are applied
+         * @param {number} xInterval The pixel interval for which transformations are applied
          * @return {boolean} `true` if the datum is in the interval; `false` otherwise
          */
-        function inMagnifier(datum: Datum, x: number, timeInterval: number): boolean {
+        function inMagnifier(datum: Datum, x: number, xInterval: number): boolean {
             const scale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
-            const mouseTime = scale.invert(x - margin.left);
-            return datum.time > mouseTime - timeInterval && datum.time < mouseTime + timeInterval;
+            const datumX = scale(datum.time) + margin.left;
+            return datumX > x - xInterval && datumX < x + xInterval;
         }
 
         /**
@@ -397,9 +397,7 @@ function RasterChart(props: Props): JSX.Element {
         if(containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
             const isMouseInPlot = mouseInPlotArea(x, y);
-            const deltaTime = 50;
-            const scale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
-            const deltaX = Math.abs(scale(deltaTime) - scale(0));
+            const deltaX = magnifier.width / 2;
             path
                 .attr('x', x - deltaX)
                 .attr('width', 2 * deltaX)
@@ -409,17 +407,17 @@ function RasterChart(props: Props): JSX.Element {
             const svg = d3.select<SVGSVGElement, MagnifiedDatum>(containerRef.current);
 
             if(isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
-                const barMagnifier: (x: number) => LensTransformation = BarMagnifier(deltaX, 3, x - margin.left);
+                const barMagnifier: (x: number) => LensTransformation = BarMagnifier(deltaX, 3 * zoomFactorRef.current, x - margin.left);
                 svg
                     // select all the spikes and keep only those that are within ±4∆t of the x-position of the mouse
                     .selectAll<SVGSVGElement, MagnifiedDatum>('.spikes-lines')
-                    .filter(datum => inMagnifier(datum , x, 4 * deltaTime) && datum.time > timeRangeRef.current.start)
+                    .filter(datum => inMagnifier(datum , x, 4 * deltaX))
                     // supplement the datum with lens transformation information (new x and scale)
                     .each(datum => {datum.lens = barMagnifier(xFrom(datum))})
                     // update each spikes line with it's new x-coordinate and the magnified line-width
                     .attr('x1', datum => datum.lens.xPrime)
                     .attr('x2', datum => datum.lens.xPrime)
-                    .attr('stroke-width', datum => spikesStyle.lineWidth * Math.max(datum.lens.magnification, 1))
+                    .attr('stroke-width', datum => spikesStyle.lineWidth * Math.min(2, Math.max(datum.lens.magnification, 1)))
                     .attr('shape-rendering', 'crispEdges')
                 ;
                 mouseCoordsRef.current = x;
@@ -427,14 +425,13 @@ function RasterChart(props: Props): JSX.Element {
             else if(!isMouseInPlot) {
                 svg
                     .selectAll<SVGSVGElement, Datum>('.spikes-lines')
-                    .filter(datum => datum.time > minTime)
                     .attr('x1', datum => xFrom(datum))
                     .attr('x2', datum => xFrom(datum))
                     .attr('stroke-width', spikesStyle.lineWidth)
                 ;
 
                 path
-                    .attr('x', minTime)
+                    .attr('x', margin.left)
                     .attr('width', 0)
                 ;
                 mouseCoordsRef.current = 0;
@@ -469,17 +466,18 @@ function RasterChart(props: Props): JSX.Element {
             y > margin.top && y < height - margin.bottom;
     }
 
+    /**
+     * Updates the plot data for the specified time-range, which may have changed due to zoom or pan
+     * @param {TimeRange} timeRange The current time range
+     */
     function updatePlot(timeRange: TimeRange) {
         tooltipRef.current = tooltip;
-        // timeRangeRef.current = {start: minTime, end: maxTime};
         timeRangeRef.current = timeRange;
 
         if (containerRef.current) {
             // select the text elements and bind the data to them
             const svg = d3
                 .select<SVGSVGElement, any>(containerRef.current)
-                // .on("mousedown.drag", () => onPan())
-                // .on("touchstart.drag", () => onPan())
             ;
 
             // set up the magnifier once
@@ -528,7 +526,6 @@ function RasterChart(props: Props): JSX.Element {
                     .attr('height', plotDimensions.height - margin.top)
                     .attr('stroke', tooltip.borderColor)
                     .attr('stroke-width', tooltip.borderWidth)
-                    // .attr('opacity', 0)
                     .style('fill', 'url(#magnifier-gradient')
                 ;
 
