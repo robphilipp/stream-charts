@@ -2,8 +2,8 @@ import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import {ScaleBand, ScaleLinear, Selection, Axis, ZoomTransform} from "d3";
 import {Datum, Series} from "./RasterChartDriver";
-import {BarMagnifier, LensTransformation} from "./BarMagnifier";
-import {TimeRange} from "./TimeRange";
+import {BarMagnifier, BarMagnifierType, LensTransformation} from "./BarMagnifier";
+import {TimeRange, TimeRangeType} from "./TimeRange";
 
 export interface Sides {
     top: number;
@@ -193,8 +193,8 @@ function RasterChart(props: Props): JSX.Element {
     // points to change.
     const tooltipRef = useRef(tooltip);
 
-    // const timeRangeRef = useRef<TimeRange>({start: minTime, end: maxTime});
-    const timeRangeRef = useRef<TimeRange>(TimeRange.of(minTime, maxTime));
+    // calculates to the time-range based on the (min, max)-time from the props
+    const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
 
     /**
      * Called when the user uses the scroll wheel (or scroll gesture) to zoom in or out. Zooms in/out
@@ -205,7 +205,7 @@ function RasterChart(props: Props): JSX.Element {
      */
     function onZoom(transform: ZoomTransform, x: number): void {
         const time = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>().invert(x);
-        timeRangeRef.current!.scale(transform.k, time);
+        timeRangeRef.current = timeRangeRef.current!.scale(transform.k, time);
         zoomFactorRef.current = transform.k;
         updatePlot(timeRangeRef.current);
     }
@@ -220,7 +220,7 @@ function RasterChart(props: Props): JSX.Element {
         const currentTime = timeRangeRef!.current.start;
         const x = scale(currentTime);
         const deltaTime = scale.invert(x + deltaX) - currentTime;
-        timeRangeRef.current!.translate(-deltaTime);
+        timeRangeRef.current = timeRangeRef.current!.translate(-deltaTime);
         updatePlot(timeRangeRef.current);
     }
 
@@ -407,13 +407,13 @@ function RasterChart(props: Props): JSX.Element {
             const svg = d3.select<SVGSVGElement, MagnifiedDatum>(containerRef.current);
 
             if(isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
-                const barMagnifier: (x: number) => LensTransformation = BarMagnifier(deltaX, 3 * zoomFactorRef.current, x - margin.left);
+                const barMagnifier: BarMagnifierType = BarMagnifier(deltaX, 3 * zoomFactorRef.current, x - margin.left);
                 svg
                     // select all the spikes and keep only those that are within ±4∆t of the x-position of the mouse
                     .selectAll<SVGSVGElement, MagnifiedDatum>('.spikes-lines')
                     .filter(datum => inMagnifier(datum , x, 4 * deltaX))
                     // supplement the datum with lens transformation information (new x and scale)
-                    .each(datum => {datum.lens = barMagnifier(xFrom(datum))})
+                    .each(datum => {datum.lens = barMagnifier.magnify(xFrom(datum))})
                     // update each spikes line with it's new x-coordinate and the magnified line-width
                     .attr('x1', datum => datum.lens.xPrime)
                     .attr('x2', datum => datum.lens.xPrime)
@@ -470,7 +470,8 @@ function RasterChart(props: Props): JSX.Element {
      * Updates the plot data for the specified time-range, which may have changed due to zoom or pan
      * @param {TimeRange} timeRange The current time range
      */
-    function updatePlot(timeRange: TimeRange) {
+    // function updatePlot(timeRange: TimeRange) {
+    function updatePlot(timeRange: TimeRangeType) {
         tooltipRef.current = tooltip;
         timeRangeRef.current = timeRange;
 
@@ -723,7 +724,8 @@ function RasterChart(props: Props): JSX.Element {
     // 4. plot attributes change
     useEffect(
         () => {
-            const timeRange = timeRangeRef.current.matchesOriginal(minTime, maxTime) ? timeRangeRef.current : TimeRange.of(minTime, maxTime);
+            // const timeRange = timeRangeRef.current.matchesOriginal(minTime, maxTime) ? timeRangeRef.current : TimeRange.of(minTime, maxTime);
+            const timeRange = timeRangeRef.current.matchesOriginal(minTime, maxTime) ? timeRangeRef.current : TimeRange(minTime, maxTime);
             updatePlot(timeRange);
         }
     );
@@ -763,26 +765,5 @@ function adjustedDimensions(width: number, height: number, margins: Sides): { wi
         height: height - margins.top - margins.top
     };
 }
-
-function registerKeyboardHandler(callback: any) {
-    d3.select(window).on("keydown", callback);
-}
-
-// function keydown() {
-//     return function() {
-//         if (!selected) return;
-//         switch (d3.event.keyCode) {
-//             case 8: // backspace
-//             case 46: { // delete
-//                 var i = self.points.indexOf(self.selected);
-//                 self.points.splice(i, 1);
-//                 self.selected = self.points.length ? self.points[i > 0 ? i - 1 : 0] : null;
-//                 self.update();
-//                 break;
-//             }
-//         }
-//     }
-// }
-
 
 export default RasterChart;

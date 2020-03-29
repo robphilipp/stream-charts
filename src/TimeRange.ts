@@ -1,97 +1,80 @@
 /**
- * Manages the time-range and provides a scaled view of the time-range
+ * The time-range contract
  */
-export class TimeRange {
-    private _start: number;
-    private _end: number;
-    private readonly originalStart: number;
-    private readonly originalEnd: number;
-    private readonly  midpoint: number;
+export interface TimeRangeType {
+    start: number;
+    end: number;
+    scaleFactor: number;
+    matchesOriginal: (start: number, end: number) => boolean;
+    scale: (factor: number, time: number) => TimeRangeType;
+    translate: (x: number) => TimeRangeType;
+}
+
+/**
+ * A time-range that can be scaled and transformed, all the while maintaining it original range values.
+ * @param {number} _start The start of the time-range
+ * @param {number} _end The end of the time-range
+ * @return {TimeRangeType} A time-range object that can be scaled and transformed
+ */
+export function TimeRange(_start: number, _end: number): TimeRangeType {
+    // form a closure on the original start and end of the time-range
+    const originalStart: number = Math.min(_start, _end);
+    const originalEnd: number = Math.max(_start, _end);
 
     /**
-     * Constructs a time-range instance with the (start, end) interval. The specified values will
-     * be maintained as the origin interval.
-     * @param {number} _start The start time of the time range
-     * @param {number} _end The end time of the time range.
-     * @constructor
+     * Updates the time-range based on the new start and end times
+     * @param {number} start The new start of the time-range
+     * @param {number} end The new end of the time-range
+     * @return {TimeRangeType} The updated time-range type
      */
-    private constructor(_start: number, _end: number) {
-        this._start = Math.min(_start, _end);
-        this._end = Math.max(_start, _end);
-        this.originalStart = this._start;
-        this.originalEnd = this._end;
-        this.midpoint = (this.originalStart + this.originalEnd) / 2;
+    function updateTimeRange(start: number, end: number): TimeRangeType {
 
+        // the amount by which the time-range is currently scaled
+        const scaleFactor = (end - start) / (originalEnd - originalStart);
+
+        /**
+         * Determines whether the specified (start, end) interval matches the original interval
+         * @param {number} start The start of the interval
+         * @param {number} end The end of the interval
+         * @return {boolean} `true` if the specified interval matches the original interval; `false` otherwise
+         */
+        function matchesOriginal(start: number, end: number): boolean {
+            return originalStart === start && originalEnd === end;
+        }
+
+        /**
+         * Scales the time-range by the specified scale factor from the specified time-location
+         * @param {number} factor The scale factor
+         * @param {number} time The time from which to scale the interval
+         */
+        function scale(factor: number, time: number): TimeRangeType {
+            const oldScale = scaleFactor;
+            const dts = time - start;
+            const dte = end - time;
+            start = time - dts * factor / oldScale;
+            end = time + dte * factor / oldScale;
+            return updateTimeRange(start, end);
+        }
+
+        /**
+         * Translates the time-range by the sepecified amount
+         * @param {number} x The amount by which to translate the time-range
+         */
+        function translate(x: number): TimeRangeType {
+            start += x;
+            end += x;
+            return updateTimeRange(start, end);
+        }
+
+        return {
+            start: start,
+            end: end,
+            matchesOriginal: matchesOriginal,
+            scaleFactor: scaleFactor,
+            scale: scale,
+            translate: translate
+        }
     }
 
-    /**
-     * Constructs a time-range instance with the (start, end) interval. The specified values will
-     * be maintained as the origin interval.
-     * @param {number} _start The start time of the time range
-     * @param {number} _end The end time of the time range.
-     * @return {TimeRange} The time-range object
-     */
-    static of(_start: number, _end: number) {
-        return new TimeRange(_start, _end);
-    }
-
-    /**
-     * @return {number} The current (scaled) start value of the time-range
-     */
-    get start() {
-        return this._start;
-    }
-
-    /**
-     * @return {number} The current (scaled) end value of the time-range
-     */
-    get end() {
-        return this._end;
-    }
-
-    /**
-     * @return {number} The current (scaled) length of the time-range
-     */
-    get length() {
-        return Math.abs(this._end - this._start);
-    };
-
-    /**
-     * Tests whether the specified (start, end) match the origin interval
-     * @param {number} start The start value of the time-range
-     * @param {number} end The end value of the time-range
-     * @return {boolean} `true` if the (start, end) match the original (start, end); `false` otherwise
-     */
-    matchesOriginal(start: number, end: number) {
-        return this.originalStart === start && this.originalEnd === end;
-    }
-
-    /**
-     * @return {number} The current scale factor
-     */
-    get scaleFactor() {
-        return (this._end - this._start) / (this.originalEnd - this.originalStart);
-    }
-
-    /**
-     * Scales the time-range by the specified scale factor from the specified time-location
-     * @param {number} factor The scale factor
-     * @param {number} time The time from which to scale the interval
-     */
-    scale(factor: number, time: number): void {
-        const oldScale = this.scaleFactor;
-        const dts = time - this._start;
-        const dte = this._end - time;
-        this._start = time - dts * factor / oldScale;
-        this._end = time + dte * factor / oldScale;
-    };
-
-    /**
-     * Translates the time-range by the sepecified amount
-     * @param {number} x The amount by which to translate the time-range
-     */
-    translate(x: number): void {
-        this._start += x;
-        this._end += x;
-    }
+    return updateTimeRange(originalStart, originalEnd);
 }

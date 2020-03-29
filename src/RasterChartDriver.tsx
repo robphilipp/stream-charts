@@ -51,13 +51,6 @@ function RasterChartDriver(props: Props): JSX.Element {
     const [magnifierVisible, setMagnifierVisible] = useState(false);
     const [trackerVisible, setTrackerVisible] = useState(false);
 
-    function nextDatum(time: number, maxDelta: number): Datum {
-        return {
-            time: time - Math.ceil(Math.random() * maxDelta),
-            value: Math.random()
-        };
-    }
-
     // called on mount to set up the <g> element into which to render
     useEffect(
         () => {
@@ -113,5 +106,11 @@ function RasterChartDriver(props: Props): JSX.Element {
     );
 }
 
+function nextDatum(time: number, maxDelta: number): Datum {
+    return {
+        time: time - Math.ceil(Math.random() * maxDelta),
+        value: Math.random()
+    };
+}
 
 export default RasterChartDriver;
