@@ -1,7 +1,7 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import {ScaleBand, ScaleLinear, Selection, Axis, ZoomTransform} from "d3";
-import {Datum, Series} from "./RasterChartDriver";
+import {Datum, Series} from "./StreamingRasterChart";
 import {BarMagnifier, BarMagnifierType, LensTransformation} from "./BarMagnifier";
 import {TimeRange, TimeRangeType} from "./TimeRange";
 
@@ -444,7 +444,7 @@ function RasterChart(props: Props): JSX.Element {
      * @param {Selection<SVGLineElement, Datum, null, undefined> | undefined} path
      * @callback
      */
-    function handleShowTracker(path: d3.Selection<SVGLineElement, Datum, null, undefined> | undefined) {
+    function handleShowTracker(path: Selection<SVGLineElement, Datum, null, undefined> | undefined) {
         if(containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
             path
