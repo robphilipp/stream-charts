@@ -1,8 +1,9 @@
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
 import {Option} from "prelude-ts";
-import RasterChart, {Datum, Series} from "./RasterChart";
 import {Observable} from 'rxjs'
+import {Datum, Series} from "./Series";
+import RasterChart from "./RasterChart";
 
 /**
  * Creates a series from the name and the optional array of `Datum`.

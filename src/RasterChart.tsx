@@ -3,36 +3,8 @@ import * as d3 from "d3";
 import {ScaleBand, ScaleLinear, Selection, Axis, ZoomTransform} from "d3";
 import {BarMagnifier, BarMagnifierType, LensTransformation} from "./BarMagnifier";
 import {TimeRange, TimeRangeType} from "./TimeRange";
-import {Option} from "prelude-ts";
-
-/**
- * An immutable datum object that holds the spike (time, value) representing a neuron spike
- */
-export interface Datum {
-    readonly time: number;
-    readonly value: number;
-}
-
-/**
- * A spike series holding an array of spike (time, value) datum, the name and supplemental information
- * needed by the `RasterChart`
- */
-export interface Series {
-    readonly name: string;
-    data: Datum[];
-    readonly last: () => Option<Datum>;
-    readonly length: () => number;
-}
-
-/**
- * Margin information
- */
-export interface Margins {
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-}
+import {Margin} from "./Margin";
+import {Datum, Series} from "./Series";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 
@@ -153,7 +125,7 @@ interface Axes {
 interface Props {
     width: number;
     height: number;
-    margin?: Partial<Margins>;
+    margin?: Partial<Margin>;
     spikesStyle?: Partial<{ margin: number, color: string, lineWidth: number, highlightColor: string, highlightWidth: number }>;
     axisLabelFont?: Partial<{ size: number, color: string, family: string, weight: number }>;
     axisStyle?: Partial<{ color: string }>;
@@ -757,7 +729,7 @@ function RasterChart(props: Props): JSX.Element {
 
     return (
         <svg
-            className="d3-component"
+            className="streaming-raster-chart-d3"
             width={width}
             height={height * seriesList.length}
             style={{backgroundColor: backgroundColor}}
@@ -780,11 +752,11 @@ export function calcMaxTime(seriesList: Array<Series>): number {
  * of the actual plot by subtracting the margins.
  * @param {number} width The overall width (plot and margins)
  * @param {number} height The overall height (plot and margins)
- * @param {Margins} margins The margins around the plot (top, bottom, left, right)
+ * @param {Margin} margins The margins around the plot (top, bottom, left, right)
  * @return {{width: number, height: number}} The dimensions of the actual plots adjusted for the margins
  * from the overall dimensions
  */
-function adjustedDimensions(width: number, height: number, margins: Margins): { width: number, height: number } {
+function adjustedDimensions(width: number, height: number, margins: Margin): { width: number, height: number } {
     return {
         width: width - margins.left - margins.right,
         height: height - margins.top - margins.top
