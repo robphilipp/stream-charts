@@ -1,7 +1,7 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import {ScaleBand, ScaleLinear, Selection, Axis, ZoomTransform} from "d3";
-import {BarMagnifier, BarMagnifierType, LensTransformation} from "./BarMagnifier";
+import {BarMagnifier, BarMagnifierType, LensTransformation} from "./barMagnifier";
 import {TimeRange, TimeRangeType} from "./timeRange";
 import {adjustedDimensions, Margin} from "./margins";
 import {Datum, Series} from "./datumSeries";
