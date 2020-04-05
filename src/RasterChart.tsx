@@ -1,11 +1,33 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import {ScaleBand, ScaleLinear, Selection, Axis, ZoomTransform} from "d3";
-import {Datum, Series} from "./StreamingRasterChart";
 import {BarMagnifier, BarMagnifierType, LensTransformation} from "./BarMagnifier";
 import {TimeRange, TimeRangeType} from "./TimeRange";
+import {Option} from "prelude-ts";
 
-export interface Sides {
+/**
+ * An immutable datum object that holds the spike (time, value) representing a neuron spike
+ */
+export interface Datum {
+    readonly time: number;
+    readonly value: number;
+}
+
+/**
+ * A spike series holding an array of spike (time, value) datum, the name and supplemental information
+ * needed by the `RasterChart`
+ */
+export interface Series {
+    readonly name: string;
+    data: Datum[];
+    readonly last: () => Option<Datum>;
+    readonly length: () => number;
+}
+
+/**
+ * Margin information
+ */
+export interface Margins {
     top: number;
     right: number;
     bottom: number;
@@ -32,6 +54,9 @@ const defaultAxesLabelFont = {
 
 const defaultPlotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'};
 
+/**
+ * Properties for rendering the tooltip
+ */
 interface TooltipStyle {
     visible: boolean;
 
@@ -74,6 +99,9 @@ const defaultTooltipStyle: TooltipStyle = {
     paddingBottom: 10,
 };
 
+/**
+ * Properties for rendering the line-magnifier lens
+ */
 interface LineMagnifierStyle {
     visible: boolean;
     width: number;
@@ -115,7 +143,6 @@ interface PixelDatum extends Datum {
     y: number;
 }
 
-
 interface Axes {
     xAxis: Axis<number | {valueOf(): number}>;
     yAxis: Axis<string>;
@@ -126,7 +153,7 @@ interface Axes {
 interface Props {
     width: number;
     height: number;
-    margin?: Partial<Sides>;
+    margin?: Partial<Margins>;
     spikesStyle?: Partial<{ margin: number, color: string, lineWidth: number, highlightColor: string, highlightWidth: number }>;
     axisLabelFont?: Partial<{ size: number, color: string, family: string, weight: number }>;
     axisStyle?: Partial<{ color: string }>;
@@ -470,7 +497,6 @@ function RasterChart(props: Props): JSX.Element {
      * Updates the plot data for the specified time-range, which may have changed due to zoom or pan
      * @param {TimeRange} timeRange The current time range
      */
-    // function updatePlot(timeRange: TimeRange) {
     function updatePlot(timeRange: TimeRangeType) {
         tooltipRef.current = tooltip;
         timeRangeRef.current = timeRange;
@@ -724,7 +750,6 @@ function RasterChart(props: Props): JSX.Element {
     // 4. plot attributes change
     useEffect(
         () => {
-            // const timeRange = timeRangeRef.current.matchesOriginal(minTime, maxTime) ? timeRangeRef.current : TimeRange.of(minTime, maxTime);
             const timeRange = timeRangeRef.current.matchesOriginal(minTime, maxTime) ? timeRangeRef.current : TimeRange(minTime, maxTime);
             updatePlot(timeRange);
         }
@@ -755,11 +780,11 @@ export function calcMaxTime(seriesList: Array<Series>): number {
  * of the actual plot by subtracting the margins.
  * @param {number} width The overall width (plot and margins)
  * @param {number} height The overall height (plot and margins)
- * @param {Sides} margins The margins around the plot (top, bottom, left, right)
+ * @param {Margins} margins The margins around the plot (top, bottom, left, right)
  * @return {{width: number, height: number}} The dimensions of the actual plots adjusted for the margins
  * from the overall dimensions
  */
-function adjustedDimensions(width: number, height: number, margins: Sides): { width: number, height: number } {
+function adjustedDimensions(width: number, height: number, margins: Margins): { width: number, height: number } {
     return {
         width: width - margins.left - margins.right,
         height: height - margins.top - margins.top
