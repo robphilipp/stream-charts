@@ -1,7 +1,7 @@
 import React from 'react';
-import './App.css';
-import StreamingRasterChart, {seriesFrom} from "./StreamingRasterChart";
-import {Series} from "./Series";
+import '../styles/App.css';
+import StreamingRasterChart, {seriesFrom} from "./examples/StreamingRasterChart";
+import {Series} from "./charts/Series";
 
 // function genData(length: number, timeDelta: number): Array<Datum> {
 //     const data: Array<Datum> = Array.from({length: length}, () => ({time: 0, value: Math.random()}));
