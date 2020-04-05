@@ -1,4 +1,4 @@
-import {interval, Observable, Subscriber} from "rxjs";
+import {interval, Observable} from "rxjs";
 import {Datum} from "../charts/datumSeries";
 import {map} from "rxjs/operators";
 
@@ -25,17 +25,21 @@ interface IndexedDatum {
  */
 export function randomDataObservable(numSeries: number, updatePeriod: number = UPDATE_PERIOD_MS): Observable<ChartData> {
     return interval(updatePeriod).pipe(
+        // convert the number sequence to a time
+        map(sequence => sequence * updatePeriod),
+        // from the time, create a random set of new data points
         map((time, index) => (
             {
-                maxTime: time * updatePeriod,
+                maxTime: time,
                 newPoints: new Array<Datum>(numSeries).fill({} as Datum)
                     .map((_: Datum, i: number) => ({
                         index: i,
                         datum: {
-                            time: time * updatePeriod - Math.ceil(Math.random() * updatePeriod),
+                            time: time - Math.ceil(Math.random() * updatePeriod),
                             value: Math.random() > 0.2 ? Math.random() : 0
                         }
                     }))
-            })),
+            })
+        ),
     );
 }
