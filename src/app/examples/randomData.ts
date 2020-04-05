@@ -1,5 +1,5 @@
 import {Observable, Subscriber} from "rxjs";
-import {Datum} from "../charts/Series";
+import {Datum} from "../charts/datumSeries";
 
 const UPDATE_PERIOD_MS = 25;
 

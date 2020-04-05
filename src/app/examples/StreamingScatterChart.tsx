@@ -1,5 +1,5 @@
 import {default as React, useEffect, useRef, useState} from "react";
-import {Datum, Series} from "../charts/Series";
+import {Datum, Series} from "../charts/datumSeries";
 import {Option} from "prelude-ts";
 import ScatterChart from "../charts/ScatterChart";
 import {randomDataObservable} from "./randomData";

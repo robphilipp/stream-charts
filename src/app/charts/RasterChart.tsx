@@ -2,9 +2,9 @@ import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import {ScaleBand, ScaleLinear, Selection, Axis, ZoomTransform} from "d3";
 import {BarMagnifier, BarMagnifierType, LensTransformation} from "./BarMagnifier";
-import {TimeRange, TimeRangeType} from "./TimeRange";
-import {Margin} from "./Margin";
-import {Datum, Series} from "./Series";
+import {TimeRange, TimeRangeType} from "./timeRange";
+import {adjustedDimensions, Margin} from "./margins";
+import {Datum, Series} from "./datumSeries";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 
@@ -738,29 +738,13 @@ function RasterChart(props: Props): JSX.Element {
     );
 }
 
-/**
- * Calculates the maximum time found in the specified list of time-series
- * @param {Array<Series>} seriesList An array of time-series
- * @return {number} The maximum time
- */
-export function calcMaxTime(seriesList: Array<Series>): number {
-    return d3.max(seriesList.map(series => series.last().map(datum => datum.time).getOrElse(0))) || 0;
-}
-
-/**
- * Given the overall dimensions of the plot (width, height) and the margins, calculates the dimensions
- * of the actual plot by subtracting the margins.
- * @param {number} width The overall width (plot and margins)
- * @param {number} height The overall height (plot and margins)
- * @param {Margin} margins The margins around the plot (top, bottom, left, right)
- * @return {{width: number, height: number}} The dimensions of the actual plots adjusted for the margins
- * from the overall dimensions
- */
-function adjustedDimensions(width: number, height: number, margins: Margin): { width: number, height: number } {
-    return {
-        width: width - margins.left - margins.right,
-        height: height - margins.top - margins.top
-    };
-}
+// /**
+//  * Calculates the maximum time found in the specified list of time-series
+//  * @param {Array<Series>} seriesList An array of time-series
+//  * @return {number} The maximum time
+//  */
+// export function calcMaxTime(seriesList: Array<Series>): number {
+//     return d3.max(seriesList.map(series => series.last().map(datum => datum.time).getOrElse(0))) || 0;
+// }
 
 export default RasterChart;

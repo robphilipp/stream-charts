@@ -1,7 +1,7 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
-import {Margin} from "./Margin";
-import {Series} from "./Series";
+import {Margin} from "./margins";
+import {Series} from "./datumSeries";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultAxesStyle = {color: '#d2933f'};

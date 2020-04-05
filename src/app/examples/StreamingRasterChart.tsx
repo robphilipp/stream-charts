@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
-import {Datum, Series} from "../charts/Series";
+import {Datum, Series} from "../charts/datumSeries";
 import RasterChart from "../charts/RasterChart";
 import {randomDataObservable} from "./randomData";
 
