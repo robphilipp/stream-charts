@@ -30,7 +30,7 @@ interface Props {
 }
 
 /**
- * 
+ *
  * @param {Props} props
  * @return {JSX.Element}
  * @constructor
@@ -64,3 +64,5 @@ function ScatterChart(props: Props): JSX.Element {
         />
     );
 }
+
+export default ScatterChart;

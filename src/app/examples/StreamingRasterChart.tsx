@@ -1,61 +1,8 @@
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
-import {Option} from "prelude-ts";
-import {Observable} from 'rxjs'
 import {Datum, Series} from "../charts/Series";
 import RasterChart from "../charts/RasterChart";
-
-/**
- * Creates a series from the name and the optional array of `Datum`.
- * @param {string} name The name of the series (i.e. neuron)
- * @param {Datum[]} data The array of (time, value) pairs, where the value is the spike value (in mV)
- * @return {Series} A `Series` for object that can be used by the `RasterChart`
- */
-export function seriesFrom(name: string, data: Datum[] = []): Series {
-    return {
-        name: name,
-        data: data,
-        last: () => data ? (data.length > 0 ? Option.of(data[data.length - 1]) : Option.none()) : Option.none(),
-        length: () => data ? data.length : 0
-    }
-}
-
-const UPDATE_PERIOD_MS = 25;
-
-/**
- * Creates random spiking data
- * @param {number} numSeries The number of time-series for which to generate data (i.e. one for each neuron)
- * @return {Observable<SpikesChartData>} An observable that produces data.
- */
-function randomDataObservable(numSeries: number): Observable<SpikesChartData> {
-    return new Observable(function subscribe(subscriber) {
-        let time = 0;
-
-        // on mount, sets the timer that updates the data and sets the live data which causes a state change
-        // and so react will call the useEffect with the live data dependency and update d3
-        const intervalId = setInterval(() => {
-                time = time + UPDATE_PERIOD_MS;
-
-                // create next set of points
-                const updates = new Array<Datum>(numSeries).fill({} as Datum)
-                    .map((_: Datum, i: number) => ({
-                        index: i,
-                        spike: {
-                            time: time - Math.ceil(Math.random() * UPDATE_PERIOD_MS),
-                            value: Math.random() > 0.2 ? Math.random() : 0
-                        }
-                    }))
-                ;
-                subscriber.next({maxTime: time, spikes: updates});
-            },
-            UPDATE_PERIOD_MS
-        );
-
-        return function unsubscribe() {
-            clearInterval(intervalId);
-        }
-    });
-}
+import {randomDataObservable} from "./randomData";
 
 /**
  * The properties
@@ -108,8 +55,8 @@ function StreamingRasterChart(props: Props): JSX.Element {
 
                     // for each series, add a point if there is a  spike value (i.e. spike value > 0)
                     seriesRef.current = seriesRef.current.map((series, i) => {
-                        if(data.spikes[i].spike.value > 0) {
-                            series.data.push(data.spikes[i].spike);
+                        if(data.newPoints[i].datum.value > 0) {
+                            series.data.push(data.newPoints[i].datum);
                         }
                         return series;
                     });
