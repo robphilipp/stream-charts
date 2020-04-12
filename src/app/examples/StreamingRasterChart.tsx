@@ -2,7 +2,7 @@ import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
 import {Datum, Series} from "../charts/datumSeries";
 import RasterChart from "../charts/RasterChart";
-import {randomDataObservable} from "./randomData";
+import {randomSpikeDataObservable} from "./randomData";
 
 /**
  * The properties
@@ -36,7 +36,7 @@ function StreamingRasterChart(props: Props): JSX.Element {
     const seriesRef = useRef<Array<Series>>(seriesList);
     const currentTimeRef = useRef<number>(0);
 
-    const observableRef = useRef(randomDataObservable(seriesList.length));
+    const observableRef = useRef(randomSpikeDataObservable(seriesList.length));
 
     const [tooltipVisible, setTooltipVisible] = useState(false);
     const [magnifierVisible, setMagnifierVisible] = useState(false);

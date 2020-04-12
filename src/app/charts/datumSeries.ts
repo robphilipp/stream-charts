@@ -33,3 +33,10 @@ export function seriesFrom(name: string, data: Datum[] = []): Series {
         length: () => data ? data.length : 0
     }
 }
+
+export interface PixelDatum extends Datum {
+    x: number;
+    y: number;
+}
+
+

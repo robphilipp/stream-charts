@@ -2,6 +2,8 @@ import React from 'react';
 import '../styles/App.css';
 import StreamingRasterChart from "./examples/StreamingRasterChart";
 import {Series, seriesFrom} from "./charts/datumSeries";
+import { StreamingScatterChart } from './examples/StreamingScatterChart';
+import LineChart from "./charts/LineChart";
 
 // function genData(length: number, timeDelta: number): Array<Datum> {
 //     const data: Array<Datum> = Array.from({length: length}, () => ({time: 0, value: Math.random()}));
@@ -17,13 +19,20 @@ const data: Array<Series> = Array.from({length: 50}, (_, i) => seriesFrom(`neuro
 const App: React.FC = () => {
   return (
     <div className="App">
-      <p>Raster Chart</p>
-      <StreamingRasterChart
+      {/*<p>Raster Chart</p>*/}
+      {/*<StreamingRasterChart*/}
+      {/*    timeWindow={1000}*/}
+      {/*    seriesList={data}*/}
+      {/*    seriesHeight={10}*/}
+      {/*    plotWidth={900}*/}
+      {/*/>*/}
+      <StreamingScatterChart
           timeWindow={1000}
-          seriesList={data}
-          seriesHeight={15}
+          seriesList={Array.from({length: 10}, (_, i) => seriesFrom(`neuron-${i}`))}
+          plotHeight={300}
           plotWidth={900}
       />
+      <LineChart/>
     </div>
   );
 };

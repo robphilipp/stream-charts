@@ -1,13 +1,13 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
-import {ScaleBand, ScaleLinear, Selection, Axis, ZoomTransform} from "d3";
+import {ScaleBand, ScaleLinear, Selection, ZoomTransform} from "d3";
 import {BarMagnifier, BarMagnifierType, LensTransformation} from "./barMagnifier";
 import {TimeRange, TimeRangeType} from "./timeRange";
 import {adjustedDimensions, Margin} from "./margins";
-import {Datum, Series} from "./datumSeries";
+import {Datum, PixelDatum, Series} from "./datumSeries";
+import {Axis} from "d3";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
-
 const defaultSpikesStyle = {
     margin: 2,
     color: '#c95d15',
@@ -15,7 +15,6 @@ const defaultSpikesStyle = {
     highlightColor: '#d2933f',
     highlightWidth: 4
 };
-
 const defaultAxesStyle = {color: '#d2933f'};
 const defaultAxesLabelFont = {
     size: 12,
@@ -23,7 +22,6 @@ const defaultAxesLabelFont = {
     weight: 300,
     family: 'sans-serif'
 };
-
 const defaultPlotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'};
 
 /**
@@ -110,17 +108,15 @@ interface MagnifiedDatum extends Datum {
     lens: LensTransformation
 }
 
-interface PixelDatum extends Datum {
-    x: number;
-    y: number;
-}
-
 interface Axes {
     xAxis: Axis<number | {valueOf(): number}>;
     yAxis: Axis<string>;
     xAxisSelection: AxisElementSelection;
     yAxisSelection: AxisElementSelection;
 }
+
+// the axis-element type return when calling the ".call(axis)" function
+type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 
 interface Props {
     width: number;
@@ -141,9 +137,6 @@ interface Props {
     maxTime: number;
     seriesList: Array<Series>;
 }
-
-// the axis-element type return when calling the ".call(axis)" function
-type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 
 /**
  * Renders a raster chart

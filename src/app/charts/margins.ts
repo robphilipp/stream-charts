@@ -20,7 +20,7 @@ export interface Margin {
 export function adjustedDimensions(width: number, height: number, margins: Margin): { width: number, height: number } {
     return {
         width: width - margins.left - margins.right,
-        height: height - margins.top - margins.top
+        height: height - margins.top - margins.bottom
     };
 }
 
