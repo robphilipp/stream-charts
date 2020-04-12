@@ -95,6 +95,10 @@ function ScatterChart(props: Props): JSX.Element {
     // reference to the axes for the plot
     const axesRef = useRef<Axes>();
 
+    // reference for the min/max values
+    const minValueRef = useRef<number>(0);
+    const maxValueRef = useRef<number>(1);
+
     // // unlike the magnifier, the handler forms a closure on the tooltip properties, and so if they change in this
     // // component, the closed properties are unchanged. using a ref allows the properties to which the reference
     // // points to change.
@@ -102,6 +106,14 @@ function ScatterChart(props: Props): JSX.Element {
 
     // calculates to the time-range based on the (min, max)-time from the props
     const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
+
+    function updateMinMaxValues(data: Array<[number, number]>[]): [number, number] {
+        const minValue = d3.min(data, series => d3.min(series, datum => datum[1])) || 0;
+        const maxValue = d3.max(data, series => d3.max(series, datum => datum[1])) || 1;
+        minValueRef.current = Math.min(minValue, minValueRef.current);
+        maxValueRef.current = Math.max(maxValue, maxValueRef.current);
+        return [minValueRef.current, maxValueRef.current];
+    }
 
     function initializeAxes(svg: SvgSelection): Axes {
         // initialize the x-axis
@@ -139,6 +151,16 @@ function ScatterChart(props: Props): JSX.Element {
             .attr('transform', `translate(${margin.left}, ${margin.top})`)
         ;
 
+        // create the clipping region so that the lines are clipped at the y-axis
+        svg
+            .append("defs")
+            .append("clipPath")
+            .attr("id", "clip")
+            .append("rect")
+            .attr("width", plotDimensions.width)
+            .attr("height", plotDimensions.height)
+        ;
+
         return {
             xAxis, yAxis,
             xAxisSelection, yAxisSelection,
@@ -158,12 +180,19 @@ function ScatterChart(props: Props): JSX.Element {
             // select the text elements and bind the data to them
             const svg = d3.select<SVGSVGElement, any>(containerRef.current);
 
+            // create the tensor of data (time, value)
+            const data: Array<Array<[number, number]>> = seriesList.map(series => selectInTimeRange(series));
+
+            // calculate and update the min and max values for updating the y-axis. only updates when
+            // the min is less than the historical min, and the max is larger than the historical max.
+            const [minValue, maxValue] = updateMinMaxValues(data);
+
             // create the x-axis
             axesRef.current.xScale.domain([timeRangeRef.current.start, timeRangeRef.current.end]);
             axesRef.current.xAxisSelection.call(axesRef.current.xAxis);
 
             // create the x-axis
-            axesRef.current.yScale.domain([-1, 1]); // todo should this be dynamic?
+            axesRef.current.yScale.domain([minValue, maxValue]); // todo should this be dynamic?
             axesRef.current.yAxisSelection.call(axesRef.current.yAxis);
 
             // set up the main <g> container for svg and translate it based on the margins, but do it only
@@ -177,60 +206,30 @@ function ScatterChart(props: Props): JSX.Element {
                 ;
             }
 
-            const data: Array<[number, number]>[] = seriesList
-                .map(series => series.data
-                    .filter(datum => datum.time >= timeRangeRef.current.start && datum.time <= timeRangeRef.current.end)
-                    .map(datum => [datum.time, datum.value]) as Array<[number, number]>
-                );
-            // const data: Array<[string, Array<[number, number]>]> = seriesList
-            //     .map(series => [series.name, series.data
+            // const data: Array<[number, number]>[] = seriesList
+            //     .map(series => series.data
             //         .filter(datum => datum.time >= timeRangeRef.current.start && datum.time <= timeRangeRef.current.end)
-            //         .map(datum => [datum.time, datum.value]) as Array<[number, number]>]
+            //         .map(datum => [datum.time, datum.value]) as Array<[number, number]>
             //     );
+            // // const data: Array<[string, Array<[number, number]>]> = seriesList
+            // //     .map(series => [series.name, series.data
+            // //         .filter(datum => datum.time >= timeRangeRef.current.start && datum.time <= timeRangeRef.current.end)
+            // //         .map(datum => [datum.time, datum.value]) as Array<[number, number]>]
+            // //     );
 
-            // Create a update selection: bind to the new data
-            // const boundData = svg
-            const updateSelection = mainGRef.current
-                .selectAll(".weights")
-                // .selectAll(`#${series.name}`)
-                // .select("weights")
-                // .data(data, (d: [string, Array<[number, number]>]) => `${d[0]}`)
-                .data(data);
 
-            updateSelection
-                .attr("fill", "none")
-                .attr("stroke", "red")
-                .attr("stroke-width", 3)
-            ;
-
-            updateSelection
-                .enter()
-                .append("path")
-                // .attr("class",`${series.name}`)
-                .attr("class", "weights")
-                // @ts-ignore
-                .merge(updateSelection)
-                .attr("d", d3.line()
-                    .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
-                    .y((d: [number, number]) => axesRef.current!.yScale(d[1])))
-                .attr("fill", "none")
-                .attr("stroke", "steelblue")
-                .attr("stroke-width", 1)
-                .attr('transform', `translate(${margin.left}, ${margin.top})`)
-            ;
-
-            updateSelection.exit().remove();
-            // mainGRef.current
-            //     .selectAll("weights")
-            //     // .selectAll(`#${series.name}`)
-            //     // .select("weights")
-            //     // .data(data, (d: [string, Array<[number, number]>]) => `${d[0]}`)
-            //     .data(data)
+            // // Create a update selection: bind to the new data
+            // const updateSelection = mainGRef.current
+            //     .selectAll(".weights")
+            //     .data(data);
+            //
+            // updateSelection
             //     .join(
             //         enter => enter
             //             .append("path")
-            //             // .attr("class",`${series.name}`)
             //             .attr("class", "weights")
+            //             // @ts-ignore
+            //             .merge(updateSelection)
             //             .attr("d", d3.line()
             //                 .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
             //                 .y((d: [number, number]) => axesRef.current!.yScale(d[1])))
@@ -238,82 +237,84 @@ function ScatterChart(props: Props): JSX.Element {
             //             .attr("stroke", "steelblue")
             //             .attr("stroke-width", 1)
             //             .attr('transform', `translate(${margin.left}, ${margin.top})`)
-            //         ,
-            //         update => update
-            //             // .select("path")
-            //             .attr("fill", "none")
-            //             .attr("stroke", "red")
-            //             .attr("stroke-width", 3)
-            //         ,
-            //         exit => exit
-            //             // .select("path")
-            //             .attr("fill", "none")
-            //             .attr("stroke", "green")
-            //             .attr("stroke-width", 13)
-            //             .remove()
+            //             // applies the clipping region so that the data don't display to the left of the y-axis
+            //             .attr("clip-path", "url(#clip)")
             //     )
             // ;
 
-            // seriesList.forEach(series => {
+            // const updateSelection = mainGRef.current
+            //     .selectAll(".weights")
+            //     .data(data);
             //
-            //     const data = series.data
-            //         .filter(datum => datum.time >= timeRangeRef.current.start && datum.time <= timeRangeRef.current.end)
-            //         .map(datum => [datum.time, datum.value]) as Array<[number, number]>
+            // updateSelection
+            //     .attr("fill", "none")
+            //     .attr("stroke", "red")
+            //     .attr("stroke-width", 3)
+            // ;
             //
-            //     // Create a update selection: bind to the new data
-            //     const boundData = svg
-            //         .selectAll(`#${series.name}`)
-            //         .data([data, data], () => `${series.name}-${timeRangeRef.current.end}`)
-            //         .join(
-            //             enter => enter
-            //                 .append("path")
-            //                 .attr("class",`${series.name}`)
-            //                 .attr("d", d3.line()
-            //                     .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
-            //                     .y((d: [number, number]) => axesRef.current!.yScale(d[1])))
-            //                 .attr("fill", "none")
-            //                 .attr("stroke", "steelblue")
-            //                 .attr("stroke-width", 1)
-            //                 .attr('transform', `translate(${margin.left}, ${margin.top})`)
-            //             ,
-            //             update => update
-            //                 .attr("fill", "none")
-            //                 .attr("stroke", "red")
-            //                 .attr("stroke-width", 3)
-            //             ,
-            //         exit => exit
-            //             .attr("fill", "none")
-            //             .attr("stroke", "green")
-            //             .attr("stroke-width", 13)
-            //             .remove()
-            //     )
-            //     ;
-            //     //
-            //     // // Update the line
-            //     // boundData
-            //     //     .enter()
-            //     //     .append("path")
-            //     //     .attr("class",`${series.name}`)
-            //     //     .attr("d", d3.line()
-            //     //         .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
-            //     //         .y((d: [number, number]) => axesRef.current!.yScale(d[1])))
-            //     //     .attr("fill", "none")
-            //     //     .attr("stroke", "steelblue")
-            //     //     .attr("stroke-width", 1)
-            //     //     .attr('transform', `translate(${margin.left}, ${margin.top})`)
-            //     // boundData
-            //     //     .enter()
-            //     //     .append("path")
-            //     //     .attr("class",`${series.name}`)
-            //     //     .attr("d", d3.line()
-            //     //         .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
-            //     //         .y((d: [number, number]) => axesRef.current!.yScale(d[1])))
-            //     //     .attr("fill", "none")
-            //     //     .attr("stroke", "steelblue")
-            //     //     .attr("stroke-width", 1)
-            //     //     .attr('transform', `translate(${margin.left}, ${margin.top})`)
-            // });
+            // updateSelection
+            //     .enter()
+            //     .append("path")
+            //     // .attr("class",`${series.name}`)
+            //     .attr("class", "weights")
+            //     // @ts-ignore
+            //     .merge(updateSelection)
+            //     .attr("d", d3.line()
+            //         .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
+            //         .y((d: [number, number]) => axesRef.current!.yScale(d[1])))
+            //     .attr("fill", "none")
+            //     .attr("stroke", "steelblue")
+            //     .attr("stroke-width", 1)
+            //     .attr('transform', `translate(${margin.left}, ${margin.top})`)
+            //     // applies the clipping region so that the data don't display to the left of the y-axis
+            //     .attr("clip-path", "url(#clip)")
+            // ;
+
+            seriesList.forEach(series => {
+
+                const data = selectInTimeRange(series);
+
+                if (data.length === 0) return;
+
+                // Create a update selection: bind to the new data
+                mainGRef.current!
+                    .selectAll(`#${series.name}`)
+                    .data([data, data], () => `${series.name}-${timeRangeRef.current.end}`)
+                    .join(
+                        enter => enter
+                            .append("path")
+                            .attr("id",`${series.name}`)
+                            .attr("d", d3.line()
+                                .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
+                                .y((d: [number, number]) => axesRef.current!.yScale(d[1])))
+                            .attr("fill", "none")
+                            .attr("stroke", "steelblue")
+                            .attr("stroke-width", 1)
+                            .attr('transform', `translate(${margin.left}, ${margin.top})`)
+                            .attr("clip-path", "url(#clip)")
+                );
+            });
         }
+    }
+
+    /**
+     * Returns the data in the time-range and the datum that comes just before the start of the time range.
+     * The point before the time range is so that the line draws up to the y-axis, where it is clipped.
+     * @param {Series} series The series
+     * @return {Array<[number, number]>} An array of (time, value) points that fit within the time range,
+     * and the point just before the time range.
+     */
+    function selectInTimeRange(series: Series): Array<[number, number]> {
+
+        function inTimeRange(datum: Datum, index: number, array: Datum[]): boolean {
+            // also want to include the point whose next value is in the time range
+            const nextDatum = array[Math.min(index + 1, array.length - 1)];
+            return nextDatum.time >= timeRangeRef.current.start && datum.time <= timeRangeRef.current.end;
+        }
+
+        return series.data
+            .filter((datum: Datum, index: number, array: Datum[]) => inTimeRange(datum, index, array))
+            .map(datum => [datum.time, datum.value]);
     }
 
     useEffect(

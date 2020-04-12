@@ -28,8 +28,8 @@ const App: React.FC = () => {
       {/*/>*/}
       <StreamingScatterChart
           timeWindow={1000}
-          seriesList={Array.from({length: 10}, (_, i) => seriesFrom(`neuron-${i}`))}
-          plotHeight={300}
+          seriesList={Array.from({length: 50}, (_, i) => seriesFrom(`neuron-${i}`))}
+          plotHeight={500}
           plotWidth={900}
       />
       <LineChart/>

@@ -30,7 +30,7 @@ import {map} from "rxjs/operators";
 export function randomWeightDataObservable(numSeries: number, delta: number, updatePeriod: number = 25): Observable<ChartData> {
     return interval(updatePeriod).pipe(
         // convert the number sequence to a time
-        map(sequence => sequence * updatePeriod),
+        map(sequence => (sequence + 1) * updatePeriod),
         // from the time, create a random set of new data points
         map((time, index) => ({
                 maxTime: time,
@@ -75,7 +75,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     useEffect(
         () => {
             const subscription = observableRef.current.subscribe(data => {
-                if(data.maxTime > 3000) {
+                if(data.maxTime > 30000) {
                     subscription.unsubscribe();
                 }
                 else {
