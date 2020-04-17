@@ -6,6 +6,7 @@ import {TimeRange, TimeRangeType} from "./timeRange";
 import {adjustedDimensions, Margin} from "./margins";
 import {Datum, PixelDatum, Series} from "./datumSeries";
 import {Axis} from "d3";
+import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultSpikesStyle = {
@@ -23,51 +24,6 @@ const defaultAxesLabelFont = {
     family: 'sans-serif'
 };
 const defaultPlotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'};
-
-/**
- * Properties for rendering the tooltip
- */
-interface TooltipStyle {
-    visible: boolean;
-
-    fontSize: number;
-    fontColor: string;
-    fontFamily: string;
-    fontWeight: number;
-
-    backgroundColor: string;
-    backgroundOpacity: number;
-
-    borderColor: string;
-    borderWidth: number;
-    borderRadius: number;
-
-    paddingLeft: number;
-    paddingRight: number;
-    paddingTop: number;
-    paddingBottom: number;
-}
-
-const defaultTooltipStyle: TooltipStyle = {
-    visible: false,
-
-    fontSize: 12,
-    fontColor: '#d2933f',
-    fontFamily: 'sans-serif',
-    fontWeight: 250,
-    
-    backgroundColor: '#202020',
-    backgroundOpacity: 0.8,
-    
-    borderColor: '#d2933f',
-    borderWidth: 1,
-    borderRadius: 5,
-    
-    paddingLeft: 10,
-    paddingRight: 10,
-    paddingTop: 5,
-    paddingBottom: 10,
-};
 
 /**
  * Properties for rendering the line-magnifier lens

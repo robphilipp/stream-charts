@@ -3,7 +3,8 @@ import * as d3 from "d3";
 import {adjustedDimensions, Margin} from "./margins";
 import {Datum, PixelDatum, Series} from "./datumSeries";
 import {TimeRange, TimeRangeType} from "./timeRange";
-import {Selection, Axis, Line, ScaleLinear} from "d3";
+import {Selection, Axis, Line, ScaleLinear, ScaleBand} from "d3";
+import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultAxesStyle = {color: '#d2933f'};
@@ -44,6 +45,7 @@ interface Props {
     backgroundColor?: string;
     spikesStyle?: Partial<{color: string, lineWidth: number, highlightColor: string, highlightWidth: number}>;
     plotGridLines?: Partial<{ visible: boolean, color: string }>;
+    tooltip?: Partial<TooltipStyle>;
 
     minWeight?: number;
     maxWeight?: number;
@@ -77,6 +79,7 @@ function ScatterChart(props: Props): JSX.Element {
     const axisStyle = {...defaultAxesStyle, ...props.axisStyle};
     const axisLabelFont = {...defaultAxesLabelFont, ...props.axisLabelFont};
     const plotGridLines = {...defaultPlotGridLines, ...props.plotGridLines};
+    const tooltip: TooltipStyle = {...defaultTooltipStyle, ...props.tooltip, visible: true};
     const spikesStyle = {...defaultSpikesStyle, ...props.spikesStyle};
 
     // grab the dimensions of the actual plot after removing the margins from the specified width and height
@@ -96,13 +99,13 @@ function ScatterChart(props: Props): JSX.Element {
     const axesRef = useRef<Axes>();
 
     // reference for the min/max values
-    const minValueRef = useRef<number>(0);
-    const maxValueRef = useRef<number>(1);
+    const minValueRef = useRef<number>(minWeight);
+    const maxValueRef = useRef<number>(maxWeight);
 
-    // // unlike the magnifier, the handler forms a closure on the tooltip properties, and so if they change in this
-    // // component, the closed properties are unchanged. using a ref allows the properties to which the reference
-    // // points to change.
-    // const tooltipRef = useRef(tooltip);
+    // unlike the magnifier, the handler forms a closure on the tooltip properties, and so if they change in this
+    // component, the closed properties are unchanged. using a ref allows the properties to which the reference
+    // points to change.
+    const tooltipRef = useRef(tooltip);
 
     // calculates to the time-range based on the (min, max)-time from the props
     const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
@@ -158,7 +161,7 @@ function ScatterChart(props: Props): JSX.Element {
             .attr("id", "clip")
             .append("rect")
             .attr("width", plotDimensions.width)
-            .attr("height", plotDimensions.height)
+            .attr("height", plotDimensions.height - margin.top)
         ;
 
         return {
@@ -166,6 +169,147 @@ function ScatterChart(props: Props): JSX.Element {
             xAxisSelection, yAxisSelection,
             xScale, yScale
         };
+    }
+
+    /**
+     * Renders a tooltip showing the neuron, spike time, and the spike strength when the mouse hovers over a spike.
+     * @param {Datum} datum The spike datum (t ms, s mV)
+     * @param {string} seriesName The name of the series (i.e. the neuron ID)
+     * @param {SVGPathElement} segment The SVG line element representing the spike, over which the mouse is hovering.
+     */
+    function handleShowTooltip(datum: Datum, seriesName: string, segment: SVGPathElement): void {
+        if(!tooltipRef.current.visible) {
+            return;
+        }
+
+        // Use D3 to select element, change color and size
+        d3.select<SVGPathElement, Datum>(segment)
+            .attr('stroke', spikesStyle.highlightColor)
+            .attr('stroke-width', spikesStyle.highlightWidth)
+            // .attr('stroke-linecap', "round")
+        ;
+
+        if (tooltipRef.current.visible) {
+            // create the rounded rectangle for the tooltip's background
+            const rect = d3.select<SVGSVGElement | null, any>(containerRef.current)
+                .append<SVGRectElement>('rect')
+                .attr('id', `r${datum.time}-${seriesName}`)
+                .attr('class', 'tooltip')
+                .attr('rx', tooltipRef.current.borderRadius)
+                .attr('fill', tooltipRef.current.backgroundColor)
+                .attr('fill-opacity', tooltipRef.current.backgroundOpacity)
+                .attr('stroke', tooltipRef.current.borderColor)
+                .attr('stroke-width', tooltipRef.current.borderWidth)
+            ;
+
+            // display the neuron ID in the tooltip
+            const header = d3.select<SVGSVGElement | null, any>(containerRef.current)
+                .append<SVGTextElement>("text")
+                .attr('id', `tn${datum.time}-${seriesName}`)
+                .attr('class', 'tooltip')
+                .attr('fill', tooltipRef.current.fontColor)
+                .attr('font-family', 'sans-serif')
+                .attr('font-size', tooltipRef.current.fontSize)
+                .attr('font-weight', tooltipRef.current.fontWeight)
+                .text(() => seriesName)
+            ;
+
+            // display the time (ms) and spike strength (mV) in the tooltip
+            const text = d3.select<SVGSVGElement | null, any>(containerRef.current)
+                .append<SVGTextElement>("text")
+                .attr('id', `t${datum.time}-${seriesName}`)
+                .attr('class', 'tooltip')
+                .attr('fill', tooltipRef.current.fontColor)
+                .attr('font-family', 'sans-serif')
+                .attr('font-size', tooltipRef.current.fontSize + 2)
+                .attr('font-weight', tooltipRef.current.fontWeight + 150)
+                .text(() => `${datum.time} ms, ${d3.format(".2")(datum.value)} mV`)
+            ;
+
+            // calculate the max width and height of the text
+            const tooltipWidth = Math.max(header.node()?.getBBox()?.width || 0, text.node()?.getBBox()?.width || 0);
+            const headerTextHeight = header.node()?.getBBox()?.height || 0;
+            const idHeight = text.node()?.getBBox()?.height || 0;
+            const textHeight = headerTextHeight + idHeight;
+
+            // set the header text location
+            header
+                .attr('x', () => tooltipX(datum.time, tooltipWidth) + tooltipRef.current.paddingLeft)
+                .attr('y', () => tooltipY(seriesName, datum.value, textHeight) - idHeight + textHeight + tooltipRef.current.paddingTop)
+            ;
+
+            // set the tooltip text (i.e. neuron ID) location
+            text
+                .attr('x', () => tooltipX(datum.time, tooltipWidth) + tooltipRef.current.paddingLeft)
+                .attr('y', () => tooltipY(seriesName, datum.value, textHeight) + textHeight + tooltipRef.current.paddingTop)
+            ;
+
+            // set the position, width, and height of the tooltip rect based on the text height and width and the padding
+            rect.attr('x', () => tooltipX(datum.time, tooltipWidth))
+                .attr('y', () => tooltipY(seriesName, datum.value, textHeight))
+                .attr('width', tooltipWidth + tooltipRef.current.paddingLeft + tooltipRef.current.paddingRight)
+                .attr('height', textHeight + tooltipRef.current.paddingTop + tooltipRef.current.paddingBottom)
+            ;
+
+        }
+    }
+
+    /**
+     * Calculates the x-coordinate of the lower left-hand side of the tooltip rectangle (obviously without
+     * "rounded corners"). Adjusts the x-coordinate so that tooltip is visible on the edges of the plot.
+     * @param {number} time The spike time
+     * @param {number} textWidth The width of the tooltip text
+     * @return {number} The x-coordinate of the lower left-hand side of the tooltip rectangle
+     */
+    function tooltipX(time: number, textWidth: number): number {
+        return Math
+            .min(
+                Math.max(
+                    axesRef.current!.xAxis.scale<ScaleLinear<number, number>>()(time),
+                    textWidth / 2
+                ),
+                plotDimensions.width - textWidth / 2
+            ) + margin.left - textWidth / 2 - tooltip.paddingLeft;
+    }
+
+    /**
+     * Calculates the y-coordinate of the lower-left-hand corner of the tooltip rectangle. Adjusts the y-coordinate
+     * so that the tooltip is visible on the upper edge of the plot
+     * @param {string} seriesName The name of the series
+     * @param {number} value The y-value of the series
+     * @param {number} textHeight The height of the header and neuron ID text
+     * @return {number} The y-coordinate of the lower-left-hand corner of the tooltip rectangle
+     */
+    function tooltipY(seriesName: string, value: number, textHeight: number): number {
+        const scale = axesRef.current!.yAxis.scale<ScaleLinear<number, number>>();
+        const y = (scale(value) || 0) + margin.top - tooltip.paddingBottom - textHeight - tooltip.paddingTop;
+        return y > 0 ? y : y + tooltip.paddingBottom + textHeight + tooltip.paddingTop;
+    }
+
+    /**
+     * @return {number} The height of the spikes line
+     */
+    function spikeLineHeight(): number {
+        return plotDimensions.height / seriesList.length;
+    }
+
+    /**
+     * Removes the tooltip when the mouse has moved away from the spike
+     * @param {Datum} datum The spike datum (t ms, s mV)
+     * @param {string} seriesName The name of the series (i.e. the neuron ID)
+     * @param {SVGPathElement} segment The SVG line element representing the spike, over which the mouse is hovering.
+     */
+    function handleHideTooltip(datum: Datum, seriesName: string, segment: SVGPathElement) {
+        // Use D3 to select element, change color and size
+        d3.select<SVGPathElement, Datum>(segment)
+            // .attr('stroke', spikesStyle.color)
+            // .attr('stroke-width', spikesStyle.lineWidth);
+            .attr('stroke', 'steelblue')
+            .attr('stroke-width', 1);
+
+        if(tooltipRef.current.visible) {
+            d3.selectAll<SVGPathElement, Datum>('.tooltip').remove();
+        }
     }
 
     /**
@@ -191,8 +335,8 @@ function ScatterChart(props: Props): JSX.Element {
             axesRef.current.xScale.domain([timeRangeRef.current.start, timeRangeRef.current.end]);
             axesRef.current.xAxisSelection.call(axesRef.current.xAxis);
 
-            // create the x-axis
-            axesRef.current.yScale.domain([minValue, maxValue]); // todo should this be dynamic?
+            // create the y-axis
+            axesRef.current.yScale.domain([Math.max(minWeight, minValue), Math.min(maxWeight, maxValue)]); // todo should this be dynamic?
             axesRef.current.yAxisSelection.call(axesRef.current.yAxis);
 
             // set up the main <g> container for svg and translate it based on the margins, but do it only
@@ -205,70 +349,6 @@ function ScatterChart(props: Props): JSX.Element {
                     .append<SVGGElement>('g')
                 ;
             }
-
-            // const data: Array<[number, number]>[] = seriesList
-            //     .map(series => series.data
-            //         .filter(datum => datum.time >= timeRangeRef.current.start && datum.time <= timeRangeRef.current.end)
-            //         .map(datum => [datum.time, datum.value]) as Array<[number, number]>
-            //     );
-            // // const data: Array<[string, Array<[number, number]>]> = seriesList
-            // //     .map(series => [series.name, series.data
-            // //         .filter(datum => datum.time >= timeRangeRef.current.start && datum.time <= timeRangeRef.current.end)
-            // //         .map(datum => [datum.time, datum.value]) as Array<[number, number]>]
-            // //     );
-
-
-            // // Create a update selection: bind to the new data
-            // const updateSelection = mainGRef.current
-            //     .selectAll(".weights")
-            //     .data(data);
-            //
-            // updateSelection
-            //     .join(
-            //         enter => enter
-            //             .append("path")
-            //             .attr("class", "weights")
-            //             // @ts-ignore
-            //             .merge(updateSelection)
-            //             .attr("d", d3.line()
-            //                 .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
-            //                 .y((d: [number, number]) => axesRef.current!.yScale(d[1])))
-            //             .attr("fill", "none")
-            //             .attr("stroke", "steelblue")
-            //             .attr("stroke-width", 1)
-            //             .attr('transform', `translate(${margin.left}, ${margin.top})`)
-            //             // applies the clipping region so that the data don't display to the left of the y-axis
-            //             .attr("clip-path", "url(#clip)")
-            //     )
-            // ;
-
-            // const updateSelection = mainGRef.current
-            //     .selectAll(".weights")
-            //     .data(data);
-            //
-            // updateSelection
-            //     .attr("fill", "none")
-            //     .attr("stroke", "red")
-            //     .attr("stroke-width", 3)
-            // ;
-            //
-            // updateSelection
-            //     .enter()
-            //     .append("path")
-            //     // .attr("class",`${series.name}`)
-            //     .attr("class", "weights")
-            //     // @ts-ignore
-            //     .merge(updateSelection)
-            //     .attr("d", d3.line()
-            //         .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
-            //         .y((d: [number, number]) => axesRef.current!.yScale(d[1])))
-            //     .attr("fill", "none")
-            //     .attr("stroke", "steelblue")
-            //     .attr("stroke-width", 1)
-            //     .attr('transform', `translate(${margin.left}, ${margin.top})`)
-            //     // applies the clipping region so that the data don't display to the left of the y-axis
-            //     .attr("clip-path", "url(#clip)")
-            // ;
 
             seriesList.forEach(series => {
 
@@ -292,6 +372,14 @@ function ScatterChart(props: Props): JSX.Element {
                             .attr("stroke-width", 1)
                             .attr('transform', `translate(${margin.left}, ${margin.top})`)
                             .attr("clip-path", "url(#clip)")
+                            .on(
+                                "mouseover",
+                                (datum, i, group) => handleShowTooltip({time: datum[i][0], value: datum[i][1]}, series.name, group[i])
+                            )
+                            .on(
+                                "mouseleave",
+                                (datum, i, group) => handleHideTooltip({time: datum[i][0], value: datum[i][1]}, series.name, group[i])
+                            )
                 );
             });
         }
