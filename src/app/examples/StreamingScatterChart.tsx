@@ -89,7 +89,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
 
                         const newPoint = {time: data.newPoints[i].datum.time, value: newValue};
                         series.data.push(newPoint);
-                        console.log(newPoint);
+                        // console.log(newPoint);
                         return series;
                     });
 

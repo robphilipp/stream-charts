@@ -171,29 +171,90 @@ function ScatterChart(props: Props): JSX.Element {
         };
     }
 
+    interface Interval {
+        tLower: number;
+        tUpper: number;
+        vLower: number;
+        vUpper: number;
+    }
+
+    /**
+     * Returns the index of the data point whose time is the upper boundary on the specified
+     * time. If the specified time is larger than any time in the specified data, the returns
+     * the length of the data array. If the specified time is smaller than all the values in
+     * the specified array, then returns -1.
+     * @param {Array<[number, number]>} data The array of points from which to select the
+     * boundary.
+     * @param {number} time The time for which to find the bounding points
+     * @return {number} The index of the upper boundary.
+     */
+    function boundingPointsIndex(data: Array<[number, number]>, time: number): number {
+        const length = data.length;
+        if(time > data[length-1][0]) {
+            return length;
+        }
+        if(time < data[0][0]) {
+            return 0;
+        }
+        return data.findIndex((value, index, array) => {
+            const lowerIndex = Math.max(0, index-1);
+            return array[lowerIndex][0] <= time && time <= array[index][0];
+        })
+    }
+
+    function boundingPoints(data: Array<[number, number]>, time: number): [[number, number], [number, number]] {
+        const upperIndex = boundingPointsIndex(data, time);
+        if(upperIndex <= 0) {
+            return [[NaN, NaN], data[0]];
+        }
+        if(upperIndex >= data.length) {
+            return [data[data.length-1], [NaN, NaN]];
+        }
+        return [data[upperIndex-1], data[upperIndex]];
+    }
+
+    function valueDisplay(lower: [number, number], upper: [number, number]): string {
+        // `${d3.format(",.0f")(time)} ms, ${d3.format(".2")(value)}`
+        if(isNaN(lower[0])) {
+            return `${d3.format(",.0f")(upper[0])} ms, ${d3.format(".2")(upper[1])}`
+        }
+        if(isNaN(upper[0])) {
+            return `${d3.format(",.0f")(lower[0])} ms, ${d3.format(".2")(lower[1])}`
+        }
+        const deltaTime = upper[0] - lower[0];
+        const deltaValue = upper[1] - lower[1];
+        return `${d3.format(",.0f")(lower[0])} ms, ${d3.format(".2")(lower[1])}\n
+        ${d3.format(",.0f")(upper[0])} ms, ${d3.format(".2")(upper[1])}\n
+        ${d3.format(",.0f")(deltaTime)} ms, ${d3.format(".2")(deltaValue)}
+        `;
+    }
+
     /**
      * Renders a tooltip showing the neuron, spike time, and the spike strength when the mouse hovers over a spike.
      * @param {Datum} datum The spike datum (t ms, s mV)
      * @param {string} seriesName The name of the series (i.e. the neuron ID)
      * @param {SVGPathElement} segment The SVG line element representing the spike, over which the mouse is hovering.
      */
-    function handleShowTooltip(datum: Datum, seriesName: string, segment: SVGPathElement): void {
-        if(!tooltipRef.current.visible) {
+    function handleShowTooltip(datum: Array<[number, number]>, seriesName: string, segment: SVGPathElement): void {
+        if(!tooltipRef.current.visible || !containerRef.current || !axesRef.current) {
             return;
         }
+
+        const [x, y] = d3.mouse(containerRef.current);
+        const time = Math.round(axesRef.current.xScale.invert(x - margin.left));
+        const [lower, upper] = boundingPoints(datum, time);
 
         // Use D3 to select element, change color and size
         d3.select<SVGPathElement, Datum>(segment)
             .attr('stroke', spikesStyle.highlightColor)
             .attr('stroke-width', spikesStyle.highlightWidth)
-            // .attr('stroke-linecap', "round")
         ;
 
         if (tooltipRef.current.visible) {
             // create the rounded rectangle for the tooltip's background
             const rect = d3.select<SVGSVGElement | null, any>(containerRef.current)
                 .append<SVGRectElement>('rect')
-                .attr('id', `r${datum.time}-${seriesName}`)
+                .attr('id', `r${time}-${seriesName}`)
                 .attr('class', 'tooltip')
                 .attr('rx', tooltipRef.current.borderRadius)
                 .attr('fill', tooltipRef.current.backgroundColor)
@@ -205,7 +266,7 @@ function ScatterChart(props: Props): JSX.Element {
             // display the neuron ID in the tooltip
             const header = d3.select<SVGSVGElement | null, any>(containerRef.current)
                 .append<SVGTextElement>("text")
-                .attr('id', `tn${datum.time}-${seriesName}`)
+                .attr('id', `tn${time}-${seriesName}`)
                 .attr('class', 'tooltip')
                 .attr('fill', tooltipRef.current.fontColor)
                 .attr('font-family', 'sans-serif')
@@ -214,83 +275,118 @@ function ScatterChart(props: Props): JSX.Element {
                 .text(() => seriesName)
             ;
 
-            // display the time (ms) and spike strength (mV) in the tooltip
-            const text = d3.select<SVGSVGElement | null, any>(containerRef.current)
-                .append<SVGTextElement>("text")
-                .attr('id', `t${datum.time}-${seriesName}`)
-                .attr('class', 'tooltip')
-                .attr('fill', tooltipRef.current.fontColor)
-                .attr('font-family', 'sans-serif')
-                .attr('font-size', tooltipRef.current.fontSize + 2)
-                .attr('font-weight', tooltipRef.current.fontWeight + 150)
-                .text(() => `${datum.time} ms, ${d3.format(".2")(datum.value)} mV`)
-            ;
+            let lowerPointText: d3.Selection<SVGTextElement, any, null, undefined> | undefined = undefined;
+            if(!isNaN(lower[0])) {
+                lowerPointText = d3.select<SVGSVGElement | null, any>(containerRef.current)
+                    .append<SVGTextElement>("text")
+                    .attr('id', `t${time}-${seriesName}`)
+                    .attr('class', 'tooltip')
+                    .attr('fill', tooltipRef.current.fontColor)
+                    .attr('font-family', 'sans-serif')
+                    .attr('font-size', tooltipRef.current.fontSize + 2)
+                    .attr('font-weight', tooltipRef.current.fontWeight + 150)
+                    .text(() => `lower: ${d3.format(",.0f")(lower[0])} ms, ${d3.format(".2")(lower[1])}`)
+                ;
+            }
+
+            let upperPointText: d3.Selection<SVGTextElement, any, null, undefined> | undefined = undefined;
+            if(!isNaN(upper[0])) {
+                upperPointText = d3.select<SVGSVGElement | null, any>(containerRef.current)
+                    .append<SVGTextElement>("text")
+                    .attr('id', `t${time}-${seriesName}`)
+                    .attr('class', 'tooltip')
+                    .attr('fill', tooltipRef.current.fontColor)
+                    .attr('font-family', 'sans-serif')
+                    .attr('font-size', tooltipRef.current.fontSize + 2)
+                    .attr('font-weight', tooltipRef.current.fontWeight + 150)
+                    .text(() => `upper: ${d3.format(",.0f")(upper[0])} ms, ${d3.format(".2")(upper[1])}`)
+                ;
+            }
+
+            let deltaText: d3.Selection<SVGTextElement, any, null, undefined> | undefined = undefined;
+            if(lowerPointText && upperPointText) {
+                deltaText = d3.select<SVGSVGElement | null, any>(containerRef.current)
+                    .append<SVGTextElement>("text")
+                    .attr('id', `t${time}-${seriesName}`)
+                    .attr('class', 'tooltip')
+                    .attr('fill', tooltipRef.current.fontColor)
+                    .attr('font-family', 'sans-serif')
+                    .attr('font-size', tooltipRef.current.fontSize + 2)
+                    .attr('font-weight', tooltipRef.current.fontWeight + 150)
+                    .text(() => `change: ${d3.format(",.0f")(upper[0] - lower[0])} ms, ${d3.format(".2")(upper[1] - lower[1])}`)
+                ;
+            }
 
             // calculate the max width and height of the text
-            const tooltipWidth = Math.max(header.node()?.getBBox()?.width || 0, text.node()?.getBBox()?.width || 0);
-            const headerTextHeight = header.node()?.getBBox()?.height || 0;
-            const idHeight = text.node()?.getBBox()?.height || 0;
-            const textHeight = headerTextHeight + idHeight;
+            const tooltipWidth = Math.max(
+                header.node()?.getBBox()?.width || 0,
+                lowerPointText?.node()?.getBBox()?.width || 0,
+                upperPointText?.node()?.getBBox()?.width || 0,
+                deltaText?.node()?.getBBox()?.width || 0
+            );
+            const headerTextHeight = header.node()!.getBBox()!.height || 0;
+            const lowerHeight = lowerPointText?.node()?.getBBox()?.height || 0;
+            const upperHeight = upperPointText?.node()?.getBBox()?.height || 0;
+            const deltaHeight = deltaText?.node()?.getBBox()?.height || 0;
+            const textHeight = headerTextHeight + lowerHeight + upperHeight + deltaHeight;
 
             // set the header text location
             header
-                .attr('x', () => tooltipX(datum.time, tooltipWidth) + tooltipRef.current.paddingLeft)
-                .attr('y', () => tooltipY(seriesName, datum.value, textHeight) - idHeight + textHeight + tooltipRef.current.paddingTop)
+                .attr('x', () => tooltipX(x, tooltipWidth) + tooltipRef.current.paddingLeft)
+                .attr('y', () => tooltipY(y, textHeight) - (lowerHeight + upperHeight + deltaHeight) + textHeight + tooltipRef.current.paddingTop)
             ;
 
-            // set the tooltip text (i.e. neuron ID) location
-            text
-                .attr('x', () => tooltipX(datum.time, tooltipWidth) + tooltipRef.current.paddingLeft)
-                .attr('y', () => tooltipY(seriesName, datum.value, textHeight) + textHeight + tooltipRef.current.paddingTop)
-            ;
+            if(lowerPointText) {
+                lowerPointText
+                    .attr('x', () => tooltipX(x, tooltipWidth) + tooltipRef.current.paddingLeft)
+                    .attr('y', () => tooltipY(y, textHeight) + headerTextHeight + lowerHeight + tooltipRef.current.paddingTop)
+                ;
+            }
+            if(upperPointText) {
+                upperPointText!
+                    .attr('x', () => tooltipX(x, tooltipWidth) + tooltipRef.current.paddingLeft)
+                    .attr('y', () => tooltipY(y, textHeight) + headerTextHeight + lowerHeight + upperHeight + tooltipRef.current.paddingTop)
+                ;
+            }
+            if(deltaText) {
+                deltaText!
+                    .attr('x', () => tooltipX(x, tooltipWidth) + tooltipRef.current.paddingLeft)
+                    .attr('y', () => tooltipY(y, textHeight) + textHeight + tooltipRef.current.paddingTop)
+                ;
+            }
 
             // set the position, width, and height of the tooltip rect based on the text height and width and the padding
-            rect.attr('x', () => tooltipX(datum.time, tooltipWidth))
-                .attr('y', () => tooltipY(seriesName, datum.value, textHeight))
+            rect.attr('x', () => tooltipX(x, tooltipWidth))
+                .attr('y', () => tooltipY(y, textHeight))
                 .attr('width', tooltipWidth + tooltipRef.current.paddingLeft + tooltipRef.current.paddingRight)
                 .attr('height', textHeight + tooltipRef.current.paddingTop + tooltipRef.current.paddingBottom)
             ;
-
         }
     }
 
     /**
      * Calculates the x-coordinate of the lower left-hand side of the tooltip rectangle (obviously without
      * "rounded corners"). Adjusts the x-coordinate so that tooltip is visible on the edges of the plot.
-     * @param {number} time The spike time
+     * @param {number} x The current x-coordinate of the mouse
      * @param {number} textWidth The width of the tooltip text
      * @return {number} The x-coordinate of the lower left-hand side of the tooltip rectangle
      */
-    function tooltipX(time: number, textWidth: number): number {
-        return Math
-            .min(
-                Math.max(
-                    axesRef.current!.xAxis.scale<ScaleLinear<number, number>>()(time),
-                    textWidth / 2
-                ),
-                plotDimensions.width - textWidth / 2
-            ) + margin.left - textWidth / 2 - tooltip.paddingLeft;
+    function tooltipX(x: number, textWidth: number): number {
+        if(x + textWidth + tooltip.paddingLeft + 10 > plotDimensions.width + margin.left) {
+            return x - textWidth - tooltip.paddingRight - margin.right;
+        }
+        return x + tooltip.paddingLeft;
     }
 
     /**
      * Calculates the y-coordinate of the lower-left-hand corner of the tooltip rectangle. Adjusts the y-coordinate
      * so that the tooltip is visible on the upper edge of the plot
-     * @param {string} seriesName The name of the series
-     * @param {number} value The y-value of the series
+     * @param {number} y The y-coordinate of the series
      * @param {number} textHeight The height of the header and neuron ID text
      * @return {number} The y-coordinate of the lower-left-hand corner of the tooltip rectangle
      */
-    function tooltipY(seriesName: string, value: number, textHeight: number): number {
-        const scale = axesRef.current!.yAxis.scale<ScaleLinear<number, number>>();
-        const y = (scale(value) || 0) + margin.top - tooltip.paddingBottom - textHeight - tooltip.paddingTop;
-        return y > 0 ? y : y + tooltip.paddingBottom + textHeight + tooltip.paddingTop;
-    }
-
-    /**
-     * @return {number} The height of the spikes line
-     */
-    function spikeLineHeight(): number {
-        return plotDimensions.height / seriesList.length;
+    function tooltipY(y: number, textHeight: number): number {
+        return y + margin.top - tooltip.paddingBottom - textHeight - tooltip.paddingTop;
     }
 
     /**
@@ -299,7 +395,7 @@ function ScatterChart(props: Props): JSX.Element {
      * @param {string} seriesName The name of the series (i.e. the neuron ID)
      * @param {SVGPathElement} segment The SVG line element representing the spike, over which the mouse is hovering.
      */
-    function handleHideTooltip(datum: Datum, seriesName: string, segment: SVGPathElement) {
+    function handleHideTooltip(datum: Array<[number, number]>, seriesName: string, segment: SVGPathElement) {
         // Use D3 to select element, change color and size
         d3.select<SVGPathElement, Datum>(segment)
             // .attr('stroke', spikesStyle.color)
@@ -374,11 +470,11 @@ function ScatterChart(props: Props): JSX.Element {
                             .attr("clip-path", "url(#clip)")
                             .on(
                                 "mouseover",
-                                (datum, i, group) => handleShowTooltip({time: datum[i][0], value: datum[i][1]}, series.name, group[i])
+                                (datumArray, i, group) => handleShowTooltip(datumArray, series.name, group[i])
                             )
                             .on(
                                 "mouseleave",
-                                (datum, i, group) => handleHideTooltip({time: datum[i][0], value: datum[i][1]}, series.name, group[i])
+                                (datumArray, i, group) => handleHideTooltip(datumArray, series.name, group[i])
                             )
                 );
             });
