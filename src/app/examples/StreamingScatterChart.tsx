@@ -75,7 +75,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     useEffect(
         () => {
             const subscription = observableRef.current.subscribe(data => {
-                if(data.maxTime > 3000) {
+                if(data.maxTime > 30000) {
                     subscription.unsubscribe();
                 }
                 else {

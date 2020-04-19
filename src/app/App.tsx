@@ -20,18 +20,18 @@ const App: React.FC = () => {
   return (
     <div className="App">
       <p>Raster Chart</p>
-      <StreamingRasterChart
-          timeWindow={1000}
-          seriesList={data}
-          seriesHeight={12}
-          plotWidth={900}
-      />
-      <StreamingScatterChart
+        <StreamingScatterChart
           timeWindow={1000}
           seriesList={Array.from({length: 50}, (_, i) => seriesFrom(`neuron-${i}`))}
           plotHeight={500}
           plotWidth={900}
-      />
+        />
+        <StreamingRasterChart
+            timeWindow={1000}
+            seriesList={data}
+            seriesHeight={12}
+            plotWidth={900}
+        />
     </div>
   );
 };

@@ -491,6 +491,46 @@ function ScatterChart(props: Props): JSX.Element {
 
             svg.call(zoom);
 
+            const convertedData = seriesList.map(series => selectInTimeRange(series));
+
+
+            // const updateSelection = mainGRef.current!
+            //     .selectAll(".weights")
+            //     .data(convertedData);
+            //
+            // updateSelection
+            //     .attr("fill", "none")
+            //     .attr("stroke", "red")
+            //     .attr("stroke-width", 3)
+            // ;
+            //
+            // updateSelection
+            //     .enter()
+            //     .append("path")
+            //     // .attr("class",`${series.name}`)
+            //     .attr("class", "weights")
+            //     // @ts-ignore
+            //     .merge(updateSelection)
+            //     .attr("d", d3.line()
+            //         .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
+            //         .y((d: [number, number]) => axesRef.current!.yScale(d[1])))
+            //     .attr("fill", "none")
+            //     .attr("stroke", "steelblue")
+            //     .attr("stroke-width", 1)
+            //     .attr('transform', `translate(${margin.left}, ${margin.top})`)
+            //     .attr("clip-path", "url(#clip)")
+            //     .on(
+            //         "mouseover",
+            //         // @ts-ignore
+            //         (datumArray, i, group) => handleShowTooltip(datumArray, 'test', group[i])
+            //     )
+            //     .on(
+            //         "mouseleave",
+            //         // @ts-ignore
+            //         (datumArray, i, group) => handleHideTooltip(group[i])
+            //     )
+            // ;
+
             seriesList.forEach(series => {
 
                 const data = selectInTimeRange(series);
@@ -500,7 +540,7 @@ function ScatterChart(props: Props): JSX.Element {
                 // Create a update selection: bind to the new data
                 mainGRef.current!
                     .selectAll(`#${series.name}`)
-                    .data([data, data], () => `${series.name}-${timeRangeRef.current.end}`)
+                    .data([data, data], () => `${series.name}`)
                     .join(
                         enter => enter
                             .append("path")

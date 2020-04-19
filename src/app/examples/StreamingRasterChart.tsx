@@ -2,7 +2,8 @@ import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
 import {Datum, Series} from "../charts/datumSeries";
 import RasterChart from "../charts/RasterChart";
-import {randomSpikeDataObservable} from "./randomData";
+import {ChartData, randomSpikeDataObservable} from "./randomData";
+import {Observable} from "rxjs";
 
 /**
  * The properties
@@ -36,7 +37,7 @@ function StreamingRasterChart(props: Props): JSX.Element {
     const seriesRef = useRef<Array<Series>>(seriesList);
     const currentTimeRef = useRef<number>(0);
 
-    const observableRef = useRef(randomSpikeDataObservable(seriesList.length));
+    const observableRef = useRef<Observable<ChartData>>(randomSpikeDataObservable(seriesList.length));
 
     const [tooltipVisible, setTooltipVisible] = useState(false);
     const [magnifierVisible, setMagnifierVisible] = useState(false);
@@ -46,7 +47,7 @@ function StreamingRasterChart(props: Props): JSX.Element {
     useEffect(
         () => {
             const subscription = observableRef.current.subscribe(data => {
-                if(data.maxTime > 3000) {
+                if(data.maxTime > 30000) {
                     subscription.unsubscribe();
                 }
                 else {
