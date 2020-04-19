@@ -1,9 +1,9 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import {adjustedDimensions, Margin} from "./margins";
-import {Datum, PixelDatum, Series} from "./datumSeries";
+import {Datum, Series} from "./datumSeries";
 import {TimeRange, TimeRangeType} from "./timeRange";
-import {Selection, Axis, Line, ScaleLinear, ScaleBand, ZoomTransform} from "d3";
+import {Selection, Axis, Line, ScaleLinear, ZoomTransform} from "d3";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
@@ -18,7 +18,7 @@ const defaultSpikesStyle = {
     color: '#c95d15',
     lineWidth: 2,
     highlightColor: '#d2933f',
-    highlightWidth: 4
+    highlightWidth: 3
 };
 const defaultPlotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'};
 
@@ -46,6 +46,7 @@ interface Props {
     spikesStyle?: Partial<{color: string, lineWidth: number, highlightColor: string, highlightWidth: number}>;
     plotGridLines?: Partial<{ visible: boolean, color: string }>;
     tooltip?: Partial<TooltipStyle>;
+    tooltipValueLabel?: string;
 
     minWeight?: number;
     maxWeight?: number;
@@ -70,6 +71,7 @@ function ScatterChart(props: Props): JSX.Element {
         height,
         backgroundColor = '#202020',
         minWeight = -1, maxWeight = 1,
+        tooltipValueLabel = 'weight',
         minTime, maxTime,
         seriesList
     } = props;
@@ -280,6 +282,8 @@ function ScatterChart(props: Props): JSX.Element {
                 .text(() => seriesName)
             ;
 
+            // create the table that shows the points that come before and after the mouse time, and the
+            // changes in the time and value
             const table = d3.select<SVGSVGElement | null, any>(containerRef.current)
                 .append("g")
                 .attr('id', `t${time}-${seriesName}-header`)
@@ -291,8 +295,8 @@ function ScatterChart(props: Props): JSX.Element {
             ;
 
             const headerRow = table.append('g').attr('font-weight', tooltipRef.current.fontWeight + 550);
-            const hrLower = headerRow.append<SVGTextElement>("text").text(() => 'lower');
-            const hrUpper = headerRow.append<SVGTextElement>("text").text(() => 'upper');
+            const hrLower = headerRow.append<SVGTextElement>("text").text(() => 'before');
+            const hrUpper = headerRow.append<SVGTextElement>("text").text(() => 'after');
             const hrDelta = headerRow.append<SVGTextElement>("text").text(() => '∆');
 
             const trHeader = table.append<SVGTextElement>("text").text(() => 't (ms)');
@@ -300,24 +304,21 @@ function ScatterChart(props: Props): JSX.Element {
             const trUpper = table.append<SVGTextElement>("text").text(() => formatTime(upper[0]));
             const trDelta = table.append<SVGTextElement>("text").text(() => formatTimeChange(lower[0], upper[0]));
 
-            const vrHeader = table.append<SVGTextElement>("text").text(() => 'y');
+            const vrHeader = table.append<SVGTextElement>("text").text(() => tooltipValueLabel);
             const vrLower = table.append<SVGTextElement>("text").text(() => formatValue(lower[1]));
             const vrUpper = table.append<SVGTextElement>("text").text(() => formatValue(upper[1]));
             const vrDelta = table.append<SVGTextElement>("text").text(() => formatValueChange(lower[1], upper[1]));
 
-            const tw = (elem: Selection<SVGTextElement, any, null, undefined>) => elem.node()?.getBBox()?.width || 0;
-            const th = (elem: Selection<SVGTextElement, any, null, undefined>) => elem.node()?.getBBox()?.height || 0;
-            const sw = (spaces: number) => spaces * tw(hrLower) / 5;
+            const textWidthOf = (elem: TextSelection) => elem.node()?.getBBox()?.width || 0;
+            const textHeightOf = (elem: TextSelection) => elem.node()?.getBBox()?.height || 0;
+            const spacesWidthFor = (spaces: number) => spaces * textWidthOf(hrLower) / 5;
 
             // calculate the max width and height of the text
-            const tooltipWidth = Math.max(
-                tw(header),
-                sw(33),
-            );
-            const headerTextHeight = th(header);
-            const headerRowHeight = th(hrLower);
-            const timeRowHeight = th(trHeader);
-            const valueRowHeight = th(vrHeader);
+            const tooltipWidth = Math.max(textWidthOf(header), spacesWidthFor(33));
+            const headerTextHeight = textHeightOf(header);
+            const headerRowHeight = textHeightOf(hrLower);
+            const timeRowHeight = textHeightOf(trHeader);
+            const valueRowHeight = textHeightOf(vrHeader);
             const textHeight = headerTextHeight + headerRowHeight + timeRowHeight + valueRowHeight;
 
             // set the header text location
@@ -325,29 +326,28 @@ function ScatterChart(props: Props): JSX.Element {
             const yTooltip = tooltipY(y, textHeight) + tooltipRef.current.paddingTop;
             header
                 .attr('x', () => xTooltip)
-                // .attr('y', () => tooltipY(y, textHeight) - (lowerHeight + upperHeight + deltaHeight) + textHeight + tooltipRef.current.paddingTop)
                 .attr('y', () => yTooltip - (headerRowHeight + timeRowHeight + valueRowHeight) + textHeight)
             ;
 
             const hrRowY = yTooltip + headerTextHeight + headerRowHeight;
-            const hrLowerX = sw(14);
-            const hrUpperX = sw(24);
-            const hrDeltaX = sw(32);
-            hrLower.attr('x', () => xTooltip + hrLowerX - tw(hrLower)).attr('y', () => hrRowY);
-            hrUpper.attr('x', () => xTooltip + hrUpperX - tw(hrUpper)).attr('y', () => hrRowY);
-            hrDelta.attr('x', () => xTooltip + hrDeltaX - tw(hrDelta)).attr('y', () => hrRowY);
+            const hrLowerX = spacesWidthFor(14);
+            const hrUpperX = spacesWidthFor(24);
+            const hrDeltaX = spacesWidthFor(32);
+            hrLower.attr('x', () => xTooltip + hrLowerX - textWidthOf(hrLower)).attr('y', () => hrRowY);
+            hrUpper.attr('x', () => xTooltip + hrUpperX - textWidthOf(hrUpper)).attr('y', () => hrRowY);
+            hrDelta.attr('x', () => xTooltip + hrDeltaX - textWidthOf(hrDelta)).attr('y', () => hrRowY);
 
             const trRowY = hrRowY + timeRowHeight;
             trHeader.attr('x', () => xTooltip).attr('y', () => trRowY);
-            trLower.attr('x', () => xTooltip + hrLowerX - tw(trLower)).attr('y', () => trRowY);
-            trUpper.attr('x', () => xTooltip + hrUpperX - tw(trUpper)).attr('y', () => trRowY);
-            trDelta.attr('x', () => xTooltip + hrDeltaX - tw(trDelta)).attr('y', () => trRowY);
+            trLower.attr('x', () => xTooltip + hrLowerX - textWidthOf(trLower)).attr('y', () => trRowY);
+            trUpper.attr('x', () => xTooltip + hrUpperX - textWidthOf(trUpper)).attr('y', () => trRowY);
+            trDelta.attr('x', () => xTooltip + hrDeltaX - textWidthOf(trDelta)).attr('y', () => trRowY);
 
             const vrRowY = trRowY + valueRowHeight;
             vrHeader.attr('x', () => xTooltip).attr('y', () => vrRowY);
-            vrLower.attr('x', () => xTooltip + hrLowerX - tw(vrLower)).attr('y', () => vrRowY);
-            vrUpper.attr('x', () => xTooltip + hrUpperX - tw(vrUpper)).attr('y', () => vrRowY);
-            vrDelta.attr('x', () => xTooltip + hrDeltaX - tw(vrDelta)).attr('y', () => vrRowY);
+            vrLower.attr('x', () => xTooltip + hrLowerX - textWidthOf(vrLower)).attr('y', () => vrRowY);
+            vrUpper.attr('x', () => xTooltip + hrUpperX - textWidthOf(vrUpper)).attr('y', () => vrRowY);
+            vrDelta.attr('x', () => xTooltip + hrDeltaX - textWidthOf(vrDelta)).attr('y', () => vrRowY);
 
             // set the position, width, and height of the tooltip rect based on the text height and width and the padding
             rect.attr('x', () => tooltipX(x, tooltipWidth))

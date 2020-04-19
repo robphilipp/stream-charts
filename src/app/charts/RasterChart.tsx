@@ -11,7 +11,8 @@ import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultSpikesStyle = {
     margin: 2,
-    color: '#c95d15',
+    color: 'steelblue',
+    // color: '#c95d15',
     lineWidth: 2,
     highlightColor: '#d2933f',
     highlightWidth: 4

@@ -19,20 +19,19 @@ const data: Array<Series> = Array.from({length: 50}, (_, i) => seriesFrom(`neuro
 const App: React.FC = () => {
   return (
     <div className="App">
-      {/*<p>Raster Chart</p>*/}
-      {/*<StreamingRasterChart*/}
-      {/*    timeWindow={1000}*/}
-      {/*    seriesList={data}*/}
-      {/*    seriesHeight={10}*/}
-      {/*    plotWidth={900}*/}
-      {/*/>*/}
+      <p>Raster Chart</p>
+      <StreamingRasterChart
+          timeWindow={1000}
+          seriesList={data}
+          seriesHeight={10}
+          plotWidth={900}
+      />
       <StreamingScatterChart
           timeWindow={1000}
           seriesList={Array.from({length: 50}, (_, i) => seriesFrom(`neuron-${i}`))}
           plotHeight={500}
           plotWidth={900}
       />
-      <LineChart/>
     </div>
   );
 };
