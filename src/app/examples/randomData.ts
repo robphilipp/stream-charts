@@ -47,23 +47,24 @@ export function randomSpikeDataObservable(numSeries: number, updatePeriod: numbe
 /**
  * Creates random set of time-series data
  * @param {number} numSeries The number of time-series for which to generate data (i.e. one for each neuron)
+ * @param {number} delta The max change in weight
  * @param {number} [updatePeriod=25] The time-interval between the generation of subsequent data points
  * @return {Observable<SpikesChartData>} An observable that produces data.
  */
-export function randomWeightDataObservable(numSeries: number, maxDelta: number, updatePeriod: number = UPDATE_PERIOD_MS): Observable<ChartData> {
+export function randomWeightDataObservable(numSeries: number, delta: number, updatePeriod: number = 25): Observable<ChartData> {
     return interval(updatePeriod).pipe(
         // convert the number sequence to a time
-        map(sequence => sequence * updatePeriod),
+        map(sequence => (sequence + 1) * updatePeriod),
         // from the time, create a random set of new data points
         map((time, index) => ({
                 maxTime: time,
-                newPoints: new Array<Datum>(numSeries)
-                    .fill({} as Datum)
+                newPoints: Array
+                    .from({length: numSeries}, () => ({time: 0, value: Math.random() * delta}))
                     .map((_: Datum, i: number) => ({
                         index: i,
                         datum: {
                             time: time - Math.ceil(Math.random() * updatePeriod),
-                            value: 2 * (Math.random() / 2 - 1) * maxDelta
+                            value: (Math.random() - 0.5) * 2 * delta
                         }
                     }))
             })
