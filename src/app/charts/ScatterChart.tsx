@@ -566,7 +566,7 @@ function ScatterChart(props: Props): JSX.Element {
             }
 
             const subscription = seriesObservable.subscribe(data => {
-                if(data.maxTime > 3000) {
+                if(data.maxTime > 30000) {
                     subscription.unsubscribe();
                 }
                 else {

@@ -43,34 +43,34 @@ function StreamingRasterChart(props: Props): JSX.Element {
     const [magnifierVisible, setMagnifierVisible] = useState(false);
     const [trackerVisible, setTrackerVisible] = useState(false);
 
-    // called on mount to set up the <g> element into which to render
-    useEffect(
-        () => {
-            const subscription = observableRef.current.subscribe(data => {
-                if(data.maxTime > 3000) {
-                    subscription.unsubscribe();
-                }
-                else {
-                    // updated the current time to be the max of the new data
-                    currentTimeRef.current = data.maxTime;
-
-                    // for each series, add a point if there is a  spike value (i.e. spike value > 0)
-                    seriesRef.current = seriesRef.current.map((series, i) => {
-                        if(data.newPoints[i].datum.value > 0) {
-                            series.data.push(data.newPoints[i].datum);
-                        }
-                        return series;
-                    });
-
-                    // update the data
-                    setLiveData(seriesRef.current);
-                }
-            });
-
-            // stop the stream on dismount
-            return () => subscription.unsubscribe();
-        }, [timeWindow]
-    );
+    // // called on mount to set up the <g> element into which to render
+    // useEffect(
+    //     () => {
+    //         const subscription = observableRef.current.subscribe(data => {
+    //             if(data.maxTime > 3000) {
+    //                 subscription.unsubscribe();
+    //             }
+    //             else {
+    //                 // updated the current time to be the max of the new data
+    //                 currentTimeRef.current = data.maxTime;
+    //
+    //                 // for each series, add a point if there is a  spike value (i.e. spike value > 0)
+    //                 seriesRef.current = seriesRef.current.map((series, i) => {
+    //                     if(data.newPoints[i].datum.value > 0) {
+    //                         series.data.push(data.newPoints[i].datum);
+    //                     }
+    //                     return series;
+    //                 });
+    //
+    //                 // update the data
+    //                 setLiveData(seriesRef.current);
+    //             }
+    //         });
+    //
+    //         // stop the stream on dismount
+    //         return () => subscription.unsubscribe();
+    //     }, [timeWindow]
+    // );
 
     return (
         <div>
@@ -90,8 +90,10 @@ function StreamingRasterChart(props: Props): JSX.Element {
                 width={plotWidth}
                 height={seriesList.length * seriesHeight + 30 + 30}
                 seriesList={liveData}
+                seriesObservable={observableRef.current}
                 minTime={Math.max(0, currentTimeRef.current - timeWindow)}
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}
+                timeWindow={timeWindow}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 tooltip={{visible: tooltipVisible}}
                 magnifier={{visible: magnifierVisible}}
