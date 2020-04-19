@@ -262,22 +262,10 @@ function ScatterChart(props: Props): JSX.Element {
                 .attr('font-weight', tooltipRef.current.fontWeight + 150)
             ;
 
-            const headerRow = table
-                .append('g')
-                .attr('font-weight', tooltipRef.current.fontWeight + 550)
-            ;
-            const hrLower = headerRow
-                .append<SVGTextElement>("text")
-                .text(() => 'lower')
-            ;
-            const hrUpper = headerRow
-                .append<SVGTextElement>("text")
-                .text(() => 'upper')
-            ;
-            const hrDelta = headerRow
-                .append<SVGTextElement>("text")
-                .text(() => '∆')
-            ;
+            const headerRow = table.append('g').attr('font-weight', tooltipRef.current.fontWeight + 550);
+            const hrLower = headerRow.append<SVGTextElement>("text").text(() => 'lower');
+            const hrUpper = headerRow.append<SVGTextElement>("text").text(() => 'upper');
+            const hrDelta = headerRow.append<SVGTextElement>("text").text(() => '∆');
 
             const fn = (value: number, format: string): string => isNaN(value) ? '---' : d3.format(format)(value);
             const ft = (value: number): string => fn(value, " ,.0f");
@@ -324,54 +312,21 @@ function ScatterChart(props: Props): JSX.Element {
             const hrLowerX = sw(16);
             const hrUpperX = sw(24);
             const hrDeltaX = sw(32);
-            hrLower
-                .attr('x', () => xTooltip + hrLowerX - tw(hrLower))
-                .attr('y', () => hrRowY)
-            ;
-            hrUpper
-                .attr('x', () => xTooltip + hrUpperX - tw(hrUpper))
-                .attr('y', () => hrRowY)
-            ;
-            hrDelta
-                .attr('x', () => xTooltip + hrDeltaX - tw(hrDelta))
-                .attr('y', () => hrRowY)
-            ;
+            hrLower.attr('x', () => xTooltip + hrLowerX - tw(hrLower)).attr('y', () => hrRowY);
+            hrUpper.attr('x', () => xTooltip + hrUpperX - tw(hrUpper)).attr('y', () => hrRowY);
+            hrDelta.attr('x', () => xTooltip + hrDeltaX - tw(hrDelta)).attr('y', () => hrRowY);
 
             const trRowY = hrRowY + timeRowHeight;
-            trHeader
-                .attr('x', () => xTooltip)
-                .attr('y', () => trRowY)
-            ;
-            trLower
-                .attr('x', () => xTooltip + hrLowerX - tw(trLower))
-                .attr('y', () => trRowY)
-            ;
-            trUpper
-                .attr('x', () => xTooltip + hrUpperX - tw(trUpper))
-                .attr('y', () => trRowY)
-            ;
-            trDelta
-                .attr('x', () => xTooltip + hrDeltaX - tw(trDelta))
-                .attr('y', () => trRowY)
-            ;
+            trHeader.attr('x', () => xTooltip).attr('y', () => trRowY);
+            trLower.attr('x', () => xTooltip + hrLowerX - tw(trLower)).attr('y', () => trRowY);
+            trUpper.attr('x', () => xTooltip + hrUpperX - tw(trUpper)).attr('y', () => trRowY);
+            trDelta.attr('x', () => xTooltip + hrDeltaX - tw(trDelta)).attr('y', () => trRowY);
 
             const vrRowY = trRowY + valueRowHeight;
-            vrHeader
-                .attr('x', () => xTooltip)
-                .attr('y', () => vrRowY)
-            ;
-            vrLower
-                .attr('x', () => xTooltip + hrLowerX - tw(vrLower))
-                .attr('y', () => vrRowY)
-            ;
-            vrUpper
-                .attr('x', () => xTooltip + hrUpperX - tw(vrUpper))
-                .attr('y', () => vrRowY)
-            ;
-            vrDelta
-                .attr('x', () => xTooltip + hrDeltaX - tw(vrDelta))
-                .attr('y', () => vrRowY)
-            ;
+            vrHeader.attr('x', () => xTooltip).attr('y', () => vrRowY);
+            vrLower.attr('x', () => xTooltip + hrLowerX - tw(vrLower)).attr('y', () => vrRowY);
+            vrUpper.attr('x', () => xTooltip + hrUpperX - tw(vrUpper)).attr('y', () => vrRowY);
+            vrDelta.attr('x', () => xTooltip + hrDeltaX - tw(vrDelta)).attr('y', () => vrRowY);
 
             // set the position, width, and height of the tooltip rect based on the text height and width and the padding
             rect.attr('x', () => tooltipX(x, tooltipWidth))
