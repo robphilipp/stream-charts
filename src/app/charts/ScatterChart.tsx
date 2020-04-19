@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import {adjustedDimensions, Margin} from "./margins";
 import {Datum, PixelDatum, Series} from "./datumSeries";
 import {TimeRange, TimeRangeType} from "./timeRange";
-import {Selection, Axis, Line, ScaleLinear, ScaleBand} from "d3";
+import {Selection, Axis, Line, ScaleLinear, ScaleBand, ZoomTransform} from "d3";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
@@ -169,6 +169,34 @@ function ScatterChart(props: Props): JSX.Element {
             xAxisSelection, yAxisSelection,
             xScale, yScale
         };
+    }
+
+    /**
+     * Called when the user uses the scroll wheel (or scroll gesture) to zoom in or out. Zooms in/out
+     * at the location of the mouse when the scroll wheel or gesture was applied.
+     * @param {ZoomTransform} transform The d3 zoom transformation information
+     * @param {number} x The x-position of the mouse when the scroll wheel or gesture is used
+     * @callback
+        */
+    function onZoom(transform: ZoomTransform, x: number): void {
+        const time = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>().invert(x);
+        timeRangeRef.current = timeRangeRef.current!.scale(transform.k, time);
+        zoomFactorRef.current = transform.k;
+        updatePlot(timeRangeRef.current);
+    }
+
+    /**
+     * Adjusts the time-range and updates the plot when the plot is dragged to the left or right
+     * @param {number} deltaX The amount that the plot is dragged
+     * @callback
+        */
+    function onPan(deltaX: number): void {
+        const scale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
+        const currentTime = timeRangeRef!.current.start;
+        const x = scale(currentTime);
+        const deltaTime = scale.invert(x + deltaX) - currentTime;
+        timeRangeRef.current = timeRangeRef.current!.translate(-deltaTime);
+        updatePlot(timeRangeRef.current);
     }
 
     /**
@@ -422,7 +450,7 @@ function ScatterChart(props: Props): JSX.Element {
             axesRef.current.xAxisSelection.call(axesRef.current.xAxis);
 
             // create the y-axis
-            axesRef.current.yScale.domain([Math.max(minWeight, minValue), Math.min(maxWeight, maxValue)]); // todo should this be dynamic?
+            axesRef.current.yScale.domain([Math.max(minWeight, minValue), Math.min(maxWeight, maxValue)]);
             axesRef.current.yAxisSelection.call(axesRef.current.yAxis);
 
             // set up the main <g> container for svg and translate it based on the margins, but do it only
@@ -435,6 +463,27 @@ function ScatterChart(props: Props): JSX.Element {
                     .append<SVGGElement>('g')
                 ;
             }
+
+            // set up panning
+            const drag = d3.drag<SVGSVGElement, Datum>()
+                .on("start", () => d3.select(containerRef.current).style("cursor", "move"))
+                .on("drag", () => onPan(d3.event.dx))
+                .on("end", () => d3.select(containerRef.current).style("cursor", "auto"))
+            ;
+
+            svg.call(drag);
+
+            // set up for zooming
+            const zoom = d3.zoom<SVGSVGElement, Datum>()
+                .scaleExtent([0, 10])
+                .translateExtent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
+                .on("zoom", () => {
+                    console.log(d3.event);
+                    onZoom(d3.event.transform, d3.event.sourceEvent.offsetX -  margin.left);
+                })
+            ;
+
+            svg.call(zoom);
 
             seriesList.forEach(series => {
 
