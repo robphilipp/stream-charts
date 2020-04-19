@@ -22,7 +22,6 @@ const defaultSpikesStyle = {
 };
 const defaultPlotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'};
 
-
 interface Axes {
     xAxis: Axis<number | {valueOf(): number}>;
     yAxis: Axis<number | {valueOf(): number}>;
@@ -35,6 +34,7 @@ interface Axes {
 // the axis-element type return when calling the ".call(axis)" function
 type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 type SvgSelection = Selection<SVGSVGElement, any, null, undefined>;
+type TextSelection = Selection<SVGTextElement, any, null, undefined>;
 
 interface Props {
     width: number;
@@ -267,22 +267,15 @@ function ScatterChart(props: Props): JSX.Element {
             const hrUpper = headerRow.append<SVGTextElement>("text").text(() => 'upper');
             const hrDelta = headerRow.append<SVGTextElement>("text").text(() => '∆');
 
-            const fn = (value: number, format: string): string => isNaN(value) ? '---' : d3.format(format)(value);
-            const ft = (value: number): string => fn(value, " ,.0f");
-            const fv = (value: number): string => fn(value, " ,.3f");
-            const fd = (v1: number, v2: number, format: string): string => isNaN(v1) || isNaN(v2) ? '---' : d3.format(format)(v2 - v1);
-            const fdt = (v1: number, v2: number): string => fd(v1, v2, " ,.0f");
-            const fdv = (v1: number, v2: number): string => fd(v1, v2, " ,.3f");
-
             const trHeader = table.append<SVGTextElement>("text").text(() => 't (ms)');
-            const trLower = table.append<SVGTextElement>("text").text(() => ft(lower[0]));
-            const trUpper = table.append<SVGTextElement>("text").text(() => ft(upper[0]));
-            const trDelta = table.append<SVGTextElement>("text").text(() => fdt(lower[0], upper[0]));
+            const trLower = table.append<SVGTextElement>("text").text(() => formatTime(lower[0]));
+            const trUpper = table.append<SVGTextElement>("text").text(() => formatTime(upper[0]));
+            const trDelta = table.append<SVGTextElement>("text").text(() => formatTimeChange(lower[0], upper[0]));
 
             const vrHeader = table.append<SVGTextElement>("text").text(() => 'y');
-            const vrLower = table.append<SVGTextElement>("text").text(() => fv(lower[1]));
-            const vrUpper = table.append<SVGTextElement>("text").text(() => fv(upper[1]));
-            const vrDelta = table.append<SVGTextElement>("text").text(() => fdv(lower[1], upper[1]));
+            const vrLower = table.append<SVGTextElement>("text").text(() => formatValue(lower[1]));
+            const vrUpper = table.append<SVGTextElement>("text").text(() => formatValue(upper[1]));
+            const vrDelta = table.append<SVGTextElement>("text").text(() => formatValueChange(lower[1], upper[1]));
 
             const tw = (elem: Selection<SVGTextElement, any, null, undefined>) => elem.node()?.getBBox()?.width || 0;
             const th = (elem: Selection<SVGTextElement, any, null, undefined>) => elem.node()?.getBBox()?.height || 0;
@@ -309,7 +302,7 @@ function ScatterChart(props: Props): JSX.Element {
             ;
 
             const hrRowY = yTooltip + headerTextHeight + headerRowHeight;
-            const hrLowerX = sw(16);
+            const hrLowerX = sw(14);
             const hrUpperX = sw(24);
             const hrDeltaX = sw(32);
             hrLower.attr('x', () => xTooltip + hrLowerX - tw(hrLower)).attr('y', () => hrRowY);
@@ -335,6 +328,30 @@ function ScatterChart(props: Props): JSX.Element {
                 .attr('height', textHeight + tooltipRef.current.paddingTop + tooltipRef.current.paddingBottom)
             ;
         }
+    }
+
+    function formatNumber(value: number, format: string): string {
+        return isNaN(value) ? '---' : d3.format(format)(value);
+    }
+
+    function formatTime(value: number): string {
+        return formatNumber(value, " ,.0f");
+    }
+
+    function formatValue(value: number): string {
+        return formatNumber(value, " ,.3f");
+    }
+
+    function formatChange(v1: number, v2: number, format: string): string {
+        return isNaN(v1) || isNaN(v2) ? '---' : d3.format(format)(v2 - v1);
+    }
+
+    function formatTimeChange(v1: number, v2: number): string {
+        return formatChange(v1, v2, " ,.0f");
+    }
+
+    function formatValueChange(v1: number, v2: number): string {
+        return formatChange(v1, v2, " ,.3f");
     }
 
     /**
