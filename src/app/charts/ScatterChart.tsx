@@ -279,13 +279,13 @@ function ScatterChart(props: Props): JSX.Element {
             if(!isNaN(lower[0])) {
                 lowerPointText = d3.select<SVGSVGElement | null, any>(containerRef.current)
                     .append<SVGTextElement>("text")
-                    .attr('id', `t${time}-${seriesName}`)
+                    .attr('id', `t${time}-${seriesName}-lower`)
                     .attr('class', 'tooltip')
                     .attr('fill', tooltipRef.current.fontColor)
                     .attr('font-family', 'sans-serif')
                     .attr('font-size', tooltipRef.current.fontSize + 2)
                     .attr('font-weight', tooltipRef.current.fontWeight + 150)
-                    .text(() => `lower: ${d3.format(",.0f")(lower[0])} ms, ${d3.format(".2")(lower[1])}`)
+                    .text(() => `lower: ${d3.format(" >,.0f")(lower[0])} ms, ${d3.format(".3f")(lower[1])}`)
                 ;
             }
 
@@ -293,13 +293,13 @@ function ScatterChart(props: Props): JSX.Element {
             if(!isNaN(upper[0])) {
                 upperPointText = d3.select<SVGSVGElement | null, any>(containerRef.current)
                     .append<SVGTextElement>("text")
-                    .attr('id', `t${time}-${seriesName}`)
+                    .attr('id', `t${time}-${seriesName}-upper`)
                     .attr('class', 'tooltip')
                     .attr('fill', tooltipRef.current.fontColor)
                     .attr('font-family', 'sans-serif')
                     .attr('font-size', tooltipRef.current.fontSize + 2)
                     .attr('font-weight', tooltipRef.current.fontWeight + 150)
-                    .text(() => `upper: ${d3.format(",.0f")(upper[0])} ms, ${d3.format(".2")(upper[1])}`)
+                    .text(() => `upper: ${d3.format(",.0f")(upper[0])} ms, ${d3.format(".3f")(upper[1])}`)
                 ;
             }
 
@@ -307,13 +307,13 @@ function ScatterChart(props: Props): JSX.Element {
             if(lowerPointText && upperPointText) {
                 deltaText = d3.select<SVGSVGElement | null, any>(containerRef.current)
                     .append<SVGTextElement>("text")
-                    .attr('id', `t${time}-${seriesName}`)
+                    .attr('id', `t${time}-${seriesName}-delta`)
                     .attr('class', 'tooltip')
                     .attr('fill', tooltipRef.current.fontColor)
                     .attr('font-family', 'sans-serif')
                     .attr('font-size', tooltipRef.current.fontSize + 2)
                     .attr('font-weight', tooltipRef.current.fontWeight + 150)
-                    .text(() => `change: ${d3.format(",.0f")(upper[0] - lower[0])} ms, ${d3.format(".2")(upper[1] - lower[1])}`)
+                    .text(() => `change: ${d3.format(",.0f")(upper[0] - lower[0])} ms, ${d3.format(".3f")(upper[1] - lower[1])}`)
                 ;
             }
 
