@@ -225,7 +225,7 @@ function RasterChart(props: Props): JSX.Element {
                 .attr('font-family', 'sans-serif')
                 .attr('font-size', tooltipRef.current.fontSize + 2)
                 .attr('font-weight', tooltipRef.current.fontWeight + 150)
-                .text(() => `${datum.time} ms, ${d3.format(".2")(datum.value)} mV`)
+                .text(() => `${d3.format(",.0f")(datum.time)} ms, ${d3.format(",.2f")(datum.value)} mV`)
             ;
 
             // calculate the max width and height of the text
