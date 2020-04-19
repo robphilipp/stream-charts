@@ -15,8 +15,9 @@ const defaultAxesLabelFont = {
     family: 'sans-serif'
 };
 const defaultSpikesStyle = {
-    color: '#c95d15',
-    lineWidth: 2,
+    color: '#008aad',
+    // color: '#c95d15',
+    lineWidth: 1,
     highlightColor: '#d2933f',
     highlightWidth: 3
 };
@@ -107,7 +108,7 @@ function ScatterChart(props: Props): JSX.Element {
     // unlike the magnifier, the handler forms a closure on the tooltip properties, and so if they change in this
     // component, the closed properties are unchanged. using a ref allows the properties to which the reference
     // points to change.
-    const tooltipRef = useRef(tooltip);
+    const tooltipRef = useRef<TooltipStyle>(tooltip);
 
     // calculates to the time-range based on the (min, max)-time from the props
     const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
@@ -409,21 +410,17 @@ function ScatterChart(props: Props): JSX.Element {
 
     /**
      * Removes the tooltip when the mouse has moved away from the spike
-     * @param {Datum} datum The spike datum (t ms, s mV)
-     * @param {string} seriesName The name of the series (i.e. the neuron ID)
      * @param {SVGPathElement} segment The SVG line element representing the spike, over which the mouse is hovering.
      */
-    function handleHideTooltip(datum: Array<[number, number]>, seriesName: string, segment: SVGPathElement) {
+    function handleHideTooltip(segment?: SVGPathElement) {
+        if(segment) {
         // Use D3 to select element, change color and size
         d3.select<SVGPathElement, Datum>(segment)
-            // .attr('stroke', spikesStyle.color)
-            // .attr('stroke-width', spikesStyle.lineWidth);
-            .attr('stroke', 'steelblue')
-            .attr('stroke-width', 1);
-
-        if(tooltipRef.current.visible) {
-            d3.selectAll<SVGPathElement, Datum>('.tooltip').remove();
+            .attr('stroke', spikesStyle.color)
+            .attr('stroke-width', spikesStyle.lineWidth);
         }
+
+        d3.selectAll<SVGPathElement, Datum>('.tooltip').remove();
     }
 
     /**
@@ -466,9 +463,18 @@ function ScatterChart(props: Props): JSX.Element {
 
             // set up panning
             const drag = d3.drag<SVGSVGElement, Datum>()
-                .on("start", () => d3.select(containerRef.current).style("cursor", "move"))
+                .on("start", () => {
+                    // during a pan, we want to hide the tooltip
+                    tooltipRef.current.visible = false;
+                    handleHideTooltip();
+                    d3.select(containerRef.current).style("cursor", "move");
+                })
                 .on("drag", () => onPan(d3.event.dx))
-                .on("end", () => d3.select(containerRef.current).style("cursor", "auto"))
+                .on("end", () => {
+                    // if the tooltip was originally visible, then allow it to be seen again
+                    tooltipRef.current.visible = tooltip.visible;
+                    d3.select(containerRef.current).style("cursor", "auto")
+                })
             ;
 
             svg.call(drag);
@@ -503,8 +509,8 @@ function ScatterChart(props: Props): JSX.Element {
                                 .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
                                 .y((d: [number, number]) => axesRef.current!.yScale(d[1])))
                             .attr("fill", "none")
-                            .attr("stroke", "steelblue")
-                            .attr("stroke-width", 1)
+                            .attr("stroke", spikesStyle.color)
+                            .attr("stroke-width", spikesStyle.lineWidth)
                             .attr('transform', `translate(${margin.left}, ${margin.top})`)
                             .attr("clip-path", "url(#clip)")
                             .on(
@@ -513,7 +519,7 @@ function ScatterChart(props: Props): JSX.Element {
                             )
                             .on(
                                 "mouseleave",
-                                (datumArray, i, group) => handleHideTooltip(datumArray, series.name, group[i])
+                                (datumArray, i, group) => handleHideTooltip(group[i])
                             )
                 );
             });
