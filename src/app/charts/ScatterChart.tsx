@@ -87,7 +87,7 @@ function ScatterChart(props: Props): JSX.Element {
     const axisStyle = {...defaultAxesStyle, ...props.axisStyle};
     const axisLabelFont = {...defaultAxesLabelFont, ...props.axisLabelFont};
     const plotGridLines = {...defaultPlotGridLines, ...props.plotGridLines};
-    const tooltip: TooltipStyle = {...defaultTooltipStyle, ...props.tooltip, visible: true};
+    const tooltip: TooltipStyle = {...defaultTooltipStyle, ...props.tooltip};
     const spikesStyle = {...defaultSpikesStyle, ...props.spikesStyle};
 
     // grab the dimensions of the actual plot after removing the margins from the specified width and height
@@ -566,7 +566,7 @@ function ScatterChart(props: Props): JSX.Element {
             }
 
             const subscription = seriesObservable.subscribe(data => {
-                if(data.maxTime > 30000) {
+                if(data.maxTime > 3000) {
                     subscription.unsubscribe();
                 }
                 else {
@@ -602,6 +602,7 @@ function ScatterChart(props: Props): JSX.Element {
     // update the plot for tooltip, magnifier, or tracker if their visibility changes
     useEffect(
         () => {
+            tooltipRef.current.visible = tooltip.visible;
             updatePlot(timeRangeRef.current);
         },
         [tooltip.visible]//, magnifier.visible, tracker.visible]
