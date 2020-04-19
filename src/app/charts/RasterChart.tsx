@@ -1,27 +1,24 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
-import {ScaleBand, ScaleLinear, Selection, Axis, ZoomTransform} from "d3";
-import {Datum, Series} from "./RasterChartDriver";
-import {BarMagnifier, BarMagnifierType, LensTransformation} from "./BarMagnifier";
-import {TimeRange, TimeRangeType} from "./TimeRange";
-
-export interface Sides {
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-}
+import {ScaleBand, ScaleLinear, Selection, ZoomTransform} from "d3";
+import {BarMagnifier, BarMagnifierType, LensTransformation} from "./barMagnifier";
+import {TimeRange, TimeRangeType} from "./timeRange";
+import {adjustedDimensions, Margin} from "./margins";
+import {Datum, PixelDatum, Series} from "./datumSeries";
+import {Axis} from "d3";
+import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
+import {Observable} from "rxjs";
+import {ChartData} from "../examples/randomData";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
-
 const defaultSpikesStyle = {
     margin: 2,
-    color: '#c95d15',
+    color: '#008aad',
+    // color: '#c95d15',
     lineWidth: 2,
     highlightColor: '#d2933f',
     highlightWidth: 4
 };
-
 const defaultAxesStyle = {color: '#d2933f'};
 const defaultAxesLabelFont = {
     size: 12,
@@ -29,51 +26,11 @@ const defaultAxesLabelFont = {
     weight: 300,
     family: 'sans-serif'
 };
-
 const defaultPlotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'};
 
-interface TooltipStyle {
-    visible: boolean;
-
-    fontSize: number;
-    fontColor: string;
-    fontFamily: string;
-    fontWeight: number;
-
-    backgroundColor: string;
-    backgroundOpacity: number;
-
-    borderColor: string;
-    borderWidth: number;
-    borderRadius: number;
-
-    paddingLeft: number;
-    paddingRight: number;
-    paddingTop: number;
-    paddingBottom: number;
-}
-
-const defaultTooltipStyle: TooltipStyle = {
-    visible: false,
-
-    fontSize: 12,
-    fontColor: '#d2933f',
-    fontFamily: 'sans-serif',
-    fontWeight: 250,
-    
-    backgroundColor: '#202020',
-    backgroundOpacity: 0.8,
-    
-    borderColor: '#d2933f',
-    borderWidth: 1,
-    borderRadius: 5,
-    
-    paddingLeft: 10,
-    paddingRight: 10,
-    paddingTop: 5,
-    paddingBottom: 10,
-};
-
+/**
+ * Properties for rendering the line-magnifier lens
+ */
 interface LineMagnifierStyle {
     visible: boolean;
     width: number;
@@ -110,12 +67,6 @@ interface MagnifiedDatum extends Datum {
     lens: LensTransformation
 }
 
-interface PixelDatum extends Datum {
-    x: number;
-    y: number;
-}
-
-
 interface Axes {
     xAxis: Axis<number | {valueOf(): number}>;
     yAxis: Axis<string>;
@@ -123,10 +74,13 @@ interface Axes {
     yAxisSelection: AxisElementSelection;
 }
 
+// the axis-element type return when calling the ".call(axis)" function
+type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
+
 interface Props {
     width: number;
     height: number;
-    margin?: Partial<Sides>;
+    margin?: Partial<Margin>;
     spikesStyle?: Partial<{ margin: number, color: string, lineWidth: number, highlightColor: string, highlightWidth: number }>;
     axisLabelFont?: Partial<{ size: number, color: string, family: string, weight: number }>;
     axisStyle?: Partial<{ color: string }>;
@@ -140,11 +94,10 @@ interface Props {
     // and series list is a list of time-series to plot
     minTime: number;
     maxTime: number;
+    timeWindow: number;
     seriesList: Array<Series>;
+    seriesObservable: Observable<ChartData>;
 }
-
-// the axis-element type return when calling the ".call(axis)" function
-type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 
 /**
  * Renders a raster chart
@@ -155,7 +108,8 @@ type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 function RasterChart(props: Props): JSX.Element {
     const {
         seriesList,
-        minTime, maxTime,
+        seriesObservable,
+        minTime, maxTime, timeWindow,
         width,
         height,
         backgroundColor = '#202020',
@@ -195,6 +149,10 @@ function RasterChart(props: Props): JSX.Element {
 
     // calculates to the time-range based on the (min, max)-time from the props
     const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
+
+    const liveDataRef = useRef<Array<Series>>(seriesList);
+    const seriesRef = useRef<Array<Series>>(seriesList);
+    const currentTimeRef = useRef<number>(0);
 
     /**
      * Called when the user uses the scroll wheel (or scroll gesture) to zoom in or out. Zooms in/out
@@ -276,7 +234,7 @@ function RasterChart(props: Props): JSX.Element {
                 .attr('font-family', 'sans-serif')
                 .attr('font-size', tooltipRef.current.fontSize + 2)
                 .attr('font-weight', tooltipRef.current.fontWeight + 150)
-                .text(() => `${datum.time} ms, ${d3.format(".2")(datum.value)} mV`)
+                .text(() => `${d3.format(",.0f")(datum.time)} ms, ${d3.format(",.2f")(datum.value)} mV`)
             ;
 
             // calculate the max width and height of the text
@@ -342,7 +300,7 @@ function RasterChart(props: Props): JSX.Element {
      * @return {number} The height of the spikes line
      */
     function spikeLineHeight(): number {
-        return plotDimensions.height / seriesList.length;
+        return plotDimensions.height / liveDataRef.current.length;
     }
 
     /**
@@ -444,7 +402,7 @@ function RasterChart(props: Props): JSX.Element {
      * @param {Selection<SVGLineElement, Datum, null, undefined> | undefined} path
      * @callback
      */
-    function handleShowTracker(path: d3.Selection<SVGLineElement, Datum, null, undefined> | undefined) {
+    function handleShowTracker(path: Selection<SVGLineElement, Datum, null, undefined> | undefined) {
         if(containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
             path
@@ -470,7 +428,6 @@ function RasterChart(props: Props): JSX.Element {
      * Updates the plot data for the specified time-range, which may have changed due to zoom or pan
      * @param {TimeRange} timeRange The current time range
      */
-    // function updatePlot(timeRange: TimeRange) {
     function updatePlot(timeRange: TimeRangeType) {
         tooltipRef.current = tooltip;
         timeRangeRef.current = timeRange;
@@ -569,7 +526,7 @@ function RasterChart(props: Props): JSX.Element {
             else {
                 spikesRef.current = mainGRef.current!
                     .selectAll<SVGGElement, Series>('g')
-                    .data<Series>(seriesList)
+                    .data<Series>(liveDataRef.current)
                     .enter()
                     .append('g')
                     .attr('class', 'spikes-series')
@@ -609,8 +566,8 @@ function RasterChart(props: Props): JSX.Element {
             // const lineHeight = height / seriesList.length;
             const lineHeight = spikeLineHeight();
             const yScale = d3.scaleBand()
-                .domain(seriesList.map(series => series.name))
-                .range([0, lineHeight * seriesList.length - margin.top]);
+                .domain(liveDataRef.current.map(series => series.name))
+                .range([0, lineHeight * liveDataRef.current.length - margin.top]);
 
             // create and add the axes, grid-lines, and mouse-over functions
             if (!axesRef.current) {
@@ -649,7 +606,7 @@ function RasterChart(props: Props): JSX.Element {
                     const gridLines = svg
                         .select<SVGGElement>('g')
                         .selectAll('grid-line')
-                        .data(seriesList.map(series => series.name));
+                        .data(liveDataRef.current.map(series => series.name));
 
                     gridLines
                         .enter()
@@ -671,7 +628,7 @@ function RasterChart(props: Props): JSX.Element {
                 axesRef.current.yAxisSelection.call(axesRef.current.yAxis);
             }
 
-            seriesList.forEach(series => {
+            liveDataRef.current.forEach(series => {
                 const container = svg
                     .select<SVGGElement>(`#${series.name}`)
                     .selectAll<SVGLineElement, PixelDatum>('line')
@@ -716,54 +673,58 @@ function RasterChart(props: Props): JSX.Element {
         }
     }
 
-    // called when:
-    // 1. component mounts to set up the main <g> element and a <g> element for each series
-    //    into which d3 renders the series
-    // 2. series data changes
-    // 3. time-window changes
-    // 4. plot attributes change
+    // called on mount to set up the <g> element into which to render
     useEffect(
         () => {
-            // const timeRange = timeRangeRef.current.matchesOriginal(minTime, maxTime) ? timeRangeRef.current : TimeRange.of(minTime, maxTime);
-            const timeRange = timeRangeRef.current.matchesOriginal(minTime, maxTime) ? timeRangeRef.current : TimeRange(minTime, maxTime);
-            updatePlot(timeRange);
-        }
+            const subscription = seriesObservable.subscribe(data => {
+                if(data.maxTime > 3000) {
+                    subscription.unsubscribe();
+                }
+                else {
+                    // updated the current time to be the max of the new data
+                    currentTimeRef.current = data.maxTime;
+
+                    // for each series, add a point if there is a  spike value (i.e. spike value > 0)
+                    seriesRef.current = seriesRef.current.map((series, i) => {
+                        if(data.newPoints[i].datum.value > 0) {
+                            series.data.push(data.newPoints[i].datum);
+                        }
+                        return series;
+                    });
+
+                    // update the data
+                    liveDataRef.current = seriesRef.current;
+                    timeRangeRef.current = TimeRange(
+                        Math.max(0, currentTimeRef.current - timeWindow),
+                        Math.max(currentTimeRef.current, timeWindow)
+                    )
+
+                    updatePlot(timeRangeRef.current);
+                }
+            });
+
+            // stop the stream on dismount
+            return () => subscription.unsubscribe();
+        }, []
     );
+
+    // update the plot for tooltip, magnifier, or tracker if their visibility changes
+    useEffect(
+        () => {
+            updatePlot(timeRangeRef.current);
+        },
+        [tooltip.visible, magnifier.visible, tracker.visible]
+    )
 
     return (
         <svg
-            className="d3-component"
+            className="streaming-raster-chart-d3"
             width={width}
-            height={height * seriesList.length}
+            height={height * liveDataRef.current.length}
             style={{backgroundColor: backgroundColor}}
             ref={containerRef}
         />
     );
-}
-
-/**
- * Calculates the maximum time found in the specified list of time-series
- * @param {Array<Series>} seriesList An array of time-series
- * @return {number} The maximum time
- */
-export function calcMaxTime(seriesList: Array<Series>): number {
-    return d3.max(seriesList.map(series => series.last().map(datum => datum.time).getOrElse(0))) || 0;
-}
-
-/**
- * Given the overall dimensions of the plot (width, height) and the margins, calculates the dimensions
- * of the actual plot by subtracting the margins.
- * @param {number} width The overall width (plot and margins)
- * @param {number} height The overall height (plot and margins)
- * @param {Sides} margins The margins around the plot (top, bottom, left, right)
- * @return {{width: number, height: number}} The dimensions of the actual plots adjusted for the margins
- * from the overall dimensions
- */
-function adjustedDimensions(width: number, height: number, margins: Sides): { width: number, height: number } {
-    return {
-        width: width - margins.left - margins.right,
-        height: height - margins.top - margins.top
-    };
 }
 
 export default RasterChart;
