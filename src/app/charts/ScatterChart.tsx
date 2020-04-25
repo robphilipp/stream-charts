@@ -7,6 +7,7 @@ import {Selection, Axis, ScaleLinear, ZoomTransform} from "d3";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable} from "rxjs";
 import {ChartData} from "../examples/randomData";
+import {BarMagnifier, BarMagnifierType, LensTransformation} from "./barMagnifier";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultAxesStyle = {color: '#d2933f'};
@@ -39,6 +40,33 @@ type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 type SvgSelection = Selection<SVGSVGElement, any, null, undefined>;
 type TextSelection = Selection<SVGTextElement, any, null, undefined>;
 
+// interface MagnifiedDatum extends Datum {
+//     lens: LensTransformation
+// }
+interface MagnifiedData {
+    datum: [number, number];
+    lens: LensTransformation;
+}
+
+/**
+ * Properties for rendering the line-magnifier lens
+ */
+interface LineMagnifierStyle {
+    visible: boolean;
+    width: number;
+    magnification: number;
+    color: string,
+    lineWidth: number,
+}
+
+const defaultLineMagnifierStyle: LineMagnifierStyle = {
+    visible: false,
+    width: 75,
+    magnification: 1,
+    color: '#d2933f',
+    lineWidth: 2,
+};
+
 interface Props {
     width: number;
     height: number;
@@ -50,6 +78,7 @@ interface Props {
     plotGridLines?: Partial<{ visible: boolean, color: string }>;
     tooltip?: Partial<TooltipStyle>;
     tooltipValueLabel?: string;
+    magnifier?: Partial<LineMagnifierStyle>;
 
     minWeight?: number;
     maxWeight?: number;
@@ -88,6 +117,7 @@ function ScatterChart(props: Props): JSX.Element {
     const axisLabelFont = {...defaultAxesLabelFont, ...props.axisLabelFont};
     const plotGridLines = {...defaultPlotGridLines, ...props.plotGridLines};
     const tooltip: TooltipStyle = {...defaultTooltipStyle, ...props.tooltip};
+    const magnifier = {...defaultLineMagnifierStyle, ...props.magnifier};
     const spikesStyle = {...defaultSpikesStyle, ...props.spikesStyle};
 
     // grab the dimensions of the actual plot after removing the margins from the specified width and height
@@ -434,6 +464,88 @@ function ScatterChart(props: Props): JSX.Element {
     }
 
     /**
+     * Called when the magnifier is enabled to set up the vertical bar magnifier lens
+     * @param {Selection<SVGRectElement, Datum, null, undefined> | undefined} path The path selection
+     * holding the magnifier whose properties need to be updated.
+     * @callback
+        */
+    function handleShowMagnify(path: Selection<SVGRectElement, Datum, null, undefined> | undefined) {
+
+        /**
+         * Determines whether specified datum is in the time interval centered around the current
+         * mouse position
+         * @param {number} datumX The datum represented in x-coordinates (i.e. screen rather than time)
+         * @param {number} x The x-coordinate of the current mouse position
+         * @param {number} xInterval The pixel interval for which transformations are applied
+         * @return {boolean} `true` if the datum is in the interval; `false` otherwise
+         */
+        function inMagnifier(datumX: number, x: number, xInterval: number): boolean {
+            return datumX + margin.left > x - xInterval && datumX < x + xInterval;
+        }
+
+        /**
+         *
+         * @param {[number, number]} datum The (time, value) pair
+         * @param {number} x The mouse cursor position
+         * @param {number} xInterval The extent of the magnifier lens
+         * @param {BarMagnifierType} barMagnifier The bar magnifier function
+         * @param {ScaleLinear<number, number>} scale The scale to convert from data coordinates to screen coordinates
+         * @return {Array<MagnifiedData>} The transformed paths
+         */
+        function magnify(datum: [number, number],
+                         x: number,
+                         xInterval: number,
+                         barMagnifier: BarMagnifierType,
+                         scale: ScaleLinear<number, number>): LensTransformation {
+                const datumX = scale(datum[0]);
+                // is in magnifier lens
+                if(inMagnifier(datumX, x, xInterval)) {
+                    return barMagnifier.magnify(datumX);
+                }
+                return barMagnifier.identify(datumX);
+        }
+
+        if(containerRef.current && path) {
+            const [x, y] = d3.mouse(containerRef.current);
+            const isMouseInPlot = mouseInPlotArea(x, y);
+            const deltaX = magnifier.width / 2;
+            path
+                .attr('x', x - deltaX)
+                .attr('width', 2 * deltaX)
+                .attr('opacity', () => isMouseInPlot ? 1 : 0)
+            ;
+
+            // const svg = d3.select<SVGSVGElement, Array<[number, number]>>(containerRef.current);
+
+            if(isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
+                const barMagnifier: BarMagnifierType = BarMagnifier(deltaX, 3 * zoomFactorRef.current, x - margin.left);
+                const scale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
+                const yScale = axesRef.current!.yAxis.scale<ScaleLinear<number, number>>();
+                mainGRef.current!
+                    .selectAll<SVGSVGElement, Array<[number, number]>>('.time-series-lines')
+                    .attr("d", d3.line()
+                        .x(datum => magnify(datum, x, 4 * deltaX, barMagnifier, scale).xPrime)
+                        .y(datum => yScale(datum[1]))
+                    )
+                    // .attr("stroke", "orange")
+                ;
+                mouseCoordsRef.current = x;
+            }
+        }
+    }
+
+    /**
+     * Calculates whether the mouse is in the plot-area
+     * @param {number} x The x-coordinate of the mouse's position
+     * @param {number} y The y-coordinate of the mouse's position
+     * @return {boolean} `true` if the mouse is in the plot area; `false` if the mouse is not in the plot area
+     */
+    function mouseInPlotArea(x: number, y: number): boolean {
+        return  x > margin.left && x < width - margin.right &&
+            y > margin.top && y < height - margin.bottom;
+    }
+
+    /**
      * Updates the plot data for the specified time-range, which may have changed due to zoom or pan
      * @param {TimeRange} timeRange The current time range
      */
@@ -459,6 +571,61 @@ function ScatterChart(props: Props): JSX.Element {
             // create the y-axis
             axesRef.current.yScale.domain([Math.max(minWeight, minValue), Math.min(maxWeight, maxValue)]);
             axesRef.current.yAxisSelection.call(axesRef.current.yAxis);
+
+            if(magnifier.visible && magnifierRef.current === undefined) {
+                const linearGradient = svg
+                    .append<SVGDefsElement>('defs')
+                    .append<SVGLinearGradientElement>('linearGradient')
+                    .attr('id', 'magnifier-gradient')
+                    .attr('x1', '0%')
+                    .attr('x2', '100%')
+                    .attr('y1', '0%')
+                    .attr('y2', '0%')
+                ;
+
+                const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
+                linearGradient
+                    .append<SVGStopElement>('stop')
+                    .attr('offset', '0%')
+                    .attr('stop-color', borderColor)
+                ;
+
+                linearGradient
+                    .append<SVGStopElement>('stop')
+                    .attr('offset', '30%')
+                    .attr('stop-color', tooltip.backgroundColor)
+                    .attr('stop-opacity', 0)
+                ;
+
+                linearGradient
+                    .append<SVGStopElement>('stop')
+                    .attr('offset', '70%')
+                    .attr('stop-color', tooltip.backgroundColor)
+                    .attr('stop-opacity', 0)
+                ;
+
+                linearGradient
+                    .append<SVGStopElement>('stop')
+                    .attr('offset', '100%')
+                    .attr('stop-color', borderColor)
+                ;
+
+                magnifierRef.current = svg
+                    .append<SVGRectElement>('rect')
+                    .attr('class', 'magnifier')
+                    .attr('y', margin.top)
+                    .attr('height', plotDimensions.height - margin.top)
+                    .attr('stroke', tooltip.borderColor)
+                    .attr('stroke-width', tooltip.borderWidth)
+                    .style('fill', 'url(#magnifier-gradient')
+                ;
+
+                svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
+            }
+            // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
+            else if(!magnifier.visible && magnifierRef.current) {
+                magnifierRef.current = undefined;
+            }
 
             // set up the main <g> container for svg and translate it based on the margins, but do it only
             // once
@@ -494,7 +661,6 @@ function ScatterChart(props: Props): JSX.Element {
                 .scaleExtent([0, 10])
                 .translateExtent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
                 .on("zoom", () => {
-                    console.log(d3.event);
                     onZoom(d3.event.transform, d3.event.sourceEvent.offsetX -  margin.left);
                 })
             ;
@@ -510,15 +676,16 @@ function ScatterChart(props: Props): JSX.Element {
                 // Create a update selection: bind to the new data
                 mainGRef.current!
                     .selectAll(`#${series.name}`)
-                    // todo figure out why it must be [data, data] and why [data] breaks shit
-                    .data([data, data], () => `${series.name}`)
+                    .data([[], data], () => `${series.name}`)
                     .join(
                         enter => enter
                             .append("path")
+                            .attr("class", 'time-series-lines')
                             .attr("id",`${series.name}`)
                             .attr("d", d3.line()
                                 .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
-                                .y((d: [number, number]) => axesRef.current!.yScale(d[1])))
+                                .y((d: [number, number]) => axesRef.current!.yScale(d[1]))
+                            )
                             .attr("fill", "none")
                             .attr("stroke", spikesStyle.color)
                             .attr("stroke-width", spikesStyle.lineWidth)
@@ -531,7 +698,9 @@ function ScatterChart(props: Props): JSX.Element {
                             .on(
                                 "mouseleave",
                                 (datumArray, i, group) => handleHideTooltip(group[i])
-                            )
+                            ),
+                        update => update,
+                        exit => exit.remove()
                 );
             });
         }
@@ -566,7 +735,7 @@ function ScatterChart(props: Props): JSX.Element {
             }
 
             const subscription = seriesObservable.subscribe(data => {
-                if(data.maxTime > 3000) {
+                if(data.maxTime > 1000) {
                     subscription.unsubscribe();
                 }
                 else {
@@ -605,7 +774,7 @@ function ScatterChart(props: Props): JSX.Element {
             tooltipRef.current.visible = tooltip.visible;
             updatePlot(timeRangeRef.current);
         },
-        [tooltip.visible]//, magnifier.visible, tracker.visible]
+        [tooltip.visible, magnifier.visible]//, tracker.visible]
     )
 
     return (

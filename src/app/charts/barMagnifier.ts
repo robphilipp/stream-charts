@@ -21,6 +21,8 @@ export interface BarMagnifierType {
      */
     magnify: (x: number) => LensTransformation;
 
+    identify: (x: number) => LensTransformation;
+
     // the radius of the lens
     radius: number;
 
@@ -76,8 +78,13 @@ export function BarMagnifier(radius: number, power: number, center: number): Bar
             return {xPrime: center + dx * magnification, magnification: magnification};
         }
 
+        function identity(x: number): LensTransformation {
+            return {xPrime: x, magnification: 1};
+        }
+
         return {
             magnify: magnifier,
+            identify: identity,
             radius: radius,
             power: power,
             center: center

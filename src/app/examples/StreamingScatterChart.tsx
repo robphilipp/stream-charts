@@ -100,7 +100,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                 timeWindow={timeWindow}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 tooltip={{visible: tooltipVisible}}
-                // magnifier={{visible: magnifierVisible}}
+                magnifier={{visible: magnifierVisible}}
                 // tracker={{visible: trackerVisible}}
             />
         </div>
