@@ -7,7 +7,7 @@ import {Selection, Axis, ScaleLinear, ZoomTransform} from "d3";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable} from "rxjs";
 import {ChartData} from "../examples/randomData";
-import {BarMagnifier, BarMagnifierType, LensTransformation} from "./barMagnifier";
+import {barMagnifierWith, BarMagnifier, LensTransformation} from "./barMagnifier";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultAxesStyle = {color: '#d2933f'};
@@ -488,14 +488,14 @@ function ScatterChart(props: Props): JSX.Element {
          * @param {[number, number]} datum The (time, value) pair
          * @param {number} x The mouse cursor position
          * @param {number} xInterval The extent of the magnifier lens
-         * @param {BarMagnifierType} barMagnifier The bar magnifier function
+         * @param {BarMagnifier} barMagnifier The bar magnifier function
          * @param {ScaleLinear<number, number>} scale The scale to convert from data coordinates to screen coordinates
          * @return {Array<MagnifiedData>} The transformed paths
          */
         function magnify(datum: [number, number],
                          x: number,
                          xInterval: number,
-                         barMagnifier: BarMagnifierType,
+                         barMagnifier: BarMagnifier,
                          scale: ScaleLinear<number, number>): LensTransformation {
                 const datumX = scale(datum[0]);
                 // is in magnifier lens
@@ -515,10 +515,8 @@ function ScatterChart(props: Props): JSX.Element {
                 .attr('opacity', () => isMouseInPlot ? 1 : 0)
             ;
 
-            // const svg = d3.select<SVGSVGElement, Array<[number, number]>>(containerRef.current);
-
             if(isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
-                const barMagnifier: BarMagnifierType = BarMagnifier(deltaX, 3 * zoomFactorRef.current, x - margin.left);
+                const barMagnifier: BarMagnifier = barMagnifierWith(deltaX, 3 * zoomFactorRef.current, x - margin.left);
                 const scale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
                 const yScale = axesRef.current!.yAxis.scale<ScaleLinear<number, number>>();
                 mainGRef.current!

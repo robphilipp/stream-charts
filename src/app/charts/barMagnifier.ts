@@ -12,7 +12,7 @@ export interface LensTransformation {
 /**
  * Bar magnifier contract.
  */
-export interface BarMagnifierType {
+export interface BarMagnifier {
     /**
      * Function to transform the x-coordinate to simulate magnification depending on the power and where in the
      * lens the x-coordinate is.
@@ -21,6 +21,11 @@ export interface BarMagnifierType {
      */
     magnify: (x: number) => LensTransformation;
 
+    /**
+     * Function to transform the x-coordinate to itself as the identity
+     * @param {number} x The x-coordinate to be transformed
+     * @return {LensTransformation} The original x-coordinate and a magnification of 1
+     */
     identify: (x: number) => LensTransformation;
 
     // the radius of the lens
@@ -45,17 +50,17 @@ export interface BarMagnifierType {
  * @param {number} radius The radius of the lens.
  * @param {number} power The optical magnification of the lens (i.e. ratio of magnified size to "true" size)
  * @param {number} center The center of the lens
- * @return {BarMagnifierType} A bar-magnifier type for transforming the x-coordinates to make it appear as though
+ * @return {BarMagnifier} A bar-magnifier type for transforming the x-coordinates to make it appear as though
  * the x-coord has been magnified by a bar magnifier
  */
-export function BarMagnifier(radius: number, power: number, center: number): BarMagnifierType {
+export function barMagnifierWith(radius: number, power: number, center: number): BarMagnifier {
 
     /**
      * Recalculates the magnification parameters
      * @return {(x: number) => number} A function that takes an x-value and transforms it to the value that
      * would appear under such a bar magnifier lens
      */
-    function rescale(): BarMagnifierType {
+    function rescale(): BarMagnifier {
         const expPower = Math.exp(power);
         const k0 = expPower / (expPower - 1) * radius;
         const k1 = power / radius;
@@ -63,7 +68,7 @@ export function BarMagnifier(radius: number, power: number, center: number): Bar
         /**
          * Transforms the x-value to where it would appear under a bar lens
          * @param {number} x The x-value of the point
-         * @return {number} The transformed value
+         * @return {number} The transformed value with the point's magnification
          */
         function magnifier(x: number): LensTransformation {
             // calculate the distance from the center of the lens
@@ -78,6 +83,11 @@ export function BarMagnifier(radius: number, power: number, center: number): Bar
             return {xPrime: center + dx * magnification, magnification: magnification};
         }
 
+        /**
+         * An identity magnification
+         * @param {number} x The x-value of the point
+         * @return {LensTransformation} The original value with a magnification of 1
+         */
         function identity(x: number): LensTransformation {
             return {xPrime: x, magnification: 1};
         }

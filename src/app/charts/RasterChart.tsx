@@ -1,7 +1,7 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import {ScaleBand, ScaleLinear, Selection, ZoomTransform} from "d3";
-import {BarMagnifier, BarMagnifierType, LensTransformation} from "./barMagnifier";
+import {barMagnifierWith, BarMagnifier, LensTransformation} from "./barMagnifier";
 import {TimeRange, TimeRangeType} from "./timeRange";
 import {adjustedDimensions, Margin} from "./margins";
 import {Datum, PixelDatum, Series} from "./datumSeries";
@@ -365,7 +365,7 @@ function RasterChart(props: Props): JSX.Element {
             const svg = d3.select<SVGSVGElement, MagnifiedDatum>(containerRef.current);
 
             if(isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
-                const barMagnifier: BarMagnifierType = BarMagnifier(deltaX, 3 * zoomFactorRef.current, x - margin.left);
+                const barMagnifier: BarMagnifier = barMagnifierWith(deltaX, 3 * zoomFactorRef.current, x - margin.left);
                 svg
                     // select all the spikes and keep only those that are within ±4∆t of the x-position of the mouse
                     .selectAll<SVGSVGElement, MagnifiedDatum>('.spikes-lines')
