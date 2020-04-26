@@ -1,13 +1,13 @@
-import {default as React, useEffect, useRef, useState} from "react";
+import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
+import {Axis, ScaleLinear, Selection, ZoomTransform} from "d3";
 import {adjustedDimensions, Margin} from "./margins";
 import {Datum, Series} from "./datumSeries";
 import {TimeRange, TimeRangeType} from "./timeRange";
-import {Selection, Axis, ScaleLinear, ZoomTransform} from "d3";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable} from "rxjs";
 import {ChartData} from "../examples/randomData";
-import {barMagnifierWith, BarMagnifier, LensTransformation} from "./barMagnifier";
+import {CircleMagnifier, circleMagnifierWith, LensTransformation2d} from "./circleMagnifier";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultAxesStyle = {color: '#d2933f'};
@@ -45,23 +45,23 @@ type TextSelection = Selection<SVGTextElement, any, null, undefined>;
 // }
 interface MagnifiedData {
     datum: [number, number];
-    lens: LensTransformation;
+    lens: LensTransformation2d;
 }
 
 /**
  * Properties for rendering the line-magnifier lens
  */
-interface LineMagnifierStyle {
+interface CircleMagnifierStyle {
     visible: boolean;
-    width: number;
+    radius: number;
     magnification: number;
     color: string,
     lineWidth: number,
 }
 
-const defaultLineMagnifierStyle: LineMagnifierStyle = {
+const defaultLineMagnifierStyle: CircleMagnifierStyle = {
     visible: false,
-    width: 75,
+    radius: 100,
     magnification: 1,
     color: '#d2933f',
     lineWidth: 2,
@@ -78,7 +78,7 @@ interface Props {
     plotGridLines?: Partial<{ visible: boolean, color: string }>;
     tooltip?: Partial<TooltipStyle>;
     tooltipValueLabel?: string;
-    magnifier?: Partial<LineMagnifierStyle>;
+    magnifier?: Partial<CircleMagnifierStyle>;
 
     minWeight?: number;
     maxWeight?: number;
@@ -131,7 +131,7 @@ function ScatterChart(props: Props): JSX.Element {
     const trackerRef = useRef<Selection<SVGLineElement, Datum, null, undefined>>();
 
     const mouseCoordsRef = useRef<number>(0);
-    const zoomFactorRef = useRef<number>(1);
+    const zoomFactorRef = useRef<number>(2);
 
     // reference to the axes for the plot
     const axesRef = useRef<Axes>();
@@ -474,60 +474,79 @@ function ScatterChart(props: Props): JSX.Element {
         /**
          * Determines whether specified datum is in the time interval centered around the current
          * mouse position
-         * @param {number} datumX The datum represented in x-coordinates (i.e. screen rather than time)
-         * @param {number} x The x-coordinate of the current mouse position
-         * @param {number} xInterval The pixel interval for which transformations are applied
+         * @param {[number, number]} datum The datum represented in x-coordinates (i.e. screen rather than time)
+         * @param {[number, number]} mouse The (x, y)-coordinate of the current mouse position
+         * @param {number} radius The pixel interval for which transformations are applied
          * @return {boolean} `true` if the datum is in the interval; `false` otherwise
          */
-        function inMagnifier(datumX: number, x: number, xInterval: number): boolean {
-            return datumX + margin.left > x - xInterval && datumX < x + xInterval;
+        function inMagnifier(datum: [number, number], mouse: [number, number], radius: number): boolean {
+            const dx = mouse[0] - datum[0] - margin.left;
+            const dy = mouse[1] - datum[1] - margin.top;
+            return Math.sqrt(dx*dx + dy*dy) < radius;
         }
 
         /**
          *
          * @param {[number, number]} datum The (time, value) pair
-         * @param {number} x The mouse cursor position
-         * @param {number} xInterval The extent of the magnifier lens
-         * @param {BarMagnifier} barMagnifier The bar magnifier function
-         * @param {ScaleLinear<number, number>} scale The scale to convert from data coordinates to screen coordinates
+         * @param {[number, number]} mouse The mouse cursor position
+         * @param {number} radius The extent of the magnifier lens
+         * @param {CircleMagnifier} magnifier The bar magnifier function
+         * @param {ScaleLinear<number, number>} xScale The xScale to convert from data coordinates to screen coordinates
+         * @param {ScaleLinear<number, number>} yScale The xScale to convert from data coordinates to screen coordinates
          * @return {Array<MagnifiedData>} The transformed paths
          */
         function magnify(datum: [number, number],
-                         x: number,
-                         xInterval: number,
-                         barMagnifier: BarMagnifier,
-                         scale: ScaleLinear<number, number>): LensTransformation {
-                const datumX = scale(datum[0]);
-                // is in magnifier lens
-                if(inMagnifier(datumX, x, xInterval)) {
-                    return barMagnifier.magnify(datumX);
-                }
-                return barMagnifier.identify(datumX);
+                         mouse: [number, number],
+                         radius: number,
+                         magnifier: CircleMagnifier,
+                         xScale: ScaleLinear<number, number>,
+                         yScale: ScaleLinear<number, number>): [number, number] {
+            const datumX = xScale(datum[0]);
+            const datumY = yScale(datum[1]);
+            if(inMagnifier([datumX, datumY], mouse, radius)) {
+                const transform = magnifier.magnify(datumX, datumY);
+                return [transform.xPrime, transform.yPrime];
+            }
+            return [datumX, datumY];
         }
 
         if(containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
-            const isMouseInPlot = mouseInPlotArea(x, y);
-            const deltaX = magnifier.width / 2;
+            const isMouseInPlotArea = mouseInPlotArea(x, y)
             path
-                .attr('x', x - deltaX)
-                .attr('width', 2 * deltaX)
-                .attr('opacity', () => isMouseInPlot ? 1 : 0)
+                .attr('r', magnifier.radius)
+                .attr('cx', x)
+                .attr('cy', y)
+                .attr('opacity', () => isMouseInPlotArea ? 1 : 0)
             ;
 
-            if(isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
-                const barMagnifier: BarMagnifier = barMagnifierWith(deltaX, 3 * zoomFactorRef.current, x - margin.left);
-                const scale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
-                const yScale = axesRef.current!.yAxis.scale<ScaleLinear<number, number>>();
+            const xScale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
+            const yScale = axesRef.current!.yAxis.scale<ScaleLinear<number, number>>();
+
+            if(isMouseInPlotArea) {
+                const barMagnifier: CircleMagnifier = circleMagnifierWith(
+                    magnifier.radius,
+                    3 * zoomFactorRef.current,
+                    [x - margin.left, y - margin.top]
+                );
                 mainGRef.current!
                     .selectAll<SVGSVGElement, Array<[number, number]>>('.time-series-lines')
-                    .attr("d", d3.line()
-                        .x(datum => magnify(datum, x, 4 * deltaX, barMagnifier, scale).xPrime)
-                        .y(datum => yScale(datum[1]))
-                    )
-                    // .attr("stroke", "orange")
+                    .attr("d", data => {
+                        const magnified = data
+                            .map(datum => magnify(datum, [x, y], magnifier.radius, barMagnifier, xScale, yScale));
+                        return d3.line()(magnified);
+                    })
                 ;
-                mouseCoordsRef.current = x;
+            }
+            else {
+                mainGRef.current!
+                    .selectAll<SVGSVGElement, Array<[number, number]>>('.time-series-lines')
+                    .attr("d", data => {
+                        const magnified: Array<[number, number]> = data
+                            .map(([x, y]) => [xScale(x), yScale(y)]);
+                        return d3.line()(magnified);
+                    })
+                ;
             }
         }
     }
@@ -571,48 +590,47 @@ function ScatterChart(props: Props): JSX.Element {
             axesRef.current.yAxisSelection.call(axesRef.current.yAxis);
 
             if(magnifier.visible && magnifierRef.current === undefined) {
-                const linearGradient = svg
+                const radialGradient = svg
                     .append<SVGDefsElement>('defs')
-                    .append<SVGLinearGradientElement>('linearGradient')
+                    .append<SVGLinearGradientElement>('radialGradient')
                     .attr('id', 'magnifier-gradient')
-                    .attr('x1', '0%')
-                    .attr('x2', '100%')
-                    .attr('y1', '0%')
-                    .attr('y2', '0%')
+                    .attr('cx', '50%')
+                    .attr('cy', '50%')
+                    .attr('r', '50%')
+                    .attr('fx', '20%')
+                    .attr('fy', '20%')
                 ;
 
                 const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
-                linearGradient
+                radialGradient
                     .append<SVGStopElement>('stop')
                     .attr('offset', '0%')
                     .attr('stop-color', borderColor)
                 ;
 
-                linearGradient
+                radialGradient
                     .append<SVGStopElement>('stop')
                     .attr('offset', '30%')
                     .attr('stop-color', tooltip.backgroundColor)
                     .attr('stop-opacity', 0)
                 ;
 
-                linearGradient
+                radialGradient
                     .append<SVGStopElement>('stop')
                     .attr('offset', '70%')
                     .attr('stop-color', tooltip.backgroundColor)
                     .attr('stop-opacity', 0)
                 ;
 
-                linearGradient
+                radialGradient
                     .append<SVGStopElement>('stop')
                     .attr('offset', '100%')
                     .attr('stop-color', borderColor)
                 ;
 
                 magnifierRef.current = svg
-                    .append<SVGRectElement>('rect')
+                    .append<SVGRectElement>('circle')
                     .attr('class', 'magnifier')
-                    .attr('y', margin.top)
-                    .attr('height', plotDimensions.height - margin.top)
                     .attr('stroke', tooltip.borderColor)
                     .attr('stroke-width', tooltip.borderWidth)
                     .style('fill', 'url(#magnifier-gradient')
