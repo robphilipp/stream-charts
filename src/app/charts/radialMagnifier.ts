@@ -15,7 +15,7 @@ export interface LensTransformation2d {
 /**
  * Circle magnifier contract.
  */
-export interface CircleMagnifier {
+export interface RadialMagnifier {
     /**
      * Function to transform the (x, y)-coordinates to simulate magnification depending on the power and where in the
      * lens the point is.
@@ -55,17 +55,17 @@ export interface CircleMagnifier {
  * @param {number} radius The radius of the lens.
  * @param {number} power The optical magnification of the lens (i.e. ratio of magnified size to "true" size)
  * @param {[number, number]} center The center of the lens
- * @return {CircleMagnifier} A bar-magnifier type for transforming the x-coordinates to make it appear as though
+ * @return {RadialMagnifier} A bar-magnifier type for transforming the x-coordinates to make it appear as though
  * the x-coord has been magnified by a bar magnifier
  */
-export function circleMagnifierWith(radius: number, power: number, center: [number, number]): CircleMagnifier {
+export function radialMagnifierWith(radius: number, power: number, center: [number, number]): RadialMagnifier {
 
     /**
      * Recalculates the magnification parameters
      * @return {(x: number) => number} A function that takes an x-value and transforms it to the value that
      * would appear under such a bar magnifier lens
      */
-    function rescale(): CircleMagnifier {
+    function rescale(): RadialMagnifier {
         const expPower = Math.exp(power);
         const k0 = expPower / (expPower - 1) * radius;
         const k1 = power / radius;

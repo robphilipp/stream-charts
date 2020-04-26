@@ -7,7 +7,7 @@ import {TimeRange, TimeRangeType} from "./timeRange";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable} from "rxjs";
 import {ChartData} from "../examples/randomData";
-import {CircleMagnifier, circleMagnifierWith, LensTransformation2d} from "./circleMagnifier";
+import {RadialMagnifier, radialMagnifierWith, LensTransformation2d} from "./radialMagnifier";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultAxesStyle = {color: '#d2933f'};
@@ -490,7 +490,7 @@ function ScatterChart(props: Props): JSX.Element {
          * @param {[number, number]} datum The (time, value) pair
          * @param {[number, number]} mouse The mouse cursor position
          * @param {number} radius The extent of the magnifier lens
-         * @param {CircleMagnifier} magnifier The bar magnifier function
+         * @param {RadialMagnifier} magnifier The bar magnifier function
          * @param {ScaleLinear<number, number>} xScale The xScale to convert from data coordinates to screen coordinates
          * @param {ScaleLinear<number, number>} yScale The xScale to convert from data coordinates to screen coordinates
          * @return {Array<MagnifiedData>} The transformed paths
@@ -498,7 +498,7 @@ function ScatterChart(props: Props): JSX.Element {
         function magnify(datum: [number, number],
                          mouse: [number, number],
                          radius: number,
-                         magnifier: CircleMagnifier,
+                         magnifier: RadialMagnifier,
                          xScale: ScaleLinear<number, number>,
                          yScale: ScaleLinear<number, number>): [number, number] {
             const datumX = xScale(datum[0]);
@@ -524,7 +524,7 @@ function ScatterChart(props: Props): JSX.Element {
             const yScale = axesRef.current!.yAxis.scale<ScaleLinear<number, number>>();
 
             if(isMouseInPlotArea) {
-                const barMagnifier: CircleMagnifier = circleMagnifierWith(
+                const barMagnifier: RadialMagnifier = radialMagnifierWith(
                     magnifier.radius,
                     3 * zoomFactorRef.current,
                     [x - margin.left, y - margin.top]
