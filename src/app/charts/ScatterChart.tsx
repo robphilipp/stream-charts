@@ -27,8 +27,8 @@ const defaultSpikesStyle = {
 const defaultPlotGridLines = {visible: true, color: 'rgba(210,147,63,0.35)'};
 
 interface Axes {
-    xAxis: Axis<number | {valueOf(): number}>;
-    yAxis: Axis<number | {valueOf(): number}>;
+    xAxisGenerator: Axis<number | {valueOf(): number}>;
+    yAxisGenerator: Axis<number | {valueOf(): number}>;
     xAxisSelection: AxisElementSelection;
     yAxisSelection: AxisElementSelection;
     xScale: ScaleLinear<number, number>;
@@ -39,6 +39,7 @@ interface Axes {
 type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 type SvgSelection = Selection<SVGSVGElement, any, null, undefined>;
 type TextSelection = Selection<SVGTextElement, any, null, undefined>;
+type MagnifierSelection = Selection<SVGCircleElement, Datum, null, undefined>;
 
 // interface MagnifiedDatum extends Datum {
 //     lens: LensTransformation
@@ -127,7 +128,7 @@ function ScatterChart(props: Props): JSX.Element {
     const containerRef = useRef<SVGSVGElement>(null);
     const mainGRef = useRef<Selection<SVGGElement, any, null, undefined>>();
     const spikesRef = useRef<Selection<SVGGElement, Series, SVGGElement, any>>();
-    const magnifierRef = useRef<Selection<SVGRectElement, Datum, null, undefined>>();
+    const magnifierRef = useRef<MagnifierSelection>();
     const trackerRef = useRef<Selection<SVGLineElement, Datum, null, undefined>>();
 
     const mouseCoordsRef = useRef<number>(0);
@@ -153,6 +154,8 @@ function ScatterChart(props: Props): JSX.Element {
     // calculates to the time-range based on the (min, max)-time from the props
     const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
 
+    const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
+
     function updateMinMaxValues(data: Array<[number, number]>[]): [number, number] {
         const minValue = d3.min(data, series => d3.min(series, datum => datum[1])) || 0;
         const maxValue = d3.max(data, series => d3.max(series, datum => datum[1])) || 1;
@@ -161,13 +164,18 @@ function ScatterChart(props: Props): JSX.Element {
         return [minValueRef.current, maxValueRef.current];
     }
 
+    /**
+     * Initializes the x and y axes and returns the axes generators, axes, and scale functions
+     * @param {SvgSelection} svg The main SVG container
+     * @return {Axes} The axes generators, axes, and scale functions
+     */
     function initializeAxes(svg: SvgSelection): Axes {
         // initialize the x-axis
         const xScale = d3.scaleLinear()
             .domain([timeRangeRef.current.start, timeRangeRef.current.end])
             .range([0, plotDimensions.width])
         ;
-        const xAxis = d3.axisBottom(xScale);
+        const xAxisGenerator = d3.axisBottom(xScale);
         const xAxisSelection = svg
             .append<SVGGElement>('g')
             .attr('class', 'x-axis')
@@ -190,7 +198,7 @@ function ScatterChart(props: Props): JSX.Element {
             .domain([minWeight, maxWeight])
             .range([plotDimensions.height - margin.bottom, 0])
         ;
-        const yAxis = d3.axisLeft(yScale);
+        const yAxisGenerator = d3.axisLeft(yScale);
         const yAxisSelection = svg
             .append<SVGGElement>('g')
             .attr('class', 'y-axis')
@@ -208,7 +216,7 @@ function ScatterChart(props: Props): JSX.Element {
         ;
 
         return {
-            xAxis, yAxis,
+            xAxisGenerator, yAxisGenerator,
             xAxisSelection, yAxisSelection,
             xScale, yScale
         };
@@ -222,7 +230,7 @@ function ScatterChart(props: Props): JSX.Element {
      * @callback
         */
     function onZoom(transform: ZoomTransform, x: number): void {
-        const time = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>().invert(x);
+        const time = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>().invert(x);
         timeRangeRef.current = timeRangeRef.current!.scale(transform.k, time);
         zoomFactorRef.current = transform.k;
         updatePlot(timeRangeRef.current);
@@ -234,7 +242,7 @@ function ScatterChart(props: Props): JSX.Element {
      * @callback
         */
     function onPan(deltaX: number): void {
-        const scale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
+        const scale = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>();
         const currentTime = timeRangeRef!.current.start;
         const x = scale(currentTime);
         const deltaTime = scale.invert(x + deltaX) - currentTime;
@@ -284,7 +292,7 @@ function ScatterChart(props: Props): JSX.Element {
      * @param {SVGPathElement} segment The SVG line element representing the spike, over which the mouse is hovering.
      */
     function handleShowTooltip(datum: Array<[number, number]>, seriesName: string, segment: SVGPathElement): void {
-        if(!tooltipRef.current.visible || !containerRef.current || !axesRef.current) {
+        if(!(tooltipRef.current.visible || magnifier.visible) || !containerRef.current || !axesRef.current) {
             return;
         }
 
@@ -298,105 +306,103 @@ function ScatterChart(props: Props): JSX.Element {
             .attr('stroke-width', spikesStyle.highlightWidth)
         ;
 
-        if (tooltipRef.current.visible) {
-            // create the rounded rectangle for the tooltip's background
-            const rect = d3.select<SVGSVGElement | null, any>(containerRef.current)
-                .append<SVGRectElement>('rect')
-                .attr('id', `r${time}-${seriesName}`)
-                .attr('class', 'tooltip')
-                .attr('rx', tooltipRef.current.borderRadius)
-                .attr('fill', tooltipRef.current.backgroundColor)
-                .attr('fill-opacity', tooltipRef.current.backgroundOpacity)
-                .attr('stroke', tooltipRef.current.borderColor)
-                .attr('stroke-width', tooltipRef.current.borderWidth)
-            ;
+        // create the rounded rectangle for the tooltip's background
+        const rect = d3.select<SVGSVGElement | null, any>(containerRef.current)
+            .append<SVGRectElement>('rect')
+            .attr('id', `r${time}-${seriesName}`)
+            .attr('class', 'tooltip')
+            .attr('rx', tooltipRef.current.borderRadius)
+            .attr('fill', tooltipRef.current.backgroundColor)
+            .attr('fill-opacity', tooltipRef.current.backgroundOpacity)
+            .attr('stroke', tooltipRef.current.borderColor)
+            .attr('stroke-width', tooltipRef.current.borderWidth)
+        ;
 
-            // display the neuron ID in the tooltip
-            const header = d3.select<SVGSVGElement | null, any>(containerRef.current)
-                .append<SVGTextElement>("text")
-                .attr('id', `tn${time}-${seriesName}`)
-                .attr('class', 'tooltip')
-                .attr('fill', tooltipRef.current.fontColor)
-                .attr('font-family', 'sans-serif')
-                .attr('font-size', tooltipRef.current.fontSize)
-                .attr('font-weight', tooltipRef.current.fontWeight)
-                .text(() => seriesName)
-            ;
+        // display the neuron ID in the tooltip
+        const header = d3.select<SVGSVGElement | null, any>(containerRef.current)
+            .append<SVGTextElement>("text")
+            .attr('id', `tn${time}-${seriesName}`)
+            .attr('class', 'tooltip')
+            .attr('fill', tooltipRef.current.fontColor)
+            .attr('font-family', 'sans-serif')
+            .attr('font-size', tooltipRef.current.fontSize)
+            .attr('font-weight', tooltipRef.current.fontWeight)
+            .text(() => seriesName)
+        ;
 
-            // create the table that shows the points that come before and after the mouse time, and the
-            // changes in the time and value
-            const table = d3.select<SVGSVGElement | null, any>(containerRef.current)
-                .append("g")
-                .attr('id', `t${time}-${seriesName}-header`)
-                .attr('class', 'tooltip')
-                .attr('fill', tooltipRef.current.fontColor)
-                .attr('font-family', 'sans-serif')
-                .attr('font-size', tooltipRef.current.fontSize + 2)
-                .attr('font-weight', tooltipRef.current.fontWeight + 150)
-            ;
+        // create the table that shows the points that come before and after the mouse time, and the
+        // changes in the time and value
+        const table = d3.select<SVGSVGElement | null, any>(containerRef.current)
+            .append("g")
+            .attr('id', `t${time}-${seriesName}-header`)
+            .attr('class', 'tooltip')
+            .attr('fill', tooltipRef.current.fontColor)
+            .attr('font-family', 'sans-serif')
+            .attr('font-size', tooltipRef.current.fontSize + 2)
+            .attr('font-weight', tooltipRef.current.fontWeight + 150)
+        ;
 
-            const headerRow = table.append('g').attr('font-weight', tooltipRef.current.fontWeight + 550);
-            const hrLower = headerRow.append<SVGTextElement>("text").text(() => 'before');
-            const hrUpper = headerRow.append<SVGTextElement>("text").text(() => 'after');
-            const hrDelta = headerRow.append<SVGTextElement>("text").text(() => '∆');
+        const headerRow = table.append('g').attr('font-weight', tooltipRef.current.fontWeight + 550);
+        const hrLower = headerRow.append<SVGTextElement>("text").text(() => 'before');
+        const hrUpper = headerRow.append<SVGTextElement>("text").text(() => 'after');
+        const hrDelta = headerRow.append<SVGTextElement>("text").text(() => '∆');
 
-            const trHeader = table.append<SVGTextElement>("text").text(() => 't (ms)');
-            const trLower = table.append<SVGTextElement>("text").text(() => formatTime(lower[0]));
-            const trUpper = table.append<SVGTextElement>("text").text(() => formatTime(upper[0]));
-            const trDelta = table.append<SVGTextElement>("text").text(() => formatTimeChange(lower[0], upper[0]));
+        const trHeader = table.append<SVGTextElement>("text").text(() => 't (ms)');
+        const trLower = table.append<SVGTextElement>("text").text(() => formatTime(lower[0]));
+        const trUpper = table.append<SVGTextElement>("text").text(() => formatTime(upper[0]));
+        const trDelta = table.append<SVGTextElement>("text").text(() => formatTimeChange(lower[0], upper[0]));
 
-            const vrHeader = table.append<SVGTextElement>("text").text(() => tooltipValueLabel);
-            const vrLower = table.append<SVGTextElement>("text").text(() => formatValue(lower[1]));
-            const vrUpper = table.append<SVGTextElement>("text").text(() => formatValue(upper[1]));
-            const vrDelta = table.append<SVGTextElement>("text").text(() => formatValueChange(lower[1], upper[1]));
+        const vrHeader = table.append<SVGTextElement>("text").text(() => tooltipValueLabel);
+        const vrLower = table.append<SVGTextElement>("text").text(() => formatValue(lower[1]));
+        const vrUpper = table.append<SVGTextElement>("text").text(() => formatValue(upper[1]));
+        const vrDelta = table.append<SVGTextElement>("text").text(() => formatValueChange(lower[1], upper[1]));
 
-            const textWidthOf = (elem: TextSelection) => elem.node()?.getBBox()?.width || 0;
-            const textHeightOf = (elem: TextSelection) => elem.node()?.getBBox()?.height || 0;
-            const spacesWidthFor = (spaces: number) => spaces * textWidthOf(hrLower) / 5;
+        const textWidthOf = (elem: TextSelection) => elem.node()?.getBBox()?.width || 0;
+        const textHeightOf = (elem: TextSelection) => elem.node()?.getBBox()?.height || 0;
+        const spacesWidthFor = (spaces: number) => spaces * textWidthOf(hrLower) / 5;
 
-            // calculate the max width and height of the text
-            const tooltipWidth = Math.max(textWidthOf(header), spacesWidthFor(33));
-            const headerTextHeight = textHeightOf(header);
-            const headerRowHeight = textHeightOf(hrLower);
-            const timeRowHeight = textHeightOf(trHeader);
-            const valueRowHeight = textHeightOf(vrHeader);
-            const textHeight = headerTextHeight + headerRowHeight + timeRowHeight + valueRowHeight;
+        // calculate the max width and height of the text
+        const tooltipWidth = Math.max(textWidthOf(header), spacesWidthFor(33));
+        const headerTextHeight = textHeightOf(header);
+        const headerRowHeight = textHeightOf(hrLower);
+        const timeRowHeight = textHeightOf(trHeader);
+        const valueRowHeight = textHeightOf(vrHeader);
+        const textHeight = headerTextHeight + headerRowHeight + timeRowHeight + valueRowHeight;
 
-            // set the header text location
-            const xTooltip = tooltipX(x, tooltipWidth) + tooltipRef.current.paddingLeft;
-            const yTooltip = tooltipY(y, textHeight) + tooltipRef.current.paddingTop;
-            header
-                .attr('x', () => xTooltip)
-                .attr('y', () => yTooltip - (headerRowHeight + timeRowHeight + valueRowHeight) + textHeight)
-            ;
+        // set the header text location
+        const xTooltip = tooltipX(x, tooltipWidth) + tooltipRef.current.paddingLeft;
+        const yTooltip = tooltipY(y, textHeight) + tooltipRef.current.paddingTop;
+        header
+            .attr('x', () => xTooltip)
+            .attr('y', () => yTooltip - (headerRowHeight + timeRowHeight + valueRowHeight) + textHeight)
+        ;
 
-            const hrRowY = yTooltip + headerTextHeight + headerRowHeight;
-            const hrLowerX = spacesWidthFor(14);
-            const hrUpperX = spacesWidthFor(24);
-            const hrDeltaX = spacesWidthFor(32);
-            hrLower.attr('x', () => xTooltip + hrLowerX - textWidthOf(hrLower)).attr('y', () => hrRowY);
-            hrUpper.attr('x', () => xTooltip + hrUpperX - textWidthOf(hrUpper)).attr('y', () => hrRowY);
-            hrDelta.attr('x', () => xTooltip + hrDeltaX - textWidthOf(hrDelta)).attr('y', () => hrRowY);
+        const hrRowY = yTooltip + headerTextHeight + headerRowHeight;
+        const hrLowerX = spacesWidthFor(14);
+        const hrUpperX = spacesWidthFor(24);
+        const hrDeltaX = spacesWidthFor(32);
+        hrLower.attr('x', () => xTooltip + hrLowerX - textWidthOf(hrLower)).attr('y', () => hrRowY);
+        hrUpper.attr('x', () => xTooltip + hrUpperX - textWidthOf(hrUpper)).attr('y', () => hrRowY);
+        hrDelta.attr('x', () => xTooltip + hrDeltaX - textWidthOf(hrDelta)).attr('y', () => hrRowY);
 
-            const trRowY = hrRowY + timeRowHeight;
-            trHeader.attr('x', () => xTooltip).attr('y', () => trRowY);
-            trLower.attr('x', () => xTooltip + hrLowerX - textWidthOf(trLower)).attr('y', () => trRowY);
-            trUpper.attr('x', () => xTooltip + hrUpperX - textWidthOf(trUpper)).attr('y', () => trRowY);
-            trDelta.attr('x', () => xTooltip + hrDeltaX - textWidthOf(trDelta)).attr('y', () => trRowY);
+        const trRowY = hrRowY + timeRowHeight;
+        trHeader.attr('x', () => xTooltip).attr('y', () => trRowY);
+        trLower.attr('x', () => xTooltip + hrLowerX - textWidthOf(trLower)).attr('y', () => trRowY);
+        trUpper.attr('x', () => xTooltip + hrUpperX - textWidthOf(trUpper)).attr('y', () => trRowY);
+        trDelta.attr('x', () => xTooltip + hrDeltaX - textWidthOf(trDelta)).attr('y', () => trRowY);
 
-            const vrRowY = trRowY + valueRowHeight;
-            vrHeader.attr('x', () => xTooltip).attr('y', () => vrRowY);
-            vrLower.attr('x', () => xTooltip + hrLowerX - textWidthOf(vrLower)).attr('y', () => vrRowY);
-            vrUpper.attr('x', () => xTooltip + hrUpperX - textWidthOf(vrUpper)).attr('y', () => vrRowY);
-            vrDelta.attr('x', () => xTooltip + hrDeltaX - textWidthOf(vrDelta)).attr('y', () => vrRowY);
+        const vrRowY = trRowY + valueRowHeight;
+        vrHeader.attr('x', () => xTooltip).attr('y', () => vrRowY);
+        vrLower.attr('x', () => xTooltip + hrLowerX - textWidthOf(vrLower)).attr('y', () => vrRowY);
+        vrUpper.attr('x', () => xTooltip + hrUpperX - textWidthOf(vrUpper)).attr('y', () => vrRowY);
+        vrDelta.attr('x', () => xTooltip + hrDeltaX - textWidthOf(vrDelta)).attr('y', () => vrRowY);
 
-            // set the position, width, and height of the tooltip rect based on the text height and width and the padding
-            rect.attr('x', () => tooltipX(x, tooltipWidth))
-                .attr('y', () => tooltipY(y, textHeight))
-                .attr('width', tooltipWidth + tooltipRef.current.paddingLeft + tooltipRef.current.paddingRight)
-                .attr('height', textHeight + tooltipRef.current.paddingTop + tooltipRef.current.paddingBottom)
-            ;
-        }
+        // set the position, width, and height of the tooltip rect based on the text height and width and the padding
+        rect.attr('x', () => tooltipX(x, tooltipWidth))
+            .attr('y', () => tooltipY(y, textHeight))
+            .attr('width', tooltipWidth + tooltipRef.current.paddingLeft + tooltipRef.current.paddingRight)
+            .attr('height', textHeight + tooltipRef.current.paddingTop + tooltipRef.current.paddingBottom)
+        ;
     }
 
     function formatNumber(value: number, format: string): string {
@@ -465,11 +471,14 @@ function ScatterChart(props: Props): JSX.Element {
 
     /**
      * Called when the magnifier is enabled to set up the vertical bar magnifier lens
-     * @param {Selection<SVGRectElement, Datum, null, undefined> | undefined} path The path selection
+     * @param {MagnifierSelection | undefined} path The path selection
      * holding the magnifier whose properties need to be updated.
      * @callback
         */
-    function handleShowMagnify(path: Selection<SVGRectElement, Datum, null, undefined> | undefined) {
+    // function handleShowMagnify(path: MagnifierSelection | undefined) {
+    function handleShowMagnify(svg: SvgSelection | undefined) {
+
+        const path: MagnifierSelection = svg!.select('.magnifier');
 
         /**
          * Determines whether specified datum is in the time interval centered around the current
@@ -510,6 +519,7 @@ function ScatterChart(props: Props): JSX.Element {
             return [datumX, datumY];
         }
 
+        // create the lens
         if(containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
             const isMouseInPlotArea = mouseInPlotArea(x, y)
@@ -520,13 +530,14 @@ function ScatterChart(props: Props): JSX.Element {
                 .attr('opacity', () => isMouseInPlotArea ? 1 : 0)
             ;
 
-            const xScale = axesRef.current!.xAxis.scale<ScaleLinear<number, number>>();
-            const yScale = axesRef.current!.yAxis.scale<ScaleLinear<number, number>>();
+            const xScale = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>();
+            const yScale = axesRef.current!.yAxisGenerator.scale<ScaleLinear<number, number>>();
 
             if(isMouseInPlotArea) {
                 const barMagnifier: RadialMagnifier = radialMagnifierWith(
                     magnifier.radius,
-                    3 * zoomFactorRef.current,
+                    // 3 * zoomFactorRef.current,
+                    3,
                     [x - margin.left, y - margin.top]
                 );
                 mainGRef.current!
@@ -537,6 +548,29 @@ function ScatterChart(props: Props): JSX.Element {
                         return d3.line()(magnified);
                     })
                 ;
+
+                svg!
+                    .select('#x-lens-axis')
+                    .attr('x1', x - magnifier.radius)
+                    .attr('x2', x + magnifier.radius)
+                    .attr('y1', y)
+                    .attr('y2', y)
+                    .attr('opacity', 0.3)
+                ;
+
+                svg!
+                    .select('#y-lens-axis')
+                    .attr('x1', x)
+                    .attr('x2', x)
+                    .attr('y1', y - magnifier.radius)
+                    .attr('y2', y + magnifier.radius)
+                    .attr('opacity', 0.3)
+                ;
+
+                // svg!
+                //     .selectAll('.x-lens-axis-ticks')
+                //     // .each((datum: number) => xScale(x + magnifier.radius * datum / 10))
+
             }
             else {
                 mainGRef.current!
@@ -558,8 +592,92 @@ function ScatterChart(props: Props): JSX.Element {
      * @return {boolean} `true` if the mouse is in the plot area; `false` if the mouse is not in the plot area
      */
     function mouseInPlotArea(x: number, y: number): boolean {
-        return  x > margin.left && x < width - margin.right &&
-            y > margin.top && y < height - margin.bottom;
+        return  x > margin.left && x < width - margin.right && y > margin.top && y < height - margin.bottom;
+    }
+
+    /**
+     * Creates the SVG elements for displaying a radial magnifier lens on the data
+     * @param {SvgSelection} svg The SVG selection
+     * @param {boolean} visible `true` if the lens is visible; `false` otherwise
+     * @return {MagnifierSelection | undefined} The magnifier selection if visible; otherwise undefined
+     */
+    function magnifierLens(svg: SvgSelection, visible: boolean): MagnifierSelection | undefined {
+        if(visible && magnifierRef.current === undefined) {
+            const radialGradient = svg
+                .append<SVGDefsElement>('defs')
+                .append<SVGLinearGradientElement>('radialGradient')
+                .attr('id', 'radial-magnifier-gradient')
+                .attr('cx', '47%')
+                .attr('cy', '47%')
+                .attr('r', '53%')
+                .attr('fx', '25%')
+                .attr('fy', '25%')
+            ;
+
+            radialGradient
+                .append<SVGStopElement>('stop')
+                .attr('offset', '0%')
+                .attr('stop-color', borderColor)
+            ;
+
+            radialGradient
+                .append<SVGStopElement>('stop')
+                .attr('offset', '30%')
+                .attr('stop-color', tooltip.backgroundColor)
+                .attr('stop-opacity', 0)
+            ;
+
+            radialGradient
+                .append<SVGStopElement>('stop')
+                .attr('offset', '70%')
+                .attr('stop-color', tooltip.backgroundColor)
+                .attr('stop-opacity', 0)
+            ;
+
+            radialGradient
+                .append<SVGStopElement>('stop')
+                .attr('offset', '100%')
+                .attr('stop-color', borderColor)
+            ;
+
+            const magnifierSelection = svg
+                .append<SVGCircleElement>('circle')
+                .attr('class', 'magnifier')
+                .style('fill', 'url(#radial-magnifier-gradient')
+            ;
+
+            svg
+                .append('line')
+                .attr('id', 'x-lens-axis')
+                .attr('stroke', tooltipRef.current.borderColor)
+                .attr('stroke-width', 0.75)
+                .attr('opacity', 0)
+
+            svg
+                .append('line')
+                .attr('id', 'y-lens-axis')
+                .attr('stroke', tooltipRef.current.borderColor)
+                .attr('stroke-width', 0.75)
+                .attr('opacity', 0)
+
+            // svg
+            //     .selectAll('x-lens-ticks')
+            //     .data([-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5])
+            //     .append('line')
+            //     .attr('stroke', tooltipRef.current.borderColor)
+            //     .attr('stroke-width', 0.75)
+            //     .attr('opacity', 0)
+
+            svg.on('mousemove', () => handleShowMagnify(svg));
+
+            return magnifierSelection;
+        }
+        // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
+        else if(!visible && magnifierRef.current) {
+            svg.on('mousemove', () => null);
+            return undefined;
+        }
+        return magnifierRef.current;
     }
 
     /**
@@ -583,65 +701,14 @@ function ScatterChart(props: Props): JSX.Element {
 
             // create the x-axis
             axesRef.current.xScale.domain([timeRangeRef.current.start, timeRangeRef.current.end]);
-            axesRef.current.xAxisSelection.call(axesRef.current.xAxis);
+            axesRef.current.xAxisSelection.call(axesRef.current.xAxisGenerator);
 
             // create the y-axis
             axesRef.current.yScale.domain([Math.max(minWeight, minValue), Math.min(maxWeight, maxValue)]);
-            axesRef.current.yAxisSelection.call(axesRef.current.yAxis);
+            axesRef.current.yAxisSelection.call(axesRef.current.yAxisGenerator);
 
-            if(magnifier.visible && magnifierRef.current === undefined) {
-                const radialGradient = svg
-                    .append<SVGDefsElement>('defs')
-                    .append<SVGLinearGradientElement>('radialGradient')
-                    .attr('id', 'magnifier-gradient')
-                    .attr('cx', '50%')
-                    .attr('cy', '50%')
-                    .attr('r', '50%')
-                    .attr('fx', '20%')
-                    .attr('fy', '20%')
-                ;
-
-                const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
-                radialGradient
-                    .append<SVGStopElement>('stop')
-                    .attr('offset', '0%')
-                    .attr('stop-color', borderColor)
-                ;
-
-                radialGradient
-                    .append<SVGStopElement>('stop')
-                    .attr('offset', '30%')
-                    .attr('stop-color', tooltip.backgroundColor)
-                    .attr('stop-opacity', 0)
-                ;
-
-                radialGradient
-                    .append<SVGStopElement>('stop')
-                    .attr('offset', '70%')
-                    .attr('stop-color', tooltip.backgroundColor)
-                    .attr('stop-opacity', 0)
-                ;
-
-                radialGradient
-                    .append<SVGStopElement>('stop')
-                    .attr('offset', '100%')
-                    .attr('stop-color', borderColor)
-                ;
-
-                magnifierRef.current = svg
-                    .append<SVGRectElement>('circle')
-                    .attr('class', 'magnifier')
-                    .attr('stroke', tooltip.borderColor)
-                    .attr('stroke-width', tooltip.borderWidth)
-                    .style('fill', 'url(#magnifier-gradient')
-                ;
-
-                svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
-            }
-            // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
-            else if(!magnifier.visible && magnifierRef.current) {
-                magnifierRef.current = undefined;
-            }
+            // create/update the magnifier lens if needed
+            magnifierRef.current = magnifierLens(svg, magnifier.visible);
 
             // set up the main <g> container for svg and translate it based on the margins, but do it only
             // once

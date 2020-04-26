@@ -482,8 +482,8 @@ function RasterChart(props: Props): JSX.Element {
                     .attr('class', 'magnifier')
                     .attr('y', margin.top)
                     .attr('height', plotDimensions.height - margin.top)
-                    .attr('stroke', tooltip.borderColor)
-                    .attr('stroke-width', tooltip.borderWidth)
+                    // .attr('stroke', tooltip.borderColor)
+                    // .attr('stroke-width', tooltip.borderWidth)
                     .style('fill', 'url(#magnifier-gradient')
                 ;
 
@@ -677,7 +677,7 @@ function RasterChart(props: Props): JSX.Element {
     useEffect(
         () => {
             const subscription = seriesObservable.subscribe(data => {
-                if(data.maxTime > 3000) {
+                if(data.maxTime > 1000) {
                     subscription.unsubscribe();
                 }
                 else {
