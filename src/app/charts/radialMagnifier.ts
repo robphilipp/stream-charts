@@ -77,9 +77,11 @@ export function radialMagnifierWith(radius: number, power: number, center: [numb
          * @return {number} The transformed value with the point's magnification
          */
         function magnifier(x: number, y: number): LensTransformation2d {
+            const [cx, cy] = center;
+
             // calculate the distance from the center of the lens
-            const dx = x - center[0];
-            const dy = y - center[1];
+            const dx = x - cx;
+            const dy = y - cy;
             const dd = Math.sqrt(dx * dx + dy * dy);
 
             // when the distance is further than the radius, the point is outside of the
@@ -90,10 +92,16 @@ export function radialMagnifierWith(radius: number, power: number, center: [numb
                 magnification: 1
             };
 
+            if (dd === 0) return {
+                xPrime: x,
+                yPrime: y,
+                magnification: power
+            };
+
             const magnification = k0 * (1 - Math.exp(-dd * k1)) / dd * .75 + .25;
             return {
-                xPrime: center[0] + dx * magnification,
-                yPrime: center[1] + dy * magnification,
+                xPrime: cx + dx * magnification,
+                yPrime: cy + dy * magnification,
                 magnification: magnification
             };
         }
