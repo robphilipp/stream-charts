@@ -147,6 +147,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                 magnifier={{visible: magnifierVisible, magnification: magnification}}
                 // tracker={{visible: trackerVisible}}
                 filter={filter}
+                // seriesColors={new Map()}
             />
         </div>
     );

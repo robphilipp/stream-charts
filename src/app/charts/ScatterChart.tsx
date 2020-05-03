@@ -91,7 +91,9 @@ interface Props {
     seriesList: Array<Series>;
     seriesObservable: Observable<ChartData>;
 
-    filter?: RegExp
+    filter?: RegExp;
+
+    seriesColors?: Map<string, string>;
 }
 
 /**
@@ -111,7 +113,8 @@ function ScatterChart(props: Props): JSX.Element {
         minTime, maxTime, timeWindow,
         seriesList,
         seriesObservable,
-        filter = /./
+        filter = /./,
+        seriesColors = seriesColorsFor(seriesList, defaultAxesStyle.color, "#a9a9b4")
     } = props;
 
     // override the defaults with the parent's properties, leaving any unset values as the default value
@@ -162,6 +165,9 @@ function ScatterChart(props: Props): JSX.Element {
     const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
 
     const seriesFilterRef = useRef<RegExp>(filter);
+
+    // set the colors used for the time-series
+    const colorsRef = useRef<Map<string, string>>(seriesColors);
 
     const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
 
@@ -471,14 +477,15 @@ function ScatterChart(props: Props): JSX.Element {
 
     /**
      * Removes the tooltip when the mouse has moved away from the spike
-     * @param {SVGPathElement} segment The SVG line element representing the spike, over which the mouse is hovering.
+     * @param {SVGPathElement} [segment] The SVG line element representing the spike, over which the mouse is hovering.
+     * @param {series} [seriesName] The optional name of the series
      */
-    function handleHideTooltip(segment?: SVGPathElement) {
-        if(segment) {
-        // Use D3 to select element, change color and size
-        d3.select<SVGPathElement, Datum>(segment)
-            .attr('stroke', lineStyle.color)
-            .attr('stroke-width', lineStyle.lineWidth);
+    function handleHideTooltip(segment?: SVGPathElement, seriesName?: string) {
+        if(segment && seriesName) {
+            d3.select<SVGPathElement, Datum>(segment)
+                .attr('stroke', colorsRef.current.get(seriesName) || lineStyle.color)
+                .attr('stroke-width', lineStyle.lineWidth)
+            ;
         }
 
         d3.selectAll<SVGPathElement, Datum>('.tooltip').remove();
@@ -873,7 +880,8 @@ function ScatterChart(props: Props): JSX.Element {
                                 .y((d: [number, number]) => axesRef.current!.yScale(d[1]))
                             )
                             .attr("fill", "none")
-                            .attr("stroke", lineStyle.color)
+                            // .attr("stroke", lineStyle.color)
+                            .attr("stroke", colorsRef.current.get(series.name) || lineStyle.color)
                             .attr("stroke-width", lineStyle.lineWidth)
                             .attr('transform', `translate(${margin.left}, ${margin.top})`)
                             .attr("clip-path", "url(#clip)")
@@ -883,7 +891,7 @@ function ScatterChart(props: Props): JSX.Element {
                             )
                             .on(
                                 "mouseleave",
-                                (datumArray, i, group) => handleHideTooltip(group[i])
+                                (datumArray, i, group) => handleHideTooltip(group[i], series.name)
                             ),
                         update => update,
                         exit => exit.remove()
@@ -920,6 +928,7 @@ function ScatterChart(props: Props): JSX.Element {
                 axesRef.current = initializeAxes(svg);
             }
 
+            // todo parts of this need to be pulled to the parent/caller
             const subscription = seriesObservable.subscribe(data => {
                 if(data.maxTime > 5000) {
                     subscription.unsubscribe();
@@ -972,6 +981,21 @@ function ScatterChart(props: Props): JSX.Element {
             style={{backgroundColor: backgroundColor}}
             ref={containerRef}
         />
+    );
+}
+
+/**
+ * Constructs a spectrum of colors, one for each time-series, starting with the `startColor` and interpolating
+ * to the `stopColor`.
+ * @param {Array<Series>} series The array holding the time-series
+ * @param {string} startColor The "start" color for the interpolation
+ * @param {string} stopColor The "stop" color for the interpolation
+ * @return {Map<string, string>} A map of the series name and associated colors
+ */
+export function seriesColorsFor(series: Array<Series>, startColor: string, stopColor: string): Map<string, string> {
+    return new Map(d3
+        .quantize(d3.interpolateHcl(startColor, stopColor), series.length)
+        .map((color, index) => [series[index].name, color]) as Array<[string, string]>
     );
 }
 
