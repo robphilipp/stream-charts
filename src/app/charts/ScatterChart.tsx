@@ -90,6 +90,8 @@ interface Props {
     timeWindow: number;
     seriesList: Array<Series>;
     seriesObservable: Observable<ChartData>;
+
+    filter?: RegExp
 }
 
 /**
@@ -109,6 +111,7 @@ function ScatterChart(props: Props): JSX.Element {
         minTime, maxTime, timeWindow,
         seriesList,
         seriesObservable,
+        filter = /./
     } = props;
 
     // override the defaults with the parent's properties, leaving any unset values as the default value
@@ -850,11 +853,14 @@ function ScatterChart(props: Props): JSX.Element {
                 const data = selectInTimeRange(series);
 
                 if (data.length === 0) return;
+                // const stroke = (series.name.match(filter)) ? lineStyle.color : 'none';
+                const stroke = lineStyle.color;
+                const plotData = (series.name.match(filter)) ? data : [];
 
                 // Create a update selection: bind to the new data
                 mainGRef.current!
                     .selectAll(`#${series.name}`)
-                    .data([[], data], () => `${series.name}`)
+                    .data([[], plotData], () => `${series.name}`)
                     .join(
                         enter => enter
                             .append("path")
@@ -865,7 +871,7 @@ function ScatterChart(props: Props): JSX.Element {
                                 .y((d: [number, number]) => axesRef.current!.yScale(d[1]))
                             )
                             .attr("fill", "none")
-                            .attr("stroke", lineStyle.color)
+                            .attr("stroke", stroke)
                             .attr("stroke-width", lineStyle.lineWidth)
                             .attr('transform', `translate(${margin.left}, ${margin.top})`)
                             .attr("clip-path", "url(#clip)")
@@ -952,7 +958,7 @@ function ScatterChart(props: Props): JSX.Element {
             tooltipRef.current.visible = tooltip.visible;
             updatePlot(timeRangeRef.current);
         },
-        [tooltip.visible, magnifier.visible, magnifier.magnification]//, tracker.visible]
+        [tooltip.visible, magnifier.visible, magnifier.magnification, filter]//, tracker.visible]
     )
 
     return (

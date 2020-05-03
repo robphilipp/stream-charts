@@ -1,4 +1,4 @@
-import {default as React, useRef, useState} from "react";
+import {default as React, useEffect, useRef, useState} from "react";
 import {Series} from "../charts/datumSeries";
 import ScatterChart from "../charts/ScatterChart";
 import {ChartData, randomWeightDataObservable} from "./randomData";
@@ -31,11 +31,12 @@ interface Props {
 export function StreamingScatterChart(props: Props): JSX.Element {
     const {seriesList, timeWindow = 100, plotHeight = 20, plotWidth = 500} = props;
 
-    // const [liveData, setLiveData] = useState(seriesList);
-    // const seriesRef = useRef<Array<Series>>(seriesList);
     const currentTimeRef = useRef<number>(0);
 
     const observableRef = useRef<Observable<ChartData>>(randomWeightDataObservable(seriesList.length, 0.1));
+
+    const [filterValue, setFilterValue] = useState<string>('');
+    const [filter, setFilter] = useState<RegExp>(new RegExp(''));
 
     const [tooltipVisible, setTooltipVisible] = useState(false);
     const [magnifierVisible, setMagnifierVisible] = useState(false);
@@ -74,9 +75,28 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     //     }, [timeWindow]
     // );
 
+    function handleUpdateRegex(updatedFilter: string): void {
+        setFilterValue(updatedFilter);
+        let updatedRegex;
+        try {
+            updatedRegex = new RegExp(updatedFilter);
+        }
+        catch(error) {
+            console.error(error);
+        }
+        if (updatedRegex) {
+            setFilter(updatedRegex)
+        } else setFilter(filter);
+    }
+
     return (
         <div>
             <p>
+                <label>regex filter <input
+                    type="text"
+                    value={filterValue}
+                    onInput={event => handleUpdateRegex(event.currentTarget.value)}
+                /></label>
                 <label><input
                     type="checkbox" checked={tooltipVisible}
                     onChange={() => {
@@ -125,6 +145,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                 tooltip={{visible: tooltipVisible}}
                 magnifier={{visible: magnifierVisible, magnification: magnification}}
                 // tracker={{visible: trackerVisible}}
+                filter={filter}
             />
         </div>
     );
