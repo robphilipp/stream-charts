@@ -1,10 +1,8 @@
-import {default as React, useEffect, useRef, useState} from "react";
-import {Datum, Series} from "../charts/datumSeries";
-import {Option} from "prelude-ts";
+import {default as React, useRef, useState} from "react";
+import {Series} from "../charts/datumSeries";
 import ScatterChart from "../charts/ScatterChart";
 import {ChartData, randomWeightDataObservable} from "./randomData";
-import {interval, Observable} from "rxjs";
-import {map} from "rxjs/operators";
+import {Observable} from "rxjs";
 
 // interface Point {
 //     x: number;
@@ -33,14 +31,15 @@ interface Props {
 export function StreamingScatterChart(props: Props): JSX.Element {
     const {seriesList, timeWindow = 100, plotHeight = 20, plotWidth = 500} = props;
 
-    const [liveData, setLiveData] = useState(seriesList);
-    const seriesRef = useRef<Array<Series>>(seriesList);
+    // const [liveData, setLiveData] = useState(seriesList);
+    // const seriesRef = useRef<Array<Series>>(seriesList);
     const currentTimeRef = useRef<number>(0);
 
     const observableRef = useRef<Observable<ChartData>>(randomWeightDataObservable(seriesList.length, 0.1));
 
     const [tooltipVisible, setTooltipVisible] = useState(false);
     const [magnifierVisible, setMagnifierVisible] = useState(false);
+    const [magnification, setMagnification] = useState(5);
     const [trackerVisible, setTrackerVisible] = useState(false);
 
     // // called on mount to set up the <g> element into which to render
@@ -78,27 +77,55 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     return (
         <div>
             <p>
-                <label>tooltip <input type="checkbox" checked={tooltipVisible}
-                                      onChange={() => setTooltipVisible(!tooltipVisible)}/>
-                </label>&nbsp;&nbsp;
-                <label>magnifier <input type="checkbox" checked={magnifierVisible} onChange={() => {
+                <label><input
+                    type="checkbox" checked={tooltipVisible}
+                    onChange={() => {
+                        setTooltipVisible(!tooltipVisible)
+                        if (trackerVisible) setTrackerVisible(false);
+                        if (magnifierVisible) setMagnifierVisible(false);
+                    }}
+                /> tooltip</label>&nbsp;&nbsp;
+                <label><input
+                    type="checkbox"
+                    checked={trackerVisible} onChange={() => {
+                        setTrackerVisible(!trackerVisible);
+                        if (magnifierVisible) setMagnifierVisible(false);
+                        if (tooltipVisible) setTooltipVisible(false);
+                    }}
+                /> tracker</label>&nbsp;&nbsp;
+                <label><input
+                    type="checkbox"
+                    checked={magnifierVisible} onChange={() => {
                     setMagnifierVisible(!magnifierVisible);
                     if (trackerVisible) setTrackerVisible(false);
-                }}/></label>&nbsp;&nbsp;
-                <label>tracker <input type="checkbox" checked={trackerVisible} onChange={() => {
-                    setTrackerVisible(!trackerVisible);
-                    if (magnifierVisible) setMagnifierVisible(false);
-                }}/></label>
+                    if (tooltipVisible) setTooltipVisible(false);
+                }}
+                /> magnifier</label>&nbsp;&nbsp;
+                {magnifierVisible ?
+                    (<label><input
+                        type="range"
+                        value={magnification}
+                        min={1}
+                        max={10}
+                        step={1}
+                        onChange={event => {
+                            console.log(event);
+                            setMagnification(parseInt(event.target.value))
+                        }}
+                    /> ({magnification})</label>) :
+                    (<span/>)
+                }
             </p>
             <ScatterChart
                 width={plotWidth}
                 height={plotHeight}
-                seriesList={liveData}
+                seriesList={seriesList}
                 seriesObservable={observableRef.current}
                 minTime={Math.max(0, currentTimeRef.current - timeWindow)}
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 timeWindow={timeWindow}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
+                magnificationPower={magnification}
                 tooltip={{visible: tooltipVisible}}
                 magnifier={{visible: magnifierVisible}}
                 // tracker={{visible: trackerVisible}}

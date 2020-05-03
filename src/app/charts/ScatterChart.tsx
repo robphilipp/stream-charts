@@ -486,7 +486,6 @@ function ScatterChart(props: Props): JSX.Element {
      * @param {SvgSelection | undefined} svg The path selection
      * holding the magnifier whose properties need to be updated.
      */
-    // function handleShowMagnify(path: MagnifierSelection | undefined) {
     function handleShowMagnify(svg: SvgSelection | undefined) {
 
         const path: MagnifierSelection = svg!.select('.magnifier');
@@ -715,6 +714,9 @@ function ScatterChart(props: Props): JSX.Element {
         else if(!visible && magnifierRef.current) {
             svg.on('mousemove', () => null);
             return undefined;
+        }
+        else if(visible && magnifierRef.current) {
+            svg.on('mousemove', () => handleShowMagnify(svg));
         }
         return magnifierRef.current;
     }
