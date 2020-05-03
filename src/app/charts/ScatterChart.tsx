@@ -161,6 +161,8 @@ function ScatterChart(props: Props): JSX.Element {
     // calculates to the time-range based on the (min, max)-time from the props
     const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
 
+    const seriesFilterRef = useRef<RegExp>(filter);
+
     const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
 
     function updateMinMaxValues(data: Array<[number, number]>[]): [number, number] {
@@ -853,11 +855,11 @@ function ScatterChart(props: Props): JSX.Element {
                 const data = selectInTimeRange(series);
 
                 if (data.length === 0) return;
-                // const stroke = (series.name.match(filter)) ? lineStyle.color : 'none';
-                const stroke = lineStyle.color;
-                const plotData = (series.name.match(filter)) ? data : [];
 
-                // Create a update selection: bind to the new data
+                // only show the data for which the filter matches
+                const plotData = (series.name.match(seriesFilterRef.current)) ? data : [];
+
+                // create the time-series paths
                 mainGRef.current!
                     .selectAll(`#${series.name}`)
                     .data([[], plotData], () => `${series.name}`)
@@ -871,7 +873,7 @@ function ScatterChart(props: Props): JSX.Element {
                                 .y((d: [number, number]) => axesRef.current!.yScale(d[1]))
                             )
                             .attr("fill", "none")
-                            .attr("stroke", stroke)
+                            .attr("stroke", lineStyle.color)
                             .attr("stroke-width", lineStyle.lineWidth)
                             .attr('transform', `translate(${margin.left}, ${margin.top})`)
                             .attr("clip-path", "url(#clip)")
@@ -956,6 +958,7 @@ function ScatterChart(props: Props): JSX.Element {
     useEffect(
         () => {
             tooltipRef.current.visible = tooltip.visible;
+            seriesFilterRef.current = filter;
             updatePlot(timeRangeRef.current);
         },
         [tooltip.visible, magnifier.visible, magnifier.magnification, filter]//, tracker.visible]

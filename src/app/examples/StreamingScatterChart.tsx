@@ -1,4 +1,4 @@
-import {default as React, useEffect, useRef, useState} from "react";
+import {default as React, useRef, useState} from "react";
 import {Series} from "../charts/datumSeries";
 import ScatterChart from "../charts/ScatterChart";
 import {ChartData, randomWeightDataObservable} from "./randomData";
@@ -75,18 +75,19 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     //     }, [timeWindow]
     // );
 
+    /**
+     * Called when the user changes the regular expression filter
+     * @param {string} updatedFilter The updated the filter
+     */
     function handleUpdateRegex(updatedFilter: string): void {
         setFilterValue(updatedFilter);
         let updatedRegex;
-        try {
-            updatedRegex = new RegExp(updatedFilter);
-        }
-        catch(error) {
-            console.error(error);
-        }
+        try {updatedRegex = new RegExp(updatedFilter)} catch(error) {}
         if (updatedRegex) {
             setFilter(updatedRegex)
-        } else setFilter(filter);
+        } else {
+            setFilter(filter);
+        }
     }
 
     return (
