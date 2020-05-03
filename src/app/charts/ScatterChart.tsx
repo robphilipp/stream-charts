@@ -38,6 +38,7 @@ interface Axes {
 // the axis-element type return when calling the ".call(axis)" function
 type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 type SvgSelection = Selection<SVGSVGElement, any, null, undefined>;
+type GSelection = Selection<SVGGElement, any, null, undefined>;
 type LineSelection = Selection<SVGLineElement, any, SVGGElement, undefined>;
 type TextSelection = Selection<SVGTextElement, any, null, undefined>;
 type MagnifierSelection = Selection<SVGCircleElement, Datum, null, undefined>;
@@ -623,6 +624,8 @@ function ScatterChart(props: Props): JSX.Element {
                 svg.select('#y-lens-axis').attr('opacity', 0);
                 magnifierXAxisRef.current!.attr('opacity', 0);
                 magnifierXAxisLabelRef.current!.text(() => '')
+                magnifierYAxisRef.current!.attr('opacity', 0);
+                magnifierYAxisLabelRef.current!.text(() => '')
             }
         }
     }
@@ -688,77 +691,21 @@ function ScatterChart(props: Props): JSX.Element {
                 .style('fill', 'url(#radial-magnifier-gradient')
             ;
 
-            svg
-                .append('line')
-                .attr('id', 'x-lens-axis')
-                .attr('stroke', tooltipRef.current.borderColor)
-                .attr('stroke-width', 0.75)
-                .attr('opacity', 0)
+            // create the lens axes', ticks and tick labels. the labels hold the time and values of the
+            // current mouse location
+            createMagnifierLensAxisLine('x-lens-axis', svg);
+            createMagnifierLensAxisLine('y-lens-axis', svg);
 
-            svg
-                .append('line')
-                .attr('id', 'y-lens-axis')
-                .attr('stroke', tooltipRef.current.borderColor)
-                .attr('stroke-width', 0.75)
-                .attr('opacity', 0)
+            const lensTickIndexes = d3.range(-5, 6, 1);
+            const lensLabelIndexes = [-5, -1, 0, 1, 5];
 
-            const xLensAxisTicks = svg
-                .append('g')
-                .attr('id', 'x-lens-axis-ticks')
-            ;
+            const xLensAxisTicks = svg.append('g').attr('id', 'x-lens-axis-ticks');
+            magnifierXAxisRef.current = magnifierLensAxisTicks('x-lens-ticks', lensTickIndexes, xLensAxisTicks);
+            magnifierXAxisLabelRef.current = magnifierLensAxisLabels(lensLabelIndexes, xLensAxisTicks);
 
-            magnifierXAxisRef.current = xLensAxisTicks
-                .selectAll('line')
-                .data(d3.range(-5, 6, 1))
-                .enter()
-                .append('line')
-                .attr('class', 'x-lens-ticks')
-                .attr('stroke', tooltipRef.current.borderColor)
-                .attr('stroke-width', 0.75)
-                .attr('opacity', 0)
-            ;
-
-            magnifierXAxisLabelRef.current = xLensAxisTicks
-                .selectAll('text')
-                .data([-5, -1, 0, 1, 5])
-                .enter()
-                .append('text')
-                .attr('fill', tooltipRef.current.fontColor)
-                .attr('font-family', 'sans-serif')
-                .attr('font-size', tooltipRef.current.fontSize)
-                .attr('font-weight', tooltipRef.current.fontWeight)
-                .text(() => '')
-            ;
-
-            const yLensAxisTicks = svg
-                .append('g')
-                .attr('id', 'y-lens-axis-ticks')
-            ;
-
-            magnifierYAxisRef.current = yLensAxisTicks
-                .selectAll('line')
-                .data(d3.range(-5, 6, 1))
-                .enter()
-                .append('line')
-                .attr('class', 'y-lens-ticks')
-                .attr('stroke', tooltipRef.current.borderColor)
-                .attr('stroke-width', 0.75)
-                .attr('opacity', 0)
-            ;
-
-            magnifierYAxisLabelRef.current = yLensAxisTicks
-                .selectAll('text')
-                .data([-5, -1, 0, 1, 5])
-                .enter()
-                .append('text')
-                .attr('fill', tooltipRef.current.fontColor)
-                .attr('font-family', 'sans-serif')
-                .attr('font-size', tooltipRef.current.fontSize)
-                .attr('font-weight', tooltipRef.current.fontWeight)
-                .text(() => '')
-            ;
-
-
+            const yLensAxisTicks = svg.append('g').attr('id', 'y-lens-axis-ticks');
+            magnifierYAxisRef.current = magnifierLensAxisTicks('y-lens-ticks', lensTickIndexes, yLensAxisTicks);
+            magnifierYAxisLabelRef.current = magnifierLensAxisLabels(lensLabelIndexes, yLensAxisTicks);
 
             svg.on('mousemove', () => handleShowMagnify(svg));
 
@@ -770,6 +717,63 @@ function ScatterChart(props: Props): JSX.Element {
             return undefined;
         }
         return magnifierRef.current;
+    }
+
+    /**
+     * Creates a magnifier lens axis svg node and appends it to the specified svg selection
+     * @param {string} className The class name of the svg line line
+     * @param {SvgSelection} svg The svg selection to which to add the axis line
+     */
+    function createMagnifierLensAxisLine(className: string, svg: SvgSelection): void {
+        svg
+            .append('line')
+            .attr('id', className)
+            .attr('stroke', tooltipRef.current.borderColor)
+            .attr('stroke-width', 0.75)
+            .attr('opacity', 0)
+    }
+
+    /**
+     * Creates the svg node for a magnifier lens axis (either x or y) ticks and binds the ticks to the nodes
+     * @param {string} className The node's class name for selection
+     * @param {Array<number>} ticks The ticks represented as an array of integers. An integer of 0 places the
+     * tick on the center of the lens. An integer of ± array_length / 2 - 1 places the tick on the lens boundary.
+     * @param {GSelection} selection The svg g node holding these axis ticks
+     * @return {LineSelection} A line selection these ticks
+     */
+    function magnifierLensAxisTicks(className: string, ticks: Array<number>, selection: GSelection): LineSelection {
+        return  selection
+            .selectAll('line')
+            .data(ticks)
+            .enter()
+            .append('line')
+            .attr('class', className)
+            .attr('stroke', tooltipRef.current.borderColor)
+            .attr('stroke-width', 0.75)
+            .attr('opacity', 0)
+            ;
+    }
+
+    /**
+     * Creates the svg text nodes for the magnifier lens axis (either x or y) tick labels and binds the text nodes
+     * to the tick data.
+     * @param {Array<number>} ticks An array of indexes defining where the ticks are to be place. The indexes refer
+     * to the ticks handed to the `magnifierLensAxis` and have the same meaning visa-vie their locations
+     * @param {GSelection} selection The selection of the svg g node holding the axis ticks and these labels
+     * @return {Selection<SVGTextElement, number, SVGGElement, any>} The selection of these tick labels
+     */
+    function magnifierLensAxisLabels(ticks: Array<number>, selection: GSelection): Selection<SVGTextElement, number, SVGGElement, any> {
+        return selection
+            .selectAll('text')
+            .data([-5, -1, 0, 1, 5])
+            .enter()
+            .append('text')
+            .attr('fill', axisLabelFont.color)
+            .attr('font-family', axisLabelFont.family)
+            .attr('font-size', axisLabelFont.size)
+            .attr('font-weight', axisLabelFont.weight)
+            .text(() => '')
+            ;
     }
 
     /**
