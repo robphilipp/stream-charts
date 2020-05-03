@@ -17,7 +17,7 @@ const defaultAxesLabelFont = {
     weight: 300,
     family: 'sans-serif'
 };
-const defaultSpikesStyle = {
+const defaultLineStyle = {
     color: '#008aad',
     // color: '#c95d15',
     lineWidth: 1,
@@ -43,9 +43,6 @@ type LineSelection = Selection<SVGLineElement, any, SVGGElement, undefined>;
 type TextSelection = Selection<SVGTextElement, any, null, undefined>;
 type MagnifierSelection = Selection<SVGCircleElement, Datum, null, undefined>;
 
-// interface MagnifiedDatum extends Datum {
-//     lens: LensTransformation
-// }
 interface MagnifiedData {
     datum: [number, number];
     lens: LensTransformation2d;
@@ -54,7 +51,7 @@ interface MagnifiedData {
 /**
  * Properties for rendering the line-magnifier lens
  */
-interface CircleMagnifierStyle {
+interface RadialMagnifierStyle {
     visible: boolean;
     radius: number;
     magnification: number;
@@ -62,10 +59,10 @@ interface CircleMagnifierStyle {
     lineWidth: number,
 }
 
-const defaultLineMagnifierStyle: CircleMagnifierStyle = {
+const defaultRadialMagnifierStyle: RadialMagnifierStyle = {
     visible: false,
     radius: 100,
-    magnification: 1,
+    magnification: 5,
     color: '#d2933f',
     lineWidth: 2,
 };
@@ -77,12 +74,11 @@ interface Props {
     axisLabelFont?: Partial<{ size: number, color: string, family: string, weight: number }>;
     axisStyle?: Partial<{ color: string }>;
     backgroundColor?: string;
-    spikesStyle?: Partial<{color: string, lineWidth: number, highlightColor: string, highlightWidth: number}>;
+    lineStyle?: Partial<{color: string, lineWidth: number, highlightColor: string, highlightWidth: number}>;
     plotGridLines?: Partial<{ visible: boolean, color: string }>;
     tooltip?: Partial<TooltipStyle>;
     tooltipValueLabel?: string;
-    magnifier?: Partial<CircleMagnifierStyle>;
-    magnificationPower?: number;
+    magnifier?: Partial<RadialMagnifierStyle>;
 
     minWeight?: number;
     maxWeight?: number;
@@ -113,7 +109,6 @@ function ScatterChart(props: Props): JSX.Element {
         minTime, maxTime, timeWindow,
         seriesList,
         seriesObservable,
-        magnificationPower = 5
     } = props;
 
     // override the defaults with the parent's properties, leaving any unset values as the default value
@@ -122,8 +117,8 @@ function ScatterChart(props: Props): JSX.Element {
     const axisLabelFont = {...defaultAxesLabelFont, ...props.axisLabelFont};
     const plotGridLines = {...defaultPlotGridLines, ...props.plotGridLines};
     const tooltip: TooltipStyle = {...defaultTooltipStyle, ...props.tooltip};
-    const magnifier = {...defaultLineMagnifierStyle, ...props.magnifier};
-    const spikesStyle = {...defaultSpikesStyle, ...props.spikesStyle};
+    const magnifier = {...defaultRadialMagnifierStyle, ...props.magnifier};
+    const lineStyle = {...defaultLineStyle, ...props.lineStyle};
 
     // grab the dimensions of the actual plot after removing the margins from the specified width and height
     const plotDimensions = adjustedDimensions(width, height, margin);
@@ -131,7 +126,6 @@ function ScatterChart(props: Props): JSX.Element {
     // the container that holds the d3 svg element
     const containerRef = useRef<SVGSVGElement>(null);
     const mainGRef = useRef<Selection<SVGGElement, any, null, undefined>>();
-    const spikesRef = useRef<Selection<SVGGElement, Series, SVGGElement, any>>();
 
     const magnifierRef = useRef<MagnifierSelection>();
     // const magnifierAxisRef = useRef<Selection<BaseType, number, BaseType, any>>();
@@ -139,11 +133,9 @@ function ScatterChart(props: Props): JSX.Element {
     const magnifierXAxisLabelRef = useRef<Selection<SVGTextElement, any, SVGGElement, undefined>>();
     const magnifierYAxisRef = useRef<LineSelection>();
     const magnifierYAxisLabelRef = useRef<Selection<SVGTextElement, any, SVGGElement, undefined>>();
-    const magnifierTicksRef = useRef<Array<number>>([]);
 
     const trackerRef = useRef<Selection<SVGLineElement, Datum, null, undefined>>();
 
-    const mouseCoordsRef = useRef<number>(0);
     const zoomFactorRef = useRef<number>(5);
 
     // reference to the axes for the plot
@@ -239,8 +231,7 @@ function ScatterChart(props: Props): JSX.Element {
      * at the location of the mouse when the scroll wheel or gesture was applied.
      * @param {ZoomTransform} transform The d3 zoom transformation information
      * @param {number} x The x-position of the mouse when the scroll wheel or gesture is used
-     * @callback
-        */
+     */
     function onZoom(transform: ZoomTransform, x: number): void {
         const time = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>().invert(x);
         timeRangeRef.current = timeRangeRef.current!.scale(transform.k, time);
@@ -251,8 +242,7 @@ function ScatterChart(props: Props): JSX.Element {
     /**
      * Adjusts the time-range and updates the plot when the plot is dragged to the left or right
      * @param {number} deltaX The amount that the plot is dragged
-     * @callback
-        */
+     */
     function onPan(deltaX: number): void {
         const scale = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>();
         const currentTime = timeRangeRef!.current.start;
@@ -286,6 +276,14 @@ function ScatterChart(props: Props): JSX.Element {
         })
     }
 
+    /**
+     * Returns the (time, value) point that comes just before the mouse and just after the mouse
+     * @param {Array<[number, number]>} data The time-series data
+     * @param {number} time The time represented by the mouse's x-coordinate
+     * @return {[[number, number], [number, number]]} the (time, value) point that comes just before
+     * the mouse and just after the mouse. If the mouse is after the last point, then the "after" point
+     * is `[NaN, NaN]`. If the mouse is before the first point, then the "before" point is `[NaN, NaN]`.
+     */
     function boundingPoints(data: Array<[number, number]>, time: number): [[number, number], [number, number]] {
         const upperIndex = boundingPointsIndex(data, time);
         if(upperIndex <= 0) {
@@ -314,8 +312,8 @@ function ScatterChart(props: Props): JSX.Element {
 
         // Use D3 to select element, change color and size
         d3.select<SVGPathElement, Datum>(segment)
-            .attr('stroke', spikesStyle.highlightColor)
-            .attr('stroke-width', spikesStyle.highlightWidth)
+            .attr('stroke', lineStyle.highlightColor)
+            .attr('stroke-width', lineStyle.highlightWidth)
         ;
 
         // create the rounded rectangle for the tooltip's background
@@ -474,8 +472,8 @@ function ScatterChart(props: Props): JSX.Element {
         if(segment) {
         // Use D3 to select element, change color and size
         d3.select<SVGPathElement, Datum>(segment)
-            .attr('stroke', spikesStyle.color)
-            .attr('stroke-width', spikesStyle.lineWidth);
+            .attr('stroke', lineStyle.color)
+            .attr('stroke-width', lineStyle.lineWidth);
         }
 
         d3.selectAll<SVGPathElement, Datum>('.tooltip').remove();
@@ -546,7 +544,7 @@ function ScatterChart(props: Props): JSX.Element {
             if(isMouseInPlotArea) {
                 const radialMagnifier: RadialMagnifier = radialMagnifierWith(
                     magnifier.radius,
-                    magnificationPower,
+                    magnifier.magnification,
                     [x - margin.left, y - margin.top]
                 );
                 mainGRef.current!
@@ -576,7 +574,7 @@ function ScatterChart(props: Props): JSX.Element {
                     .attr('opacity', 0.3)
                 ;
 
-                const axesMagnifier: RadialMagnifier = radialMagnifierWith(magnifier.radius, magnificationPower, [x, y]);
+                const axesMagnifier: RadialMagnifier = radialMagnifierWith(magnifier.radius, magnifier.magnification, [x, y]);
                 magnifierXAxisRef.current!
                     .attr('stroke', tooltipRef.current.borderColor)
                     .attr('stroke-width', 0.75)
@@ -606,7 +604,7 @@ function ScatterChart(props: Props): JSX.Element {
                 magnifierYAxisLabelRef.current!
                     .attr('x', datum => axesMagnifier.magnify(x + magnifier.radius * (1 - Math.abs(datum / 5)) / 40, y).xPrime + 10)
                     .attr('y', datum => axesMagnifier.magnify(x, y + datum * magnifier.radius / 5).yPrime - 2)
-                    .text(datum => d3.format(',.2f')(yScale.invert(y - margin.top + datum * magnifier.radius / 5)))
+                    .text(datum => formatValue(yScale.invert(y - margin.top + datum * magnifier.radius / 5)))
                 ;
             }
             else {
@@ -849,7 +847,6 @@ function ScatterChart(props: Props): JSX.Element {
             svg.call(zoom);
 
             liveDataRef.current.forEach(series => {
-
                 const data = selectInTimeRange(series);
 
                 if (data.length === 0) return;
@@ -868,8 +865,8 @@ function ScatterChart(props: Props): JSX.Element {
                                 .y((d: [number, number]) => axesRef.current!.yScale(d[1]))
                             )
                             .attr("fill", "none")
-                            .attr("stroke", spikesStyle.color)
-                            .attr("stroke-width", spikesStyle.lineWidth)
+                            .attr("stroke", lineStyle.color)
+                            .attr("stroke-width", lineStyle.lineWidth)
                             .attr('transform', `translate(${margin.left}, ${margin.top})`)
                             .attr("clip-path", "url(#clip)")
                             .on(
@@ -916,7 +913,7 @@ function ScatterChart(props: Props): JSX.Element {
             }
 
             const subscription = seriesObservable.subscribe(data => {
-                if(data.maxTime > 1000) {
+                if(data.maxTime > 5000) {
                     subscription.unsubscribe();
                 }
                 else {
@@ -955,7 +952,7 @@ function ScatterChart(props: Props): JSX.Element {
             tooltipRef.current.visible = tooltip.visible;
             updatePlot(timeRangeRef.current);
         },
-        [tooltip.visible, magnifier.visible, magnificationPower]//, tracker.visible]
+        [tooltip.visible, magnifier.visible, magnifier.magnification]//, tracker.visible]
     )
 
     return (

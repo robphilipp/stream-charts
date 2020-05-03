@@ -108,10 +108,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                         min={1}
                         max={10}
                         step={1}
-                        onChange={event => {
-                            console.log(event);
-                            setMagnification(parseInt(event.target.value))
-                        }}
+                        onChange={event => setMagnification(parseInt(event.target.value))}
                     /> ({magnification})</label>) :
                     (<span/>)
                 }
@@ -125,9 +122,8 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 timeWindow={timeWindow}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
-                magnificationPower={magnification}
                 tooltip={{visible: tooltipVisible}}
-                magnifier={{visible: magnifierVisible}}
+                magnifier={{visible: magnifierVisible, magnification: magnification}}
                 // tracker={{visible: trackerVisible}}
             />
         </div>
