@@ -134,8 +134,10 @@ function ScatterChart(props: Props): JSX.Element {
 
     const magnifierRef = useRef<MagnifierSelection>();
     // const magnifierAxisRef = useRef<Selection<BaseType, number, BaseType, any>>();
-    const magnifierAxisRef = useRef<LineSelection>();
-    const magnifierAxisLabelRef = useRef<Selection<SVGTextElement, any, SVGGElement, undefined>>();
+    const magnifierXAxisRef = useRef<LineSelection>();
+    const magnifierXAxisLabelRef = useRef<Selection<SVGTextElement, any, SVGGElement, undefined>>();
+    const magnifierYAxisRef = useRef<LineSelection>();
+    const magnifierYAxisLabelRef = useRef<Selection<SVGTextElement, any, SVGGElement, undefined>>();
     const magnifierTicksRef = useRef<Array<number>>([]);
 
     const trackerRef = useRef<Selection<SVGLineElement, Datum, null, undefined>>();
@@ -575,7 +577,7 @@ function ScatterChart(props: Props): JSX.Element {
                 ;
 
                 const axesMagnifier: RadialMagnifier = radialMagnifierWith(magnifier.radius, magnificationPower, [x, y]);
-                magnifierAxisRef.current!
+                magnifierXAxisRef.current!
                     .attr('stroke', tooltipRef.current.borderColor)
                     .attr('stroke-width', 0.75)
                     .attr('opacity', 0.75)
@@ -583,12 +585,29 @@ function ScatterChart(props: Props): JSX.Element {
                     .attr('x2', datum => axesMagnifier.magnify(x + datum * magnifier.radius / 5, y).xPrime)
                     .attr('y1', y)
                     .attr('y2', datum => axesMagnifier.magnify(x, y + magnifier.radius * (1 - Math.abs(datum / 5)) / 40).yPrime + 5)
+                ;
 
-                magnifierAxisLabelRef.current!
+                magnifierXAxisLabelRef.current!
                     .attr('x', datum => axesMagnifier.magnify(x + datum * magnifier.radius / 5, y).xPrime - 12)
                     .attr('y', datum => axesMagnifier.magnify(x, y + magnifier.radius * (1 - Math.abs(datum / 5)) / 30).yPrime + 20)
                     .text(datum => Math.round(xScale.invert(x - margin.left + datum * magnifier.radius / 5)))
+                ;
 
+                magnifierYAxisRef.current!
+                    .attr('stroke', tooltipRef.current.borderColor)
+                    .attr('stroke-width', 0.75)
+                    .attr('opacity', 0.75)
+                    .attr('x1', datum => axesMagnifier.magnify(x - magnifier.radius * (1 - Math.abs(datum / 5)) / 40, y).xPrime - 2)
+                    .attr('x2', datum => axesMagnifier.magnify(x + magnifier.radius * (1 - Math.abs(datum / 5)) / 40, y).xPrime + 2)
+                    .attr('y1', datum => axesMagnifier.magnify(x, y + datum * magnifier.radius / 5).yPrime)
+                    .attr('y2', datum => axesMagnifier.magnify(x, y + datum * magnifier.radius / 5).yPrime)
+                ;
+
+                magnifierYAxisLabelRef.current!
+                    .attr('x', datum => axesMagnifier.magnify(x + magnifier.radius * (1 - Math.abs(datum / 5)) / 40, y).xPrime + 10)
+                    .attr('y', datum => axesMagnifier.magnify(x, y + datum * magnifier.radius / 5).yPrime - 2)
+                    .text(datum => d3.format(',.2f')(yScale.invert(y - margin.top + datum * magnifier.radius / 5)))
+                ;
             }
             else {
                 mainGRef.current!
@@ -602,8 +621,8 @@ function ScatterChart(props: Props): JSX.Element {
 
                 svg.select('#x-lens-axis').attr('opacity', 0);
                 svg.select('#y-lens-axis').attr('opacity', 0);
-                magnifierAxisRef.current!.attr('opacity', 0);
-                magnifierAxisLabelRef.current!.text(() => '')
+                magnifierXAxisRef.current!.attr('opacity', 0);
+                magnifierXAxisLabelRef.current!.text(() => '')
             }
         }
     }
@@ -688,7 +707,7 @@ function ScatterChart(props: Props): JSX.Element {
                 .attr('id', 'x-lens-axis-ticks')
             ;
 
-            magnifierAxisRef.current = xLensAxisTicks
+            magnifierXAxisRef.current = xLensAxisTicks
                 .selectAll('line')
                 .data(d3.range(-5, 6, 1))
                 .enter()
@@ -699,7 +718,7 @@ function ScatterChart(props: Props): JSX.Element {
                 .attr('opacity', 0)
             ;
 
-            magnifierAxisLabelRef.current = xLensAxisTicks
+            magnifierXAxisLabelRef.current = xLensAxisTicks
                 .selectAll('text')
                 .data([-5, -1, 0, 1, 5])
                 .enter()
@@ -709,6 +728,37 @@ function ScatterChart(props: Props): JSX.Element {
                 .attr('font-size', tooltipRef.current.fontSize)
                 .attr('font-weight', tooltipRef.current.fontWeight)
                 .text(() => '')
+            ;
+
+            const yLensAxisTicks = svg
+                .append('g')
+                .attr('id', 'y-lens-axis-ticks')
+            ;
+
+            magnifierYAxisRef.current = yLensAxisTicks
+                .selectAll('line')
+                .data(d3.range(-5, 6, 1))
+                .enter()
+                .append('line')
+                .attr('class', 'y-lens-ticks')
+                .attr('stroke', tooltipRef.current.borderColor)
+                .attr('stroke-width', 0.75)
+                .attr('opacity', 0)
+            ;
+
+            magnifierYAxisLabelRef.current = yLensAxisTicks
+                .selectAll('text')
+                .data([-5, -1, 0, 1, 5])
+                .enter()
+                .append('text')
+                .attr('fill', tooltipRef.current.fontColor)
+                .attr('font-family', 'sans-serif')
+                .attr('font-size', tooltipRef.current.fontSize)
+                .attr('font-weight', tooltipRef.current.fontWeight)
+                .text(() => '')
+            ;
+
+
 
             svg.on('mousemove', () => handleShowMagnify(svg));
 
