@@ -1,11 +1,11 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
-import {Axis, ScaleLinear, Selection, ZoomTransform, EnterElement} from "d3";
+import {Axis, ScaleLinear, Selection, ZoomTransform} from "d3";
 import {adjustedDimensions, Margin} from "./margins";
 import {Datum, Series} from "./datumSeries";
 import {TimeRange, TimeRangeType} from "./timeRange";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
-import {Observable} from "rxjs";
+import {Observable, Subscription} from "rxjs";
 import {ChartData} from "../examples/randomData";
 import {RadialMagnifier, radialMagnifierWith, LensTransformation2d} from "./radialMagnifier";
 
@@ -90,9 +90,14 @@ interface Props {
     timeWindow: number;
     seriesList: Array<Series>;
     seriesObservable: Observable<ChartData>;
+    onSubscribe?: (subscription: Subscription) => void;
+    onUpdateData?: (seriesName: string, t: number, y: number) => void;
+    onUpdateTime?: (time: number) => void;
 
+    // regex filter used to select which series are displayed
     filter?: RegExp;
 
+    // a map that holds the series name and it's associated cooler
     seriesColors?: Map<string, string>;
 }
 
@@ -113,8 +118,11 @@ function ScatterChart(props: Props): JSX.Element {
         minTime, maxTime, timeWindow,
         seriesList,
         seriesObservable,
+        onSubscribe = (_: Subscription) => {},
+        onUpdateData = () => {},
+        onUpdateTime = (_: number) => {},
         filter = /./,
-        seriesColors = seriesColorsFor(seriesList, defaultAxesStyle.color, "#a9a9b4")
+        seriesColors = seriesColorsFor(seriesList, defaultLineStyle.color, "#a9a9b4")
     } = props;
 
     // override the defaults with the parent's properties, leaving any unset values as the default value
@@ -928,35 +936,39 @@ function ScatterChart(props: Props): JSX.Element {
                 axesRef.current = initializeAxes(svg);
             }
 
-            // todo parts of this need to be pulled to the parent/caller
             const subscription = seriesObservable.subscribe(data => {
-                if(data.maxTime > 5000) {
-                    subscription.unsubscribe();
-                }
-                else {
-                    // updated the current time to be the max of the new data
-                    currentTimeRef.current = data.maxTime;
+                // updated the current time to be the max of the new data
+                currentTimeRef.current = data.maxTime;
 
-                    // for each series, add a point if there is a  spike value (i.e. spike value > 0)
-                    seriesRef.current = seriesRef.current.map((series, i) => {
-                        const newValue = (series.data.length > 0 ? series.data[series.data.length-1].value : 0) +
-                            data.newPoints[i].datum.value;
+                // for each series, add a point if there is a  spike value (i.e. spike value > 0)
+                seriesRef.current = seriesRef.current.map((series, i) => {
+                    const newValue = (series.data.length > 0 ? series.data[series.data.length-1].value : 0) +
+                        data.newPoints[i].datum.value;
+                    const time = data.newPoints[i].datum.time;
 
-                        const newPoint = {time: data.newPoints[i].datum.time, value: newValue};
-                        series.data.push(newPoint);
-                        return series;
-                    });
+                    // update the handler with the new data point
+                    onUpdateData(series.name, time, newValue);
 
-                    // update the data
-                    liveDataRef.current = seriesRef.current;
-                    timeRangeRef.current = TimeRange(
-                        Math.max(0, currentTimeRef.current - timeWindow),
-                        Math.max(currentTimeRef.current, timeWindow)
-                    )
+                    const newPoint = {time: time, value: newValue};
+                    series.data.push(newPoint);
+                    return series;
+                });
 
-                    updatePlot(timeRangeRef.current);
-                }
+                // update the data
+                liveDataRef.current = seriesRef.current;
+                timeRangeRef.current = TimeRange(
+                    Math.max(0, currentTimeRef.current - timeWindow),
+                    Math.max(currentTimeRef.current, timeWindow)
+                )
+
+                // updates the caller with the current time
+                onUpdateTime(currentTimeRef.current);
+
+                updatePlot(timeRangeRef.current);
             });
+
+            // provide the subscription to the caller
+            onSubscribe(subscription);
 
             // stop the stream on dismount
             return () => subscription.unsubscribe();

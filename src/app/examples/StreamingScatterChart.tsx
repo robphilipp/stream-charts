@@ -2,7 +2,7 @@ import {default as React, useRef, useState} from "react";
 import {Series} from "../charts/datumSeries";
 import ScatterChart from "../charts/ScatterChart";
 import {ChartData, randomWeightDataObservable} from "./randomData";
-import {Observable} from "rxjs";
+import {Observable, Subscription} from "rxjs";
 
 // interface Point {
 //     x: number;
@@ -34,6 +34,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     const currentTimeRef = useRef<number>(0);
 
     const observableRef = useRef<Observable<ChartData>>(randomWeightDataObservable(seriesList.length, 0.1));
+    const subscriptionRef = useRef<Subscription>();
 
     const [filterValue, setFilterValue] = useState<string>('');
     const [filter, setFilter] = useState<RegExp>(new RegExp(''));
@@ -43,37 +44,6 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     const [magnification, setMagnification] = useState(5);
     const [trackerVisible, setTrackerVisible] = useState(false);
 
-    // // called on mount to set up the <g> element into which to render
-    // useEffect(
-    //     () => {
-    //         const subscription = observableRef.current.subscribe(data => {
-    //             if(data.maxTime > 3000) {
-    //                 subscription.unsubscribe();
-    //             }
-    //             else {
-    //                 // updated the current time to be the max of the new data
-    //                 currentTimeRef.current = data.maxTime;
-    //
-    //                 // for each series, add a point if there is a  spike value (i.e. spike value > 0)
-    //                 seriesRef.current = seriesRef.current.map((series, i) => {
-    //                     const newValue = (series.data.length > 0 ? series.data[series.data.length-1].value : 0) +
-    //                         data.newPoints[i].datum.value;
-    //
-    //                     const newPoint = {time: data.newPoints[i].datum.time, value: newValue};
-    //                     series.data.push(newPoint);
-    //                     // console.log(newPoint);
-    //                     return series;
-    //                 });
-    //
-    //                 // update the data
-    //                 setLiveData(seriesRef.current);
-    //             }
-    //         });
-    //
-    //         // stop the stream on dismount
-    //         return () => subscription.unsubscribe();
-    //     }, [timeWindow]
-    // );
 
     /**
      * Called when the user changes the regular expression filter
@@ -139,6 +109,10 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                 height={plotHeight}
                 seriesList={seriesList}
                 seriesObservable={observableRef.current}
+                onSubscribe={subscription => subscriptionRef.current = subscription}
+                onUpdateTime={(t: number) => {
+                    if(t > 5000) subscriptionRef.current!.unsubscribe()
+                }}
                 minTime={Math.max(0, currentTimeRef.current - timeWindow)}
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 timeWindow={timeWindow}
