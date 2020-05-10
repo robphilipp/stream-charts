@@ -53,7 +53,8 @@ export interface RadialMagnifier {
  * which also references <a href="http://dl.acm.org/citation.cfm?id=142763">Based on Sarkar and Brown’s Graphical
  * Fisheye Views of Graphs (CHI '92)</a>.
  * @param {number} radius The radius of the lens.
- * @param {number} power The optical magnification of the lens (i.e. ratio of magnified size to "true" size)
+ * @param {number} power The optical magnification of the lens (i.e. ratio of magnified size to "true" size) and must
+ * be greater than 1.
  * @param {[number, number]} center The center of the lens
  * @return {RadialMagnifier} A bar-magnifier type for transforming the x-coordinates to make it appear as though
  * the x-coord has been magnified by a bar magnifier
@@ -66,7 +67,7 @@ export function radialMagnifierWith(radius: number, power: number, center: [numb
      * would appear under such a bar magnifier lens
      */
     function rescale(): RadialMagnifier {
-        const expPower = Math.exp(power);
+        const expPower = Math.exp(Math.max(1, power));
         const k0 = expPower / (expPower - 1) * radius;
         const k1 = power / radius;
 
@@ -95,7 +96,7 @@ export function radialMagnifierWith(radius: number, power: number, center: [numb
             if (dd === 0) return {
                 xPrime: x,
                 yPrime: y,
-                magnification: power
+                magnification: Math.max(1, power)
             };
 
             const magnification = k0 * (1 - Math.exp(-dd * k1)) / dd * .75 + .25;
@@ -120,7 +121,7 @@ export function radialMagnifierWith(radius: number, power: number, center: [numb
             magnify: magnifier,
             identify: identity,
             radius: radius,
-            power: power,
+            power: Math.max(1, power),
             center: center
         }
     }

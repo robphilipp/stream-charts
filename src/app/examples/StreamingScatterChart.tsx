@@ -3,20 +3,7 @@ import {Series} from "../charts/datumSeries";
 import ScatterChart from "../charts/ScatterChart";
 import {ChartData, randomWeightDataObservable} from "./randomData";
 import {Observable, Subscription} from "rxjs";
-
-// interface Point {
-//     x: number;
-//     y: number;
-// }
-//
-// function genData(length: number, delta: number): Array<Point> {
-//     return Array
-//         .from({length: length}, () => ({x: 0, y: Math.random() * delta}))
-//         .map((datum, index, array) =>
-//             ({x: index, y: array[Math.max(0, index - 1)].y + datum.y})
-//         );
-// }
-
+import {regexFilter} from "../charts/regexFilter";
 
 /**
  * The properties
@@ -51,13 +38,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
      */
     function handleUpdateRegex(updatedFilter: string): void {
         setFilterValue(updatedFilter);
-        let updatedRegex;
-        try {updatedRegex = new RegExp(updatedFilter)} catch(error) {}
-        if (updatedRegex) {
-            setFilter(updatedRegex)
-        } else {
-            setFilter(filter);
-        }
+        regexFilter(updatedFilter).ifSome(regex => setFilter(regex));
     }
 
     return (

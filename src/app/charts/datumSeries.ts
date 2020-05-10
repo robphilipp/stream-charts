@@ -17,6 +17,7 @@ export interface Series {
     data: Datum[];
     readonly last: () => Option<Datum>;
     readonly length: () => number;
+    readonly isEmpty: () => boolean;
 }
 
 /**
@@ -30,8 +31,18 @@ export function seriesFrom(name: string, data: Datum[] = []): Series {
         name: name,
         data: data,
         last: () => data ? (data.length > 0 ? Option.of(data[data.length - 1]) : Option.none()) : Option.none(),
-        length: () => data ? data.length : 0
+        length: () => data ? data.length : 0,
+        isEmpty: () => data ? data.length === 0 : true
     }
+}
+
+/**
+ * Returns an empty series with the specified name
+ * @param {string} name The name of the series
+ * @return {Series} The empty series
+ */
+export function emptySeries(name: string): Series {
+    return seriesFrom(name);
 }
 
 export interface PixelDatum extends Datum {

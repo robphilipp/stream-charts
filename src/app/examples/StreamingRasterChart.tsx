@@ -3,7 +3,9 @@ import {useEffect, useRef, useState} from 'react';
 import {Datum, Series} from "../charts/datumSeries";
 import RasterChart from "../charts/RasterChart";
 import {ChartData, randomSpikeDataObservable} from "./randomData";
-import {Observable} from "rxjs";
+import {Observable, Subscription} from "rxjs";
+import {regexFilter} from "../charts/regexFilter";
+import ScatterChart from "../charts/ScatterChart";
 
 /**
  * The properties
@@ -38,43 +40,32 @@ function StreamingRasterChart(props: Props): JSX.Element {
     const currentTimeRef = useRef<number>(0);
 
     const observableRef = useRef<Observable<ChartData>>(randomSpikeDataObservable(seriesList.length));
+    const subscriptionRef = useRef<Subscription>();
+
+    const [filterValue, setFilterValue] = useState<string>('');
+    const [filter, setFilter] = useState<RegExp>(new RegExp(''));
 
     const [tooltipVisible, setTooltipVisible] = useState(false);
     const [magnifierVisible, setMagnifierVisible] = useState(false);
     const [trackerVisible, setTrackerVisible] = useState(false);
 
-    // // called on mount to set up the <g> element into which to render
-    // useEffect(
-    //     () => {
-    //         const subscription = observableRef.current.subscribe(data => {
-    //             if(data.maxTime > 3000) {
-    //                 subscription.unsubscribe();
-    //             }
-    //             else {
-    //                 // updated the current time to be the max of the new data
-    //                 currentTimeRef.current = data.maxTime;
-    //
-    //                 // for each series, add a point if there is a  spike value (i.e. spike value > 0)
-    //                 seriesRef.current = seriesRef.current.map((series, i) => {
-    //                     if(data.newPoints[i].datum.value > 0) {
-    //                         series.data.push(data.newPoints[i].datum);
-    //                     }
-    //                     return series;
-    //                 });
-    //
-    //                 // update the data
-    //                 setLiveData(seriesRef.current);
-    //             }
-    //         });
-    //
-    //         // stop the stream on dismount
-    //         return () => subscription.unsubscribe();
-    //     }, [timeWindow]
-    // );
+    /**
+     * Called when the user changes the regular expression filter
+     * @param {string} updatedFilter The updated the filter
+     */
+    function handleUpdateRegex(updatedFilter: string): void {
+        setFilterValue(updatedFilter);
+        regexFilter(updatedFilter).ifSome(regex => setFilter(regex));
+    }
 
     return (
         <div>
             <p>
+                <label>regex filter <input
+                    type="text"
+                    value={filterValue}
+                    onInput={event => handleUpdateRegex(event.currentTarget.value)}
+                /></label>
                 <label>tooltip <input type="checkbox" checked={tooltipVisible}
                                       onChange={() => setTooltipVisible(!tooltipVisible)}/></label>&nbsp;&nbsp;
                 <label>magnifier <input type="checkbox" checked={magnifierVisible} onChange={() => {
@@ -89,8 +80,13 @@ function StreamingRasterChart(props: Props): JSX.Element {
             <RasterChart
                 width={plotWidth}
                 height={seriesList.length * seriesHeight + 30 + 30}
+                // seriesHeight={seriesHeight}
                 seriesList={liveData}
                 seriesObservable={observableRef.current}
+                onSubscribe={subscription => subscriptionRef.current = subscription}
+                onUpdateTime={(t: number) => {
+                    if(t > 5000) subscriptionRef.current!.unsubscribe()
+                }}
                 minTime={Math.max(0, currentTimeRef.current - timeWindow)}
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 timeWindow={timeWindow}
@@ -98,6 +94,7 @@ function StreamingRasterChart(props: Props): JSX.Element {
                 tooltip={{visible: tooltipVisible}}
                 magnifier={{visible: magnifierVisible}}
                 tracker={{visible: trackerVisible}}
+                filter={filter}
             />
         </div>
     );

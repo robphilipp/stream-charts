@@ -22,7 +22,7 @@ const App: React.FC = () => {
         <StreamingRasterChart
             timeWindow={1000}
             seriesList={spikes}
-            seriesHeight={12}
+            seriesHeight={20}
             plotWidth={900}
         />
     </div>

@@ -4,11 +4,12 @@ import {ScaleBand, ScaleLinear, Selection, ZoomTransform} from "d3";
 import {barMagnifierWith, BarMagnifier, LensTransformation} from "./barMagnifier";
 import {TimeRange, TimeRangeType} from "./timeRange";
 import {adjustedDimensions, Margin} from "./margins";
-import {Datum, PixelDatum, Series} from "./datumSeries";
+import {Datum, emptySeries, PixelDatum, Series} from "./datumSeries";
 import {Axis} from "d3";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
-import {Observable} from "rxjs";
+import {Observable, Subscription} from "rxjs";
 import {ChartData} from "../examples/randomData";
+import {plot} from "plotly.js";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultSpikesStyle = {
@@ -80,6 +81,7 @@ type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 interface Props {
     width: number;
     height: number;
+    // seriesHeight: number;
     margin?: Partial<Margin>;
     spikesStyle?: Partial<{ margin: number, color: string, lineWidth: number, highlightColor: string, highlightWidth: number }>;
     axisLabelFont?: Partial<{ size: number, color: string, family: string, weight: number }>;
@@ -96,7 +98,14 @@ interface Props {
     maxTime: number;
     timeWindow: number;
     seriesList: Array<Series>;
+
+    // regex filter used to select which series are displayed
+    filter?: RegExp;
+
     seriesObservable: Observable<ChartData>;
+    onSubscribe?: (subscription: Subscription) => void;
+    onUpdateData?: (seriesName: string, t: number, y: number) => void;
+    onUpdateTime?: (time: number) => void;
 }
 
 /**
@@ -109,9 +118,14 @@ function RasterChart(props: Props): JSX.Element {
     const {
         seriesList,
         seriesObservable,
+        onSubscribe = (_: Subscription) => {},
+        onUpdateData = () => {},
+        onUpdateTime = (_: number) => {},
+        filter = /./,
         minTime, maxTime, timeWindow,
         width,
         height,
+        // seriesHeight,
         backgroundColor = '#202020',
     } = props;
 
@@ -127,6 +141,7 @@ function RasterChart(props: Props): JSX.Element {
     const tracker = {...defaultTrackerStyle, ...props.tracker};
 
     // grab the dimensions of the actual plot after removing the margins from the specified width and height
+    // const plotDimensions = adjustedDimensions(width, seriesList.length, margin);
     const plotDimensions = adjustedDimensions(width, height, margin);
 
     // the container that holds the d3 svg element
@@ -150,9 +165,12 @@ function RasterChart(props: Props): JSX.Element {
     // calculates to the time-range based on the (min, max)-time from the props
     const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
 
+    const seriesFilterRef = useRef<RegExp>(filter);
+
     const liveDataRef = useRef<Array<Series>>(seriesList);
     const seriesRef = useRef<Array<Series>>(seriesList);
     const currentTimeRef = useRef<number>(0);
+
 
     /**
      * Called when the user uses the scroll wheel (or scroll gesture) to zoom in or out. Zooms in/out
@@ -629,10 +647,12 @@ function RasterChart(props: Props): JSX.Element {
             }
 
             liveDataRef.current.forEach(series => {
+                const plotSeries = (series.name.match(seriesFilterRef.current)) ? series : emptySeries(series.name);
+
                 const container = svg
                     .select<SVGGElement>(`#${series.name}`)
                     .selectAll<SVGLineElement, PixelDatum>('line')
-                    .data(series.data.filter(datum => datum.time >= timeRangeRef.current.start && datum.time <= timeRangeRef.current.end) as PixelDatum[])
+                    .data(plotSeries.data.filter(datum => datum.time >= timeRangeRef.current.start && datum.time <= timeRangeRef.current.end) as PixelDatum[])
                 ;
 
                 // enter new elements
@@ -677,31 +697,36 @@ function RasterChart(props: Props): JSX.Element {
     useEffect(
         () => {
             const subscription = seriesObservable.subscribe(data => {
-                if(data.maxTime > 1000) {
-                    subscription.unsubscribe();
-                }
-                else {
-                    // updated the current time to be the max of the new data
-                    currentTimeRef.current = data.maxTime;
+                // updated the current time to be the max of the new data
+                currentTimeRef.current = data.maxTime;
 
-                    // for each series, add a point if there is a  spike value (i.e. spike value > 0)
-                    seriesRef.current = seriesRef.current.map((series, i) => {
-                        if(data.newPoints[i].datum.value > 0) {
-                            series.data.push(data.newPoints[i].datum);
-                        }
-                        return series;
-                    });
+                // for each series, add a point if there is a  spike value (i.e. spike value > 0)
+                seriesRef.current = seriesRef.current.map((series, i) => {
+                    const datum = data.newPoints[i].datum;
+                    if(datum.value > 0) {
+                        series.data.push(datum);
 
-                    // update the data
-                    liveDataRef.current = seriesRef.current;
-                    timeRangeRef.current = TimeRange(
-                        Math.max(0, currentTimeRef.current - timeWindow),
-                        Math.max(currentTimeRef.current, timeWindow)
-                    )
+                        // update the handler with the new data point
+                        onUpdateData(series.name, datum.time, datum.value);
+                    }
+                    return series;
+                });
 
-                    updatePlot(timeRangeRef.current);
-                }
+                // update the data
+                liveDataRef.current = seriesRef.current;
+                timeRangeRef.current = TimeRange(
+                    Math.max(0, currentTimeRef.current - timeWindow),
+                    Math.max(currentTimeRef.current, timeWindow)
+                )
+
+                // updates the caller with the current time
+                onUpdateTime(currentTimeRef.current);
+
+                updatePlot(timeRangeRef.current);
             });
+
+            // provide the subscription to the caller
+            onSubscribe(subscription);
 
             // stop the stream on dismount
             return () => subscription.unsubscribe();
@@ -711,9 +736,10 @@ function RasterChart(props: Props): JSX.Element {
     // update the plot for tooltip, magnifier, or tracker if their visibility changes
     useEffect(
         () => {
+            seriesFilterRef.current = filter;
             updatePlot(timeRangeRef.current);
         },
-        [tooltip.visible, magnifier.visible, tracker.visible]
+        [tooltip.visible, magnifier.visible, tracker.visible, filter]
     )
 
     return (
