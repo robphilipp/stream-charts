@@ -731,33 +731,12 @@ function RasterChart(props: Props): JSX.Element {
                             Math.max(0, currentTimeRef.current - timeWindow),
                             Math.max(currentTimeRef.current, timeWindow)
                         )
+                    }).then(() => {
+                        // updates the caller with the current time
+                        onUpdateTime(currentTimeRef.current);
+
+                        updatePlot(timeRangeRef.current);
                     })
-                    // // updated the current time to be the max of the new data
-                    // currentTimeRef.current = data.maxTime;
-                    //
-                    // // for each series, add a point if there is a  spike value (i.e. spike value > 0)
-                    // seriesRef.current = seriesRef.current.map((series, i) => {
-                    //     const datum = data.newPoints[i].datum;
-                    //     if(datum.value > 0) {
-                    //         series.data.push(datum);
-                    //
-                    //         // update the handler with the new data point
-                    //         onUpdateData(series.name, datum.time, datum.value);
-                    //     }
-                    //     return series;
-                    // });
-                    //
-                    // // update the data
-                    // liveDataRef.current = seriesRef.current;
-                    // timeRangeRef.current = TimeRange(
-                    //     Math.max(0, currentTimeRef.current - timeWindow),
-                    //     Math.max(currentTimeRef.current, timeWindow)
-                    // )
-
-                    // updates the caller with the current time
-                    onUpdateTime(currentTimeRef.current);
-
-                    updatePlot(timeRangeRef.current);
                 });
 
             // provide the subscription to the caller

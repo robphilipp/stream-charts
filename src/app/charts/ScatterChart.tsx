@@ -963,12 +963,12 @@ function ScatterChart(props: Props): JSX.Element {
                             Math.max(0, currentTimeRef.current - timeWindow),
                             Math.max(currentTimeRef.current, timeWindow)
                         )
+                    }).then(() => {
+                        // updates the caller with the current time
+                        onUpdateTime(currentTimeRef.current);
+
+                        updatePlot(timeRangeRef.current);
                     })
-
-                    // updates the caller with the current time
-                    onUpdateTime(currentTimeRef.current);
-
-                    updatePlot(timeRangeRef.current);
                 });
 
             // provide the subscription to the caller
