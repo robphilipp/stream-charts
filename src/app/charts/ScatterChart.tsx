@@ -232,7 +232,7 @@ function ScatterChart(props: Props): JSX.Element {
         svg
             .append("defs")
             .append("clipPath")
-            .attr("id", "clip")
+            .attr("id", "clip-series")
             .append("rect")
             .attr("width", plotDimensions.width)
             .attr("height", plotDimensions.height - margin.top)
@@ -892,7 +892,7 @@ function ScatterChart(props: Props): JSX.Element {
                             .attr("stroke", colorsRef.current.get(series.name) || lineStyle.color)
                             .attr("stroke-width", lineStyle.lineWidth)
                             .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                            .attr("clip-path", "url(#clip)")
+                            .attr("clip-path", "url(#clip-series)")
                             .on(
                                 "mouseover",
                                 (datumArray, i, group) => handleShowTooltip(datumArray, series.name, group[i])

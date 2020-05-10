@@ -81,7 +81,6 @@ type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 interface Props {
     width: number;
     height: number;
-    // seriesHeight: number;
     margin?: Partial<Margin>;
     spikesStyle?: Partial<{ margin: number, color: string, lineWidth: number, highlightColor: string, highlightWidth: number }>;
     axisLabelFont?: Partial<{ size: number, color: string, family: string, weight: number }>;
@@ -637,6 +636,15 @@ function RasterChart(props: Props): JSX.Element {
                     ;
                 }
 
+                // create the clipping region so that the lines are clipped at the y-axis
+                svg
+                    .append("defs")
+                    .append("clipPath")
+                    .attr("id", "clip-spikes")
+                    .append("rect")
+                    .attr("width", plotDimensions.width)
+                    .attr("height", plotDimensions.height - margin.top)
+                ;
             }
             // update the scales
             else {
@@ -653,6 +661,7 @@ function RasterChart(props: Props): JSX.Element {
                     .select<SVGGElement>(`#${series.name}`)
                     .selectAll<SVGLineElement, PixelDatum>('line')
                     .data(plotSeries.data.filter(datum => datum.time >= timeRangeRef.current.start && datum.time <= timeRangeRef.current.end) as PixelDatum[])
+                    // .data(plotSeries.data as PixelDatum[])
                 ;
 
                 // enter new elements
@@ -660,7 +669,7 @@ function RasterChart(props: Props): JSX.Element {
                 container
                     .enter()
                     .append<SVGLineElement>('line')
-                    .filter(datum => datum.time >= timeRangeRef.current.start)
+                    // .filter(datum => datum.time >= timeRangeRef.current.start)
                     .each(datum => {datum.x = xScale(datum.time)})
                     .attr('class', 'spikes-lines')
                     .attr('x1', datum => datum.x)
@@ -670,6 +679,7 @@ function RasterChart(props: Props): JSX.Element {
                     .attr('stroke', spikesStyle.color)
                     .attr('stroke-width', spikesStyle.lineWidth)
                     .attr('stroke-linecap', "round")
+                    .attr("clip-path", "url(#clip-spikes)")
                     // even though the tooltip is may not be set to show up on the mouseover, we want to attach the handler
                     // so that when the use enables tooltips the handlers will show the the tooltip
                     .on("mouseover", (datum, i, group) => handleShowTooltip(datum, series.name, group[i]))

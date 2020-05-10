@@ -79,7 +79,7 @@ function StreamingRasterChart(props: Props): JSX.Element {
             </p>
             <RasterChart
                 width={plotWidth}
-                height={seriesList.length * seriesHeight + 30 + 30}
+                height={seriesList.length * seriesHeight}
                 // seriesHeight={seriesHeight}
                 seriesList={liveData}
                 seriesObservable={observableRef.current}
