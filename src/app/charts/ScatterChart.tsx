@@ -8,6 +8,7 @@ import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
 import {ChartData} from "../examples/randomData";
 import {RadialMagnifier, radialMagnifierWith, LensTransformation2d} from "./radialMagnifier";
+import {windowTime} from "rxjs/operators";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultAxesStyle = {color: '#d2933f'};
@@ -936,36 +937,39 @@ function ScatterChart(props: Props): JSX.Element {
                 axesRef.current = initializeAxes(svg);
             }
 
-            const subscription = seriesObservable.subscribe(data => {
-                // updated the current time to be the max of the new data
-                currentTimeRef.current = data.maxTime;
+            const subscription = seriesObservable
+                .pipe(windowTime(100))
+                .subscribe(dataList => {
+                    dataList.forEach(data => {
+                        // updated the current time to be the max of the new data
+                        currentTimeRef.current = data.maxTime;
 
-                // for each series, add a point if there is a  spike value (i.e. spike value > 0)
-                seriesRef.current = seriesRef.current.map((series, i) => {
-                    const newValue = (series.data.length > 0 ? series.data[series.data.length-1].value : 0) +
-                        data.newPoints[i].datum.value;
-                    const time = data.newPoints[i].datum.time;
+                        // for each series, add a point if the value > 0)
+                        seriesRef.current = seriesRef.current.map((series, i) => {
+                            const newValue = data.newPoints[i].datum.value;
+                            const time = data.newPoints[i].datum.time;
 
-                    // update the handler with the new data point
-                    onUpdateData(series.name, time, newValue);
+                            // update the handler with the new data point
+                            onUpdateData(series.name, time, newValue);
 
-                    const newPoint = {time: time, value: newValue};
-                    series.data.push(newPoint);
-                    return series;
+                            const newPoint = {time: time, value: newValue};
+                            series.data.push(newPoint);
+                            return series;
+                        });
+
+                        // update the data
+                        liveDataRef.current = seriesRef.current;
+                        timeRangeRef.current = TimeRange(
+                            Math.max(0, currentTimeRef.current - timeWindow),
+                            Math.max(currentTimeRef.current, timeWindow)
+                        )
+                    })
+
+                    // updates the caller with the current time
+                    onUpdateTime(currentTimeRef.current);
+
+                    updatePlot(timeRangeRef.current);
                 });
-
-                // update the data
-                liveDataRef.current = seriesRef.current;
-                timeRangeRef.current = TimeRange(
-                    Math.max(0, currentTimeRef.current - timeWindow),
-                    Math.max(currentTimeRef.current, timeWindow)
-                )
-
-                // updates the caller with the current time
-                onUpdateTime(currentTimeRef.current);
-
-                updatePlot(timeRangeRef.current);
-            });
 
             // provide the subscription to the caller
             onSubscribe(subscription);

@@ -10,6 +10,7 @@ import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
 import {ChartData} from "../examples/randomData";
 import {plot} from "plotly.js";
+import {windowTime} from "rxjs/operators";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultSpikesStyle = {
@@ -576,7 +577,6 @@ function RasterChart(props: Props): JSX.Element {
             // location on the screen (range)
             // const maxTime = calcMaxTime(seriesList);
             const xScale = d3.scaleLinear()
-                // .domain([Math.max(0, maxTime - timeWindow), Math.max(timeWindow, maxTime)])
                 .domain([timeRangeRef.current.start, timeRangeRef.current.end])
                 .range([0, plotDimensions.width]);
 
@@ -706,34 +706,59 @@ function RasterChart(props: Props): JSX.Element {
     // called on mount to set up the <g> element into which to render
     useEffect(
         () => {
-            const subscription = seriesObservable.subscribe(data => {
-                // updated the current time to be the max of the new data
-                currentTimeRef.current = data.maxTime;
+            const subscription = seriesObservable
+                .pipe(windowTime(100))
+                .subscribe(dataList => {
+                    dataList.forEach(data => {
+                        // updated the current time to be the max of the new data
+                        currentTimeRef.current = data.maxTime;
 
-                // for each series, add a point if there is a  spike value (i.e. spike value > 0)
-                seriesRef.current = seriesRef.current.map((series, i) => {
-                    const datum = data.newPoints[i].datum;
-                    if(datum.value > 0) {
-                        series.data.push(datum);
+                        // for each series, add a point if there is a  spike value (i.e. spike value > 0)
+                        seriesRef.current = seriesRef.current.map((series, i) => {
+                            const datum = data.newPoints[i].datum;
+                            if(datum.value > 0) {
+                                series.data.push(datum);
 
-                        // update the handler with the new data point
-                        onUpdateData(series.name, datum.time, datum.value);
-                    }
-                    return series;
+                                // update the handler with the new data point
+                                onUpdateData(series.name, datum.time, datum.value);
+                            }
+                            return series;
+                        });
+
+                        // update the data
+                        liveDataRef.current = seriesRef.current;
+                        timeRangeRef.current = TimeRange(
+                            Math.max(0, currentTimeRef.current - timeWindow),
+                            Math.max(currentTimeRef.current, timeWindow)
+                        )
+                    })
+                    // // updated the current time to be the max of the new data
+                    // currentTimeRef.current = data.maxTime;
+                    //
+                    // // for each series, add a point if there is a  spike value (i.e. spike value > 0)
+                    // seriesRef.current = seriesRef.current.map((series, i) => {
+                    //     const datum = data.newPoints[i].datum;
+                    //     if(datum.value > 0) {
+                    //         series.data.push(datum);
+                    //
+                    //         // update the handler with the new data point
+                    //         onUpdateData(series.name, datum.time, datum.value);
+                    //     }
+                    //     return series;
+                    // });
+                    //
+                    // // update the data
+                    // liveDataRef.current = seriesRef.current;
+                    // timeRangeRef.current = TimeRange(
+                    //     Math.max(0, currentTimeRef.current - timeWindow),
+                    //     Math.max(currentTimeRef.current, timeWindow)
+                    // )
+
+                    // updates the caller with the current time
+                    onUpdateTime(currentTimeRef.current);
+
+                    updatePlot(timeRangeRef.current);
                 });
-
-                // update the data
-                liveDataRef.current = seriesRef.current;
-                timeRangeRef.current = TimeRange(
-                    Math.max(0, currentTimeRef.current - timeWindow),
-                    Math.max(currentTimeRef.current, timeWindow)
-                )
-
-                // updates the caller with the current time
-                onUpdateTime(currentTimeRef.current);
-
-                updatePlot(timeRangeRef.current);
-            });
 
             // provide the subscription to the caller
             onSubscribe(subscription);
