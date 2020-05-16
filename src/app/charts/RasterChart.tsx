@@ -76,6 +76,8 @@ interface Axes {
 
 // the axis-element type return when calling the ".call(axis)" function
 type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
+type SvgSelection = Selection<SVGSVGElement, any, null, undefined>;
+type MagnifierSelection = Selection<SVGRectElement, Datum, null, undefined>;
 
 interface Props {
     width: number;
@@ -443,6 +445,74 @@ function RasterChart(props: Props): JSX.Element {
     }
 
     /**
+     * Creates the SVG elements for displaying a bar magnifier lens on the data
+     * @param {SvgSelection} svg The SVG selection
+     * @param {boolean} visible `true` if the lens is visible; `false` otherwise
+     * @return {MagnifierSelection | undefined} The magnifier selection if visible; otherwise undefined
+     */
+    function magnifierLens(svg: SvgSelection, visible: boolean): MagnifierSelection | undefined {
+        if(visible && magnifierRef.current === undefined) {
+            const linearGradient = svg
+                .append<SVGDefsElement>('defs')
+                .append<SVGLinearGradientElement>('linearGradient')
+                .attr('id', 'magnifier-gradient')
+                .attr('x1', '0%')
+                .attr('x2', '100%')
+                .attr('y1', '0%')
+                .attr('y2', '0%')
+            ;
+
+            const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
+            linearGradient
+                .append<SVGStopElement>('stop')
+                .attr('offset', '0%')
+                .attr('stop-color', borderColor)
+            ;
+
+            linearGradient
+                .append<SVGStopElement>('stop')
+                .attr('offset', '30%')
+                .attr('stop-color', tooltip.backgroundColor)
+                .attr('stop-opacity', 0)
+            ;
+
+            linearGradient
+                .append<SVGStopElement>('stop')
+                .attr('offset', '70%')
+                .attr('stop-color', tooltip.backgroundColor)
+                .attr('stop-opacity', 0)
+            ;
+
+            linearGradient
+                .append<SVGStopElement>('stop')
+                .attr('offset', '100%')
+                .attr('stop-color', borderColor)
+            ;
+
+            const magnifierSelection = svg
+                .append<SVGRectElement>('rect')
+                .attr('class', 'magnifier')
+                .attr('y', margin.top)
+                .attr('height', plotDimensions.height - margin.top)
+                .style('fill', 'url(#magnifier-gradient')
+            ;
+
+            svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
+
+            return magnifierSelection;
+        }
+        // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
+        else if(!visible && magnifierRef.current) {
+            svg.on('mousemove', () => null);
+            return undefined;
+        }
+        else if (visible && magnifierRef.current) {
+            svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
+        }
+        return magnifierRef.current;
+    }
+
+    /**
      * Updates the plot data for the specified time-range, which may have changed due to zoom or pan
      * @param {TimeRange} timeRange The current time range
      */
@@ -456,61 +526,8 @@ function RasterChart(props: Props): JSX.Element {
                 .select<SVGSVGElement, any>(containerRef.current)
             ;
 
-            // set up the magnifier once
-            if(magnifier.visible && magnifierRef.current === undefined) {
-                const linearGradient = svg
-                    .append<SVGDefsElement>('defs')
-                    .append<SVGLinearGradientElement>('linearGradient')
-                    .attr('id', 'magnifier-gradient')
-                    .attr('x1', '0%')
-                    .attr('x2', '100%')
-                    .attr('y1', '0%')
-                    .attr('y2', '0%')
-                ;
-
-                const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
-                linearGradient
-                    .append<SVGStopElement>('stop')
-                    .attr('offset', '0%')
-                    .attr('stop-color', borderColor)
-                ;
-
-                linearGradient
-                    .append<SVGStopElement>('stop')
-                    .attr('offset', '30%')
-                    .attr('stop-color', tooltip.backgroundColor)
-                    .attr('stop-opacity', 0)
-                ;
-
-                linearGradient
-                    .append<SVGStopElement>('stop')
-                    .attr('offset', '70%')
-                    .attr('stop-color', tooltip.backgroundColor)
-                    .attr('stop-opacity', 0)
-                ;
-
-                linearGradient
-                    .append<SVGStopElement>('stop')
-                    .attr('offset', '100%')
-                    .attr('stop-color', borderColor)
-                ;
-
-                magnifierRef.current = svg
-                    .append<SVGRectElement>('rect')
-                    .attr('class', 'magnifier')
-                    .attr('y', margin.top)
-                    .attr('height', plotDimensions.height - margin.top)
-                    // .attr('stroke', tooltip.borderColor)
-                    // .attr('stroke-width', tooltip.borderWidth)
-                    .style('fill', 'url(#magnifier-gradient')
-                ;
-
-                svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
-            }
-            // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
-            else if(!magnifier.visible && magnifierRef.current) {
-                magnifierRef.current = undefined;
-            }
+            // create/update the magnifier lens if needed
+            magnifierRef.current = magnifierLens(svg, magnifier.visible);
 
             // set up the tracker-line once
             if(tracker.visible && trackerRef.current === undefined) {
