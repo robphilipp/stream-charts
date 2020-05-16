@@ -8,7 +8,7 @@ import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
 import {ChartData} from "../examples/randomData";
 import {RadialMagnifier, radialMagnifierWith, LensTransformation2d} from "./radialMagnifier";
-import {windowTime} from "rxjs/operators";
+import {min, windowTime} from "rxjs/operators";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultAxesStyle = {color: '#d2933f'};
@@ -44,6 +44,11 @@ type LineSelection = Selection<SVGLineElement, any, SVGGElement, undefined>;
 type TextSelection = Selection<SVGTextElement, any, null, undefined>;
 type MagnifierSelection = Selection<SVGCircleElement, Datum, null, undefined>;
 
+type TimeSeries = Array<[number, number]>;
+
+/**
+ * Holds the actual datum and the associated transformation information
+ */
 interface MagnifiedData {
     datum: [number, number];
     lens: LensTransformation2d;
@@ -184,12 +189,19 @@ function ScatterChart(props: Props): JSX.Element {
 
     const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
 
-    function updateMinMaxValues(data: Array<[number, number]>[]): [number, number] {
+    /**
+     * Calculates the min and max values for the specified array of time-series
+     * @param {Array<TimeSeries>} data The array of time-series
+     * @return {[number, number]} A pair with the min value as the first element and the max
+     * value as the second element.
+     */
+    function calcMinMaxValues(data: Array<TimeSeries>): [number, number] {
         const minValue = d3.min(data, series => d3.min(series, datum => datum[1])) || 0;
         const maxValue = d3.max(data, series => d3.max(series, datum => datum[1])) || 1;
-        minValueRef.current = Math.min(minValue, minValueRef.current);
-        maxValueRef.current = Math.max(maxValue, maxValueRef.current);
-        return [minValueRef.current, maxValueRef.current];
+        return [
+            Math.min(minValue, minValueRef.current),
+            Math.max(maxValue, maxValueRef.current)
+        ];
     }
 
     /**
@@ -281,12 +293,12 @@ function ScatterChart(props: Props): JSX.Element {
      * time. If the specified time is larger than any time in the specified data, the returns
      * the length of the data array. If the specified time is smaller than all the values in
      * the specified array, then returns -1.
-     * @param {Array<[number, number]>} data The array of points from which to select the
+     * @param {TimeSeries} data The array of points from which to select the
      * boundary.
      * @param {number} time The time for which to find the bounding points
      * @return {number} The index of the upper boundary.
      */
-    function boundingPointsIndex(data: Array<[number, number]>, time: number): number {
+    function boundingPointsIndex(data: TimeSeries, time: number): number {
         const length = data.length;
         if(time > data[length-1][0]) {
             return length;
@@ -302,13 +314,13 @@ function ScatterChart(props: Props): JSX.Element {
 
     /**
      * Returns the (time, value) point that comes just before the mouse and just after the mouse
-     * @param {Array<[number, number]>} data The time-series data
+     * @param {TimeSeries} data The time-series data
      * @param {number} time The time represented by the mouse's x-coordinate
      * @return {[[number, number], [number, number]]} the (time, value) point that comes just before
      * the mouse and just after the mouse. If the mouse is after the last point, then the "after" point
      * is `[NaN, NaN]`. If the mouse is before the first point, then the "before" point is `[NaN, NaN]`.
      */
-    function boundingPoints(data: Array<[number, number]>, time: number): [[number, number], [number, number]] {
+    function boundingPoints(data: TimeSeries, time: number): [[number, number], [number, number]] {
         const upperIndex = boundingPointsIndex(data, time);
         if(upperIndex <= 0) {
             return [[NaN, NaN], data[0]];
@@ -325,7 +337,7 @@ function ScatterChart(props: Props): JSX.Element {
      * @param {string} seriesName The name of the series (i.e. the neuron ID)
      * @param {SVGPathElement} segment The SVG line element representing the spike, over which the mouse is hovering.
      */
-    function handleShowTooltip(datum: Array<[number, number]>, seriesName: string, segment: SVGPathElement): void {
+    function handleShowTooltip(datum: TimeSeries, seriesName: string, segment: SVGPathElement): void {
         if(!(tooltipRef.current.visible || magnifier.visible) || !containerRef.current || !axesRef.current) {
             return;
         }
@@ -636,7 +648,7 @@ function ScatterChart(props: Props): JSX.Element {
                 mainGRef.current!
                     .selectAll<SVGSVGElement, Array<[number, number]>>('.time-series-lines')
                     .attr("d", data => {
-                        const magnified: Array<[number, number]> = data
+                        const magnified: TimeSeries = data
                             .map(([x, y]) => [xScale(x), yScale(y)]);
                         return d3.line()(magnified);
                     })
@@ -818,7 +830,9 @@ function ScatterChart(props: Props): JSX.Element {
 
             // calculate and update the min and max values for updating the y-axis. only updates when
             // the min is less than the historical min, and the max is larger than the historical max.
-            const [minValue, maxValue] = updateMinMaxValues(data);
+            const [minValue, maxValue] = calcMinMaxValues(data);
+            minValueRef.current = minValue;
+            maxValueRef.current = maxValue;
 
             // create the x-axis
             axesRef.current.xScale.domain([timeRangeRef.current.start, timeRangeRef.current.end]);
@@ -917,10 +931,10 @@ function ScatterChart(props: Props): JSX.Element {
      * Returns the data in the time-range and the datum that comes just before the start of the time range.
      * The point before the time range is so that the line draws up to the y-axis, where it is clipped.
      * @param {Series} series The series
-     * @return {Array<[number, number]>} An array of (time, value) points that fit within the time range,
+     * @return {TimeSeries} An array of (time, value) points that fit within the time range,
      * and the point just before the time range.
      */
-    function selectInTimeRange(series: Series): Array<[number, number]> {
+    function selectInTimeRange(series: Series): TimeSeries {
 
         function inTimeRange(datum: Datum, index: number, array: Datum[]): boolean {
             // also want to include the point whose next value is in the time range
