@@ -7,8 +7,8 @@ import {TimeRange, TimeRangeType} from "./timeRange";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
 import {ChartData} from "../examples/randomData";
-import {RadialMagnifier, radialMagnifierWith, LensTransformation2d} from "./radialMagnifier";
-import {min, windowTime} from "rxjs/operators";
+import {LensTransformation2d, RadialMagnifier, radialMagnifierWith} from "./radialMagnifier";
+import {windowTime} from "rxjs/operators";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultAxesStyle = {color: '#d2933f'};
@@ -43,8 +43,11 @@ type GSelection = Selection<SVGGElement, any, null, undefined>;
 type LineSelection = Selection<SVGLineElement, any, SVGGElement, undefined>;
 type TextSelection = Selection<SVGTextElement, any, null, undefined>;
 type MagnifierSelection = Selection<SVGCircleElement, Datum, null, undefined>;
+type TrackerSelection = Selection<SVGLineElement, Datum, null, undefined>;
 
 type TimeSeries = Array<[number, number]>;
+
+const textWidthOf = (elem: Selection<SVGTextElement, any, HTMLElement, any>) => elem.node()?.getBBox()?.width || 0;
 
 /**
  * Holds the actual datum and the associated transformation information
@@ -53,6 +56,22 @@ interface MagnifiedData {
     datum: [number, number];
     lens: LensTransformation2d;
 }
+
+interface TrackerStyle {
+    visible: boolean;
+    timeWindow: number;
+    magnification: number;
+    color: string,
+    lineWidth: number,
+}
+
+const defaultTrackerStyle: TrackerStyle = {
+    visible: false,
+    timeWindow: 50,
+    magnification: 1,
+    color: '#d2933f',
+    lineWidth: 2,
+};
 
 /**
  * Properties for rendering the line-magnifier lens
@@ -85,6 +104,7 @@ interface Props {
     tooltip?: Partial<TooltipStyle>;
     tooltipValueLabel?: string;
     magnifier?: Partial<RadialMagnifierStyle>;
+    tracker?: Partial<TrackerStyle>;
 
     minWeight?: number;
     maxWeight?: number;
@@ -143,6 +163,7 @@ function ScatterChart(props: Props): JSX.Element {
     const tooltip: TooltipStyle = {...defaultTooltipStyle, ...props.tooltip};
     const magnifier = {...defaultRadialMagnifierStyle, ...props.magnifier};
     const lineStyle = {...defaultLineStyle, ...props.lineStyle};
+    const tracker = {...defaultTrackerStyle, ...props.tracker};
 
     // grab the dimensions of the actual plot after removing the margins from the specified width and height
     const plotDimensions = adjustedDimensions(width, height, margin);
@@ -517,6 +538,29 @@ function ScatterChart(props: Props): JSX.Element {
     }
 
     /**
+     * Callback when the mouse tracker is to be shown
+     * @param {Selection<SVGLineElement, Datum, null, undefined> | undefined} path
+     */
+    function handleShowTracker(path: Selection<SVGLineElement, Datum, null, undefined> | undefined) {
+        if (containerRef.current && path) {
+            const [x, y] = d3.mouse(containerRef.current);
+            path
+                .attr('x1', x)
+                .attr('x2', x)
+                .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
+            ;
+
+            const label = d3.select<SVGTextElement, any>('#scatter-chart-tracker-time')
+                .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
+                .text(() => `${d3.format(",.0f")(axesRef.current!.xScale.invert(x - margin.left))} ms`)
+
+
+            const labelWidth = textWidthOf(label);
+            label.attr('x', Math.min(plotDimensions.width + margin.left - labelWidth, x))
+        }
+    }
+
+    /**
      * Called when the magnifier is enabled to set up the vertical bar magnifier lens
      * @param {SvgSelection | undefined} svg The path selection
      * holding the magnifier whose properties need to be updated.
@@ -814,6 +858,50 @@ function ScatterChart(props: Props): JSX.Element {
     }
 
     /**
+     * Creates the SVG elements for displaying a tracker line
+     * @param {SvgSelection} svg The SVG selection
+     * @param {boolean} visible `true` if the tracker is visible; `false` otherwise
+     * @return {TrackerSelection | undefined} The tracker selection if visible; otherwise undefined
+     */
+    function trackerControl(svg: SvgSelection, visible: boolean): TrackerSelection | undefined {
+        if (visible && trackerRef.current === undefined) {
+            const tracker = svg
+                .append<SVGLineElement>('line')
+                .attr('class', 'tracker')
+                .attr('y1', margin.top)
+                .attr('y2', plotDimensions.height)
+                .attr('stroke', tooltip.borderColor)
+                .attr('stroke-width', tooltip.borderWidth)
+                .attr('opacity', 0) as Selection<SVGLineElement, Datum, null, undefined>
+            ;
+
+            // create the text element holding the tracker time
+            svg
+                .append<SVGTextElement>('text')
+                .attr('id', 'scatter-chart-tracker-time')
+                .attr('y', Math.max(0, margin.top -3))
+                .attr('fill', axisLabelFont.color)
+                .attr('font-family', axisLabelFont.family)
+                .attr('font-size', axisLabelFont.size)
+                .attr('font-weight', axisLabelFont.weight)
+                .attr('opacity', 0)
+                .text(() => '')
+
+            svg.on('mousemove', () => handleShowTracker(trackerRef.current));
+
+            return tracker;
+        }
+        // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
+        else if (!visible && trackerRef.current) {
+            svg.on('mousemove', () => null);
+            return undefined;
+        } else if (visible && trackerRef.current) {
+            svg.on('mousemove', () => handleShowTracker(trackerRef.current));
+        }
+        return trackerRef.current;
+    }
+
+    /**
      * Updates the plot data for the specified time-range, which may have changed due to zoom or pan
      * @param {TimeRange} timeRange The current time range
      */
@@ -844,6 +932,9 @@ function ScatterChart(props: Props): JSX.Element {
 
             // create/update the magnifier lens if needed
             magnifierRef.current = magnifierLens(svg, magnifier.visible);
+
+            // create/update the tracker line if needed
+            trackerRef.current = trackerControl(svg, tracker.visible);
 
             // set up the main <g> container for svg and translate it based on the margins, but do it only
             // once
@@ -1004,7 +1095,12 @@ function ScatterChart(props: Props): JSX.Element {
             seriesFilterRef.current = filter;
             updatePlot(timeRangeRef.current);
         },
-        [tooltip.visible, magnifier.visible, magnifier.magnification, filter]//, tracker.visible]
+        // seriesFilterRef and timeRangeRef are not included in the dependencies because we don't want
+        // react involved in the SVG updates. Rather, the rxjs observable we subscribed to manage the
+        // updates to the time-range and the svg plot
+        //
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [tooltip.visible, magnifier.visible, magnifier.magnification, tracker.visible, filter]
     )
 
     return (

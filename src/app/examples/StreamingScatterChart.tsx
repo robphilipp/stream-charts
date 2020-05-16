@@ -100,7 +100,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 tooltip={{visible: tooltipVisible}}
                 magnifier={{visible: magnifierVisible, magnification: magnification}}
-                // tracker={{visible: trackerVisible}}
+                tracker={{visible: trackerVisible}}
                 filter={filter}
                 // seriesColors={new Map()}
             />

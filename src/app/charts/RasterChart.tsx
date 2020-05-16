@@ -82,6 +82,9 @@ type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 type SvgSelection = Selection<SVGSVGElement, any, null, undefined>;
 type MagnifierSelection = Selection<SVGRectElement, Datum, null, undefined>;
 type TrackerSelection = Selection<SVGLineElement, Datum, null, undefined>;
+type TextSelection = Selection<SVGTextElement, any, HTMLElement, any>;
+
+const textWidthOf = (elem: TextSelection) => elem.node()?.getBBox()?.width || 0;
 
 interface Props {
     width: number;
@@ -496,6 +499,13 @@ function RasterChart(props: Props): JSX.Element {
                 .attr('x2', x)
                 .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
             ;
+
+            const label = d3.select<SVGTextElement, any>('#raster-chart-tracker-time')
+                .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
+                .text(() => `${d3.format(",.0f")(axesRef.current!.xScale.invert(x - margin.left))} ms`)
+
+            const labelWidth = textWidthOf(label);
+            label.attr('x', Math.min(plotDimensions.width + margin.left - labelWidth, x))
         }
     }
 
@@ -592,15 +602,27 @@ function RasterChart(props: Props): JSX.Element {
                 .attr('y2', plotDimensions.height)
                 .attr('stroke', tooltip.borderColor)
                 .attr('stroke-width', tooltip.borderWidth)
-                .attr('opacity', 0) as Selection<SVGLineElement, Datum, null, undefined>
+                .attr('opacity', 0)
             ;
+
+            // create the text element holding the tracker time
+            svg
+                .append<SVGTextElement>('text')
+                .attr('id', 'raster-chart-tracker-time')
+                .attr('y', Math.max(0, margin.top -3))
+                .attr('fill', axisLabelFont.color)
+                .attr('font-family', axisLabelFont.family)
+                .attr('font-size', axisLabelFont.size)
+                .attr('font-weight', axisLabelFont.weight)
+                .attr('opacity', 0)
+                .text(() => '')
 
             svg.on('mousemove', () => handleShowTracker(trackerRef.current));
 
             return tracker;
         }
         // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
-        else if (!tracker.visible && trackerRef.current) {
+        else if (!visible && trackerRef.current) {
             svg.on('mousemove', () => null);
             return undefined;
         } else if (visible && trackerRef.current) {
@@ -609,6 +631,10 @@ function RasterChart(props: Props): JSX.Element {
         return trackerRef.current;
     }
 
+    /**
+     * Adds grid lines, centered on the spikes, for each neuron
+     * @param {SvgSelection} svg The SVG selection holding the grid-lines
+     */
     function addGridLines(svg: SvgSelection): void {
         const gridLines = svg
             .selectAll('.grid-line')
