@@ -90,7 +90,10 @@ interface Props {
     maxTime: number;
     timeWindow: number;
     seriesList: Array<Series>;
+
+    // data stream
     seriesObservable: Observable<ChartData>;
+    windowingTime?: number;
     onSubscribe?: (subscription: Subscription) => void;
     onUpdateData?: (seriesName: string, t: number, y: number) => void;
     onUpdateTime?: (time: number) => void;
@@ -119,6 +122,7 @@ function ScatterChart(props: Props): JSX.Element {
         minTime, maxTime, timeWindow,
         seriesList,
         seriesObservable,
+        windowingTime = 100,
         onSubscribe = (_: Subscription) => {},
         onUpdateData = () => {},
         onUpdateTime = (_: number) => {},
@@ -938,7 +942,7 @@ function ScatterChart(props: Props): JSX.Element {
             }
 
             const subscription = seriesObservable
-                .pipe(windowTime(100))
+                .pipe(windowTime(windowingTime))
                 .subscribe(dataList => {
                     dataList.forEach(data => {
                         // updated the current time to be the max of the new data

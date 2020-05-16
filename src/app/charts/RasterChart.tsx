@@ -1,15 +1,13 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
-import {ScaleBand, ScaleLinear, Selection, ZoomTransform} from "d3";
-import {barMagnifierWith, BarMagnifier, LensTransformation} from "./barMagnifier";
+import {Axis, ScaleBand, ScaleLinear, Selection, ZoomTransform} from "d3";
+import {BarMagnifier, barMagnifierWith, LensTransformation} from "./barMagnifier";
 import {TimeRange, TimeRangeType} from "./timeRange";
 import {adjustedDimensions, Margin} from "./margins";
 import {Datum, emptySeries, PixelDatum, Series} from "./datumSeries";
-import {Axis} from "d3";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
 import {ChartData} from "../examples/randomData";
-import {plot} from "plotly.js";
 import {windowTime} from "rxjs/operators";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
@@ -103,6 +101,7 @@ interface Props {
     filter?: RegExp;
 
     seriesObservable: Observable<ChartData>;
+    windowingTime?: number;
     onSubscribe?: (subscription: Subscription) => void;
     onUpdateData?: (seriesName: string, t: number, y: number) => void;
     onUpdateTime?: (time: number) => void;
@@ -118,6 +117,7 @@ function RasterChart(props: Props): JSX.Element {
     const {
         seriesList,
         seriesObservable,
+        windowingTime = 100,
         onSubscribe = (_: Subscription) => {},
         onUpdateData = () => {},
         onUpdateTime = (_: number) => {},
@@ -707,7 +707,7 @@ function RasterChart(props: Props): JSX.Element {
     useEffect(
         () => {
             const subscription = seriesObservable
-                .pipe(windowTime(100))
+                .pipe(windowTime(windowingTime))
                 .subscribe(dataList => {
                     dataList.forEach(data => {
                         // updated the current time to be the max of the new data
