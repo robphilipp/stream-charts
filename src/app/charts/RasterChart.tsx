@@ -68,7 +68,7 @@ interface MagnifiedDatum extends Datum {
 }
 
 interface Axes {
-    xAxisGenerator: Axis<number | {valueOf(): number}>;
+    xAxisGenerator: Axis<number | { valueOf(): number }>;
     yAxisGenerator: Axis<string>;
     xAxisSelection: AxisElementSelection;
     yAxisSelection: AxisElementSelection;
@@ -124,9 +124,12 @@ function RasterChart(props: Props): JSX.Element {
         seriesList,
         seriesObservable,
         windowingTime = 100,
-        onSubscribe = (_: Subscription) => {},
-        onUpdateData = () => {},
-        onUpdateTime = (_: number) => {},
+        onSubscribe = (_: Subscription) => {
+        },
+        onUpdateData = () => {
+        },
+        onUpdateTime = (_: number) => {
+        },
         filter = /./,
         minTime, maxTime, timeWindow,
         width,
@@ -245,7 +248,7 @@ function RasterChart(props: Props): JSX.Element {
      * @param {ZoomTransform} transform The d3 zoom transformation information
      * @param {number} x The x-position of the mouse when the scroll wheel or gesture is used
      * @callback
-     */
+        */
     function onZoom(transform: ZoomTransform, x: number): void {
         const time = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>().invert(x);
         timeRangeRef.current = timeRangeRef.current!.scale(transform.k, time);
@@ -257,7 +260,7 @@ function RasterChart(props: Props): JSX.Element {
      * Adjusts the time-range and updates the plot when the plot is dragged to the left or right
      * @param {number} deltaX The amount that the plot is dragged
      * @callback
-     */
+        */
     function onPan(deltaX: number): void {
         const scale = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>();
         const currentTime = timeRangeRef!.current.start;
@@ -274,7 +277,7 @@ function RasterChart(props: Props): JSX.Element {
      * @param {SVGLineElement} spike The SVG line element representing the spike, over which the mouse is hovering.
      */
     function handleShowTooltip(datum: Datum, seriesName: string, spike: SVGLineElement): void {
-        if(!tooltipRef.current.visible) {
+        if (!tooltipRef.current.visible) {
             return;
         }
 
@@ -400,7 +403,7 @@ function RasterChart(props: Props): JSX.Element {
             .attr('stroke', spikesStyle.color)
             .attr('stroke-width', spikesStyle.lineWidth);
 
-        if(tooltipRef.current.visible) {
+        if (tooltipRef.current.visible) {
             d3.selectAll<SVGLineElement, Datum>('.tooltip').remove();
         }
     }
@@ -410,7 +413,7 @@ function RasterChart(props: Props): JSX.Element {
      * @param {Selection<SVGRectElement, Datum, null, undefined> | undefined} path The path selection
      * holding the magnifier whose properties need to be updated.
      * @callback
-     */
+        */
     function handleShowMagnify(path: Selection<SVGRectElement, Datum, null, undefined> | undefined) {
 
         /**
@@ -437,7 +440,7 @@ function RasterChart(props: Props): JSX.Element {
             return scale(datum.time);
         }
 
-        if(containerRef.current && path) {
+        if (containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
             const isMouseInPlot = mouseInPlotArea(x, y);
             const deltaX = magnifier.width / 2;
@@ -449,14 +452,16 @@ function RasterChart(props: Props): JSX.Element {
 
             const svg = d3.select<SVGSVGElement, MagnifiedDatum>(containerRef.current);
 
-            if(isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
+            if (isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
                 const barMagnifier: BarMagnifier = barMagnifierWith(deltaX, 3 * zoomFactorRef.current, x - margin.left);
                 svg
                     // select all the spikes and keep only those that are within ±4∆t of the x-position of the mouse
                     .selectAll<SVGSVGElement, MagnifiedDatum>('.spikes-lines')
-                    .filter(datum => inMagnifier(datum , x, 4 * deltaX))
+                    .filter(datum => inMagnifier(datum, x, 4 * deltaX))
                     // supplement the datum with lens transformation information (new x and scale)
-                    .each(datum => {datum.lens = barMagnifier.magnify(xFrom(datum))})
+                    .each(datum => {
+                        datum.lens = barMagnifier.magnify(xFrom(datum))
+                    })
                     // update each spikes line with it's new x-coordinate and the magnified line-width
                     .attr('x1', datum => datum.lens.xPrime)
                     .attr('x2', datum => datum.lens.xPrime)
@@ -464,8 +469,7 @@ function RasterChart(props: Props): JSX.Element {
                     .attr('shape-rendering', 'crispEdges')
                 ;
                 mouseCoordsRef.current = x;
-            }
-            else if(!isMouseInPlot) {
+            } else if (!isMouseInPlot) {
                 svg
                     .selectAll<SVGSVGElement, Datum>('.spikes-lines')
                     .attr('x1', datum => xFrom(datum))
@@ -486,9 +490,9 @@ function RasterChart(props: Props): JSX.Element {
      * Callback when the mouse tracker is to be shown
      * @param {Selection<SVGLineElement, Datum, null, undefined> | undefined} path
      * @callback
-     */
+        */
     function handleShowTracker(path: Selection<SVGLineElement, Datum, null, undefined> | undefined) {
-        if(containerRef.current && path) {
+        if (containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
             path
                 .attr('x1', x)
@@ -505,7 +509,7 @@ function RasterChart(props: Props): JSX.Element {
      * @return {boolean} `true` if the mouse is in the plot area; `false` if the mouse is not in the plot area
      */
     function mouseInPlotArea(x: number, y: number): boolean {
-        return  x > margin.left && x < width - margin.right &&
+        return x > margin.left && x < width - margin.right &&
             y > margin.top && y < height - margin.bottom;
     }
 
@@ -516,7 +520,7 @@ function RasterChart(props: Props): JSX.Element {
      * @return {MagnifierSelection | undefined} The magnifier selection if visible; otherwise undefined
      */
     function magnifierLens(svg: SvgSelection, visible: boolean): MagnifierSelection | undefined {
-        if(visible && magnifierRef.current === undefined) {
+        if (visible && magnifierRef.current === undefined) {
             const linearGradient = svg
                 .append<SVGDefsElement>('defs')
                 .append<SVGLinearGradientElement>('linearGradient')
@@ -567,11 +571,10 @@ function RasterChart(props: Props): JSX.Element {
             return magnifierSelection;
         }
         // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
-        else if(!visible && magnifierRef.current) {
+        else if (!visible && magnifierRef.current) {
             svg.on('mousemove', () => null);
             return undefined;
-        }
-        else if (visible && magnifierRef.current) {
+        } else if (visible && magnifierRef.current) {
             svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
         }
         return magnifierRef.current;
@@ -584,7 +587,7 @@ function RasterChart(props: Props): JSX.Element {
      * @return {TrackerSelection | undefined} The tracker selection if visible; otherwise undefined
      */
     function trackerControl(svg: SvgSelection, visible: boolean): TrackerSelection | undefined {
-        if(visible && trackerRef.current === undefined) {
+        if (visible && trackerRef.current === undefined) {
             const tracker = svg
                 .append<SVGLineElement>('line')
                 .attr('class', 'tracker')
@@ -600,11 +603,10 @@ function RasterChart(props: Props): JSX.Element {
             return tracker;
         }
         // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
-        else if(!tracker.visible && trackerRef.current) {
+        else if (!tracker.visible && trackerRef.current) {
             svg.on('mousemove', () => null);
             return undefined;
-        }
-        else if (visible && trackerRef.current) {
+        } else if (visible && trackerRef.current) {
             svg.on('mousemove', () => handleShowTracker(trackerRef.current));
         }
         return trackerRef.current;
@@ -666,15 +668,14 @@ function RasterChart(props: Props): JSX.Element {
 
             // set up the main <g> container for svg and translate it based on the margins, but do it only
             // once
-            if(mainGRef.current === undefined) {
+            if (mainGRef.current === undefined) {
                 mainGRef.current = svg
                     .attr('width', width)
                     .attr('height', height)
                     .attr('color', axisStyle.color)
                     .append<SVGGElement>('g')
                 ;
-            }
-            else {
+            } else {
                 spikesRef.current = mainGRef.current!
                     .selectAll<SVGGElement, Series>('g')
                     .data<Series>(liveDataRef.current)
@@ -698,7 +699,7 @@ function RasterChart(props: Props): JSX.Element {
             const zoom = d3.zoom<SVGSVGElement, Datum>()
                 .scaleExtent([0, 10])
                 .translateExtent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
-                .on("zoom", () => onZoom(d3.event.transform, d3.event.sourceEvent.offsetX -  margin.left))
+                .on("zoom", () => onZoom(d3.event.transform, d3.event.sourceEvent.offsetX - margin.left))
             ;
 
             svg.call(zoom);
@@ -728,8 +729,9 @@ function RasterChart(props: Props): JSX.Element {
                 container
                     .enter()
                     .append<SVGLineElement>('line')
-                    // .filter(datum => datum.time >= timeRangeRef.current.start)
-                    .each(datum => {datum.x = axesRef.current!.xScale(datum.time)})
+                    .each(datum => {
+                        datum.x = axesRef.current!.xScale(datum.time)
+                    })
                     .attr('class', 'spikes-lines')
                     .attr('x1', datum => datum.x)
                     .attr('x2', datum => datum.x)
@@ -739,7 +741,7 @@ function RasterChart(props: Props): JSX.Element {
                     .attr('stroke-width', spikesStyle.lineWidth)
                     .attr('stroke-linecap', "round")
                     .attr("clip-path", "url(#clip-spikes)")
-                    // even though the tooltip is may not be set to show up on the mouseover, we want to attach the handler
+                    // even though the tooltip may not be set to show up on the mouseover, we want to attach the handler
                     // so that when the use enables tooltips the handlers will show the the tooltip
                     .on("mouseover", (datum, i, group) => handleShowTooltip(datum, series.name, group[i]))
                     .on("mouseleave", (datum, i, group) => handleHideTooltip(datum, series.name, group[i]))
@@ -748,7 +750,9 @@ function RasterChart(props: Props): JSX.Element {
                 // update existing elements
                 container
                     .filter(datum => datum.time >= timeRangeRef.current.start)
-                    .each(datum => {datum.x = axesRef.current!.xScale(datum.time)})
+                    .each(datum => {
+                        datum.x = axesRef.current!.xScale(datum.time)
+                    })
                     .attr('x1', datum => datum.x)
                     .attr('x2', datum => datum.x)
                     .attr('y1', _ => y + spikesStyle.margin)
@@ -765,7 +769,7 @@ function RasterChart(props: Props): JSX.Element {
     // called on mount to set up the <g> element into which to render
     useEffect(
         () => {
-            if(containerRef.current) {
+            if (containerRef.current) {
                 const svg = d3.select<SVGSVGElement, any>(containerRef.current);
                 axesRef.current = initializeAxes(svg);
             }
@@ -773,34 +777,36 @@ function RasterChart(props: Props): JSX.Element {
             const subscription = seriesObservable
                 .pipe(windowTime(windowingTime))
                 .subscribe(dataList => {
-                    dataList.forEach(data => {
-                        // updated the current time to be the max of the new data
-                        currentTimeRef.current = data.maxTime;
+                    dataList
+                        .forEach(data => {
+                            // updated the current time to be the max of the new data
+                            currentTimeRef.current = data.maxTime;
 
-                        // for each series, add a point if there is a  spike value (i.e. spike value > 0)
-                        seriesRef.current = seriesRef.current.map((series, i) => {
-                            const datum = data.newPoints[i].datum;
-                            if(datum.value > 0) {
-                                series.data.push(datum);
+                            // for each series, add a point if there is a  spike value (i.e. spike value > 0)
+                            seriesRef.current = seriesRef.current.map((series, i) => {
+                                const datum = data.newPoints[i].datum;
+                                if (datum.value > 0) {
+                                    series.data.push(datum);
 
-                                // update the handler with the new data point
-                                onUpdateData(series.name, datum.time, datum.value);
-                            }
-                            return series;
-                        });
+                                    // update the handler with the new data point
+                                    onUpdateData(series.name, datum.time, datum.value);
+                                }
+                                return series;
+                            });
 
-                        // update the data
-                        liveDataRef.current = seriesRef.current;
-                        timeRangeRef.current = TimeRange(
-                            Math.max(0, currentTimeRef.current - timeWindow),
-                            Math.max(currentTimeRef.current, timeWindow)
-                        )
-                    }).then(() => {
-                        // updates the caller with the current time
-                        onUpdateTime(currentTimeRef.current);
+                            // update the data
+                            liveDataRef.current = seriesRef.current;
+                            timeRangeRef.current = TimeRange(
+                                Math.max(0, currentTimeRef.current - timeWindow),
+                                Math.max(currentTimeRef.current, timeWindow)
+                            )
+                        })
+                        .then(() => {
+                            // updates the caller with the current time
+                            onUpdateTime(currentTimeRef.current);
 
-                        updatePlot(timeRangeRef.current);
-                    })
+                            updatePlot(timeRangeRef.current);
+                        })
                 });
 
             // provide the subscription to the caller
@@ -808,7 +814,14 @@ function RasterChart(props: Props): JSX.Element {
 
             // stop the stream on dismount
             return () => subscription.unsubscribe();
-        }, []
+        },
+        // currentTimeRef, seriesRef, initializeAxes, onSubscribe, onUpdateData, etc are not included
+        // in the dependency list because we only want this to run when the component mounts. The
+        // lambda handed to the subscribe function gets called and updates many of these refs, and
+        // ultimately the SVG plot and we don't want react involved in these updates
+        //
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        []
     );
 
     // update the plot for tooltip, magnifier, or tracker if their visibility changes
@@ -817,6 +830,11 @@ function RasterChart(props: Props): JSX.Element {
             seriesFilterRef.current = filter;
             updatePlot(timeRangeRef.current);
         },
+        // seriesFilterRef and timeRangeRef are not included in the dependencies because we don't want
+        // react involved in the SVG updates. Rather, the rxjs observable we subscribed to manage the
+        // updates to the time-range and the svg plot
+        //
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [tooltip.visible, magnifier.visible, tracker.visible, filter]
     )
 
