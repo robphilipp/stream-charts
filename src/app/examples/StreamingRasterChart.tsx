@@ -82,6 +82,7 @@ function StreamingRasterChart(props: Props): JSX.Element {
                 height={seriesList.length * seriesHeight}
                 // seriesHeight={seriesHeight}
                 seriesList={liveData}
+                // seriesList={liveData.filter(series => series.name.match(filter))}
                 seriesObservable={observableRef.current}
                 onSubscribe={subscription => subscriptionRef.current = subscription}
                 onUpdateTime={(t: number) => {

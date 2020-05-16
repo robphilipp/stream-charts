@@ -124,12 +124,9 @@ function RasterChart(props: Props): JSX.Element {
         seriesList,
         seriesObservable,
         windowingTime = 100,
-        onSubscribe = (_: Subscription) => {
-        },
-        onUpdateData = () => {
-        },
-        onUpdateTime = (_: number) => {
-        },
+        onSubscribe = (_: Subscription) => {},
+        onUpdateData = () => {},
+        onUpdateTime = (_: number) => {},
         filter = /./,
         minTime, maxTime, timeWindow,
         width,
@@ -150,7 +147,6 @@ function RasterChart(props: Props): JSX.Element {
     const tracker = {...defaultTrackerStyle, ...props.tracker};
 
     // grab the dimensions of the actual plot after removing the margins from the specified width and height
-    // const plotDimensions = adjustedDimensions(width, seriesList.length, margin);
     const plotDimensions = adjustedDimensions(width, height, margin);
 
     // the container that holds the d3 svg element
@@ -193,11 +189,10 @@ function RasterChart(props: Props): JSX.Element {
             .domain([timeRangeRef.current.start, timeRangeRef.current.end])
             .range([0, plotDimensions.width]);
 
-        // const lineHeight = height / seriesList.length;
-        const lineHeight = spikeLineHeight();
+        const lineHeight = (plotDimensions.height - margin.top) / liveDataRef.current.length;
         const yScale = d3.scaleBand()
             .domain(liveDataRef.current.map(series => series.name))
-            .range([0, lineHeight * liveDataRef.current.length - margin.top]);
+            .range([0, lineHeight * liveDataRef.current.length]);
 
         // create and add the axes
         const xAxisGenerator = d3.axisBottom(xScale);
@@ -205,7 +200,8 @@ function RasterChart(props: Props): JSX.Element {
         const xAxisSelection = svg
             .append<SVGGElement>('g')
             .attr('class', 'x-axis')
-            .attr('transform', `translate(${margin.left}, ${plotDimensions.height})`)
+            // .attr('transform', `translate(${margin.left}, ${plotDimensions.height})`)
+            .attr('transform', `translate(${margin.left}, ${lineHeight * liveDataRef.current.length + margin.top})`)
             .call(xAxisGenerator);
 
         const yAxisSelection = svg
@@ -216,6 +212,7 @@ function RasterChart(props: Props): JSX.Element {
 
         svg
             .append<SVGTextElement>('text')
+            .attr('id', 'raster-chart-x-axis-label')
             .attr('text-anchor', 'middle')
             .attr('font-size', axisLabelFont.size)
             .attr('fill', axisLabelFont.color)
@@ -647,17 +644,27 @@ function RasterChart(props: Props): JSX.Element {
         timeRangeRef.current = timeRange;
 
         if (containerRef.current && axesRef.current) {
+            // filter out any data that doesn't match the current filter
+            const filteredData = liveDataRef.current.filter(series => series.name.match(seriesFilterRef.current));
+
             // select the text elements and bind the data to them
             const svg = d3.select<SVGSVGElement, any>(containerRef.current);
 
-            // create the x-axis
+            // create or update the x-axis (user filters change the location of x-axis)
             axesRef.current.xScale.domain([timeRangeRef.current.start, timeRangeRef.current.end]);
-            axesRef.current.xAxisSelection.call(axesRef.current.xAxisGenerator);
+            axesRef.current.xAxisSelection
+                .attr('transform', `translate(${margin.left}, ${axesRef.current.lineHeight * filteredData.length + margin.top})`)
+                .call(axesRef.current.xAxisGenerator);
+            svg
+                .select('#raster-chart-x-axis-label')
+                .attr('transform', `translate(${margin.left + plotDimensions.width / 2}, ${axesRef.current.lineHeight * filteredData.length + 2 *  margin.top + (margin.bottom / 3)})`);
 
-            // create the y-axis
+            // create or update the y-axis (user filters change the scale of the y-axis)
             axesRef.current.yScale
-                .domain(liveDataRef.current.map(series => series.name))
-                .range([0, axesRef.current.lineHeight * liveDataRef.current.length - margin.top]);
+                // .domain(liveDataRef.current.map(series => series.name))
+                // .range([0, axesRef.current.lineHeight * liveDataRef.current.length - margin.top]);
+                .domain(filteredData.map(series => series.name))
+                .range([0, axesRef.current.lineHeight * filteredData.length]);
             axesRef.current.yAxisSelection.call(axesRef.current.yAxisGenerator);
 
             // create/update the magnifier lens if needed
@@ -678,7 +685,8 @@ function RasterChart(props: Props): JSX.Element {
             } else {
                 spikesRef.current = mainGRef.current!
                     .selectAll<SVGGElement, Series>('g')
-                    .data<Series>(liveDataRef.current)
+                    // .data<Series>(liveDataRef.current)
+                    .data<Series>(filteredData)
                     .enter()
                     .append('g')
                     .attr('class', 'spikes-series')
@@ -716,6 +724,7 @@ function RasterChart(props: Props): JSX.Element {
                 .attr("height", plotDimensions.height - margin.top)
 
             liveDataRef.current.forEach(series => {
+            // filteredData.forEach(series => {
                 const plotSeries = (series.name.match(seriesFilterRef.current)) ? series : emptySeries(series.name);
 
                 const container = svg
@@ -783,16 +792,17 @@ function RasterChart(props: Props): JSX.Element {
                             currentTimeRef.current = data.maxTime;
 
                             // for each series, add a point if there is a  spike value (i.e. spike value > 0)
-                            seriesRef.current = seriesRef.current.map((series, i) => {
-                                const datum = data.newPoints[i].datum;
-                                if (datum.value > 0) {
-                                    series.data.push(datum);
+                            seriesRef.current = seriesRef.current
+                                .map((series, i) => {
+                                    const datum = data.newPoints[i].datum;
+                                    if (datum.value > 0) {
+                                        series.data.push(datum);
 
-                                    // update the handler with the new data point
-                                    onUpdateData(series.name, datum.time, datum.value);
-                                }
-                                return series;
-                            });
+                                        // update the handler with the new data point
+                                        onUpdateData(series.name, datum.time, datum.value);
+                                    }
+                                    return series;
+                                });
 
                             // update the data
                             liveDataRef.current = seriesRef.current;
