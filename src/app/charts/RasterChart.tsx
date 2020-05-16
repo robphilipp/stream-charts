@@ -78,6 +78,7 @@ interface Axes {
 type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 type SvgSelection = Selection<SVGSVGElement, any, null, undefined>;
 type MagnifierSelection = Selection<SVGRectElement, Datum, null, undefined>;
+type TrackerSelection = Selection<SVGLineElement, Datum, null, undefined>;
 
 interface Props {
     width: number;
@@ -513,6 +514,39 @@ function RasterChart(props: Props): JSX.Element {
     }
 
     /**
+     * Creates the SVG elements for displaying a tracker line
+     * @param {SvgSelection} svg The SVG selection
+     * @param {boolean} visible `true` if the tracker is visible; `false` otherwise
+     * @return {TrackerSelection | undefined} The tracker selection if visible; otherwise undefined
+     */
+    function trackerControl(svg: SvgSelection, visible: boolean): TrackerSelection | undefined {
+        if(visible && trackerRef.current === undefined) {
+            const tracker = svg
+                .append<SVGLineElement>('line')
+                .attr('class', 'tracker')
+                .attr('y1', margin.top)
+                .attr('y2', plotDimensions.height)
+                .attr('stroke', tooltip.borderColor)
+                .attr('stroke-width', tooltip.borderWidth)
+                .attr('opacity', 0) as Selection<SVGLineElement, Datum, null, undefined>
+            ;
+
+            svg.on('mousemove', () => handleShowTracker(trackerRef.current));
+
+            return tracker;
+        }
+        // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
+        else if(!tracker.visible && trackerRef.current) {
+            svg.on('mousemove', () => null);
+            return undefined;
+        }
+        else if (visible && trackerRef.current) {
+            svg.on('mousemove', () => handleShowTracker(trackerRef.current));
+        }
+        return trackerRef.current;
+    }
+
+    /**
      * Updates the plot data for the specified time-range, which may have changed due to zoom or pan
      * @param {TimeRange} timeRange The current time range
      */
@@ -529,24 +563,8 @@ function RasterChart(props: Props): JSX.Element {
             // create/update the magnifier lens if needed
             magnifierRef.current = magnifierLens(svg, magnifier.visible);
 
-            // set up the tracker-line once
-            if(tracker.visible && trackerRef.current === undefined) {
-                trackerRef.current = svg
-                    .append<SVGLineElement>('line')
-                    .attr('class', 'tracker')
-                    .attr('y1', margin.top)
-                    .attr('y2', plotDimensions.height)
-                    .attr('stroke', tooltip.borderColor)
-                    .attr('stroke-width', tooltip.borderWidth)
-                    .attr('opacity', 0) as Selection<SVGLineElement, Datum, null, undefined>
-                ;
-
-                svg.on('mousemove', () => handleShowTracker(trackerRef.current));
-            }
-            // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
-            else if(!tracker.visible && trackerRef.current) {
-                trackerRef.current = undefined;
-            }
+            // create/update the tracker line if needed
+            trackerRef.current = trackerControl(svg, tracker.visible);
 
             // set up the main <g> container for svg and translate it based on the margins, but do it only
             // once
