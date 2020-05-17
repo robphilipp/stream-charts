@@ -9,6 +9,7 @@ import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
 import {ChartData} from "../examples/randomData";
 import {windowTime} from "rxjs/operators";
+import {RadialMagnifier, radialMagnifierWith} from "./radialMagnifier";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultSpikesStyle = {
@@ -463,8 +464,20 @@ function RasterChart(props: Props): JSX.Element {
                 .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
                 .text(() => `${d3.format(",.0f")(axesRef.current!.xScale.invert(x - margin.left))} ms`)
             ;
-            label
-                .attr('x', Math.min(plotDimensions.width + margin.left - textWidthOf(label), x))
+            label.attr('x', Math.min(plotDimensions.width + margin.left - textWidthOf(label), x));
+
+            const axesMagnifier: BarMagnifier = barMagnifierWith(deltaX, magnifier.magnification, x);
+            svg
+                .selectAll<SVGLineElement, number>('.magnifier-axis-ticks')
+                .attr('opacity', isMouseInPlot ? 1 : 0)
+                .attr('stroke', tooltipRef.current.borderColor)
+                .attr('stroke-width', 0.75)
+                .attr('x1', datum => axesMagnifier.magnify(x + datum * deltaX / 5).xPrime)
+                .attr('x2', datum => axesMagnifier.magnify(x + datum * deltaX / 5).xPrime)
+                .attr('y1', y - 10)
+                .attr('y2', y)
+            ;
+
 
             //
             if (isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
@@ -610,6 +623,19 @@ function RasterChart(props: Props): JSX.Element {
                 .attr('font-weight', axisLabelFont.weight)
                 .attr('opacity', 0)
                 .text(() => '')
+
+            const xLensAxisTicks = svg.append('g').attr('id', 'x-lens-axis-ticks');
+
+            xLensAxisTicks
+                .selectAll('line')
+                .data(d3.range(-5, 6, 1))
+                .enter()
+                .append('line')
+                .attr('class', 'magnifier-axis-ticks')
+                .attr('stroke', tooltipRef.current.borderColor)
+                .attr('stroke-width', 0.75)
+                .attr('opacity', 0)
+            ;
 
 
             // add the handler for the magnifier as the mouse moves
