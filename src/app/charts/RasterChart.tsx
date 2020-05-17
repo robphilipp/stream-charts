@@ -35,8 +35,9 @@ interface LineMagnifierStyle {
     visible: boolean;
     width: number;
     magnification: number;
-    color: string,
-    lineWidth: number,
+    color: string;
+    lineWidth: number;
+    axisOpacity?: number;
 }
 
 const defaultLineMagnifierStyle: LineMagnifierStyle = {
@@ -44,7 +45,8 @@ const defaultLineMagnifierStyle: LineMagnifierStyle = {
     width: 75,
     magnification: 1,
     color: '#d2933f',
-    lineWidth: 2,
+    lineWidth: 1,
+    axisOpacity: 0.35
 };
 
 interface TrackerStyle {
@@ -410,10 +412,9 @@ function RasterChart(props: Props): JSX.Element {
 
     /**
      * Called when the magnifier is enabled to set up the vertical bar magnifier lens
-     * @param {Selection<SVGRectElement, Datum, null, undefined> | undefined} path The path selection
-     * holding the magnifier whose properties need to be updated.
+     * @param {SvgSelection} svg The svg selection holding the whole chart
      */
-    function handleShowMagnify(path: Selection<SVGRectElement, Datum, null, undefined> | undefined): void {
+    function handleShowMagnify(svg: SvgSelection): void {
 
         /**
          * Determines whether specified datum is in the time interval centered around the current
@@ -439,6 +440,8 @@ function RasterChart(props: Props): JSX.Element {
             return scale(datum.time);
         }
 
+        const path = d3.select('.magnifier')
+
         if (containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
             const isMouseInPlot = mouseInPlotArea(x, y);
@@ -449,8 +452,21 @@ function RasterChart(props: Props): JSX.Element {
                 .attr('opacity', () => isMouseInPlot ? 1 : 0)
             ;
 
-            const svg = d3.select<SVGSVGElement, MagnifiedDatum>(containerRef.current);
+            // add the magnifier axes and label
+            d3.select('#magnifier-line')
+                .attr('x1', x)
+                .attr('x2', x)
+                .attr('opacity', () => isMouseInPlot ? magnifier.axisOpacity || 0.35 : 0)
+            ;
 
+            const label = d3.select<SVGTextElement, any>('#magnifier-line-time')
+                .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
+                .text(() => `${d3.format(",.0f")(axesRef.current!.xScale.invert(x - margin.left))} ms`)
+            ;
+            label
+                .attr('x', Math.min(plotDimensions.width + margin.left - textWidthOf(label), x))
+
+            //
             if (isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
                 const barMagnifier: BarMagnifier = barMagnifierWith(deltaX, 3 * zoomFactorRef.current, x - margin.left);
                 svg
@@ -573,8 +589,31 @@ function RasterChart(props: Props): JSX.Element {
                 .style('fill', 'url(#magnifier-gradient')
             ;
 
+            svg
+                .append<SVGLineElement>('line')
+                .attr('id', 'magnifier-line')
+                .attr('y1', margin.top)
+                .attr('y2', height + margin.top)
+                .attr('stroke', tooltip.borderColor)
+                .attr('stroke-width', tooltip.borderWidth)
+                .attr('opacity', 0)
+            ;
+
+            // create the text element holding the tracker time
+            svg
+                .append<SVGTextElement>('text')
+                .attr('id', 'magnifier-line-time')
+                .attr('y', Math.max(0, margin.top -3))
+                .attr('fill', axisLabelFont.color)
+                .attr('font-family', axisLabelFont.family)
+                .attr('font-size', axisLabelFont.size)
+                .attr('font-weight', axisLabelFont.weight)
+                .attr('opacity', 0)
+                .text(() => '')
+
+
             // add the handler for the magnifier as the mouse moves
-            svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
+            svg.on('mousemove', () => handleShowMagnify(svg));
 
             return magnifierSelection;
         }
@@ -590,7 +629,7 @@ function RasterChart(props: Props): JSX.Element {
             magnifierRef.current.attr('height', height);
 
             // update the handler for the magnifier as the mouse moves
-            svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
+            svg.on('mousemove', () => handleShowMagnify(svg));
         }
         return magnifierRef.current;
     }
