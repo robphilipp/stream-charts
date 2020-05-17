@@ -412,9 +412,8 @@ function RasterChart(props: Props): JSX.Element {
      * Called when the magnifier is enabled to set up the vertical bar magnifier lens
      * @param {Selection<SVGRectElement, Datum, null, undefined> | undefined} path The path selection
      * holding the magnifier whose properties need to be updated.
-     * @callback
-        */
-    function handleShowMagnify(path: Selection<SVGRectElement, Datum, null, undefined> | undefined) {
+     */
+    function handleShowMagnify(path: Selection<SVGRectElement, Datum, null, undefined> | undefined): void {
 
         /**
          * Determines whether specified datum is in the time interval centered around the current
@@ -524,9 +523,10 @@ function RasterChart(props: Props): JSX.Element {
      * Creates the SVG elements for displaying a bar magnifier lens on the data
      * @param {SvgSelection} svg The SVG selection
      * @param {boolean} visible `true` if the lens is visible; `false` otherwise
+     * @param {number} height The height of the magnifier lens
      * @return {MagnifierSelection | undefined} The magnifier selection if visible; otherwise undefined
      */
-    function magnifierLens(svg: SvgSelection, visible: boolean): MagnifierSelection | undefined {
+    function magnifierLens(svg: SvgSelection, visible: boolean, height: number): MagnifierSelection | undefined {
         if (visible && magnifierRef.current === undefined) {
             const linearGradient = svg
                 .append<SVGDefsElement>('defs')
@@ -569,10 +569,11 @@ function RasterChart(props: Props): JSX.Element {
                 .append<SVGRectElement>('rect')
                 .attr('class', 'magnifier')
                 .attr('y', margin.top)
-                .attr('height', plotDimensions.height - margin.top)
+                .attr('height', height)
                 .style('fill', 'url(#magnifier-gradient')
             ;
 
+            // add the handler for the magnifier as the mouse moves
             svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
 
             return magnifierSelection;
@@ -581,7 +582,14 @@ function RasterChart(props: Props): JSX.Element {
         else if (!visible && magnifierRef.current) {
             svg.on('mousemove', () => null);
             return undefined;
-        } else if (visible && magnifierRef.current) {
+        }
+        // when the magnifier is visible and exists, then make sure the height is set (which can change due
+        // to filtering) and update the handler
+        else if (visible && magnifierRef.current) {
+            // update the magnifier height
+            magnifierRef.current.attr('height', height);
+
+            // update the handler for the magnifier as the mouse moves
             svg.on('mousemove', () => handleShowMagnify(magnifierRef.current));
         }
         return magnifierRef.current;
@@ -591,15 +599,16 @@ function RasterChart(props: Props): JSX.Element {
      * Creates the SVG elements for displaying a tracker line
      * @param {SvgSelection} svg The SVG selection
      * @param {boolean} visible `true` if the tracker is visible; `false` otherwise
+     * @param {number} height The height of the tracker bar
      * @return {TrackerSelection | undefined} The tracker selection if visible; otherwise undefined
      */
-    function trackerControl(svg: SvgSelection, visible: boolean): TrackerSelection | undefined {
+    function trackerControl(svg: SvgSelection, visible: boolean, height: number): TrackerSelection | undefined {
         if (visible && trackerRef.current === undefined) {
             const tracker = svg
                 .append<SVGLineElement>('line')
                 .attr('class', 'tracker')
                 .attr('y1', margin.top)
-                .attr('y2', plotDimensions.height)
+                .attr('y2', height + margin.top)
                 .attr('stroke', tooltip.borderColor)
                 .attr('stroke-width', tooltip.borderWidth)
                 .attr('opacity', 0)
@@ -625,7 +634,11 @@ function RasterChart(props: Props): JSX.Element {
         else if (!visible && trackerRef.current) {
             svg.on('mousemove', () => null);
             return undefined;
-        } else if (visible && trackerRef.current) {
+        }
+        // when the tracker is visible and exists, then make sure the height is set (which can change due
+        // to filtering) and update the handler
+        else if (visible && trackerRef.current) {
+            trackerRef.current.attr('y2', height + margin.top);
             svg.on('mousemove', () => handleShowTracker(trackerRef.current));
         }
         return trackerRef.current;
@@ -694,10 +707,10 @@ function RasterChart(props: Props): JSX.Element {
             axesRef.current.yAxisSelection.call(axesRef.current.yAxisGenerator);
 
             // create/update the magnifier lens if needed
-            magnifierRef.current = magnifierLens(svg, magnifier.visible);
+            magnifierRef.current = magnifierLens(svg, magnifier.visible, filteredData.length * axesRef.current.lineHeight);
 
             // create/update the tracker line if needed
-            trackerRef.current = trackerControl(svg, tracker.visible);
+            trackerRef.current = trackerControl(svg, tracker.visible, filteredData.length * axesRef.current.lineHeight);
 
             // set up the main <g> container for svg and translate it based on the margins, but do it only
             // once
