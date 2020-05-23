@@ -9,7 +9,6 @@ import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
 import {ChartData} from "../examples/randomData";
 import {windowTime} from "rxjs/operators";
-import {RadialMagnifier, radialMagnifierWith} from "./radialMagnifier";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultSpikesStyle = {
@@ -43,7 +42,7 @@ interface LineMagnifierStyle {
 
 const defaultLineMagnifierStyle: LineMagnifierStyle = {
     visible: false,
-    width: 75,
+    width: 125,
     magnification: 1,
     color: '#d2933f',
     lineWidth: 1,
@@ -441,7 +440,7 @@ function RasterChart(props: Props): JSX.Element {
             return scale(datum.time);
         }
 
-        const path = d3.select('.magnifier')
+        const path = d3.select('.bar-magnifier')
 
         if (containerRef.current && path) {
             const [x, y] = d3.mouse(containerRef.current);
@@ -560,7 +559,7 @@ function RasterChart(props: Props): JSX.Element {
             const linearGradient = svg
                 .append<SVGDefsElement>('defs')
                 .append<SVGLinearGradientElement>('linearGradient')
-                .attr('id', 'magnifier-gradient')
+                .attr('id', 'bar-magnifier-gradient')
                 .attr('x1', '0%')
                 .attr('x2', '100%')
                 .attr('y1', '0%')
@@ -596,10 +595,10 @@ function RasterChart(props: Props): JSX.Element {
 
             const magnifierSelection = svg
                 .append<SVGRectElement>('rect')
-                .attr('class', 'magnifier')
+                .attr('class', 'bar-magnifier')
                 .attr('y', margin.top)
                 .attr('height', height)
-                .style('fill', 'url(#magnifier-gradient')
+                .style('fill', 'url(#bar-magnifier-gradient')
             ;
 
             svg

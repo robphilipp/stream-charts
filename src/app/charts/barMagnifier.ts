@@ -71,11 +71,13 @@ export function barMagnifierWith(radius: number, power: number, center: number):
          * @return {number} The transformed value with the point's magnification
          */
         function magnifier(x: number): LensTransformation {
+            // when the x value is on the center, then just return the x value and the
+            // maximum magnification
+            if (x === center) return {xPrime: x, magnification: power};
+
             // calculate the distance from the center of the lens
             const dx = x - center;
             const dd = Math.abs(dx);
-
-            if (dx === 0) return {xPrime: x, magnification: power};
 
             // when the distance is further than the radius, the point is outside of the
             // lens and so there is no magnification
