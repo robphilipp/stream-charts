@@ -75,6 +75,8 @@ export function barMagnifierWith(radius: number, power: number, center: number):
             const dx = x - center;
             const dd = Math.abs(dx);
 
+            if (dx === 0) return {xPrime: x, magnification: power};
+
             // when the distance is further than the radius, the point is outside of the
             // lens and so there is no magnification
             if (dd >= radius) return {xPrime: x, magnification: 1};
