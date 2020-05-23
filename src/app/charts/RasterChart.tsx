@@ -205,7 +205,6 @@ function RasterChart(props: Props): JSX.Element {
         const xAxisSelection = svg
             .append<SVGGElement>('g')
             .attr('class', 'x-axis')
-            // .attr('transform', `translate(${margin.left}, ${plotDimensions.height})`)
             .attr('transform', `translate(${margin.left}, ${lineHeight * liveDataRef.current.length + margin.top})`)
             .call(xAxisGenerator);
 
@@ -715,7 +714,7 @@ function RasterChart(props: Props): JSX.Element {
     function addGridLines(svg: SvgSelection): void {
         const gridLines = svg
             .selectAll('.grid-line')
-            .data(liveDataRef.current.map(series => series.name));
+            .data(liveDataRef.current.filter(series => series.name.match(seriesFilterRef.current)).map(series => series.name));
 
         gridLines
             .enter()
@@ -764,8 +763,6 @@ function RasterChart(props: Props): JSX.Element {
 
             // create or update the y-axis (user filters change the scale of the y-axis)
             axesRef.current.yScale
-                // .domain(liveDataRef.current.map(series => series.name))
-                // .range([0, axesRef.current.lineHeight * liveDataRef.current.length - margin.top]);
                 .domain(filteredData.map(series => series.name))
                 .range([0, axesRef.current.lineHeight * filteredData.length]);
             axesRef.current.yAxisSelection.call(axesRef.current.yAxisGenerator);
@@ -827,7 +824,6 @@ function RasterChart(props: Props): JSX.Element {
                 .attr("height", plotDimensions.height - margin.top)
 
             liveDataRef.current.forEach(series => {
-            // filteredData.forEach(series => {
                 const plotSeries = (series.name.match(seriesFilterRef.current)) ? series : emptySeries(series.name);
 
                 const container = svg
