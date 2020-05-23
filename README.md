@@ -4,7 +4,7 @@ Please see [change history](changes.md) for a history of changes.
 
 ## intro
 
-Charts for view high frequency data in real-time. The charts below show charts after the data has been streamed.
+Charts for viewing high frequency data in real-time. The charts below show charts after the data has been streamed.
 
 The first chart is a neuron raster chart that displays neuron spikes as a function of time. In the image below, a magnifier lens is used to enlarge a region of the data to compare spikes from different neurons.
 
