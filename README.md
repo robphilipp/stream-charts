@@ -1,4 +1,4 @@
-# streamable charts
+# stream-charts
 
 Please see [change history](changes.md) for a history of changes.
 
