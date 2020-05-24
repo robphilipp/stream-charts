@@ -78,6 +78,7 @@ export default function Checkbox(props: Props): JSX.Element {
                 display: 'inline-block',
                 position: 'relative',
                 top: -5,
+                left: 1,
                 fontSize: width,
                 fontWeight: 800
             }}>&#10003;</span> : <span/>}</span>
