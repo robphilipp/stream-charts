@@ -120,7 +120,7 @@ function StreamingRasterChart(props: Props): JSX.Element {
                 seriesObservable={observableRef.current}
                 onSubscribe={subscription => subscriptionRef.current = subscription}
                 onUpdateTime={(t: number) => {
-                    if(t > 1000) subscriptionRef.current!.unsubscribe()
+                    if(t > 10000) subscriptionRef.current!.unsubscribe()
                 }}
                 minTime={Math.max(0, currentTimeRef.current - timeWindow)}
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}

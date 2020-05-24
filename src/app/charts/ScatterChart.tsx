@@ -291,7 +291,7 @@ function ScatterChart(props: Props): JSX.Element {
      */
     function onZoom(transform: ZoomTransform, x: number): void {
         // only zoom if the mouse is in the plot area
-        if (x > margin.left && x < width - margin.right) {
+        if (x > 0 && x < width - margin.right) {
             const time = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>().invert(x);
             timeRangeRef.current = timeRangeRef.current!.scale(transform.k, time);
             zoomFactorRef.current = transform.k;
