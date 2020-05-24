@@ -785,7 +785,6 @@ function RasterChart(props: Props): JSX.Element {
             } else {
                 spikesRef.current = mainGRef.current!
                     .selectAll<SVGGElement, Series>('g')
-                    // .data<Series>(liveDataRef.current)
                     .data<Series>(filteredData)
                     .enter()
                     .append('g')

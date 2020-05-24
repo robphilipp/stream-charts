@@ -11,7 +11,7 @@ const weights: Array<Series> = inputNeurons.flatMap(input => outputNeurons.map(o
 
 const App: React.FC = () => {
   return (
-    <div className="App">
+    <div className="App" style={{backgroundColor: '#202020'}}>
       <p>Raster Chart</p>
         <StreamingScatterChart
           timeWindow={1000}

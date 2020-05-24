@@ -6,6 +6,19 @@ import {ChartData, randomSpikeDataObservable} from "./randomData";
 import {Observable, Subscription} from "rxjs";
 import {regexFilter} from "../charts/regexFilter";
 import ScatterChart from "../charts/ScatterChart";
+import Checkbox from "./Checkbox";
+
+interface Visibility {
+    tooltip: boolean;
+    tracker: boolean;
+    magnifier: boolean;
+}
+
+const initialVisibility: Visibility = {
+    tooltip: false,
+    tracker: false,
+    magnifier: false
+}
 
 /**
  * The properties
@@ -45,9 +58,7 @@ function StreamingRasterChart(props: Props): JSX.Element {
     const [filterValue, setFilterValue] = useState<string>('');
     const [filter, setFilter] = useState<RegExp>(new RegExp(''));
 
-    const [tooltipVisible, setTooltipVisible] = useState(false);
-    const [magnifierVisible, setMagnifierVisible] = useState(false);
-    const [trackerVisible, setTrackerVisible] = useState(false);
+    const [visibility, setVisibility] = useState<Visibility>(initialVisibility);
 
     /**
      * Called when the user changes the regular expression filter
@@ -58,24 +69,47 @@ function StreamingRasterChart(props: Props): JSX.Element {
         regexFilter(updatedFilter).ifSome(regex => setFilter(regex));
     }
 
+    const inputStyle = {
+        backgroundColor: '#202020',
+        outlineStyle: 'none',
+        borderColor: '#d2933f',
+        borderStyle: 'solid',
+        borderWidth: 1,
+        borderRadius: 3,
+        color: '#d2933f',
+        fontSize: 12,
+        padding: 4,
+        margin: 6,
+        marginRight: 20
+    };
+
     return (
-        <div>
+        <div style={{color: '#d2933f'}}>
             <p>
                 <label>regex filter <input
                     type="text"
                     value={filterValue}
-                    onInput={event => handleUpdateRegex(event.currentTarget.value)}
+                    onChange={event => handleUpdateRegex(event.currentTarget.value)}
+                    style={inputStyle}
                 /></label>
-                <label>tooltip <input type="checkbox" checked={tooltipVisible}
-                                      onChange={() => setTooltipVisible(!tooltipVisible)}/></label>&nbsp;&nbsp;
-                <label>magnifier <input type="checkbox" checked={magnifierVisible} onChange={() => {
-                    setMagnifierVisible(!magnifierVisible);
-                    if (trackerVisible) setTrackerVisible(false);
-                }}/></label>&nbsp;&nbsp;
-                <label>tracker <input type="checkbox" checked={trackerVisible} onChange={() => {
-                    setTrackerVisible(!trackerVisible);
-                    if (magnifierVisible) setMagnifierVisible(false);
-                }}/></label>
+                <Checkbox
+                    key={1}
+                    checked={visibility.tooltip}
+                    label="tooltip"
+                    onChange={() => setVisibility({tooltip: !visibility.tooltip, tracker: false, magnifier: false})}
+                />
+                <Checkbox
+                    key={2}
+                    checked={visibility.tracker}
+                    label="tracker"
+                    onChange={() => setVisibility({tooltip: false, tracker: !visibility.tracker, magnifier: false})}
+                />
+                <Checkbox
+                    key={3}
+                    checked={visibility.magnifier}
+                    label="magnifier"
+                    onChange={() => setVisibility({tooltip: false, tracker: false, magnifier: !visibility.magnifier})}
+                />
             </p>
             <RasterChart
                 width={plotWidth}
@@ -92,9 +126,9 @@ function StreamingRasterChart(props: Props): JSX.Element {
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 timeWindow={timeWindow}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
-                tooltip={{visible: tooltipVisible}}
-                magnifier={{visible: magnifierVisible}}
-                tracker={{visible: trackerVisible}}
+                tooltip={{visible: visibility.tooltip}}
+                magnifier={{visible: visibility.magnifier}}
+                tracker={{visible: visibility.tracker}}
                 filter={filter}
             />
         </div>
