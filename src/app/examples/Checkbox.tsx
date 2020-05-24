@@ -49,7 +49,8 @@ export default function Checkbox(props: Props): JSX.Element {
                 marginTop: marginTop,
                 marginBottom: marginBottom,
                 marginLeft: marginLeft,
-                marginRight: marginRight
+                marginRight: marginRight,
+                cursor: 'pointer'
             }}
             onClick={() => onChange(!checked)}
         >
