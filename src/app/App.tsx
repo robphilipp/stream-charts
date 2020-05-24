@@ -1,5 +1,4 @@
 import React from 'react';
-import '../styles/App.css';
 import StreamingRasterChart from "./examples/StreamingRasterChart";
 import {Series, seriesFrom} from "./charts/datumSeries";
 import { StreamingScatterChart } from './examples/StreamingScatterChart';
@@ -11,14 +10,15 @@ const weights: Array<Series> = inputNeurons.flatMap(input => outputNeurons.map(o
 
 const App: React.FC = () => {
   return (
-    <div className="App">
-      <p>Raster Chart</p>
+    <div className="App" style={{backgroundColor: '#202020', float: 'left'}}>
+      <h3 style={{color: '#d2933f'}}>Streaming Scatter Chart</h3>
         <StreamingScatterChart
           timeWindow={1000}
           seriesList={weights}
           plotHeight={500}
           plotWidth={900}
         />
+      <h3 style={{color: '#d2933f'}}>Streaming Raster Chart</h3>
         <StreamingRasterChart
             timeWindow={1000}
             seriesList={spikes}

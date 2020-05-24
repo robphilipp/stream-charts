@@ -4,6 +4,19 @@ import ScatterChart from "../charts/ScatterChart";
 import {ChartData, randomWeightDataObservable} from "./randomData";
 import {Observable, Subscription} from "rxjs";
 import {regexFilter} from "../charts/regexFilter";
+import Checkbox from "./Checkbox";
+
+interface Visibility {
+    tooltip: boolean;
+    tracker: boolean;
+    magnifier: boolean;
+}
+
+const initialVisibility: Visibility = {
+    tooltip: false,
+    tracker: false,
+    magnifier: false
+}
 
 /**
  * The properties
@@ -26,11 +39,8 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     const [filterValue, setFilterValue] = useState<string>('');
     const [filter, setFilter] = useState<RegExp>(new RegExp(''));
 
-    const [tooltipVisible, setTooltipVisible] = useState(false);
-    const [magnifierVisible, setMagnifierVisible] = useState(false);
+    const [visibility, setVisibility] = useState<Visibility>(initialVisibility);
     const [magnification, setMagnification] = useState(5);
-    const [trackerVisible, setTrackerVisible] = useState(false);
-
 
     /**
      * Called when the user changes the regular expression filter
@@ -41,39 +51,48 @@ export function StreamingScatterChart(props: Props): JSX.Element {
         regexFilter(updatedFilter).ifSome(regex => setFilter(regex));
     }
 
+    const inputStyle = {
+        backgroundColor: '#202020',
+        outlineStyle: 'none',
+        borderColor: '#d2933f',
+        borderStyle: 'solid',
+        borderWidth: 1,
+        borderRadius: 3,
+        color: '#d2933f',
+        fontSize: 12,
+        padding: 4,
+        margin: 6,
+        marginRight: 20
+    };
+
     return (
         <div>
             <p>
                 <label>regex filter <input
                     type="text"
                     value={filterValue}
-                    onInput={event => handleUpdateRegex(event.currentTarget.value)}
+                    onChange={event => handleUpdateRegex(event.currentTarget.value)}
+                    style={inputStyle}
                 /></label>
-                <label><input
-                    type="checkbox" checked={tooltipVisible}
-                    onChange={() => {
-                        setTooltipVisible(!tooltipVisible)
-                        if (trackerVisible) setTrackerVisible(false);
-                        if (magnifierVisible) setMagnifierVisible(false);
-                    }}
-                /> tooltip</label>&nbsp;&nbsp;
-                <label><input
-                    type="checkbox"
-                    checked={trackerVisible} onChange={() => {
-                        setTrackerVisible(!trackerVisible);
-                        if (magnifierVisible) setMagnifierVisible(false);
-                        if (tooltipVisible) setTooltipVisible(false);
-                    }}
-                /> tracker</label>&nbsp;&nbsp;
-                <label><input
-                    type="checkbox"
-                    checked={magnifierVisible} onChange={() => {
-                    setMagnifierVisible(!magnifierVisible);
-                    if (trackerVisible) setTrackerVisible(false);
-                    if (tooltipVisible) setTooltipVisible(false);
-                }}
-                /> magnifier</label>&nbsp;&nbsp;
-                {magnifierVisible ?
+                <Checkbox
+                    key={1}
+                    checked={visibility.tooltip}
+                    label="tooltip"
+                    onChange={() => setVisibility({tooltip: !visibility.tooltip, tracker: false, magnifier: false})}
+                />
+                <Checkbox
+                    key={2}
+                    checked={visibility.tracker}
+                    label="tracker"
+                    onChange={() => setVisibility({tooltip: false, tracker: !visibility.tracker, magnifier: false})}
+                />
+                <Checkbox
+                    key={3}
+                    checked={visibility.magnifier}
+                    label="magnifier"
+                    onChange={() => setVisibility({tooltip: false, tracker: false, magnifier: !visibility.magnifier})}
+                />
+                {visibility.magnifier ?
                     (<label><input
                         type="range"
                         value={magnification}
@@ -92,15 +111,15 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                 seriesObservable={observableRef.current}
                 onSubscribe={subscription => subscriptionRef.current = subscription}
                 onUpdateTime={(t: number) => {
-                    if(t > 5000) subscriptionRef.current!.unsubscribe()
+                    if(t > 1000) subscriptionRef.current!.unsubscribe()
                 }}
                 minTime={Math.max(0, currentTimeRef.current - timeWindow)}
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 timeWindow={timeWindow}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
-                tooltip={{visible: tooltipVisible}}
-                magnifier={{visible: magnifierVisible, magnification: magnification}}
-                tracker={{visible: trackerVisible}}
+                tooltip={{visible: visibility.tooltip}}
+                magnifier={{visible: visibility.magnifier, magnification: magnification}}
+                tracker={{visible: visibility.tracker}}
                 filter={filter}
                 // seriesColors={new Map()}
             />

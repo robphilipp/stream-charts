@@ -1,6 +1,8 @@
-# streamable charts
+# stream-charts
 
 Please see [change history](changes.md) for a history of changes.
+
+These charts are currently still under development. Soon these charts will be available as a npm module.
 
 ## intro
 
@@ -15,6 +17,23 @@ In this image, the weights are plotted as a function of time, and the tooltip sh
 ![scatter-chart](docs/images/scatter.png)  
 
 In both cases the plots were updated in real-time with an average update time interval of 25 ms. 
+
+## usage
+
+The [examples](src/app/examples) directory has examples. The [`StreamingRasterChart`](src/app/examples/StreamingRasterChart.tsx) provides an example of using the raster chart. The [`StreamingScatterChart`](src/app/examples/StreamingScatterChart.tsx) provides an example of using the scatter chart. Both of these examples provide controls for enabling the tooltip, tracker, and magnifier enhancements.
+
+## running examples
+
+Install the dependencies.
+
+```shell script
+$ npm install
+```
+
+Run the development server, which should fire up a browser and load the example app.
+```shell script
+$ npm start
+```
 
 ##
 

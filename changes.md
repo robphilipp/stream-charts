@@ -1,5 +1,9 @@
 # change history
 
+## version 0.0.3 (bug fixes)
+1. Cleaned up a bunch of small bugs related to the selection of enhancements (tooltip, tracker, magnifier).
+2. Updated the test application style.
+
 ## version 0.0.2 (basic functionality)
 1. Added radial magnifier to the scatter chart; has axes in the lens
 2. Added time to the tracker for the scatter and raster charts
