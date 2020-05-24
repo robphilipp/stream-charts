@@ -935,6 +935,30 @@ function RasterChart(props: Props): JSX.Element {
     // update the plot for tooltip, magnifier, or tracker if their visibility changes
     useEffect(
         () => {
+            // update the reference to reflect the selection (only one is allowed)
+            if (tooltip.visible) {
+                tooltipRef.current.visible = true;
+                trackerRef.current = undefined;
+                magnifierRef.current = undefined;
+            }
+            else if (tracker.visible) {
+                tooltipRef.current.visible = false;
+                magnifierRef.current = undefined;
+            }
+            else if (magnifier.visible) {
+                tooltipRef.current.visible = false;
+                trackerRef.current = undefined;
+            }
+            // when no enhancements are selected, then make sure they are all off
+            else {
+                tooltipRef.current.visible = false;
+                trackerRef.current = undefined;
+                magnifierRef.current = undefined;
+                if (containerRef.current) {
+                    d3.select<SVGSVGElement, any>(containerRef.current).on('mousemove', () => null);
+                }
+            }
+
             seriesFilterRef.current = filter;
             updatePlot(timeRangeRef.current);
         },

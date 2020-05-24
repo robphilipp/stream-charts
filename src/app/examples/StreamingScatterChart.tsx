@@ -66,7 +66,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     };
 
     return (
-        <div style={{color: '#d2933f'}}>
+        <div>
             <p>
                 <label>regex filter <input
                     type="text"

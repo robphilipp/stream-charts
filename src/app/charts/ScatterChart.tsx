@@ -290,10 +290,13 @@ function ScatterChart(props: Props): JSX.Element {
      * @param {number} x The x-position of the mouse when the scroll wheel or gesture is used
      */
     function onZoom(transform: ZoomTransform, x: number): void {
-        const time = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>().invert(x);
-        timeRangeRef.current = timeRangeRef.current!.scale(transform.k, time);
-        zoomFactorRef.current = transform.k;
-        updatePlot(timeRangeRef.current);
+        // only zoom if the mouse is in the plot area
+        if (x > margin.left && x < width - margin.right) {
+            const time = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>().invert(x);
+            timeRangeRef.current = timeRangeRef.current!.scale(transform.k, time);
+            zoomFactorRef.current = transform.k;
+            updatePlot(timeRangeRef.current);
+        }
     }
 
     /**
@@ -790,7 +793,7 @@ function ScatterChart(props: Props): JSX.Element {
             return magnifierSelection;
         }
         // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
-        else if(!visible && magnifierRef.current) {
+        else if ((!visible && magnifierRef.current) || tooltipRef.current.visible) {
             svg.on('mousemove', () => null);
             return undefined;
         }
@@ -892,7 +895,7 @@ function ScatterChart(props: Props): JSX.Element {
             return tracker;
         }
         // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
-        else if (!visible && trackerRef.current) {
+        else if ((!visible && trackerRef.current) || tooltipRef.current.visible) {
             svg.on('mousemove', () => null);
             return undefined;
         } else if (visible && trackerRef.current) {
@@ -970,7 +973,7 @@ function ScatterChart(props: Props): JSX.Element {
                 .scaleExtent([0, 10])
                 .translateExtent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
                 .on("zoom", () => {
-                    onZoom(d3.event.transform, d3.event.sourceEvent.offsetX -  margin.left);
+                    onZoom(d3.event.transform, d3.event.sourceEvent.offsetX - margin.left);
                 })
             ;
 
@@ -1005,11 +1008,13 @@ function ScatterChart(props: Props): JSX.Element {
                             .attr("clip-path", "url(#clip-series)")
                             .on(
                                 "mouseover",
-                                (datumArray, i, group) => handleShowTooltip(datumArray, series.name, group[i])
+                                (datumArray, i, group) =>
+                                    tooltipRef.current.visible ? handleShowTooltip(datumArray, series.name, group[i]) : null
                             )
                             .on(
                                 "mouseleave",
-                                (datumArray, i, group) => handleHideTooltip(group[i], series.name)
+                                (datumArray, i, group) =>
+                                    tooltipRef.current.visible ? handleHideTooltip(group[i], series.name) : null
                             ),
                         update => update,
                         exit => exit.remove()
@@ -1091,7 +1096,29 @@ function ScatterChart(props: Props): JSX.Element {
     // update the plot for tooltip, magnifier, or tracker if their visibility changes
     useEffect(
         () => {
-            tooltipRef.current.visible = tooltip.visible;
+            // update the reference to reflect the selection (only one is allowed)
+            if (tooltip.visible) {
+                tooltipRef.current.visible = true;
+                trackerRef.current = undefined;
+                magnifierRef.current = undefined;
+            }
+            else if (tracker.visible) {
+                tooltipRef.current.visible = false;
+                magnifierRef.current = undefined;
+            }
+            else if (magnifier.visible) {
+                tooltipRef.current.visible = false;
+                trackerRef.current = undefined;
+            }
+            // when no enhancements are selected, then make sure they are all off
+            else {
+                tooltipRef.current.visible = false;
+                trackerRef.current = undefined;
+                magnifierRef.current = undefined;
+                if (containerRef.current) {
+                    d3.select<SVGSVGElement, any>(containerRef.current).on('mousemove', () => null);
+                }
+            }
             seriesFilterRef.current = filter;
             updatePlot(timeRangeRef.current);
         },

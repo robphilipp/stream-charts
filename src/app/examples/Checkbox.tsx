@@ -17,6 +17,12 @@ interface Props {
     marginRight?: number;
 }
 
+/**
+ * Simple checkbox because native html checkbox doesn't allow any style changes
+ * @param {Props} props The properties from the parent
+ * @return {JSX.Element} The checkbox component
+ * @constructor
+ */
 export default function Checkbox(props: Props): JSX.Element {
 
     const {
@@ -71,7 +77,7 @@ export default function Checkbox(props: Props): JSX.Element {
             >{checked ? <span style={{
                 display: 'inline-block',
                 position: 'relative',
-                top: -4,
+                top: -5,
                 fontSize: width,
                 fontWeight: 800
             }}>&#10003;</span> : <span/>}</span>
