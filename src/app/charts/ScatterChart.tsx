@@ -131,9 +131,9 @@ interface Props {
 }
 
 /**
- *
- * @param {Props} props
- * @return {JSX.Element}
+ * Scatter chart with points connected by a line.
+ * @param {Props} props The properties from the parent
+ * @return {JSX.Element} The scatter chart
  * @constructor
  */
 function ScatterChart(props: Props): JSX.Element {
