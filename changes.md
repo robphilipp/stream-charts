@@ -1,5 +1,9 @@
 # change history
 
+## version 0.0.4 (bug fixes)
+1. Fixed raster chart controls so that when the magnifier is selected, and then the tooltip, the tooltip actually shows.
+2. Cleaned up the raster-chart example
+
 ## version 0.0.3 (bug fixes)
 1. Cleaned up a bunch of small bugs related to the selection of enhancements (tooltip, tracker, magnifier).
 2. Updated the test application style.
