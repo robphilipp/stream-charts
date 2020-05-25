@@ -143,7 +143,7 @@ function ScatterChart(props: Props): JSX.Element {
         height,
         backgroundColor = '#202020',
         minWeight = -1, maxWeight = 1,
-        tooltipValueLabel = 'weight',
+        tooltipValueLabel = 'y',
         minTime, maxTime, timeWindow,
         seriesList,
         seriesObservable,

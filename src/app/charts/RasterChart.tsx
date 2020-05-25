@@ -643,7 +643,6 @@ function RasterChart(props: Props): JSX.Element {
         }
         // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
         else if ((!visible && magnifierRef.current) || tooltipRef.current.visible) {
-        // else if (!visible && magnifierRef.current) {
             svg.on('mousemove', () => null);
             return undefined;
         }
