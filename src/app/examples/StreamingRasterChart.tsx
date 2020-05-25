@@ -1,11 +1,10 @@
 import * as React from 'react';
-import {useEffect, useRef, useState} from 'react';
+import {useRef, useState} from 'react';
 import {Datum, Series} from "../charts/datumSeries";
 import RasterChart from "../charts/RasterChart";
 import {ChartData, randomSpikeDataObservable} from "./randomData";
 import {Observable, Subscription} from "rxjs";
 import {regexFilter} from "../charts/regexFilter";
-import ScatterChart from "../charts/ScatterChart";
 import Checkbox from "./Checkbox";
 
 interface Visibility {
@@ -48,8 +47,6 @@ export interface SpikesChartData {
 function StreamingRasterChart(props: Props): JSX.Element {
     const {seriesList, timeWindow = 100, seriesHeight = 20, plotWidth = 500} = props;
 
-    const [liveData, setLiveData] = useState(seriesList);
-    const seriesRef = useRef<Array<Series>>(seriesList);
     const currentTimeRef = useRef<number>(0);
 
     const observableRef = useRef<Observable<ChartData>>(randomSpikeDataObservable(seriesList.length));
@@ -114,13 +111,11 @@ function StreamingRasterChart(props: Props): JSX.Element {
             <RasterChart
                 width={plotWidth}
                 height={seriesList.length * seriesHeight}
-                // seriesHeight={seriesHeight}
-                seriesList={liveData}
-                // seriesList={liveData.filter(series => series.name.match(filter))}
+                seriesList={seriesList}
                 seriesObservable={observableRef.current}
                 onSubscribe={subscription => subscriptionRef.current = subscription}
                 onUpdateTime={(t: number) => {
-                    if(t > 1000) subscriptionRef.current!.unsubscribe()
+                    if(t > 10000) subscriptionRef.current!.unsubscribe()
                 }}
                 minTime={Math.max(0, currentTimeRef.current - timeWindow)}
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}

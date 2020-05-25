@@ -1,6 +1,6 @@
 import {interval, Observable} from "rxjs";
 import {Datum} from "../charts/datumSeries";
-import {map, max, pairwise, scan} from "rxjs/operators";
+import {map, scan} from "rxjs/operators";
 
 const UPDATE_PERIOD_MS = 25;
 

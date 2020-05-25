@@ -131,9 +131,9 @@ interface Props {
 }
 
 /**
- *
- * @param {Props} props
- * @return {JSX.Element}
+ * Scatter chart with points connected by a line.
+ * @param {Props} props The properties from the parent
+ * @return {JSX.Element} The scatter chart
  * @constructor
  */
 function ScatterChart(props: Props): JSX.Element {
@@ -143,7 +143,7 @@ function ScatterChart(props: Props): JSX.Element {
         height,
         backgroundColor = '#202020',
         minWeight = -1, maxWeight = 1,
-        tooltipValueLabel = 'weight',
+        tooltipValueLabel = 'y',
         minTime, maxTime, timeWindow,
         seriesList,
         seriesObservable,
@@ -291,7 +291,7 @@ function ScatterChart(props: Props): JSX.Element {
      */
     function onZoom(transform: ZoomTransform, x: number): void {
         // only zoom if the mouse is in the plot area
-        if (x > margin.left && x < width - margin.right) {
+        if (x > 0 && x < width - margin.right) {
             const time = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>().invert(x);
             timeRangeRef.current = timeRangeRef.current!.scale(transform.k, time);
             zoomFactorRef.current = transform.k;
