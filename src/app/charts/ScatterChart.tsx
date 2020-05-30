@@ -173,7 +173,6 @@ function ScatterChart(props: Props): JSX.Element {
     const mainGRef = useRef<Selection<SVGGElement, any, null, undefined>>();
 
     const magnifierRef = useRef<MagnifierSelection>();
-    // const magnifierAxisRef = useRef<Selection<BaseType, number, BaseType, any>>();
     const magnifierXAxisRef = useRef<LineSelection>();
     const magnifierXAxisLabelRef = useRef<Selection<SVGTextElement, any, SVGGElement, undefined>>();
     const magnifierYAxisRef = useRef<LineSelection>();
@@ -849,7 +848,7 @@ function ScatterChart(props: Props): JSX.Element {
     function magnifierLensAxisLabels(ticks: Array<number>, selection: GSelection): Selection<SVGTextElement, number, SVGGElement, any> {
         return selection
             .selectAll('text')
-            .data([-5, -1, 0, 1, 5])
+            .data(ticks)
             .enter()
             .append('text')
             .attr('fill', axisLabelFont.color)

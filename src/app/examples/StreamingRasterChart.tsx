@@ -115,14 +115,14 @@ function StreamingRasterChart(props: Props): JSX.Element {
                 seriesObservable={observableRef.current}
                 onSubscribe={subscription => subscriptionRef.current = subscription}
                 onUpdateTime={(t: number) => {
-                    if(t > 10000) subscriptionRef.current!.unsubscribe()
+                    if(t > 1000) subscriptionRef.current!.unsubscribe()
                 }}
                 minTime={Math.max(0, currentTimeRef.current - timeWindow)}
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 timeWindow={timeWindow}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 tooltip={{visible: visibility.tooltip}}
-                magnifier={{visible: visibility.magnifier}}
+                magnifier={{visible: visibility.magnifier, magnification: 5}}
                 tracker={{visible: visibility.tracker}}
                 filter={filter}
             />

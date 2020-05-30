@@ -83,6 +83,8 @@ interface Axes {
 type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>;
 type SvgSelection = Selection<SVGSVGElement, any, null, undefined>;
 type MagnifierSelection = Selection<SVGRectElement, Datum, null, undefined>;
+type LineSelection = Selection<SVGLineElement, any, SVGGElement, undefined>;
+type GSelection = Selection<SVGGElement, any, null, undefined>;
 type TrackerSelection = Selection<SVGLineElement, Datum, null, undefined>;
 type TextSelection = Selection<SVGTextElement, any, HTMLElement, any>;
 
@@ -158,7 +160,11 @@ function RasterChart(props: Props): JSX.Element {
     const containerRef = useRef<SVGSVGElement>(null);
     const mainGRef = useRef<Selection<SVGGElement, any, null, undefined>>();
     const spikesRef = useRef<Selection<SVGGElement, Series, SVGGElement, any>>();
+
     const magnifierRef = useRef<Selection<SVGRectElement, Datum, null, undefined>>();
+    const magnifierXAxisRef = useRef<LineSelection>();
+    const magnifierXAxisLabelRef = useRef<Selection<SVGTextElement, any, SVGGElement, undefined>>();
+
     const trackerRef = useRef<Selection<SVGLineElement, Datum, null, undefined>>();
 
     const mouseCoordsRef = useRef<number>(0);
@@ -465,8 +471,7 @@ function RasterChart(props: Props): JSX.Element {
             label.attr('x', Math.min(plotDimensions.width + margin.left - textWidthOf(label), x));
 
             const axesMagnifier: BarMagnifier = barMagnifierWith(deltaX, magnifier.magnification, x);
-            svg
-                .selectAll<SVGLineElement, number>('.magnifier-axis-ticks')
+            magnifierXAxisRef.current!
                 .attr('opacity', isMouseInPlot ? 1 : 0)
                 .attr('stroke', tooltipRef.current.borderColor)
                 .attr('stroke-width', 0.75)
@@ -476,6 +481,12 @@ function RasterChart(props: Props): JSX.Element {
                 .attr('y2', y)
             ;
 
+            magnifierXAxisLabelRef.current!
+                .attr('opacity', isMouseInPlot ? 1 : 0)
+                .attr('x', datum => axesMagnifier.magnify(x + datum * deltaX / 5).xPrime - 12)
+                .attr('y', datum => y + 20)
+                .text(datum => Math.round(axesRef.current!.xScale.invert(x - margin.left + datum * deltaX / 5)))
+            ;
 
             //
             if (isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
@@ -507,6 +518,7 @@ function RasterChart(props: Props): JSX.Element {
                     .attr('x', margin.left)
                     .attr('width', 0)
                 ;
+
                 mouseCoordsRef.current = 0;
             }
         }
@@ -622,18 +634,12 @@ function RasterChart(props: Props): JSX.Element {
                 .attr('opacity', 0)
                 .text(() => '')
 
-            const xLensAxisTicks = svg.append('g').attr('id', 'x-lens-axis-ticks');
+            const lensTickIndexes = d3.range(-5, 6, 1);
+            const lensLabelIndexes = [-5, -1, 1, 5];
 
-            xLensAxisTicks
-                .selectAll('line')
-                .data(d3.range(-5, 6, 1))
-                .enter()
-                .append('line')
-                .attr('class', 'magnifier-axis-ticks')
-                .attr('stroke', tooltipRef.current.borderColor)
-                .attr('stroke-width', 0.75)
-                .attr('opacity', 0)
-            ;
+            const xLensAxisTicks = svg.append('g').attr('id', 'x-lens-axis-ticks-raster');
+            magnifierXAxisRef.current = magnifierLensAxisTicks('x-lens-ticks', lensTickIndexes, xLensAxisTicks);
+            magnifierXAxisLabelRef.current = magnifierLensAxisLabels(lensLabelIndexes, xLensAxisTicks);
 
 
             // add the handler for the magnifier as the mouse moves
@@ -656,6 +662,49 @@ function RasterChart(props: Props): JSX.Element {
             svg.on('mousemove', () => handleShowMagnify(svg));
         }
         return magnifierRef.current;
+    }
+
+    /**
+     * Creates the svg node for a magnifier lens axis (either x or y) ticks and binds the ticks to the nodes
+     * @param {string} className The node's class name for selection
+     * @param {Array<number>} ticks The ticks represented as an array of integers. An integer of 0 places the
+     * tick on the center of the lens. An integer of ± array_length / 2 - 1 places the tick on the lens boundary.
+     * @param {GSelection} selection The svg g node holding these axis ticks
+     * @return {LineSelection} A line selection these ticks
+     */
+    function magnifierLensAxisTicks(className: string, ticks: Array<number>, selection: GSelection): LineSelection {
+        return  selection
+            .selectAll('line')
+            .data(ticks)
+            .enter()
+            .append('line')
+            .attr('class', className)
+            .attr('stroke', tooltipRef.current.borderColor)
+            .attr('stroke-width', 0.75)
+            .attr('opacity', 0)
+            ;
+    }
+
+    /**
+     * Creates the svg text nodes for the magnifier lens axis (either x or y) tick labels and binds the text nodes
+     * to the tick data.
+     * @param {Array<number>} ticks An array of indexes defining where the ticks are to be place. The indexes refer
+     * to the ticks handed to the `magnifierLensAxis` and have the same meaning visa-vie their locations
+     * @param {GSelection} selection The selection of the svg g node holding the axis ticks and these labels
+     * @return {Selection<SVGTextElement, number, SVGGElement, any>} The selection of these tick labels
+     */
+    function magnifierLensAxisLabels(ticks: Array<number>, selection: GSelection): Selection<SVGTextElement, number, SVGGElement, any> {
+        return selection
+            .selectAll('text')
+            .data(ticks)
+            .enter()
+            .append('text')
+            .attr('fill', axisLabelFont.color)
+            .attr('font-family', axisLabelFont.family)
+            .attr('font-size', axisLabelFont.size)
+            .attr('font-weight', axisLabelFont.weight)
+            .text(() => '')
+            ;
     }
 
     /**
