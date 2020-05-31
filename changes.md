@@ -1,5 +1,9 @@
 # change history
 
+## version 0.0.5 (raster magnifier ticks and labels; test)
+1. Added ticks and labels for the time-axis of the bar-magnifier available in the raster chart.
+2. Added a number of tests.
+
 ## version 0.0.4 (bug fixes)
 1. Fixed raster chart controls so that when the magnifier is selected, and then the tooltip, the tooltip actually shows.
 2. Cleaned up the raster-chart example

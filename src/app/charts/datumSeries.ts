@@ -23,10 +23,10 @@ export interface Series {
 /**
  * Creates a series from the name and the optional array of `Datum`.
  * @param {string} name The name of the series (i.e. neuron)
- * @param {Datum[]} data The array of (time, value) pairs, where the value is the spike value (in mV)
+ * @param {Array<Datum>} data The array of (time, value) pairs, where the value is the spike value (in mV)
  * @return {Series} A `Series` for object that can be used by the `RasterChart`
  */
-export function seriesFrom(name: string, data: Datum[] = []): Series {
+export function seriesFrom(name: string, data: Array<Datum> = []): Series {
     return {
         name: name,
         data: data,

@@ -111,7 +111,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                 seriesObservable={observableRef.current}
                 onSubscribe={subscription => subscriptionRef.current = subscription}
                 onUpdateTime={(t: number) => {
-                    if(t > 10000) subscriptionRef.current!.unsubscribe()
+                    if(t > 1000) subscriptionRef.current!.unsubscribe()
                 }}
                 minTime={Math.max(0, currentTimeRef.current - timeWindow)}
                 maxTime={Math.max(currentTimeRef.current, timeWindow)}
@@ -119,7 +119,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 tooltip={{visible: visibility.tooltip}}
                 tooltipValueLabel='weight'
-                magnifier={{visible: visibility.magnifier, magnification: magnification}}
+                magnifier={{visible: visibility.magnifier, magnification: magnification, radius: 150}}
                 tracker={{visible: visibility.tracker}}
                 filter={filter}
                 // seriesColors={new Map()}
