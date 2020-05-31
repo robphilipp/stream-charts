@@ -138,7 +138,6 @@ function RasterChart(props: Props): JSX.Element {
         minTime, maxTime, timeWindow,
         width,
         height,
-        // seriesHeight,
         backgroundColor = '#202020',
     } = props;
 
@@ -484,11 +483,12 @@ function RasterChart(props: Props): JSX.Element {
             magnifierXAxisLabelRef.current!
                 .attr('opacity', isMouseInPlot ? 1 : 0)
                 .attr('x', datum => axesMagnifier.magnify(x + datum * deltaX / 5).xPrime - 12)
-                .attr('y', datum => y + 20)
+                .attr('y', _ => y + 20)
                 .text(datum => Math.round(axesRef.current!.xScale.invert(x - margin.left + datum * deltaX / 5)))
             ;
 
-            //
+            // if the mouse is in the plot area and it has moved by at least 1 pixel, then show/update
+            // the bar magnifier
             if (isMouseInPlot && Math.abs(x - mouseCoordsRef.current) >= 1) {
                 const barMagnifier: BarMagnifier = barMagnifierWith(deltaX, 3 * zoomFactorRef.current, x - margin.left);
                 svg
@@ -506,7 +506,9 @@ function RasterChart(props: Props): JSX.Element {
                     .attr('shape-rendering', 'crispEdges')
                 ;
                 mouseCoordsRef.current = x;
-            } else if (!isMouseInPlot) {
+            }
+            // mouse is no longer in plot, hide the magnifier
+            else if (!isMouseInPlot) {
                 svg
                     .selectAll<SVGSVGElement, Datum>('.spikes-lines')
                     .attr('x1', datum => xFrom(datum))
