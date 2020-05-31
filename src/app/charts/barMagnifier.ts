@@ -55,6 +55,14 @@ export interface BarMagnifier {
  */
 export function barMagnifierWith(radius: number, power: number, center: number): BarMagnifier {
 
+    if (power < 1) {
+        throw Error('bar magnifier power must be greater than or equal to 1');
+    }
+
+    if (radius <= 0) {
+        throw Error('bar magnifier radius (width) must be greater than or equal to 0');
+    }
+
     /**
      * Recalculates the magnification parameters
      * @return {(x: number) => number} A function that takes an x-value and transforms it to the value that
