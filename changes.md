@@ -1,5 +1,9 @@
 # change history
 
+## version 0.0.6 (fixed tests, cleaned up radial magnifier)
+1. Fixed all the test conditions to use `expect` properly :)
+2. Cleaned up the limiting condition for the radial magnifier.
+
 ## version 0.0.5 (raster magnifier ticks and labels; test)
 1. Added ticks and labels for the time-axis of the bar-magnifier available in the raster chart.
 2. Added a number of tests.
