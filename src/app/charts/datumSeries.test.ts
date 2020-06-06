@@ -10,15 +10,15 @@ describe('should be able to create an empty series', () => {
     });
 
     test('an empty series should have 0 length', () => {
-        expect(emptySeries('test1').length() === 0);
+        expect(emptySeries('test1').length()).toBe(0);
     });
 
     test('an empty series should not have any data', () => {
-        expect(emptySeries('test1').data.length === 0);
+        expect(emptySeries('test1').data.length).toBe(0);
     });
 
     test('an empty series should have the specified name', () => {
-        expect(emptySeries('test1').name === 'test1');
+        expect(emptySeries('test1').name).toBe('test1');
     });
 });
 
@@ -42,18 +42,19 @@ describe('should be able to create a series from data', () => {
     });
 
     test('series name should be test2', () => {
-        expect(series.name === 'test2')
+        expect(series.name).toEqual('test2')
     });
 
     test('series should have 10 points', () => {
-        expect(series.length() === 10)
+        expect(series.length()).toBe(10);
     });
 
     test('last value in series should be (10, 100)', () => {
-        expect(series.last().map(last => last === {time: 10, value: 100}).getOrElse(false))
+        const lastElement = series.last().getOrElse({time: NaN, value: NaN});
+        expect(lastElement).toEqual({time: 10, value: 100});
     });
 
     test('series data should equal original data', () => {
-        expect(series.data === data)
+        expect(series.data).toEqual(data);
     });
 });

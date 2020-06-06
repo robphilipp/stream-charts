@@ -7,10 +7,10 @@ describe('adjusted dimension should correct for margins', () => {
     const dimensions = adjustedDimensions(width, height, margins);
 
     test('adjusted width should have the left and right margins removed', () => {
-        expect(dimensions.width === width - margins.right - margins.left);
+        expect(dimensions.width).toBe(width - margins.right - margins.left);
     });
 
     test('adjusted height should have the top and bottom margins removed', () => {
-        expect(dimensions.height === height - margins.top - margins.bottom);
+        expect(dimensions.height).toBe(height - margins.top - margins.bottom);
     });
 })

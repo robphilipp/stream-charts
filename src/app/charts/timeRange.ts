@@ -43,7 +43,9 @@ export function TimeRange(_start: number, _end: number): TimeRangeType {
         }
 
         /**
-         * Scales the time-range by the specified scale factor from the specified time-location
+         * Scales the time-range by the specified scale factor from the specified time-location. The equations
+         * are written so that the zooming (scaling) occurs at the specified time, and expands/contracts equally
+         * from that time.
          * @param {number} factor The scale factor
          * @param {number} time The time from which to scale the interval
          */

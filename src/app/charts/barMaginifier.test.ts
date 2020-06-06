@@ -16,74 +16,75 @@ describe('bar magnifier with power 1 should not magnify', () => {
     const magnifier = barMagnifierWith(10, 1, 0);
 
     test('magnifier should have the input settings', () => {
-        expect(magnifier.power === 1);
-        expect(magnifier.radius === 10);
-        expect(magnifier.center === 0);
+        expect(magnifier.power).toBe(1);
+        expect(magnifier.radius).toBe(10);
+        expect(magnifier.center).toBe(0);
     });
 
-    test('x value should remain unchanged when in magnifier', () => {
-        expect(magnifier.magnify(3).xPrime === 3)
-        expect(magnifier.magnify(3).magnification === 1)
-        expect(magnifier.magnify(0).xPrime === 0)
+    test('x value should not change when in magnifier', () => {
+        expect(magnifier.magnify(3).xPrime).toBe(3);
+        expect(magnifier.magnify(3).magnification).toBe(1);
+        expect(magnifier.magnify(0).xPrime).toBe(0);
+        expect(magnifier.magnify(0).magnification).toBe(1);
     })
 
     test('x value should remain unchanged when outside of magnifier', () => {
-        expect(magnifier.magnify(13).xPrime === 13)
-        expect(magnifier.magnify(13).magnification === 1)
+        expect(magnifier.magnify(13).xPrime).toBe(13);
+        expect(magnifier.magnify(13).magnification).toBe(1);
     })
 })
 
 test('bar magnifier identity function should always return the specified values', () => {
     const magnifier = barMagnifierWith(100, 10, 0);
-    expect(magnifier.magnify(54).xPrime === 54);
-    expect(magnifier.magnify(54).magnification === 1);
+    expect(magnifier.identity(54).xPrime).toBe(54);
+    expect(magnifier.identity(54).magnification).toBe(1);
 })
 
 describe('bar magnifier with power greater than 1 should fisheye', () => {
     const magnifier = barMagnifierWith(100, 5, 0);
 
     test('points on the radius should be unchanged', () => {
-        expect(magnifier.magnify(100).xPrime === 100);
-        expect(magnifier.magnify(100).magnification === 1);
-        expect(magnifier.magnify(-100).xPrime === -100);
-        expect(magnifier.magnify(-100).magnification === 1);
+        expect(magnifier.magnify(100).xPrime).toBe(100);
+        expect(magnifier.magnify(100).magnification).toBe(1);
+        expect(magnifier.magnify(-100).xPrime).toBe(-100);
+        expect(magnifier.magnify(-100).magnification).toBe(1);
     });
 
     test('the center points should be unchanged', () => {
-        expect(magnifier.magnify(0).xPrime === 0);
-        expect(magnifier.magnify(0).magnification === 1);
+        expect(magnifier.magnify(0).xPrime).toBe(0);
+        expect(magnifier.magnify(0).magnification).toBe(5);
     });
 
     test('points within the radius should be magnified', () => {
-        expect(magnifier.magnify(5).xPrime > 5);
-        expect(magnifier.magnify(5).magnification > 1);
-        expect(magnifier.magnify(50).xPrime > 50);
-        expect(magnifier.magnify(50).magnification > 1);
-        expect(magnifier.magnify(99).xPrime > 99);
-        expect(magnifier.magnify(99).xPrime < 100);
-        expect(magnifier.magnify(99).magnification > 1);
+        expect(magnifier.magnify(5).xPrime).toBeGreaterThan(5);
+        expect(magnifier.magnify(5).magnification).toBeGreaterThan(1);
+        expect(magnifier.magnify(50).xPrime).toBeGreaterThan(50);
+        expect(magnifier.magnify(50).magnification).toBeGreaterThan(1);
+        expect(magnifier.magnify(99).xPrime).toBeGreaterThan(99);
+        expect(magnifier.magnify(99).xPrime).toBeLessThan(100);
+        expect(magnifier.magnify(99).magnification).toBeGreaterThan(1);
 
-        expect(magnifier.magnify(-5).xPrime < -5);
-        expect(magnifier.magnify(-5).magnification > 1);
-        expect(magnifier.magnify(-50).xPrime < -50);
-        expect(magnifier.magnify(-50).magnification > 1);
-        expect(magnifier.magnify(-99).xPrime < -99);
-        expect(magnifier.magnify(-99).xPrime > -100);
-        expect(magnifier.magnify(-99).magnification > 1);
+        expect(magnifier.magnify(-5).xPrime).toBeLessThan(-5);
+        expect(magnifier.magnify(-5).magnification).toBeGreaterThan(1);
+        expect(magnifier.magnify(-50).xPrime).toBeLessThan(-50);
+        expect(magnifier.magnify(-50).magnification).toBeGreaterThan(1);
+        expect(magnifier.magnify(-99).xPrime).toBeLessThan(-99);
+        expect(magnifier.magnify(-99).xPrime).toBeGreaterThan(-100);
+        expect(magnifier.magnify(-99).magnification).toBeGreaterThan(1);
     });
 
     test('points closer to the center should be more spread out', () => {
         const xp5 = magnifier.magnify(5).xPrime;
         const xp10 = magnifier.magnify(10).xPrime;
-        expect(xp5 > xp10 - xp5);
-        expect(xp10 - xp5 > 5);
+        expect(xp5).toBeGreaterThan(xp10 - xp5);
+        expect(xp10 - xp5).toBeGreaterThan(5);
     })
 
     test('points closer to the edge should be more bunched up', () => {
         const xp49 = magnifier.magnify(49).xPrime;
         const xp98 = magnifier.magnify(98).xPrime;
-        expect( xp49 > xp98 - xp49);
-        expect(xp98 - xp49 < 49);
+        expect( xp49).toBeGreaterThan(xp98 - xp49);
+        expect(xp98 - xp49).toBeLessThan(49);
     })
 })
 
