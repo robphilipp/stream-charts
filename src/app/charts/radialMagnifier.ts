@@ -101,10 +101,9 @@ export function radialMagnifierWith(radius: number, power: number, center: [numb
                 magnification: 1
             };
 
-            if (dd === 0) return {
+            if (dd < 1e-6) return {
                 xPrime: x,
                 yPrime: y,
-                // magnification: Math.max(1, power)
                 // set the magnification to the value in the limit as dd -> 0
                 magnification: 0.25 + 0.75 * expPower / (expPower - 1)
             };
