@@ -61,6 +61,14 @@ export interface RadialMagnifier {
  */
 export function radialMagnifierWith(radius: number, power: number, center: [number, number]): RadialMagnifier {
 
+    if (power < 1) {
+        throw Error('radial magnifier power must be greater than or equal to 1');
+    }
+
+    if (radius <= 0) {
+        throw Error('radial magnifier radius must be greater than or equal to 0');
+    }
+
     /**
      * Recalculates the magnification parameters
      * @return {(x: number) => number} A function that takes an x-value and transforms it to the value that
