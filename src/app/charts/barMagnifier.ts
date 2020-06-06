@@ -26,7 +26,7 @@ export interface BarMagnifier {
      * @param {number} x The x-coordinate to be transformed
      * @return {LensTransformation} The original x-coordinate and a magnification of 1
      */
-    identify: (x: number) => LensTransformation;
+    identity: (x: number) => LensTransformation;
 
     // the radius of the lens
     radius: number;
@@ -91,7 +91,7 @@ export function barMagnifierWith(radius: number, power: number, center: number):
             // lens and so there is no magnification
             if (dd >= radius) return {xPrime: x, magnification: 1};
 
-            const magnification = k0 * (1 - Math.exp(-dd * k1)) / dd * .75 + .25;
+            const magnification = 0.25 + 0.75 * k0 * (1 - Math.exp(-dd * k1)) / dd;
             return {xPrime: center + dx * magnification, magnification: magnification};
         }
 
@@ -106,7 +106,7 @@ export function barMagnifierWith(radius: number, power: number, center: number):
 
         return {
             magnify: magnifier,
-            identify: identity,
+            identity: identity,
             radius: radius,
             power: power,
             center: center

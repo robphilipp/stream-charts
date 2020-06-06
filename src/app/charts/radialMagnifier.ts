@@ -31,7 +31,7 @@ export interface RadialMagnifier {
      * @param {number} y The y-coordinate of the point to be transformed
      * @return {LensTransformation} The original x-coordinate and a magnification of 1
      */
-    identify: (x: number, y: number) => LensTransformation2d;
+    identity: (x: number, y: number) => LensTransformation2d;
 
     // the radius of the lens
     radius: number;
@@ -61,6 +61,14 @@ export interface RadialMagnifier {
  */
 export function radialMagnifierWith(radius: number, power: number, center: [number, number]): RadialMagnifier {
 
+    if (power < 1) {
+        throw Error('radial magnifier power must be greater than or equal to 1');
+    }
+
+    if (radius <= 0) {
+        throw Error('radial magnifier radius must be greater than or equal to 0');
+    }
+
     /**
      * Recalculates the magnification parameters
      * @return {(x: number) => number} A function that takes an x-value and transforms it to the value that
@@ -68,7 +76,7 @@ export function radialMagnifierWith(radius: number, power: number, center: [numb
      */
     function rescale(): RadialMagnifier {
         const expPower = Math.exp(Math.max(1, power));
-        const k0 = expPower / (expPower - 1) * radius;
+        const k0 = radius * expPower / (expPower - 1);
         const k1 = power / radius;
 
         /**
@@ -93,13 +101,14 @@ export function radialMagnifierWith(radius: number, power: number, center: [numb
                 magnification: 1
             };
 
-            if (dd === 0) return {
+            if (dd < 1e-6) return {
                 xPrime: x,
                 yPrime: y,
-                magnification: Math.max(1, power)
+                // set the magnification to the value in the limit as dd -> 0
+                magnification: 0.25 + 0.75 * expPower / (expPower - 1)
             };
 
-            const magnification = k0 * (1 - Math.exp(-dd * k1)) / dd * .75 + .25;
+            const magnification = 0.25 + 0.75 * k0 * (1 - Math.exp(-dd * k1)) / dd;
             return {
                 xPrime: cx + dx * magnification,
                 yPrime: cy + dy * magnification,
@@ -119,7 +128,7 @@ export function radialMagnifierWith(radius: number, power: number, center: [numb
 
         return {
             magnify: magnifier,
-            identify: identity,
+            identity: identity,
             radius: radius,
             power: Math.max(1, power),
             center: center
