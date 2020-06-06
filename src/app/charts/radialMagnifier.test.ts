@@ -124,7 +124,7 @@ describe('radial magnifier with power greater than 1 should fisheye', () => {
 
             const {xPrime: xm5, yPrime: ym5} = magnified5;
             const {xPrime: xm10, yPrime: ym10} = magnified10;
-            expect(length(xm5, xm5)).toBeGreaterThan(length(xm10, ym10) - length(xm5, ym5));
+            expect(length(xm5, ym5)).toBeGreaterThan(length(xm10, ym10) - length(xm5, ym5));
             expect(length(xm10, ym10) - length(xm5, ym5)).toBeGreaterThan(5);
         }
     })
@@ -146,7 +146,7 @@ describe('radial magnifier with power greater than 1 should fisheye', () => {
 
             const {xPrime: xm49, yPrime: ym49} = magnified49;
             const {xPrime: xm98, yPrime: ym98} = magnified98;
-            expect(length(xm49, xm49)).toBeGreaterThan(length(xm98, ym98) - length(xm49, ym49));
+            expect(length(xm49, ym49)).toBeGreaterThan(length(xm98, ym98) - length(xm49, ym49));
             expect(length(xm98, ym98) - length(xm49, ym49)).toBeLessThan(49);
         }
 

@@ -91,7 +91,7 @@ export function barMagnifierWith(radius: number, power: number, center: number):
             // lens and so there is no magnification
             if (dd >= radius) return {xPrime: x, magnification: 1};
 
-            const magnification = k0 * (1 - Math.exp(-dd * k1)) / dd * .75 + .25;
+            const magnification = 0.25 + 0.75 * k0 * (1 - Math.exp(-dd * k1)) / dd;
             return {xPrime: center + dx * magnification, magnification: magnification};
         }
 

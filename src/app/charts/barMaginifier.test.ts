@@ -22,8 +22,8 @@ describe('bar magnifier with power 1 should not magnify', () => {
     });
 
     test('x value should not change when in magnifier', () => {
-        expect(magnifier.magnify(3).xPrime).toBe(3);
-        expect(magnifier.magnify(3).magnification).toBe(1);
+        expect(magnifier.magnify(3).xPrime).toBeCloseTo(3.8251465, 6);
+        expect(magnifier.magnify(3).magnification).toBeCloseTo(1.2750488443161716, 6);
         expect(magnifier.magnify(0).xPrime).toBe(0);
         expect(magnifier.magnify(0).magnification).toBe(1);
     })
