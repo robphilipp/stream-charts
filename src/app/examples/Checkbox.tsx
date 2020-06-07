@@ -54,12 +54,6 @@ export default function Checkbox(props: Props): JSX.Element {
             }}
             onClick={() => onChange(!checked)}
         >
-            <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => {}}
-                style={{display: 'none'}}
-            />
             <span
                 style={{
                     display: 'inline-block',

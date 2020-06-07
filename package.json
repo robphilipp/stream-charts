@@ -1,7 +1,9 @@
 {
   "name": "stream-charts",
-  "version": "0.0.6",
-  "private": true,
+  "version": "0.0.7",
+  "homepage": "https://github.com/robphilipp/stream-charts",
+  "license": "MIT",
+  "repository": "github:robphilipp/stream-charts",
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.4.0",
