@@ -1,5 +1,9 @@
 # change history
 
+## version 0.0.7 (updates for npm)
+1. Added repo information to the package.json for publishing to npm
+2. Removed the `private` field from package.json
+
 ## version 0.0.6 (fixed tests, cleaned up radial magnifier)
 1. Fixed all the test conditions to use `expect` properly :)
 2. Cleaned up the limiting condition for the radial magnifier.
