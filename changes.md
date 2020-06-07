@@ -1,5 +1,8 @@
 # change history
 
+## version 0.0.8 (suppressed warning)
+Suppressed react-hook warning about exhaustive deps and added comment describe why this is needed and ok.
+
 ## version 0.0.7 (updates for npm)
 1. Added repo information to the package.json for publishing to npm
 2. Removed the `private` field from package.json
