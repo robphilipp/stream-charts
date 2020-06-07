@@ -1086,6 +1086,13 @@ function ScatterChart(props: Props): JSX.Element {
 
             // stop the stream on dismount
             return () => subscription.unsubscribe();
+
+            // we really, really only want this called when the component mounts, and there are
+            // no stale closures in the this. recall that d3 manages the updates to the chart, and
+            // react is only used when certain props change (e.g. magnifier, tracker, tooltip visibility
+            // state, magnification power)
+            //
+            // eslint-disable-next-line react-hooks/exhaustive-deps
         }, []
     );
 
