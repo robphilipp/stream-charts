@@ -31,7 +31,7 @@ $ npm install stream-charts
 
 For the neuron raster chart (see [example](src/app/examples/StreamingRasterChart.tsx))
 
-```typescript jsx
+```typescript
 import RasterChart from "../charts/RasterChart";
 .
 .
