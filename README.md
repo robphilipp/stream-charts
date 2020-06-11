@@ -145,12 +145,6 @@ The *style* properties common to all plots are listed in the table below.
 | axesLabelFont | optional | `{size: number, color: string, family: string, weight: number}` | The font used to display the labels for the axes and ticks | `{size: 14, color: '#fff'}` |
 | backgroundColor | optional | string | The background color of the plot. Technically, this property is carried over to the SVG element holding the entire plot | `'#202020'` |
 
-| Name |  | Type | Description | Example |
-| ---- | --- | -------- | ----------- | ------- |
-| tooltip | optional | [TooltipStyle](src/app/charts/TooltipStyle.ts) | Styling for the tooltip control when it is active | `{visible: false, fontSize: 12, fontColor: '#d2933f'}`|
-| magnifier | optional | [RadialMagnifier](src/app/charts/ScatterChart.tsx) or [BarMagnifier](src/app/charts/RasterChart.tsx) | Defines the style of the radial magnifier used for the scatter chart and the bar magnifier used for the raster chart | `{visible: true}` |
-| tracker | optional | [TrackerStyle](src/app/charts/TrackerStyle.ts) | Style of the tracker line that draws a vertical line at the time represented by the current mouse position and shows that time, when the mouse is in the plot area. | `{visible: false, timeWindow: 50}` |
-
 #### data
 
 The *data* properties define the data source, processing, and constraints.
@@ -310,12 +304,12 @@ Please note that the font style of the tracker text is controlled by the axis-la
 
 Install the dependencies.
 
-```shell script
+```
 $ npm install
 ```
 
 Run the development server, which should fire up a browser and load the example app.
-```shell script
+```
 $ npm start
 ```
 
