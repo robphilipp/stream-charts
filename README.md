@@ -24,7 +24,7 @@ Please see [change history](changes.md) for a history of changes.
 These charts are currently still under development.
 
 ## quick start
-```shell script
+```
 $ npm install stream-charts
 ```
 
