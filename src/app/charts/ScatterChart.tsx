@@ -9,6 +9,7 @@ import {Observable, Subscription} from "rxjs";
 import {ChartData} from "../examples/randomData";
 import {LensTransformation2d, RadialMagnifier, radialMagnifierWith} from "./radialMagnifier";
 import {windowTime} from "rxjs/operators";
+import {defaultTrackerStyle, TrackerStyle} from "./TrackerStyle";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultAxesStyle = {color: '#d2933f'};
@@ -54,22 +55,6 @@ interface MagnifiedData {
     datum: [number, number];
     lens: LensTransformation2d;
 }
-
-interface TrackerStyle {
-    visible: boolean;
-    timeWindow: number;
-    magnification: number;
-    color: string,
-    lineWidth: number,
-}
-
-const defaultTrackerStyle: TrackerStyle = {
-    visible: false,
-    timeWindow: 50,
-    magnification: 1,
-    color: '#d2933f',
-    lineWidth: 2,
-};
 
 /**
  * Properties for rendering the line-magnifier lens
@@ -656,8 +641,8 @@ function ScatterChart(props: Props): JSX.Element {
 
                 const axesMagnifier: RadialMagnifier = radialMagnifierWith(magnifier.radius, magnifier.magnification, [x, y]);
                 magnifierXAxisRef.current!
-                    .attr('stroke', tooltipRef.current.borderColor)
-                    .attr('stroke-width', 0.75)
+                    .attr('stroke', magnifier.color)
+                    .attr('stroke-width', magnifier.lineWidth)
                     .attr('opacity', 0.75)
                     .attr('x1', datum => axesMagnifier.magnify(x + datum * magnifier.radius / 5, y).xPrime)
                     .attr('x2', datum => axesMagnifier.magnify(x + datum * magnifier.radius / 5, y).xPrime)
@@ -672,8 +657,8 @@ function ScatterChart(props: Props): JSX.Element {
                 ;
 
                 magnifierYAxisRef.current!
-                    .attr('stroke', tooltipRef.current.borderColor)
-                    .attr('stroke-width', 0.75)
+                    .attr('stroke', magnifier.color)
+                    .attr('stroke-width', magnifier.lineWidth)
                     .attr('opacity', 0.75)
                     .attr('x1', datum => axesMagnifier.magnify(x - magnifier.radius * (1 - Math.abs(datum / 5)) / 40, y).xPrime - 2)
                     .attr('x2', datum => axesMagnifier.magnify(x + magnifier.radius * (1 - Math.abs(datum / 5)) / 40, y).xPrime + 2)
@@ -808,8 +793,8 @@ function ScatterChart(props: Props): JSX.Element {
         svg
             .append('line')
             .attr('id', className)
-            .attr('stroke', tooltipRef.current.borderColor)
-            .attr('stroke-width', 0.75)
+            .attr('stroke', magnifier.color)
+            .attr('stroke-width', magnifier.lineWidth)
             .attr('opacity', 0)
     }
 
@@ -828,8 +813,8 @@ function ScatterChart(props: Props): JSX.Element {
             .enter()
             .append('line')
             .attr('class', className)
-            .attr('stroke', tooltipRef.current.borderColor)
-            .attr('stroke-width', 0.75)
+            .attr('stroke', magnifier.color)
+            .attr('stroke-width', magnifier.lineWidth)
             .attr('opacity', 0)
             ;
     }

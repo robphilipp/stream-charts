@@ -1,7 +1,7 @@
 {
   "name": "stream-charts",
   "version": "0.0.9-SNAPSHOT",
-  "homepage": "https://github.com/robphilipp/stream-charts",
+  "homepage": "https://robphilipp.github.io/stream-charts/",
   "license": "MIT",
   "repository": "github:robphilipp/stream-charts",
   "dependencies": {

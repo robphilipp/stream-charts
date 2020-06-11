@@ -9,6 +9,7 @@ import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
 import {ChartData} from "../examples/randomData";
 import {windowTime} from "rxjs/operators";
+import {defaultTrackerStyle, TrackerStyle} from "./TrackerStyle";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultSpikesStyle = {
@@ -47,22 +48,6 @@ const defaultLineMagnifierStyle: LineMagnifierStyle = {
     color: '#d2933f',
     lineWidth: 1,
     axisOpacity: 0.35
-};
-
-interface TrackerStyle {
-    visible: boolean;
-    timeWindow: number;
-    magnification: number;
-    color: string,
-    lineWidth: number,
-}
-
-const defaultTrackerStyle: TrackerStyle = {
-    visible: false,
-    timeWindow: 50,
-    magnification: 1,
-    color: '#d2933f',
-    lineWidth: 2,
 };
 
 interface MagnifiedDatum extends Datum {
