@@ -24,7 +24,8 @@ Please see [change history](changes.md) for a history of changes.
 These charts are currently still under development.
 
 ## quick start
-```
+
+```shell script
 $ npm install stream-charts
 ```
 
@@ -55,7 +56,9 @@ import RasterChart from "../charts/RasterChart";
 />
 
 ```
+
 and for the scatter chart  (see [example](src/app/examples/StreamingScatterChart.tsx))
+
 ```typescript jsx
 import ScatterChart from "../charts/ScatterChart";
 .
@@ -83,6 +86,7 @@ import ScatterChart from "../charts/ScatterChart";
 ```
 
 ## intro
+
 `stream-charts` are high-performance charts for displaying large amounts of data in real-time. The charts are wrapped in [react](https://reactjs.org) and fed data using [rxjs](https://rxjs-dev.firebaseapp.com) `Observable`s. The goal `stream-charts` is to display large amounts of time-series data at high frequencies while providing tools to understand the time-series.
 
 There are currently two chart types available: a raster chart for display neuron spikes as a function of time, and a scatter chart. The chart below shows the raster chart with the bar magnifier enabled. The controls at the top of the chart are part of the example. These controls allow filtering time-series by their assigned names in real-time, displaying a tooltip when the mouse pointer is on top of a datum, displaying a tracker that show a vertical line and the current time of the mouse, and a bar magnifier, as shown in the image.
@@ -112,9 +116,11 @@ Each chart accepts a number of required and optional properties. The properties 
 4. state. 
 
 #### styles
+
 Except for the plot height and width, *style* properties are optional. Style properties define how the plot will look. For example, the *margin* property defines the space between the rectangle defined by the *height* and *width* property and the plot area. 
 
 All the optional *style* properties have defaults (the defaults look like the example charts above). The defaults can be overridden by specifying the properties you would like to change. For example, if you would like to change only the size of the font used for the axes labels, then you can specify the property as,
+
 ```typescript jsx
 <ScatterChart
     .
@@ -126,6 +132,7 @@ All the optional *style* properties have defaults (the defaults look like the ex
     .
 />
 ``` 
+
 In this case, the size, family, and weight of the axis labels will remain at their default values, and only the color will change from its default value to the one specified, which in this case is "blue".
 
 The *style* properties common to all plots are listed in the table below.
