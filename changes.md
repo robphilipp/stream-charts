@@ -1,5 +1,8 @@
 # change history
 
+## version 0.0.12 (reduced size)
+Apparently github actions ignores the .npmignore file.
+
 ## version 0.0.11 (reduced size)
 Added .npmignore to exclude images in docs and move deps to devDeps.
 
