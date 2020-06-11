@@ -24,13 +24,14 @@ Please see [change history](changes.md) for a history of changes.
 These charts are currently still under development.
 
 ## quick start
-```shell script
+
+```
 $ npm install stream-charts
 ```
 
 For the neuron raster chart (see [example](src/app/examples/StreamingRasterChart.tsx))
 
-```typescript jsx
+```typescript
 import RasterChart from "../charts/RasterChart";
 .
 .
@@ -55,8 +56,10 @@ import RasterChart from "../charts/RasterChart";
 />
 
 ```
+
 and for the scatter chart  (see [example](src/app/examples/StreamingScatterChart.tsx))
-```typescript jsx
+
+```typescript
 import ScatterChart from "../charts/ScatterChart";
 .
 .
@@ -83,6 +86,7 @@ import ScatterChart from "../charts/ScatterChart";
 ```
 
 ## intro
+
 `stream-charts` are high-performance charts for displaying large amounts of data in real-time. The charts are wrapped in [react](https://reactjs.org) and fed data using [rxjs](https://rxjs-dev.firebaseapp.com) `Observable`s. The goal `stream-charts` is to display large amounts of time-series data at high frequencies while providing tools to understand the time-series.
 
 There are currently two chart types available: a raster chart for display neuron spikes as a function of time, and a scatter chart. The chart below shows the raster chart with the bar magnifier enabled. The controls at the top of the chart are part of the example. These controls allow filtering time-series by their assigned names in real-time, displaying a tooltip when the mouse pointer is on top of a datum, displaying a tracker that show a vertical line and the current time of the mouse, and a bar magnifier, as shown in the image.
@@ -112,10 +116,12 @@ Each chart accepts a number of required and optional properties. The properties 
 4. state. 
 
 #### styles
+
 Except for the plot height and width, *style* properties are optional. Style properties define how the plot will look. For example, the *margin* property defines the space between the rectangle defined by the *height* and *width* property and the plot area. 
 
 All the optional *style* properties have defaults (the defaults look like the example charts above). The defaults can be overridden by specifying the properties you would like to change. For example, if you would like to change only the size of the font used for the axes labels, then you can specify the property as,
-```typescript jsx
+
+```typescript
 <ScatterChart
     .
     .
@@ -126,6 +132,7 @@ All the optional *style* properties have defaults (the defaults look like the ex
     .
 />
 ``` 
+
 In this case, the size, family, and weight of the axis labels will remain at their default values, and only the color will change from its default value to the one specified, which in this case is "blue".
 
 The *style* properties common to all plots are listed in the table below.
@@ -137,12 +144,6 @@ The *style* properties common to all plots are listed in the table below.
 | margin | optional | [Margin](src/app/charts/margins.ts) | The plot margin | `{top: 10, left: 10}` |
 | axesLabelFont | optional | `{size: number, color: string, family: string, weight: number}` | The font used to display the labels for the axes and ticks | `{size: 14, color: '#fff'}` |
 | backgroundColor | optional | string | The background color of the plot. Technically, this property is carried over to the SVG element holding the entire plot | `'#202020'` |
-
-| Name |  | Type | Description | Example |
-| ---- | --- | -------- | ----------- | ------- |
-| tooltip | optional | [TooltipStyle](src/app/charts/TooltipStyle.ts) | Styling for the tooltip control when it is active | `{visible: false, fontSize: 12, fontColor: '#d2933f'}`|
-| magnifier | optional | [RadialMagnifier](src/app/charts/ScatterChart.tsx) or [BarMagnifier](src/app/charts/RasterChart.tsx) | Defines the style of the radial magnifier used for the scatter chart and the bar magnifier used for the raster chart | `{visible: true}` |
-| tracker | optional | [TrackerStyle](src/app/charts/TrackerStyle.ts) | Style of the tracker line that draws a vertical line at the time represented by the current mouse position and shows that time, when the mouse is in the plot area. | `{visible: false, timeWindow: 50}` |
 
 #### data
 
@@ -207,7 +208,7 @@ If you are only interested in the current time, you can use the `onUpdateTime` c
 
 When the time associated with the data in the stream changes, this callback provides a hook into that time. In the [StreamingScatterChart](src/app/examples/StreamingScatterChart.tsx), for example, this callback is used to stop the random data after 1 second (1000 ms) by cancelling the subscription.
 
-```typescript jsx
+```typescript
 <ScatterChart
     .
     .
@@ -303,12 +304,12 @@ Please note that the font style of the tracker text is controlled by the axis-la
 
 Install the dependencies.
 
-```shell script
+```
 $ npm install
 ```
 
 Run the development server, which should fire up a browser and load the example app.
-```shell script
+```
 $ npm start
 ```
 
