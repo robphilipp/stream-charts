@@ -59,7 +59,7 @@ import RasterChart from "../charts/RasterChart";
 
 and for the scatter chart  (see [example](src/app/examples/StreamingScatterChart.tsx))
 
-```typescript jsx
+```typescript
 import ScatterChart from "../charts/ScatterChart";
 .
 .
@@ -121,7 +121,7 @@ Except for the plot height and width, *style* properties are optional. Style pro
 
 All the optional *style* properties have defaults (the defaults look like the example charts above). The defaults can be overridden by specifying the properties you would like to change. For example, if you would like to change only the size of the font used for the axes labels, then you can specify the property as,
 
-```typescript jsx
+```typescript
 <ScatterChart
     .
     .
@@ -214,7 +214,7 @@ If you are only interested in the current time, you can use the `onUpdateTime` c
 
 When the time associated with the data in the stream changes, this callback provides a hook into that time. In the [StreamingScatterChart](src/app/examples/StreamingScatterChart.tsx), for example, this callback is used to stop the random data after 1 second (1000 ms) by cancelling the subscription.
 
-```typescript jsx
+```typescript
 <ScatterChart
     .
     .
