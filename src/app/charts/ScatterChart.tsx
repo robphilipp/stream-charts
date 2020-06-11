@@ -6,7 +6,7 @@ import {Datum, Series} from "./datumSeries";
 import {TimeRange, TimeRangeType} from "./timeRange";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
-import {ChartData} from "../examples/randomData";
+import {ChartData} from "./chartData";
 import {LensTransformation2d, RadialMagnifier, radialMagnifierWith} from "./radialMagnifier";
 import {windowTime} from "rxjs/operators";
 import {defaultTrackerStyle, TrackerStyle} from "./TrackerStyle";
@@ -89,8 +89,8 @@ interface Props {
     magnifier?: Partial<RadialMagnifierStyle>;
     tracker?: Partial<TrackerStyle>;
 
-    minWeight?: number;
-    maxWeight?: number;
+    minY?: number;
+    maxY?: number;
 
     // data to plot: min-time is the earliest time for which to plot the data; max-time is the latest
     // and series list is a list of time-series to plot
@@ -125,7 +125,7 @@ function ScatterChart(props: Props): JSX.Element {
         width,
         height,
         backgroundColor = '#202020',
-        minWeight = -1, maxWeight = 1,
+        minY = -1, maxY = 1,
         tooltipValueLabel = 'y',
         minTime, maxTime, timeWindow,
         seriesList,
@@ -168,8 +168,8 @@ function ScatterChart(props: Props): JSX.Element {
     const axesRef = useRef<Axes>();
 
     // reference for the min/max values
-    const minValueRef = useRef<number>(minWeight);
-    const maxValueRef = useRef<number>(maxWeight);
+    const minValueRef = useRef<number>(minY);
+    const maxValueRef = useRef<number>(maxY);
 
     const liveDataRef = useRef<Array<Series>>(seriesList);
     const seriesRef = useRef<Array<Series>>(seriesList);
@@ -237,7 +237,7 @@ function ScatterChart(props: Props): JSX.Element {
 
         // initialize the y-axis
         const yScale = d3.scaleLinear()
-            .domain([minWeight, maxWeight])
+            .domain([minY, maxY])
             .range([plotDimensions.height - margin.bottom, 0])
         ;
         const yAxisGenerator = d3.axisLeft(yScale);
@@ -849,13 +849,13 @@ function ScatterChart(props: Props): JSX.Element {
      */
     function trackerControl(svg: SvgSelection, visible: boolean): TrackerSelection | undefined {
         if (visible && trackerRef.current === undefined) {
-            const tracker = svg
+            const trackerLine = svg
                 .append<SVGLineElement>('line')
                 .attr('class', 'tracker')
                 .attr('y1', margin.top)
                 .attr('y2', plotDimensions.height)
-                .attr('stroke', tooltip.borderColor)
-                .attr('stroke-width', tooltip.borderWidth)
+                .attr('stroke', tracker.color)
+                .attr('stroke-width', tracker.lineWidth)
                 .attr('opacity', 0) as Selection<SVGLineElement, Datum, null, undefined>
             ;
 
@@ -873,7 +873,7 @@ function ScatterChart(props: Props): JSX.Element {
 
             svg.on('mousemove', () => handleShowTracker(trackerRef.current));
 
-            return tracker;
+            return trackerLine;
         }
         // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
         else if ((!visible && trackerRef.current) || tooltipRef.current.visible) {
@@ -911,7 +911,7 @@ function ScatterChart(props: Props): JSX.Element {
             axesRef.current.xAxisSelection.call(axesRef.current.xAxisGenerator);
 
             // create the y-axis
-            axesRef.current.yScale.domain([Math.max(minWeight, minValue), Math.min(maxWeight, maxValue)]);
+            axesRef.current.yScale.domain([Math.max(minY, minValue), Math.min(maxY, maxValue)]);
             axesRef.current.yAxisSelection.call(axesRef.current.yAxisGenerator);
 
             // create/update the magnifier lens if needed

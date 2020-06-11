@@ -2,6 +2,8 @@
 
 `stream-charts` are [react](https://reactjs.org)-based time-series charts for viewing high frequency data, streamed in real-time using [rxjs](https://rxjs-dev.firebaseapp.com). Generally, update periods of 25 ms aren't a problem for about a hundred or so time-series. To achieve this type of performance, the charts are implemented in [d3](https://d3js.org) and wrapped in react functional components using hooks.
 
+[Homepage](https://robphilipp.github.io/stream-charts/)
+
 Although still under development, there are two charts available:
 1. A neuron raster chart, and a
 2. scatter chart.
@@ -9,11 +11,12 @@ Although still under development, there are two charts available:
 Over time, I will add additional chart types. In the meantime, I welcome any contributions to create new chart types (bar, gauges, etc).
 
 Both charts provide
-1. a tracker that shows the current time of the mouse position
-2. a tooltip that gives information about the current datum
-3. a magnifier that zooms in on the data giving a more detailed look.
-4. a filter that shows only the time-series whose names match the filter (examples use a regex filter)
-5. themeable properties to change the look of the plots.
+1. A tracker that shows the current time of the mouse position
+2. A tooltip that gives information about the current datum
+3. A magnifier that zooms in on the data giving a more detailed look.
+4. A regular expression filter to remove time-series whose names match.
+5. Themeable properties to change the look of the plots.
+6. Zooming and panning.
 
 
 Please see [change history](changes.md) for a history of changes.
@@ -103,7 +106,7 @@ The [examples](src/app/examples) directory has example code that was used to gen
 Each chart accepts a number of required and optional properties. The properties are divided into 
 1. style, 
 2. data, 
-3. enhancement visibility, and
+3. enhancements, and
 4. state. 
 
 #### styles
@@ -132,9 +135,50 @@ The *style* properties common to all plots are listed in the table below.
 | margin | optional | [Margin](src/app/charts/margins.ts) | The plot margin | `{top: 10, left: 10}` |
 | axesLabelFont | optional | `{size: number, color: string, family: string, weight: number}` | The font used to display the labels for the axes and ticks | `{size: 14, color: '#fff'}` |
 | backgroundColor | optional | string | The background color of the plot. Technically, this property is carried over to the SVG element holding the entire plot | `'#202020'` |
+
+| Name |  | Type | Description | Example |
+| ---- | --- | -------- | ----------- | ------- |
 | tooltip | optional | [TooltipStyle](src/app/charts/TooltipStyle.ts) | Styling for the tooltip control when it is active | `{visible: false, fontSize: 12, fontColor: '#d2933f'}`|
 | magnifier | optional | [RadialMagnifier](src/app/charts/ScatterChart.tsx) or [BarMagnifier](src/app/charts/RasterChart.tsx) | Defines the style of the radial magnifier used for the scatter chart and the bar magnifier used for the raster chart | `{visible: true}` |
 | tracker | optional | [TrackerStyle](src/app/charts/TrackerStyle.ts) | Style of the tracker line that draws a vertical line at the time represented by the current mouse position and shows that time, when the mouse is in the plot area. | `{visible: false, timeWindow: 50}` |
+
+#### data
+
+The *data* properties define the data source, processing, and constraints. All the data properties are required.
+
+| Name | Type | Description | Example |
+| ---- | ---- | ----------- | ------- |
+| seriesList | Array<[Series](src/app/charts/datumSeries.ts)> | A list of the series to plot. | `[seriesFrom('test1')]` |
+| seriesObservable | [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable)<[ChartData](src/app/charts/chartData.ts)> | An [rxjs](https://rxjs-dev.firebaseapp.com) observable that sources chart data. | see the [randomWeightDataObservable(...)](src/app/examples/randomData.ts) function. |
+| 
+
+    // data to plot: min-time is the earliest time for which to plot the data; max-time is the latest
+    // and series list is a list of time-series to plot
+    minTime: number;
+    maxTime: number;
+    timeWindow: number;
+    seriesList: Array<Series>;
+
+    // data stream
+    seriesObservable: Observable<ChartData>;
+    windowingTime?: number;
+
+
+
+#### enhancements
+
+The tracker, tooltip, magnifier, and filter are enhancements to the plots for exploring the displayed data. Each of these enhancements has a set of properties for determining how they are displayed. The details of the styles are given in sections below. All enhancements are optional, and, inactive by default. 
+
+The tracker, tooltip, and magnifier are activated (shown) when the mouse is in the plot area **and** the enhancement's `visible` property is set to true. Generally, only one enhancement is used at one time.
+
+The filter enhancement differs from the others. This isn't a visible component, rather, it controls what data is displayed in the chart. The filter allows the user to specify a regular expression that is used to filter time-series based on their name. 
+
+| Name |  | Type | Description | Example |
+| ---- | --- | -------- | ----------- | ------- |
+| tooltip | optional | [TooltipStyle](src/app/charts/TooltipStyle.ts) | Styling for the tooltip control when it is active | `{visible: false, fontSize: 12, fontColor: '#d2933f'}`|
+| magnifier | optional | [RadialMagnifier](src/app/charts/ScatterChart.tsx) or [BarMagnifier](src/app/charts/RasterChart.tsx) | Defines the style of the radial magnifier used for the scatter chart and the bar magnifier used for the raster chart | `{visible: true}` |
+| tracker | optional | [TrackerStyle](src/app/charts/TrackerStyle.ts) | Style of the tracker line that draws a vertical line at the time represented by the current mouse position and shows that time, when the mouse is in the plot area. | `{visible: false, timeWindow: 50}` |
+| filter | optional | [RexExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) | A regular expression used to filter time-series based on their name. Generally, this would be specified by some control in the parent component. See for example [StreamingRasterChart](src/app/examples/StreamingRasterChart.tsx). | `^in[0-3]+$` | undefined | 
 
 
 
@@ -151,6 +195,9 @@ interface Props {
     magnifier?: Partial<RadialMagnifierStyle>;
     tracker?: Partial<TrackerStyle>;
 
+    // regex filter used to select which series are displayed
+    filter?: RegExp;
+
     minWeight?: number;
     maxWeight?: number;
 
@@ -164,12 +211,11 @@ interface Props {
     // data stream
     seriesObservable: Observable<ChartData>;
     windowingTime?: number;
+
     onSubscribe?: (subscription: Subscription) => void;
     onUpdateData?: (seriesName: string, t: number, y: number) => void;
     onUpdateTime?: (time: number) => void;
 
-    // regex filter used to select which series are displayed
-    filter?: RegExp;
 
     // a map that holds the series name and it's associated cooler
     seriesColors?: Map<string, string>;
@@ -242,11 +288,13 @@ The tracker displays a vertical line in the chart area at the current mouse posi
 
 The tracker styles are defined in the [TrackerStyle](src/app/charts/TrackerStyle.ts) file and is used as a `Partial<TrackerStyle>`, which means that you only need to specify the values you would like to change.
 
-    visible: false,
-    timeWindow: 50,
-    magnification: 1,
-    color: '#d2933f',
-    lineWidth: 2,
+| Name | Type | Description | Example | Default Value |
+| ---- | ---- | ----------- | ------- | ------- |
+| visible | boolean | Defines whether the tracker is visible when the mouse is in the plot area. Generally, this would be managed by a control in the parent component. | `true` | `false` |
+| color | string | Color of the tracker line. | `'rgba(55,66,77,0.88)'` | `'#d2933f'` |
+| lineWidth | number | Width, in pixels, of the vertical tracker line. | `2` | `1` | 
+
+Please note that the font style of the tracker text is controlled by the axis-label font styles described above. 
 
 
 ### raster chart
@@ -260,17 +308,7 @@ The raster chart component has the following properties.
 
 ```typescript
 interface Props {
-    width: number;
-    height: number;
-    margin?: Partial<Margin>;
-    spikesStyle?: Partial<{ margin: number, color: string, lineWidth: number, highlightColor: string, highlightWidth: number }>;
-    axisLabelFont?: Partial<{ size: number, color: string, family: string, weight: number }>;
-    axisStyle?: Partial<{ color: string }>;
-    backgroundColor?: string;
     plotGridLines?: Partial<{ visible: boolean, color: string }>;
-    tooltip?: Partial<TooltipStyle>;
-    magnifier?: Partial<LineMagnifierStyle>;
-    tracker?: Partial<TrackerStyle>;
 
     // data to plot: min-time is the earliest time for which to plot the data; max-time is the latest
     // and series list is a list of time-series to plot
@@ -283,6 +321,7 @@ interface Props {
     filter?: RegExp;
 
     seriesObservable: Observable<ChartData>;
+
     windowingTime?: number;
     onSubscribe?: (subscription: Subscription) => void;
     onUpdateData?: (seriesName: string, t: number, y: number) => void;

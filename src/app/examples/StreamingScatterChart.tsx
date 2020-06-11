@@ -1,7 +1,8 @@
 import {default as React, useRef, useState} from "react";
 import {Series} from "../charts/datumSeries";
 import ScatterChart from "../charts/ScatterChart";
-import {ChartData, randomWeightDataObservable} from "./randomData";
+import {randomWeightDataObservable} from "./randomData";
+import {ChartData} from "../charts/chartData";
 import {Observable, Subscription} from "rxjs";
 import {regexFilter} from "../charts/regexFilter";
 import Checkbox from "./Checkbox";

@@ -7,7 +7,7 @@ import {adjustedDimensions, Margin} from "./margins";
 import {Datum, emptySeries, PixelDatum, Series} from "./datumSeries";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
-import {ChartData} from "../examples/randomData";
+import {ChartData} from "./chartData";
 import {windowTime} from "rxjs/operators";
 import {defaultTrackerStyle, TrackerStyle} from "./TrackerStyle";
 
@@ -703,13 +703,13 @@ function RasterChart(props: Props): JSX.Element {
      */
     function trackerControl(svg: SvgSelection, visible: boolean, height: number): TrackerSelection | undefined {
         if (visible && trackerRef.current === undefined) {
-            const tracker = svg
+            const trackerLine = svg
                 .append<SVGLineElement>('line')
                 .attr('class', 'tracker')
                 .attr('y1', margin.top)
                 .attr('y2', height + margin.top)
-                .attr('stroke', tooltip.borderColor)
-                .attr('stroke-width', tooltip.borderWidth)
+                .attr('stroke', tracker.color)
+                .attr('stroke-width', tracker.lineWidth)
                 .attr('opacity', 0)
             ;
 
@@ -727,7 +727,7 @@ function RasterChart(props: Props): JSX.Element {
 
             svg.on('mousemove', () => handleShowTracker(trackerRef.current));
 
-            return tracker;
+            return trackerLine;
         }
         // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
         else if (!visible && trackerRef.current) {

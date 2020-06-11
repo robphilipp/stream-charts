@@ -1,41 +1,9 @@
 import {interval, Observable} from "rxjs";
 import {Datum} from "../charts/datumSeries";
 import {map, scan} from "rxjs/operators";
+import {ChartData, emptyChartData, IndexedDatum} from "../charts/chartData";
 
 const UPDATE_PERIOD_MS = 25;
-
-/**
- * The spike-chart data produced by the rxjs observable that is pushed to the `RasterChart`
- */
-export interface ChartData {
-    maxTime: number;
-    newPoints: Array<IndexedDatum>
-}
-
-interface IndexedDatum {
-    index: number;
-    datum: Datum;
-}
-
-/**
- * Creates an empty chart data object with all the values set to 0
- * @param {number} numSeries The number of series in the chart data
- * @return {ChartData} An empty chart data object
- */
-function emptyChartData(numSeries: number): ChartData {
-    return {
-        maxTime: 0,
-        newPoints: new Array<Datum>(numSeries)
-            .fill({} as Datum)
-            .map((_: Datum, i: number) => ({
-                index: i,
-                datum: {
-                    time: 0,
-                    value: 0
-                }
-            }))
-    }
-}
 
 /**
  * Creates a random spike for each series and within (time - update_period, time)

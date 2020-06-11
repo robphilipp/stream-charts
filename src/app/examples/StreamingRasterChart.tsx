@@ -2,10 +2,11 @@ import * as React from 'react';
 import {useRef, useState} from 'react';
 import {Datum, Series} from "../charts/datumSeries";
 import RasterChart from "../charts/RasterChart";
-import {ChartData, randomSpikeDataObservable} from "./randomData";
+import {ChartData} from "../charts/chartData";
 import {Observable, Subscription} from "rxjs";
 import {regexFilter} from "../charts/regexFilter";
 import Checkbox from "./Checkbox";
+import {randomSpikeDataObservable} from "./randomData";
 
 interface Visibility {
     tooltip: boolean;
