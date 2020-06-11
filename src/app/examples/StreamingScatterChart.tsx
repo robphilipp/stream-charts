@@ -114,8 +114,6 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                 onUpdateTime={(t: number) => {
                     if(t > 1000) subscriptionRef.current!.unsubscribe()
                 }}
-                minTime={Math.max(0, currentTimeRef.current - timeWindow)}
-                maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 timeWindow={timeWindow}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 tooltip={{visible: visibility.tooltip}}

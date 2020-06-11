@@ -88,10 +88,7 @@ interface Props {
     magnifier?: Partial<LineMagnifierStyle>;
     tracker?: Partial<TrackerStyle>;
 
-    // data to plot: min-time is the earliest time for which to plot the data; max-time is the latest
-    // and series list is a list of time-series to plot
-    minTime: number;
-    maxTime: number;
+    // data to plot: time-window is the time-range of data shown (slides in time)
     timeWindow: number;
     seriesList: Array<Series>;
 
@@ -120,7 +117,7 @@ function RasterChart(props: Props): JSX.Element {
         onUpdateData = () => {},
         onUpdateTime = (_: number) => {},
         filter = /./,
-        minTime, maxTime, timeWindow,
+        timeWindow,
         width,
         height,
         backgroundColor = '#202020',
@@ -163,7 +160,7 @@ function RasterChart(props: Props): JSX.Element {
     const tooltipRef = useRef(tooltip);
 
     // calculates to the time-range based on the (min, max)-time from the props
-    const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
+    const timeRangeRef = useRef<TimeRangeType>(TimeRange(0, timeWindow));
 
     const seriesFilterRef = useRef<RegExp>(filter);
 

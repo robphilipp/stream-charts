@@ -144,25 +144,18 @@ The *style* properties common to all plots are listed in the table below.
 
 #### data
 
-The *data* properties define the data source, processing, and constraints. All the data properties are required.
+The *data* properties define the data source, processing, and constraints.
 
-| Name | Type | Description | Example |
-| ---- | ---- | ----------- | ------- |
-| seriesList | Array<[Series](src/app/charts/datumSeries.ts)> | A list of the series to plot. | `[seriesFrom('test1')]` |
-| seriesObservable | [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable)<[ChartData](src/app/charts/chartData.ts)> | An [rxjs](https://rxjs-dev.firebaseapp.com) observable that sources chart data. | see the [randomWeightDataObservable(...)](src/app/examples/randomData.ts) function. |
-| 
+| Name |     | Type | Description | Example |
+| ---- | --- | ---- | ----------- | ------- |
+| seriesList | required | Array<[Series](src/app/charts/datumSeries.ts)> | A list of the series to plot. | `[seriesFrom('test1')]` |
+| seriesObservable | required | [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable) <[ChartData](src/app/charts/chartData.ts)> | An [rxjs](https://rxjs-dev.firebaseapp.com) observable that sources chart data. | see the [randomWeightDataObservable(...)](src/app/examples/randomData.ts) function. |
+| windowingTime | required | number (ms) | Chart data being streamed into the chart can be aggregated by time windows to reduce the update frequency. Depending on the number of time-series being plotted, this number can be comfortably set at 25 ms. The default value is 100 ms | `100` |
+| timeWindow | required | number (ms) | The maximum time between the `minTime` and the `maxTime`. | `2000` |
 
-    // data to plot: min-time is the earliest time for which to plot the data; max-time is the latest
-    // and series list is a list of time-series to plot
-    minTime: number;
-    maxTime: number;
-    timeWindow: number;
-    seriesList: Array<Series>;
+##### Understanding min/max time and the time-window.
 
-    // data stream
-    seriesObservable: Observable<ChartData>;
-    windowingTime?: number;
-
+These charts have been develop to be used with high-frequency dynamic data that my run for a considerable amount of time. For example, you may stream in data for a few hundred seconds, and have the plot show the last 10 seconds worth of data. To achieve this you use the `timeWindow` property. Because you want to see the most recent 10 seconds of data, you set the time-window property to 10,000 ms (`timeWindow={10000}`). The charts use the time-window property and the current simulation time to show the most recent `timeWindow` milliseconds of data (in our example, the past 10 seconds). This causes the data to "slide" to the left after `timeWindow` has elapsed.
 
 
 #### enhancements
