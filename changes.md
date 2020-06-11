@@ -1,5 +1,8 @@
 # change history
 
+## version 0.0.13 (reduced size)
+Moved typescript to devDeps, moved react stuff to peerDeps.
+
 ## version 0.0.12 (reduced size)
 Apparently github actions ignores the .npmignore file.
 
