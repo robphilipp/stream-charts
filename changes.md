@@ -1,5 +1,8 @@
 # change history
 
+## version 0.0.11 (reduced size)
+Added .npmignore to exclude images in docs and move deps to devDeps.
+
 ## version 0.0.10 (removed unused deps)
 1. Removed unused dependencies
 
