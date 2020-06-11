@@ -1,5 +1,8 @@
 # change history
 
+## version 0.0.14 (reduced size)
+Failed attempts
+
 ## version 0.0.13 (reduced size)
 Moved typescript to devDeps, moved react stuff to peerDeps.
 
