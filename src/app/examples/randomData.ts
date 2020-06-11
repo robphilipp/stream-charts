@@ -24,6 +24,7 @@ function randomSpikeData(time: number, numSeries: number, updatePeriod: number):
                     value: Math.random() > 0.2 ? Math.random() : 0
                 }
             }))
+            .filter(datum => Math.random() > 0.25)
     };
 }
 
