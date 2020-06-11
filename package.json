@@ -1,17 +1,18 @@
 {
   "name": "stream-charts",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "homepage": "https://robphilipp.github.io/stream-charts/",
   "license": "MIT",
   "repository": "github:robphilipp/stream-charts",
   "dependencies": {
     "d3": "^5.15.0",
     "prelude-ts": "^0.8.3",
+    "rxjs": "^6.5.4"
+  },
+  "peerDependencies": {
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
-    "react-scripts": "3.3.0",
-    "rxjs": "^6.5.4",
-    "typescript": "^3.9.3"
+    "react-scripts": "3.3.0"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -42,7 +43,8 @@
     "@types/jest": "^24.9.1",
     "@types/node": "^12.12.25",
     "@types/react": "^16.9.19",
-    "@types/react-dom": "^16.9.5"
+    "@types/react-dom": "^16.9.5",
+    "typescript": "^3.9.3"
   },
   "files": ["README.md", "changes.md", "package.json", "tsconfig.json", "build", "public", "src"]
 }
