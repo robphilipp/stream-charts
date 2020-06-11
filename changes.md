@@ -1,5 +1,8 @@
 # change history
 
+## version 0.0.10 (removed unused deps)
+1. Removed unused dependencies
+
 ## version 0.0.9 (user docs, cleaning, refactoring)
 1. Added user docs (more to come)
 2. Refactored a few things to clean up the code
