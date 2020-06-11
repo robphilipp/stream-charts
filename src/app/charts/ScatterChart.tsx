@@ -6,9 +6,10 @@ import {Datum, Series} from "./datumSeries";
 import {TimeRange, TimeRangeType} from "./timeRange";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
-import {ChartData} from "../examples/randomData";
+import {ChartData} from "./chartData";
 import {LensTransformation2d, RadialMagnifier, radialMagnifierWith} from "./radialMagnifier";
 import {windowTime} from "rxjs/operators";
+import {defaultTrackerStyle, TrackerStyle} from "./TrackerStyle";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultAxesStyle = {color: '#d2933f'};
@@ -55,22 +56,6 @@ interface MagnifiedData {
     lens: LensTransformation2d;
 }
 
-interface TrackerStyle {
-    visible: boolean;
-    timeWindow: number;
-    magnification: number;
-    color: string,
-    lineWidth: number,
-}
-
-const defaultTrackerStyle: TrackerStyle = {
-    visible: false,
-    timeWindow: 50,
-    magnification: 1,
-    color: '#d2933f',
-    lineWidth: 2,
-};
-
 /**
  * Properties for rendering the line-magnifier lens
  */
@@ -104,13 +89,10 @@ interface Props {
     magnifier?: Partial<RadialMagnifierStyle>;
     tracker?: Partial<TrackerStyle>;
 
-    minWeight?: number;
-    maxWeight?: number;
+    minY?: number;
+    maxY?: number;
 
-    // data to plot: min-time is the earliest time for which to plot the data; max-time is the latest
-    // and series list is a list of time-series to plot
-    minTime: number;
-    maxTime: number;
+    // data to plot: time-window is the time-range of data shown (slides in time)
     timeWindow: number;
     seriesList: Array<Series>;
 
@@ -140,9 +122,9 @@ function ScatterChart(props: Props): JSX.Element {
         width,
         height,
         backgroundColor = '#202020',
-        minWeight = -1, maxWeight = 1,
+        minY = -1, maxY = 1,
         tooltipValueLabel = 'y',
-        minTime, maxTime, timeWindow,
+        timeWindow,
         seriesList,
         seriesObservable,
         windowingTime = 100,
@@ -183,8 +165,8 @@ function ScatterChart(props: Props): JSX.Element {
     const axesRef = useRef<Axes>();
 
     // reference for the min/max values
-    const minValueRef = useRef<number>(minWeight);
-    const maxValueRef = useRef<number>(maxWeight);
+    const minValueRef = useRef<number>(minY);
+    const maxValueRef = useRef<number>(maxY);
 
     const liveDataRef = useRef<Array<Series>>(seriesList);
     const seriesRef = useRef<Array<Series>>(seriesList);
@@ -197,7 +179,8 @@ function ScatterChart(props: Props): JSX.Element {
     const tooltipRef = useRef<TooltipStyle>(tooltip);
 
     // calculates to the time-range based on the (min, max)-time from the props
-    const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
+    // const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
+    const timeRangeRef = useRef<TimeRangeType>(TimeRange(0, timeWindow));
 
     const seriesFilterRef = useRef<RegExp>(filter);
 
@@ -252,7 +235,7 @@ function ScatterChart(props: Props): JSX.Element {
 
         // initialize the y-axis
         const yScale = d3.scaleLinear()
-            .domain([minWeight, maxWeight])
+            .domain([minY, maxY])
             .range([plotDimensions.height - margin.bottom, 0])
         ;
         const yAxisGenerator = d3.axisLeft(yScale);
@@ -656,8 +639,8 @@ function ScatterChart(props: Props): JSX.Element {
 
                 const axesMagnifier: RadialMagnifier = radialMagnifierWith(magnifier.radius, magnifier.magnification, [x, y]);
                 magnifierXAxisRef.current!
-                    .attr('stroke', tooltipRef.current.borderColor)
-                    .attr('stroke-width', 0.75)
+                    .attr('stroke', magnifier.color)
+                    .attr('stroke-width', magnifier.lineWidth)
                     .attr('opacity', 0.75)
                     .attr('x1', datum => axesMagnifier.magnify(x + datum * magnifier.radius / 5, y).xPrime)
                     .attr('x2', datum => axesMagnifier.magnify(x + datum * magnifier.radius / 5, y).xPrime)
@@ -672,8 +655,8 @@ function ScatterChart(props: Props): JSX.Element {
                 ;
 
                 magnifierYAxisRef.current!
-                    .attr('stroke', tooltipRef.current.borderColor)
-                    .attr('stroke-width', 0.75)
+                    .attr('stroke', magnifier.color)
+                    .attr('stroke-width', magnifier.lineWidth)
                     .attr('opacity', 0.75)
                     .attr('x1', datum => axesMagnifier.magnify(x - magnifier.radius * (1 - Math.abs(datum / 5)) / 40, y).xPrime - 2)
                     .attr('x2', datum => axesMagnifier.magnify(x + magnifier.radius * (1 - Math.abs(datum / 5)) / 40, y).xPrime + 2)
@@ -808,8 +791,8 @@ function ScatterChart(props: Props): JSX.Element {
         svg
             .append('line')
             .attr('id', className)
-            .attr('stroke', tooltipRef.current.borderColor)
-            .attr('stroke-width', 0.75)
+            .attr('stroke', magnifier.color)
+            .attr('stroke-width', magnifier.lineWidth)
             .attr('opacity', 0)
     }
 
@@ -828,8 +811,8 @@ function ScatterChart(props: Props): JSX.Element {
             .enter()
             .append('line')
             .attr('class', className)
-            .attr('stroke', tooltipRef.current.borderColor)
-            .attr('stroke-width', 0.75)
+            .attr('stroke', magnifier.color)
+            .attr('stroke-width', magnifier.lineWidth)
             .attr('opacity', 0)
             ;
     }
@@ -864,13 +847,13 @@ function ScatterChart(props: Props): JSX.Element {
      */
     function trackerControl(svg: SvgSelection, visible: boolean): TrackerSelection | undefined {
         if (visible && trackerRef.current === undefined) {
-            const tracker = svg
+            const trackerLine = svg
                 .append<SVGLineElement>('line')
                 .attr('class', 'tracker')
                 .attr('y1', margin.top)
                 .attr('y2', plotDimensions.height)
-                .attr('stroke', tooltip.borderColor)
-                .attr('stroke-width', tooltip.borderWidth)
+                .attr('stroke', tracker.color)
+                .attr('stroke-width', tracker.lineWidth)
                 .attr('opacity', 0) as Selection<SVGLineElement, Datum, null, undefined>
             ;
 
@@ -888,7 +871,7 @@ function ScatterChart(props: Props): JSX.Element {
 
             svg.on('mousemove', () => handleShowTracker(trackerRef.current));
 
-            return tracker;
+            return trackerLine;
         }
         // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
         else if ((!visible && trackerRef.current) || tooltipRef.current.visible) {
@@ -926,7 +909,7 @@ function ScatterChart(props: Props): JSX.Element {
             axesRef.current.xAxisSelection.call(axesRef.current.xAxisGenerator);
 
             // create the y-axis
-            axesRef.current.yScale.domain([Math.max(minWeight, minValue), Math.min(maxWeight, maxValue)]);
+            axesRef.current.yScale.domain([Math.max(minY, minValue), Math.min(maxY, maxValue)]);
             axesRef.current.yAxisSelection.call(axesRef.current.yAxisGenerator);
 
             // create/update the magnifier lens if needed
@@ -1054,17 +1037,18 @@ function ScatterChart(props: Props): JSX.Element {
                         // updated the current time to be the max of the new data
                         currentTimeRef.current = data.maxTime;
 
-                        // for each series, add a point if the value > 0)
-                        seriesRef.current = seriesRef.current.map((series, i) => {
-                            const newValue = data.newPoints[i].datum.value;
-                            const time = data.newPoints[i].datum.time;
+                        // add each new point to it's corresponding series
+                        data.newPoints.forEach(datum => {
+                            const newValue = datum.datum.value;
+                            const time = datum.datum.time;
+
+                            // grab the series associated with the new data
+                            const series = seriesRef.current[datum.index];
 
                             // update the handler with the new data point
                             onUpdateData(series.name, time, newValue);
 
-                            const newPoint = {time: time, value: newValue};
-                            series.data.push(newPoint);
-                            return series;
+                            series.data.push({time: time, value: newValue});
                         });
 
                         // update the data

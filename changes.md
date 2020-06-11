@@ -1,5 +1,10 @@
 # change history
 
+## version 0.0.9 (user docs, cleaning, refactoring)
+1. Added user docs (more to come)
+2. Refactored a few things to clean up the code
+3. Cleaned up a few unused props
+
 ## version 0.0.8 (suppressed warning)
 Suppressed react-hook warning about exhaustive deps and added comment describe why this is needed and ok.
 

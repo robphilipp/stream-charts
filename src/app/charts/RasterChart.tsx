@@ -7,8 +7,9 @@ import {adjustedDimensions, Margin} from "./margins";
 import {Datum, emptySeries, PixelDatum, Series} from "./datumSeries";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
-import {ChartData} from "../examples/randomData";
+import {ChartData} from "./chartData";
 import {windowTime} from "rxjs/operators";
+import {defaultTrackerStyle, TrackerStyle} from "./TrackerStyle";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultSpikesStyle = {
@@ -49,22 +50,6 @@ const defaultLineMagnifierStyle: LineMagnifierStyle = {
     axisOpacity: 0.35
 };
 
-interface TrackerStyle {
-    visible: boolean;
-    timeWindow: number;
-    magnification: number;
-    color: string,
-    lineWidth: number,
-}
-
-const defaultTrackerStyle: TrackerStyle = {
-    visible: false,
-    timeWindow: 50,
-    magnification: 1,
-    color: '#d2933f',
-    lineWidth: 2,
-};
-
 interface MagnifiedDatum extends Datum {
     lens: LensTransformation
 }
@@ -103,10 +88,7 @@ interface Props {
     magnifier?: Partial<LineMagnifierStyle>;
     tracker?: Partial<TrackerStyle>;
 
-    // data to plot: min-time is the earliest time for which to plot the data; max-time is the latest
-    // and series list is a list of time-series to plot
-    minTime: number;
-    maxTime: number;
+    // data to plot: time-window is the time-range of data shown (slides in time)
     timeWindow: number;
     seriesList: Array<Series>;
 
@@ -135,7 +117,7 @@ function RasterChart(props: Props): JSX.Element {
         onUpdateData = () => {},
         onUpdateTime = (_: number) => {},
         filter = /./,
-        minTime, maxTime, timeWindow,
+        timeWindow,
         width,
         height,
         backgroundColor = '#202020',
@@ -178,7 +160,7 @@ function RasterChart(props: Props): JSX.Element {
     const tooltipRef = useRef(tooltip);
 
     // calculates to the time-range based on the (min, max)-time from the props
-    const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
+    const timeRangeRef = useRef<TimeRangeType>(TimeRange(0, timeWindow));
 
     const seriesFilterRef = useRef<RegExp>(filter);
 
@@ -718,13 +700,13 @@ function RasterChart(props: Props): JSX.Element {
      */
     function trackerControl(svg: SvgSelection, visible: boolean, height: number): TrackerSelection | undefined {
         if (visible && trackerRef.current === undefined) {
-            const tracker = svg
+            const trackerLine = svg
                 .append<SVGLineElement>('line')
                 .attr('class', 'tracker')
                 .attr('y1', margin.top)
                 .attr('y2', height + margin.top)
-                .attr('stroke', tooltip.borderColor)
-                .attr('stroke-width', tooltip.borderWidth)
+                .attr('stroke', tracker.color)
+                .attr('stroke-width', tracker.lineWidth)
                 .attr('opacity', 0)
             ;
 
@@ -742,7 +724,7 @@ function RasterChart(props: Props): JSX.Element {
 
             svg.on('mousemove', () => handleShowTracker(trackerRef.current));
 
-            return tracker;
+            return trackerLine;
         }
         // if the magnifier was defined, and is now no longer defined (i.e. props changed, then remove the magnifier)
         else if (!visible && trackerRef.current) {
@@ -940,18 +922,23 @@ function RasterChart(props: Props): JSX.Element {
                             // updated the current time to be the max of the new data
                             currentTimeRef.current = data.maxTime;
 
-                            // for each series, add a point if there is a  spike value (i.e. spike value > 0)
-                            seriesRef.current = seriesRef.current
-                                .map((series, i) => {
-                                    const datum = data.newPoints[i].datum;
-                                    if (datum.value > 0) {
-                                        series.data.push(datum);
+                            // add each new point to it's corresponding series
+                            data.newPoints.forEach(datum => {
+                                const newValue = datum.datum.value;
 
-                                        // update the handler with the new data point
-                                        onUpdateData(series.name, datum.time, datum.value);
-                                    }
-                                    return series;
-                                });
+                                // ignore negative spikes
+                                if (newValue > 0) {
+                                    const time = datum.datum.time;
+
+                                    // grab the series associated with the new data
+                                    const series = seriesRef.current[datum.index];
+
+                                    // update the handler with the new data point
+                                    onUpdateData(series.name, time, newValue);
+
+                                    series.data.push({time: time, value: newValue});
+                                }
+                            });
 
                             // update the data
                             liveDataRef.current = seriesRef.current;

@@ -1,7 +1,8 @@
 import {default as React, useRef, useState} from "react";
 import {Series} from "../charts/datumSeries";
 import ScatterChart from "../charts/ScatterChart";
-import {ChartData, randomWeightDataObservable} from "./randomData";
+import {randomWeightDataObservable} from "./randomData";
+import {ChartData} from "../charts/chartData";
 import {Observable, Subscription} from "rxjs";
 import {regexFilter} from "../charts/regexFilter";
 import Checkbox from "./Checkbox";
@@ -30,8 +31,6 @@ interface Props {
 
 export function StreamingScatterChart(props: Props): JSX.Element {
     const {seriesList, timeWindow = 100, plotHeight = 20, plotWidth = 500} = props;
-
-    const currentTimeRef = useRef<number>(0);
 
     const observableRef = useRef<Observable<ChartData>>(randomWeightDataObservable(seriesList.length, 0.1));
     const subscriptionRef = useRef<Subscription>();
@@ -113,8 +112,6 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                 onUpdateTime={(t: number) => {
                     if(t > 1000) subscriptionRef.current!.unsubscribe()
                 }}
-                minTime={Math.max(0, currentTimeRef.current - timeWindow)}
-                maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 timeWindow={timeWindow}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 tooltip={{visible: visibility.tooltip}}

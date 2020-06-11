@@ -2,10 +2,11 @@ import * as React from 'react';
 import {useRef, useState} from 'react';
 import {Datum, Series} from "../charts/datumSeries";
 import RasterChart from "../charts/RasterChart";
-import {ChartData, randomSpikeDataObservable} from "./randomData";
+import {ChartData} from "../charts/chartData";
 import {Observable, Subscription} from "rxjs";
 import {regexFilter} from "../charts/regexFilter";
 import Checkbox from "./Checkbox";
+import {randomSpikeDataObservable} from "./randomData";
 
 interface Visibility {
     tooltip: boolean;
@@ -46,8 +47,6 @@ export interface SpikesChartData {
  */
 function StreamingRasterChart(props: Props): JSX.Element {
     const {seriesList, timeWindow = 100, seriesHeight = 20, plotWidth = 500} = props;
-
-    const currentTimeRef = useRef<number>(0);
 
     const observableRef = useRef<Observable<ChartData>>(randomSpikeDataObservable(seriesList.length));
     const subscriptionRef = useRef<Subscription>();
@@ -117,8 +116,6 @@ function StreamingRasterChart(props: Props): JSX.Element {
                 onUpdateTime={(t: number) => {
                     if(t > 1000) subscriptionRef.current!.unsubscribe()
                 }}
-                minTime={Math.max(0, currentTimeRef.current - timeWindow)}
-                maxTime={Math.max(currentTimeRef.current, timeWindow)}
                 timeWindow={timeWindow}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 tooltip={{visible: visibility.tooltip}}
