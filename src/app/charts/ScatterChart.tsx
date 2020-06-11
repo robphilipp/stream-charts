@@ -1037,17 +1037,18 @@ function ScatterChart(props: Props): JSX.Element {
                         // updated the current time to be the max of the new data
                         currentTimeRef.current = data.maxTime;
 
-                        // for each series, add a point if the value > 0)
-                        seriesRef.current = seriesRef.current.map((series, i) => {
-                            const newValue = data.newPoints[i].datum.value;
-                            const time = data.newPoints[i].datum.time;
+                        // add each new point to it's corresponding series
+                        data.newPoints.forEach(datum => {
+                            const newValue = datum.datum.value;
+                            const time = datum.datum.time;
+
+                            // grab the series associated with the new data
+                            const series = seriesRef.current[datum.index];
 
                             // update the handler with the new data point
                             onUpdateData(series.name, time, newValue);
 
-                            const newPoint = {time: time, value: newValue};
-                            series.data.push(newPoint);
-                            return series;
+                            series.data.push({time: time, value: newValue});
                         });
 
                         // update the data

@@ -101,7 +101,9 @@ In both cases the plots were updated in real-time with an average update time in
 
 ## usage
 
-The [examples](src/app/examples) directory has example code that was used to generate the charts in the images above. The [`StreamingRasterChart`](src/app/examples/StreamingRasterChart.tsx) provides an example of using the raster chart. The [`StreamingScatterChart`](src/app/examples/StreamingScatterChart.tsx) provides an example of using the scatter chart. Both of these examples provide controls for enabling the filtering, tooltip, tracker, and magnifier enhancements.
+### properties
+
+The [examples](src/app/examples) directory has example code that was used to generate the charts in the images above. The [StreamingRasterChart](src/app/examples/StreamingRasterChart.tsx) provides an example of using the raster chart. The [StreamingScatterChart](src/app/examples/StreamingScatterChart.tsx) provides an example of using the scatter chart. Both of these examples provide controls for enabling the filtering, tooltip, tracker, and magnifier enhancements.
 
 Each chart accepts a number of required and optional properties. The properties are divided into 
 1. style, 
@@ -150,10 +152,10 @@ The *data* properties define the data source, processing, and constraints.
 | ---- | --- | ---- | ----------- | ------- |
 | seriesList | required | Array<[Series](src/app/charts/datumSeries.ts)> | A list of the series to plot. | `[seriesFrom('test1')]` |
 | seriesObservable | required | [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable) <[ChartData](src/app/charts/chartData.ts)> | An [rxjs](https://rxjs-dev.firebaseapp.com) observable that sources chart data. | see the [randomWeightDataObservable(...)](src/app/examples/randomData.ts) function. |
-| windowingTime | required | number (ms) | Chart data being streamed into the chart can be aggregated by time windows to reduce the update frequency. Depending on the number of time-series being plotted, this number can be comfortably set at 25 ms. The default value is 100 ms | `100` |
+| windowingTime | required | number (ms) | Controls the update frequency of the chart. Depending on the number of time-series being plotted, this number can be comfortably set at 25 ms. The default value is 100 ms | `100` |
 | timeWindow | required | number (ms) | The maximum time between the `minTime` and the `maxTime`. | `2000` |
 
-##### Understanding min/max time and the time-window.
+##### Understanding the time-window.
 
 These charts have been develop to be used with high-frequency dynamic data that my run for a considerable amount of time. For example, you may stream in data for a few hundred seconds, and have the plot show the last 10 seconds worth of data. To achieve this you use the `timeWindow` property. Because you want to see the most recent 10 seconds of data, you set the time-window property to 10,000 ms (`timeWindow={10000}`). The charts use the time-window property and the current simulation time to show the most recent `timeWindow` milliseconds of data (in our example, the past 10 seconds). This causes the data to "slide" to the left after `timeWindow` has elapsed.
 
@@ -174,47 +176,51 @@ The filter enhancement differs from the others. This isn't a visible component, 
 | filter | optional | [RexExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) | A regular expression used to filter time-series based on their name. Generally, this would be specified by some control in the parent component. See for example [StreamingRasterChart](src/app/examples/StreamingRasterChart.tsx). | `^in[0-3]+$` | undefined | 
 
 
+#### state
 
-```typescript
-interface Props {
-    width: number;
-    height: number;
-    margin?: Partial<Margin>;
-    axisLabelFont?: Partial<{ size: number, color: string, family: string, weight: number }>;
-    axisStyle?: Partial<{ color: string }>;
-    backgroundColor?: string;
-    plotGridLines?: Partial<{ visible: boolean, color: string }>;
-    tooltip?: Partial<TooltipStyle>;
-    magnifier?: Partial<RadialMagnifierStyle>;
-    tracker?: Partial<TrackerStyle>;
+The *state* properties allow you to provide callbacks when the chart state changes. There are three state changes you can plug into
+1. on subscription to the rxjs observable
+2. when data changes
+3. when the current time changes.
 
-    // regex filter used to select which series are displayed
-    filter?: RegExp;
+##### onSubscription
 
-    minWeight?: number;
-    maxWeight?: number;
+> (subscription: Subscription) => void
 
-    // data to plot: min-time is the earliest time for which to plot the data; max-time is the latest
-    // and series list is a list of time-series to plot
-    minTime: number;
-    maxTime: number;
-    timeWindow: number;
-    seriesList: Array<Series>;
+You hand the `stream-charts` an [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable). This defines how (i.e. the pipeline) the data is generated. Only upon subscription does data flow through this pipeline. The rxjs `Observable.subscribe(...)` function returns a [Subscription](https://rxjs-dev.firebaseapp.com/api/index/class/Subscription) that can be used to stop the data.
 
-    // data stream
-    seriesObservable: Observable<ChartData>;
-    windowingTime?: number;
+An example of an observable can be found in the [randomSpikeDataObservable(...)](src/app/examples/randomData.ts) function. 
 
-    onSubscribe?: (subscription: Subscription) => void;
-    onUpdateData?: (seriesName: string, t: number, y: number) => void;
-    onUpdateTime?: (time: number) => void;
+One reason to provide an `onSubscription` callback is so that you have a handle on the subscription so that you can stop the data. For example, you may want to provide the user of your application a button to stop the data. Or, you may wish to stop the simulation after a certain period of time.
 
+###### onUpdateData
 
-    // a map that holds the series name and it's associated cooler
-    seriesColors?: Map<string, string>;
-}
+> (seriesName: string, t: number, y: number) => void
+
+When new data arrives from the observable, the `onUpdateData` callback provides a hook into the data. For example, you may want to stop the data if, for example, the value crosses some threshold.
+
+If you are only interested in the current time, you can use the `onUpdateTime` callback.
+
+##### onUpdateTime
+
+> (time: number) => void
+
+When the time associated with the data in the stream changes, this callback provides a hook into that time. In the [StreamingScatterChart](src/app/examples/StreamingScatterChart.tsx), for example, this callback is used to stop the random data after 1 second (1000 ms) by cancelling the subscription.
+
+```typescript jsx
+<ScatterChart
+    .
+    .
+    .
+    onSubscribe={subscription => subscriptionRef.current = subscription}
+    onUpdateTime={(t: number) => {
+        if(t > 1000) subscriptionRef.current!.unsubscribe()
+    }}
+    .
+    .
+    .
+/>
 ```
-
 
 #### axisLabelFont
 
@@ -289,56 +295,9 @@ The tracker styles are defined in the [TrackerStyle](src/app/charts/TrackerStyle
 
 Please note that the font style of the tracker text is controlled by the axis-label font styles described above. 
 
+### time-series
 
-### raster chart
-The raster chart component has the following properties.
 
-| Name |  | Type | Description | Example |
-| ---- | --- | -------- | ----------- | ------- |
-| width | Required | number | The width of the chart in pixels | 450 |
-| height | Required | number | The height of the chart in pixels | 300 |
-| margin | Optional | [Margin](src/app/charts/margins.ts) | The plot margin | `{top: 10, right: 10, left: 10}` |
-
-```typescript
-interface Props {
-    plotGridLines?: Partial<{ visible: boolean, color: string }>;
-
-    // data to plot: min-time is the earliest time for which to plot the data; max-time is the latest
-    // and series list is a list of time-series to plot
-    minTime: number;
-    maxTime: number;
-    timeWindow: number;
-    seriesList: Array<Series>;
-
-    // regex filter used to select which series are displayed
-    filter?: RegExp;
-
-    seriesObservable: Observable<ChartData>;
-
-    windowingTime?: number;
-    onSubscribe?: (subscription: Subscription) => void;
-    onUpdateData?: (seriesName: string, t: number, y: number) => void;
-    onUpdateTime?: (time: number) => void;
-}
-```
-```typescript
-interface Margin {
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-}
-```
-
-```typescript
-interface Series {
-    readonly name: string;
-    data: Datum[];
-    readonly last: () => Option<Datum>;
-    readonly length: () => number;
-    readonly isEmpty: () => boolean;
-}
-```
 
 ## running examples
 

@@ -32,8 +32,6 @@ interface Props {
 export function StreamingScatterChart(props: Props): JSX.Element {
     const {seriesList, timeWindow = 100, plotHeight = 20, plotWidth = 500} = props;
 
-    const currentTimeRef = useRef<number>(0);
-
     const observableRef = useRef<Observable<ChartData>>(randomWeightDataObservable(seriesList.length, 0.1));
     const subscriptionRef = useRef<Subscription>();
 

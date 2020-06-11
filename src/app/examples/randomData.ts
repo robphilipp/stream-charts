@@ -38,7 +38,7 @@ export function randomSpikeDataObservable(numSeries: number, updatePeriod: numbe
         // convert the number sequence to a time
         map(sequence => sequence * updatePeriod),
         // create a random spike for each series
-        map((time, index) => randomSpikeData(time, numSeries, updatePeriod))
+        map((time) => randomSpikeData(time, numSeries, updatePeriod))
     );
 }
 

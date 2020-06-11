@@ -48,8 +48,6 @@ export interface SpikesChartData {
 function StreamingRasterChart(props: Props): JSX.Element {
     const {seriesList, timeWindow = 100, seriesHeight = 20, plotWidth = 500} = props;
 
-    const currentTimeRef = useRef<number>(0);
-
     const observableRef = useRef<Observable<ChartData>>(randomSpikeDataObservable(seriesList.length));
     const subscriptionRef = useRef<Subscription>();
 
