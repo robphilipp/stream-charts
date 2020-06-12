@@ -5,31 +5,22 @@ import {Datum} from "./datumSeries";
  */
 export interface ChartData {
     maxTime: number;
-    newPoints: Array<IndexedDatum>
-}
-
-export interface IndexedDatum {
-    index: number;
-    datum: Datum;
+    // map(series_name -> array(datum))
+    newPoints: Map<string, Array<Datum>>;
 }
 
 /**
  * Creates an empty chart data object with all the values set to 0
- * @param {number} numSeries The number of series in the chart data
+ * @param {Array<string>} series The list of series names (identifiers) to update
  * @return {ChartData} An empty chart data object
  */
-export function emptyChartData(numSeries: number): ChartData {
+export function emptyChartData(series: Array<string>): ChartData {
     return {
         maxTime: 0,
-        newPoints: new Array<Datum>(numSeries)
-            .fill({} as Datum)
-            .map((_: Datum, i: number) => ({
-                index: i,
-                datum: {
-                    time: 0,
-                    value: 0
-                }
-            }))
+        newPoints: new Map<string, Array<Datum>>(series.map(name => [name, [{time: 0, value: 0}]]))
+        // newPoints: series.map(name => ({
+        //     // seriesName: name,
+        //     datum: {time: 0, value: 0}
+        // }))
     }
 }
-
