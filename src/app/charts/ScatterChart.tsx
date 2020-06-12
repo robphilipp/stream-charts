@@ -2,7 +2,7 @@ import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import {Axis, ScaleLinear, Selection, ZoomTransform} from "d3";
 import {adjustedDimensions, Margin} from "./margins";
-import {Datum, Series} from "./datumSeries";
+import {Datum, emptySeries, Series} from "./datumSeries";
 import {TimeRange, TimeRangeType} from "./timeRange";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
 import {Observable, Subscription} from "rxjs";
@@ -100,7 +100,7 @@ interface Props {
     seriesObservable: Observable<ChartData>;
     windowingTime?: number;
     onSubscribe?: (subscription: Subscription) => void;
-    onUpdateData?: (seriesName: string, t: number, y: number) => void;
+    onUpdateData?: (seriesName: string, data: Array<Datum>) => void;
     onUpdateTime?: (time: number) => void;
 
     // regex filter used to select which series are displayed
@@ -169,7 +169,7 @@ function ScatterChart(props: Props): JSX.Element {
     const maxValueRef = useRef<number>(maxY);
 
     const liveDataRef = useRef<Array<Series>>(seriesList);
-    const seriesRef = useRef<Array<Series>>(seriesList);
+    const seriesRef = useRef<Map<string, Series>>(new Map<string, Series>(seriesList.map(series => [series.name, series])));
     const currentTimeRef = useRef<number>(0);
 
 
@@ -179,7 +179,6 @@ function ScatterChart(props: Props): JSX.Element {
     const tooltipRef = useRef<TooltipStyle>(tooltip);
 
     // calculates to the time-range based on the (min, max)-time from the props
-    // const timeRangeRef = useRef<TimeRangeType>(TimeRange(minTime, maxTime));
     const timeRangeRef = useRef<TimeRangeType>(TimeRange(0, timeWindow));
 
     const seriesFilterRef = useRef<RegExp>(filter);
@@ -1038,21 +1037,18 @@ function ScatterChart(props: Props): JSX.Element {
                         currentTimeRef.current = data.maxTime;
 
                         // add each new point to it's corresponding series
-                        data.newPoints.forEach(datum => {
-                            const newValue = datum.datum.value;
-                            const time = datum.datum.time;
-
-                            // grab the series associated with the new data
-                            const series = seriesRef.current[datum.index];
+                        data.newPoints.forEach((newData, name) => {
+                            // grab the current series associated with the new data
+                            const series = seriesRef.current.get(name) || emptySeries(name);
 
                             // update the handler with the new data point
-                            onUpdateData(series.name, time, newValue);
+                            onUpdateData(name, newData);
 
-                            series.data.push({time: time, value: newValue});
-                        });
+                            series.data.push(...newData);
+                        })
 
                         // update the data
-                        liveDataRef.current = seriesRef.current;
+                        liveDataRef.current = Array.from(seriesRef.current.values());
                         timeRangeRef.current = TimeRange(
                             Math.max(0, currentTimeRef.current - timeWindow),
                             Math.max(currentTimeRef.current, timeWindow)

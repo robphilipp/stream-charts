@@ -48,7 +48,7 @@ export interface SpikesChartData {
 function StreamingRasterChart(props: Props): JSX.Element {
     const {seriesList, timeWindow = 100, seriesHeight = 20, plotWidth = 500} = props;
 
-    const observableRef = useRef<Observable<ChartData>>(randomSpikeDataObservable(seriesList.length));
+    const observableRef = useRef<Observable<ChartData>>(randomSpikeDataObservable(seriesList.map(series => series.name)));
     const subscriptionRef = useRef<Subscription>();
 
     const [filterValue, setFilterValue] = useState<string>('');
@@ -114,9 +114,10 @@ function StreamingRasterChart(props: Props): JSX.Element {
                 seriesObservable={observableRef.current}
                 onSubscribe={subscription => subscriptionRef.current = subscription}
                 onUpdateTime={(t: number) => {
-                    if(t > 1000) subscriptionRef.current!.unsubscribe()
+                    if(t > 30000) subscriptionRef.current!.unsubscribe()
                 }}
                 timeWindow={timeWindow}
+                windowingTime={100}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 tooltip={{visible: visibility.tooltip}}
                 magnifier={{visible: visibility.magnifier, magnification: 5}}

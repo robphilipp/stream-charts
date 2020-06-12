@@ -98,7 +98,7 @@ interface Props {
     seriesObservable: Observable<ChartData>;
     windowingTime?: number;
     onSubscribe?: (subscription: Subscription) => void;
-    onUpdateData?: (seriesName: string, t: number, y: number) => void;
+    onUpdateData?: (seriesName: string, data: Array<Datum>) => void;
     onUpdateTime?: (time: number) => void;
 }
 
@@ -165,7 +165,7 @@ function RasterChart(props: Props): JSX.Element {
     const seriesFilterRef = useRef<RegExp>(filter);
 
     const liveDataRef = useRef<Array<Series>>(seriesList);
-    const seriesRef = useRef<Array<Series>>(seriesList);
+    const seriesRef = useRef<Map<string, Series>>(new Map<string, Series>(seriesList.map(series => [series.name, series])));
     const currentTimeRef = useRef<number>(0);
 
     /**
@@ -923,25 +923,19 @@ function RasterChart(props: Props): JSX.Element {
                             currentTimeRef.current = data.maxTime;
 
                             // add each new point to it's corresponding series
-                            data.newPoints.forEach(datum => {
-                                const newValue = datum.datum.value;
+                            data.newPoints.forEach((newData, name) => {
+                                // grab the current series associated with the new data
+                                const series = seriesRef.current.get(name) || emptySeries(name);
 
-                                // ignore negative spikes
-                                if (newValue > 0) {
-                                    const time = datum.datum.time;
+                                // update the handler with the new data point
+                                onUpdateData(name, newData);
 
-                                    // grab the series associated with the new data
-                                    const series = seriesRef.current[datum.index];
-
-                                    // update the handler with the new data point
-                                    onUpdateData(series.name, time, newValue);
-
-                                    series.data.push({time: time, value: newValue});
-                                }
-                            });
+                                // add the new data to the series
+                                series.data.push(...newData);
+                            })
 
                             // update the data
-                            liveDataRef.current = seriesRef.current;
+                            liveDataRef.current = Array.from(seriesRef.current.values());
                             timeRangeRef.current = TimeRange(
                                 Math.max(0, currentTimeRef.current - timeWindow),
                                 Math.max(currentTimeRef.current, timeWindow)
