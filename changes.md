@@ -1,5 +1,8 @@
 # change history
 
+## version 0.0.15 (replaced indexes with maps)
+Switched the `ChartData` interface to use a map of series names to new series data, rather than relying on indexes. Now a map with the series name and an array of `Datum` is all that's needed to update the chart. This removes the tedious bookkeeping required when using indexes. 
+
 ## version 0.0.14 (reduced size)
 Failed attempts
 
