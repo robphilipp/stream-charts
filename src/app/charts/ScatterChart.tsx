@@ -168,7 +168,8 @@ function ScatterChart(props: Props): JSX.Element {
     const minValueRef = useRef<number>(minY);
     const maxValueRef = useRef<number>(maxY);
 
-    const liveDataRef = useRef<Array<Series>>(seriesList);
+    // const liveDataRef = useRef<Array<Series>>(seriesList);
+    const liveDataRef = useRef<Map<string, Series>>(new Map<string, Series>(seriesList.map(series => [series.name, series])));
     const seriesRef = useRef<Map<string, Series>>(new Map<string, Series>(seriesList.map(series => [series.name, series])));
     const currentTimeRef = useRef<number>(0);
 
@@ -895,7 +896,9 @@ function ScatterChart(props: Props): JSX.Element {
             const svg = d3.select<SVGSVGElement, any>(containerRef.current);
 
             // create the tensor of data (time, value)
-            const data: Array<Array<[number, number]>> = liveDataRef.current.map(series => selectInTimeRange(series));
+            const data: Array<Array<[number, number]>> = Array
+                .from(liveDataRef.current.values())
+                .map(series => selectInTimeRange(series));
 
             // calculate and update the min and max values for updating the y-axis. only updates when
             // the min is less than the historical min, and the max is larger than the historical max.
@@ -957,13 +960,14 @@ function ScatterChart(props: Props): JSX.Element {
 
             svg.call(zoom);
 
-            liveDataRef.current.forEach(series => {
+            liveDataRef.current.forEach((series, name) => {
                 const data = selectInTimeRange(series);
 
                 if (data.length === 0) return;
 
                 // only show the data for which the filter matches
-                const plotData = (series.name.match(seriesFilterRef.current)) ? data : [];
+                // const plotData = (series.name.match(seriesFilterRef.current)) ? data : [];
+                const plotData = (name.match(seriesFilterRef.current)) ? data : [];
 
                 // create the time-series paths
                 mainGRef.current!
@@ -1048,7 +1052,8 @@ function ScatterChart(props: Props): JSX.Element {
                         })
 
                         // update the data
-                        liveDataRef.current = Array.from(seriesRef.current.values());
+                        // liveDataRef.current = Array.from(seriesRef.current.values());
+                        liveDataRef.current = seriesRef.current;
                         timeRangeRef.current = TimeRange(
                             Math.max(0, currentTimeRef.current - timeWindow),
                             Math.max(currentTimeRef.current, timeWindow)
