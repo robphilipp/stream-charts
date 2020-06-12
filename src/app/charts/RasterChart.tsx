@@ -164,7 +164,7 @@ function RasterChart(props: Props): JSX.Element {
 
     const seriesFilterRef = useRef<RegExp>(filter);
 
-    const liveDataRef = useRef<Array<Series>>(seriesList);
+    const liveDataRef = useRef<Map<string, Series>>(new Map<string, Series>(seriesList.map(series => [series.name, series])));
     const seriesRef = useRef<Map<string, Series>>(new Map<string, Series>(seriesList.map(series => [series.name, series])));
     const currentTimeRef = useRef<number>(0);
 
@@ -176,15 +176,14 @@ function RasterChart(props: Props): JSX.Element {
     function initializeAxes(svg: SvgSelection): Axes {
         // calculate the mapping between the times in the data (domain) and the display
         // location on the screen (range)
-        // const maxTime = calcMaxTime(seriesList);
         const xScale = d3.scaleLinear()
             .domain([timeRangeRef.current.start, timeRangeRef.current.end])
             .range([0, plotDimensions.width]);
 
-        const lineHeight = (plotDimensions.height - margin.top) / liveDataRef.current.length;
+        const lineHeight = (plotDimensions.height - margin.top) / liveDataRef.current.size;
         const yScale = d3.scaleBand()
-            .domain(liveDataRef.current.map(series => series.name))
-            .range([0, lineHeight * liveDataRef.current.length]);
+            .domain(Array.from(liveDataRef.current.keys()))
+            .range([0, lineHeight * liveDataRef.current.size]);
 
         // create and add the axes
         const xAxisGenerator = d3.axisBottom(xScale);
@@ -192,7 +191,7 @@ function RasterChart(props: Props): JSX.Element {
         const xAxisSelection = svg
             .append<SVGGElement>('g')
             .attr('class', 'x-axis')
-            .attr('transform', `translate(${margin.left}, ${lineHeight * liveDataRef.current.length + margin.top})`)
+            .attr('transform', `translate(${margin.left}, ${lineHeight * liveDataRef.current.size + margin.top})`)
             .call(xAxisGenerator);
 
         const yAxisSelection = svg
@@ -376,7 +375,7 @@ function RasterChart(props: Props): JSX.Element {
      * @return {number} The height of the spikes line
      */
     function spikeLineHeight(): number {
-        return plotDimensions.height / liveDataRef.current.length;
+        return plotDimensions.height / liveDataRef.current.size;
     }
 
     /**
@@ -747,7 +746,7 @@ function RasterChart(props: Props): JSX.Element {
     function addGridLines(svg: SvgSelection): void {
         const gridLines = svg
             .selectAll('.grid-line')
-            .data(liveDataRef.current.filter(series => series.name.match(seriesFilterRef.current)).map(series => series.name));
+            .data(Array.from(liveDataRef.current.keys()).filter(name => name.match(seriesFilterRef.current)));
 
         gridLines
             .enter()
@@ -780,7 +779,7 @@ function RasterChart(props: Props): JSX.Element {
 
         if (containerRef.current && axesRef.current) {
             // filter out any data that doesn't match the current filter
-            const filteredData = liveDataRef.current.filter(series => series.name.match(seriesFilterRef.current));
+            const filteredData = Array.from(liveDataRef.current.values()).filter(series => series.name.match(seriesFilterRef.current));
 
             // select the text elements and bind the data to them
             const svg = d3.select<SVGSVGElement, any>(containerRef.current);
@@ -935,7 +934,7 @@ function RasterChart(props: Props): JSX.Element {
                             })
 
                             // update the data
-                            liveDataRef.current = Array.from(seriesRef.current.values());
+                            liveDataRef.current = seriesRef.current;
                             timeRangeRef.current = TimeRange(
                                 Math.max(0, currentTimeRef.current - timeWindow),
                                 Math.max(currentTimeRef.current, timeWindow)
@@ -1006,7 +1005,7 @@ function RasterChart(props: Props): JSX.Element {
         <svg
             className="streaming-raster-chart-d3"
             width={width}
-            height={height * liveDataRef.current.length}
+            height={height * liveDataRef.current.size}
             style={{backgroundColor: backgroundColor}}
             ref={containerRef}
         />
