@@ -8,20 +8,18 @@ Although still under development, there are two charts available:
 1. A neuron raster chart, and a
 2. scatter chart.
 
-Over time, I will add additional chart types. In the meantime, I welcome any contributions to create new chart types (bar, gauges, etc).
+Over time, I'll add additional chart types. In the meantime, I welcome any contributions to create new chart types (bar, gauges, etc).
 
 Both charts provide
 1. A tracker that shows the current time of the mouse position
 2. A tooltip that gives information about the current datum
 3. A magnifier that zooms in on the data giving a more detailed look.
-4. A regular expression filter to remove time-series whose names match.
+4. A regular expression filter to remove time-series whose names don't match.
 5. Themeable properties to change the look of the plots.
 6. Zooming and panning.
 
 
 Please see [change history](changes.md) for a history of changes.
-
-These charts are currently still under development.
 
 ## quick start
 
@@ -179,6 +177,12 @@ The *state* properties allow you to provide callbacks when the chart state chang
 1. on subscription to the rxjs observable
 2. when data changes
 3. when the current time changes.
+
+##### shouldSubscribe
+
+> boolean
+
+By default, when the charts mount, they subscribe to the specified observable. This causes the observable to start emitting chart-data. Although the chart controls the subscription to the observable, you can control the timing of that subscription through the `shouldSubscribe` property. Setting the property to `false` for the initial mount tells the chart not to subscribe when it mounts. Then, at some point in time later, when you want the chart to start consuming data, simply set the `shouldSubscribe` property to `true`. Once the chart has subscribed to the observable, changing the value of this property has no effect.
 
 ##### onSubscription
 
