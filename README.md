@@ -178,6 +178,12 @@ The *state* properties allow you to provide callbacks when the chart state chang
 2. when data changes
 3. when the current time changes.
 
+##### shouldSubscribe
+
+> boolean
+
+By default, when the charts mount, they subscribe to the specified observable. This causes the observable to start emitting chart-data. Although the chart controls the subscription to the observable, you can control the timing of that subscription through the `shouldSubscribe` property. Setting the property to `false` for the initial mount tells the chart not to subscribe when it mounts. Then, at some point in time later, when you want the chart to start consuming data, simply set the `shouldSubscribe` property to `true`. Once the chart has subscribed to the observable, changing the value of this property has no effect.
+
 ##### onSubscription
 
 > (subscription: Subscription) => void
