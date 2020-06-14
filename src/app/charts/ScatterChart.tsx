@@ -99,6 +99,7 @@ interface Props {
     // data stream
     seriesObservable: Observable<ChartData>;
     windowingTime?: number;
+    shouldSubscribe?: boolean;
     onSubscribe?: (subscription: Subscription) => void;
     onUpdateData?: (seriesName: string, data: Array<Datum>) => void;
     onUpdateTime?: (time: number) => void;
@@ -111,7 +112,12 @@ interface Props {
 }
 
 /**
- * Scatter chart with points connected by a line.
+ * Renders a scatter chart of time-series. The x-axis is time, and the y-axis shows the values. The chart
+ * relies on an rxjs `Observable` of {@link ChartData} for its data. By default, this chart will subscribe
+ * to the observable when it mounts. However, you can control the timing of the subscription through the
+ * `shouldSubscribe` property by setting it to `false`, and then some time later setting it to `true`.
+ * Once the observable starts sourcing a sequence of {@link ChartData}, for performance, this chart updates
+ * itself without invoking React's re-render.
  * @param {Props} props The properties from the parent
  * @return {JSX.Element} The scatter chart
  * @constructor
@@ -128,6 +134,7 @@ function ScatterChart(props: Props): JSX.Element {
         seriesList,
         seriesObservable,
         windowingTime = 100,
+        shouldSubscribe = true,
         onSubscribe = (_: Subscription) => {},
         onUpdateData = () => {},
         onUpdateTime = (_: number) => {},
@@ -1025,6 +1032,46 @@ function ScatterChart(props: Props): JSX.Element {
             .map(datum => [datum.time, datum.value]);
     }
 
+    function subscribe(): Subscription {
+        const subscription = seriesObservable
+            .pipe(windowTime(windowingTime))
+            .subscribe(dataList => {
+                dataList.forEach(data => {
+                    // updated the current time to be the max of the new data
+                    currentTimeRef.current = data.maxTime;
+
+                    // add each new point to it's corresponding series
+                    data.newPoints.forEach((newData, name) => {
+                        // grab the current series associated with the new data
+                        const series = seriesRef.current.get(name) || emptySeries(name);
+
+                        // update the handler with the new data point
+                        onUpdateData(name, newData);
+
+                        series.data.push(...newData);
+                    })
+
+                    // update the data
+                    // liveDataRef.current = Array.from(seriesRef.current.values());
+                    liveDataRef.current = seriesRef.current;
+                    timeRangeRef.current = TimeRange(
+                        Math.max(0, currentTimeRef.current - timeWindow),
+                        Math.max(currentTimeRef.current, timeWindow)
+                    )
+                }).then(() => {
+                    // updates the caller with the current time
+                    onUpdateTime(currentTimeRef.current);
+
+                    updatePlot(timeRangeRef.current);
+                })
+            });
+
+        // provide the subscription to the caller
+        onSubscribe(subscription);
+
+        return subscription;
+    }
+
     // called on mount to set up the <g> element into which to render
     useEffect(
         () => {
@@ -1032,45 +1079,6 @@ function ScatterChart(props: Props): JSX.Element {
                 const svg = d3.select<SVGSVGElement, any>(containerRef.current);
                 axesRef.current = initializeAxes(svg);
             }
-
-            const subscription = seriesObservable
-                .pipe(windowTime(windowingTime))
-                .subscribe(dataList => {
-                    dataList.forEach(data => {
-                        // updated the current time to be the max of the new data
-                        currentTimeRef.current = data.maxTime;
-
-                        // add each new point to it's corresponding series
-                        data.newPoints.forEach((newData, name) => {
-                            // grab the current series associated with the new data
-                            const series = seriesRef.current.get(name) || emptySeries(name);
-
-                            // update the handler with the new data point
-                            onUpdateData(name, newData);
-
-                            series.data.push(...newData);
-                        })
-
-                        // update the data
-                        // liveDataRef.current = Array.from(seriesRef.current.values());
-                        liveDataRef.current = seriesRef.current;
-                        timeRangeRef.current = TimeRange(
-                            Math.max(0, currentTimeRef.current - timeWindow),
-                            Math.max(currentTimeRef.current, timeWindow)
-                        )
-                    }).then(() => {
-                        // updates the caller with the current time
-                        onUpdateTime(currentTimeRef.current);
-
-                        updatePlot(timeRangeRef.current);
-                    })
-                });
-
-            // provide the subscription to the caller
-            onSubscribe(subscription);
-
-            // stop the stream on dismount
-            return () => subscription.unsubscribe();
 
             // we really, really only want this called when the component mounts, and there are
             // no stale closures in the this. recall that d3 manages the updates to the chart, and
@@ -1080,6 +1088,20 @@ function ScatterChart(props: Props): JSX.Element {
             // eslint-disable-next-line react-hooks/exhaustive-deps
         }, []
     );
+
+    // called on mount, dismount and when shouldSubscribe changes
+    useEffect(
+        () => {
+            if (shouldSubscribe) {
+                const subscription = subscribe();
+
+                // stop the stream on dismount
+                return () => subscription.unsubscribe();
+            }
+        },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [shouldSubscribe]
+    )
 
     // update the plot for tooltip, magnifier, or tracker if their visibility changes
     useEffect(

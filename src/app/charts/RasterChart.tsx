@@ -97,13 +97,19 @@ interface Props {
 
     seriesObservable: Observable<ChartData>;
     windowingTime?: number;
+    shouldSubscribe?: boolean;
     onSubscribe?: (subscription: Subscription) => void;
     onUpdateData?: (seriesName: string, data: Array<Datum>) => void;
     onUpdateTime?: (time: number) => void;
 }
 
 /**
- * Renders a raster chart
+ * Renders a raster chart of tagged events. The x-axis is time, and the y-axis shows each tag. The chart
+ * relies on an rxjs `Observable` of {@link ChartData} for its data. By default, this chart will subscribe
+ * to the observable when it mounts. However, you can control the timing of the subscription through the
+ * `shouldSubscribe` property by setting it to `false`, and then some time later setting it to `true`.
+ * Once the observable starts sourcing a sequence of {@link ChartData}, for performance, this chart updates
+ * itself without invoking React's re-render.
  * @param {Props} props The properties from the parent
  * @return {JSX.Element} The raster chart
  * @constructor
@@ -113,6 +119,7 @@ function RasterChart(props: Props): JSX.Element {
         seriesList,
         seriesObservable,
         windowingTime = 100,
+        shouldSubscribe = true,
         onSubscribe = (_: Subscription) => {},
         onUpdateData = () => {},
         onUpdateTime = (_: number) => {},
@@ -905,6 +912,48 @@ function RasterChart(props: Props): JSX.Element {
         }
     }
 
+    function subscribe(): Subscription {
+        const subscription = seriesObservable
+            .pipe(windowTime(windowingTime))
+            .subscribe(dataList => {
+                dataList
+                    .forEach(data => {
+                        // updated the current time to be the max of the new data
+                        currentTimeRef.current = data.maxTime;
+
+                        // add each new point to it's corresponding series
+                        data.newPoints.forEach((newData, name) => {
+                            // grab the current series associated with the new data
+                            const series = seriesRef.current.get(name) || emptySeries(name);
+
+                            // update the handler with the new data point
+                            onUpdateData(name, newData);
+
+                            // add the new data to the series
+                            series.data.push(...newData);
+                        })
+
+                        // update the data
+                        liveDataRef.current = seriesRef.current;
+                        timeRangeRef.current = TimeRange(
+                            Math.max(0, currentTimeRef.current - timeWindow),
+                            Math.max(currentTimeRef.current, timeWindow)
+                        )
+                    })
+                    .then(() => {
+                        // updates the caller with the current time
+                        onUpdateTime(currentTimeRef.current);
+
+                        updatePlot(timeRangeRef.current);
+                    })
+            });
+
+        // provide the subscription to the caller
+        onSubscribe(subscription);
+
+        return subscription;
+    }
+
     // called on mount to set up the <g> element into which to render
     useEffect(
         () => {
@@ -912,47 +961,6 @@ function RasterChart(props: Props): JSX.Element {
                 const svg = d3.select<SVGSVGElement, any>(containerRef.current);
                 axesRef.current = initializeAxes(svg);
             }
-
-            const subscription = seriesObservable
-                .pipe(windowTime(windowingTime))
-                .subscribe(dataList => {
-                    dataList
-                        .forEach(data => {
-                            // updated the current time to be the max of the new data
-                            currentTimeRef.current = data.maxTime;
-
-                            // add each new point to it's corresponding series
-                            data.newPoints.forEach((newData, name) => {
-                                // grab the current series associated with the new data
-                                const series = seriesRef.current.get(name) || emptySeries(name);
-
-                                // update the handler with the new data point
-                                onUpdateData(name, newData);
-
-                                // add the new data to the series
-                                series.data.push(...newData);
-                            })
-
-                            // update the data
-                            liveDataRef.current = seriesRef.current;
-                            timeRangeRef.current = TimeRange(
-                                Math.max(0, currentTimeRef.current - timeWindow),
-                                Math.max(currentTimeRef.current, timeWindow)
-                            )
-                        })
-                        .then(() => {
-                            // updates the caller with the current time
-                            onUpdateTime(currentTimeRef.current);
-
-                            updatePlot(timeRangeRef.current);
-                        })
-                });
-
-            // provide the subscription to the caller
-            onSubscribe(subscription);
-
-            // stop the stream on dismount
-            return () => subscription.unsubscribe();
         },
         // currentTimeRef, seriesRef, initializeAxes, onSubscribe, onUpdateData, etc are not included
         // in the dependency list because we only want this to run when the component mounts. The
@@ -962,6 +970,20 @@ function RasterChart(props: Props): JSX.Element {
         // eslint-disable-next-line react-hooks/exhaustive-deps
         []
     );
+
+    // called on mount, dismount and when shouldSubscribe changes
+    useEffect(
+        () => {
+            if (shouldSubscribe) {
+                const subscription = subscribe();
+
+                // stop the stream on dismount
+                return () => subscription.unsubscribe();
+            }
+        },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [shouldSubscribe]
+    )
 
     // update the plot for tooltip, magnifier, or tracker if their visibility changes
     useEffect(

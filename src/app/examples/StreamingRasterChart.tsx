@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {Datum, Series} from "../charts/datumSeries";
 import RasterChart from "../charts/RasterChart";
 import {ChartData} from "../charts/chartData";
@@ -39,10 +39,14 @@ export interface SpikesChartData {
 }
 
 /**
- * An example wrapper to the `RasterChart` that accepts an rxjs observable stream of data and updates the
- * `RasterChart` with the new data.
+ * An example wrapper to the {@link RasterChart} that accepts an rxjs observable. The {@link RasterChart} manages
+ * the subscription to the observable, but we can control when the {@link RasterChart} subscribes through the
+ * `shouldSubscribe` property. Once subscribed, the observable emits a sequence or random chart data. The
+ * {@link RasterChart} updates itself with the new data without causing React to re-render the component. In this
+ * example, we delay the subscription to the observable by 1 second.
+ * after the {@link RasterChart} has mounted.
  * @param {Props} props The properties passed down from the parent
- * @return {JSX.Element} The streaming raster chart
+ * @return {Element} The streaming raster chart
  * @constructor
  */
 function StreamingRasterChart(props: Props): JSX.Element {
@@ -55,6 +59,8 @@ function StreamingRasterChart(props: Props): JSX.Element {
     const [filter, setFilter] = useState<RegExp>(new RegExp(''));
 
     const [visibility, setVisibility] = useState<Visibility>(initialVisibility);
+
+    const [shouldSubscribe, setShouldSubscribe] = useState<boolean>(false);
 
     /**
      * Called when the user changes the regular expression filter
@@ -78,6 +84,13 @@ function StreamingRasterChart(props: Props): JSX.Element {
         margin: 6,
         marginRight: 20
     };
+
+    useEffect(
+        () => {
+            setTimeout(() => setShouldSubscribe(true), 1000);
+        },
+        []
+    );
 
     return (
         <div style={{color: '#d2933f'}}>
@@ -112,12 +125,13 @@ function StreamingRasterChart(props: Props): JSX.Element {
                 height={seriesList.length * seriesHeight}
                 seriesList={seriesList}
                 seriesObservable={observableRef.current}
+                shouldSubscribe={shouldSubscribe}
                 onSubscribe={subscription => subscriptionRef.current = subscription}
                 onUpdateTime={(t: number) => {
                     if(t > 3000) subscriptionRef.current!.unsubscribe()
                 }}
                 timeWindow={timeWindow}
-                windowingTime={250}
+                windowingTime={100}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 tooltip={{visible: visibility.tooltip}}
                 magnifier={{visible: visibility.magnifier, magnification: 5}}

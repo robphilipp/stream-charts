@@ -113,7 +113,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                     if(t > 3000) subscriptionRef.current!.unsubscribe()
                 }}
                 timeWindow={timeWindow}
-                windowingTime={250}
+                windowingTime={100}
                 margin={{top: 30, right: 20, bottom: 30, left: 75}}
                 tooltip={{visible: visibility.tooltip}}
                 tooltipValueLabel='weight'

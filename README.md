@@ -8,20 +8,18 @@ Although still under development, there are two charts available:
 1. A neuron raster chart, and a
 2. scatter chart.
 
-Over time, I will add additional chart types. In the meantime, I welcome any contributions to create new chart types (bar, gauges, etc).
+Over time, I'll add additional chart types. In the meantime, I welcome any contributions to create new chart types (bar, gauges, etc).
 
 Both charts provide
 1. A tracker that shows the current time of the mouse position
 2. A tooltip that gives information about the current datum
 3. A magnifier that zooms in on the data giving a more detailed look.
-4. A regular expression filter to remove time-series whose names match.
+4. A regular expression filter to remove time-series whose names don't match.
 5. Themeable properties to change the look of the plots.
 6. Zooming and panning.
 
 
 Please see [change history](changes.md) for a history of changes.
-
-These charts are currently still under development.
 
 ## quick start
 
