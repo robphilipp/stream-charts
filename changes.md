@@ -1,5 +1,8 @@
 # change history
 
+## version 0.0.16 (control timing of subscription)
+Previously, the charts subscribed to the rxjs observable upon mounting, and started consuming data. The default behaviour after this update is the same. However, now, using the `shouldSubscribe` property, you can control when the chart subscribes to the data.
+
 ## version 0.0.15 (replaced indexes with maps)
 Switched the `ChartData` interface to use a map of series names to new series data, rather than relying on indexes. Now a map with the series name and an array of `Datum` is all that's needed to update the chart. This removes the tedious bookkeeping required when using indexes. 
 
