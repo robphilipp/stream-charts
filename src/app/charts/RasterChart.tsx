@@ -114,7 +114,7 @@ interface Props {
  * @return {JSX.Element} The raster chart
  * @constructor
  */
-function RasterChart(props: Props): JSX.Element {
+export function RasterChart(props: Props): JSX.Element {
     const {
         seriesList,
         seriesObservable,
@@ -1033,5 +1033,3 @@ function RasterChart(props: Props): JSX.Element {
         />
     );
 }
-
-export default RasterChart;

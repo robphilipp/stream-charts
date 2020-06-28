@@ -1,5 +1,8 @@
 # change history
 
+## version 0.1.0 (pure lib)
+Updated project to be a pure library and moved [examples](https://github.com/robphilipp/stream-charts-examples), that uses this library, to a separate project.
+
 ## version 0.0.16 (control timing of subscription)
 Previously, the charts subscribed to the rxjs observable upon mounting, and started consuming data. The default behaviour after this update is the same. However, now, using the `shouldSubscribe` property, you can control when the chart subscribes to the data.
 

@@ -122,7 +122,7 @@ interface Props {
  * @return {JSX.Element} The scatter chart
  * @constructor
  */
-function ScatterChart(props: Props): JSX.Element {
+export function ScatterChart(props: Props): JSX.Element {
 
     const {
         width,
@@ -1165,5 +1165,3 @@ export function seriesColorsFor(series: Array<Series>, startColor: string, stopC
         .map((color, index) => [series[index].name, color]) as Array<[string, string]>
     );
 }
-
-export default ScatterChart;
