@@ -18,9 +18,5 @@ export function emptyChartData(series: Array<string>): ChartData {
     return {
         maxTime: 0,
         newPoints: new Map<string, Array<Datum>>(series.map(name => [name, [{time: 0, value: 0}]]))
-        // newPoints: series.map(name => ({
-        //     // seriesName: name,
-        //     datum: {time: 0, value: 0}
-        // }))
     }
 }
