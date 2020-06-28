@@ -1,6 +1,6 @@
 {
   "name": "stream-charts",
-  "version": "0.0.17-SNAPSHOT",
+  "version": "0.1.0",
   "description": "Charts for steaming data",
   "author": "Rob Philipp",
   "homepage": "https://robphilipp.github.io/stream-charts/",
