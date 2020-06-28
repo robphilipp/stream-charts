@@ -27,10 +27,10 @@ Please see [change history](changes.md) for a history of changes.
 $ npm install stream-charts
 ```
 
-For the neuron raster chart (see [example](src/app/examples/StreamingRasterChart.tsx))
+For the neuron raster chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx))
 
 ```typescript
-import RasterChart from "../charts/RasterChart";
+import {RasterChart} from "stream-charts";
 .
 .
 .
@@ -53,10 +53,10 @@ import RasterChart from "../charts/RasterChart";
 
 ```
 
-and for the scatter chart  (see [example](src/app/examples/StreamingScatterChart.tsx))
+and for the scatter chart  (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx))
 
 ```typescript
-import ScatterChart from "../charts/ScatterChart";
+import {ScatterChart} from "stream-charts";
 .
 .
 .
@@ -85,15 +85,15 @@ import ScatterChart from "../charts/ScatterChart";
 
 There are currently two chart types available: a raster chart for display neuron spikes as a function of time, and a scatter chart. The chart below shows the raster chart with the bar magnifier enabled. The controls at the top of the chart are part of the example. These controls allow filtering time-series by their assigned names in real-time, displaying a tooltip when the mouse pointer is on top of a datum, displaying a tracker that show a vertical line and the current time of the mouse, and a bar magnifier, as shown in the image.
 
-![raster-chart](docs/images/raster-magnifier.png)
+![raster-chart](https://github.com/robphilipp/stream-charts/blob/master/docs/images/raster-magnifier.png?raw=true)
 
 A scatter plot is shown below. In this plot, the neurons' weights are plotted as a function of time. In this plot, the magnifier is enabled, and magnifies the data near the mouse pointer.
 
-![scatter-chart](docs/images/scatter.png)  
+![scatter-chart](https://github.com/robphilipp/stream-charts/blob/master/docs/images/scatter.png?raw=true)  
 
 Another example of a scatter plot is shown below. In this plot, a tooltip shows the weight updates that came just before the mouse cursor and just after, as well as the time and weight changes.
 
-![scatter-chart-tooltip](docs/images/scatter-tooltip.png)
+![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/master/docs/images/scatter-tooltip.png?raw=true)
 
 In both cases the plots were updated in real-time with an average update time interval of 25 ms. 
 
@@ -101,7 +101,7 @@ In both cases the plots were updated in real-time with an average update time in
 
 ### properties
 
-The [examples](src/app/examples) directory has example code that was used to generate the charts in the images above. The [StreamingRasterChart](src/app/examples/StreamingRasterChart.tsx) provides an example of using the raster chart. The [StreamingScatterChart](src/app/examples/StreamingScatterChart.tsx) provides an example of using the scatter chart. Both of these examples provide controls for enabling the filtering, tooltip, tracker, and magnifier enhancements.
+The [examples](https://github.com/robphilipp/stream-charts-examples) project has example code that was used to generate the charts in the images above. The [StreamingRasterChart](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx) provides an example of using the raster chart. The [StreamingScatterChart](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx) provides an example of using the scatter chart. Both of these examples provide controls for enabling the filtering, tooltip, tracker, and magnifier enhancements.
 
 Each chart accepts a number of required and optional properties. The properties are divided into 
 1. style, 
@@ -135,7 +135,7 @@ The *style* properties common to all plots are listed in the table below.
 | ---- | --- | -------- | ----------- | ------- |
 | width | required | number | The width of the chart in pixels | 450 |
 | height | required | number | The height of the chart in pixels | 300 |
-| margin | optional | [Margin](src/app/charts/margins.ts) | The plot margin | `{top: 10, left: 10}` |
+| margin | optional | [Margin](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/margins.ts) | The plot margin | `{top: 10, left: 10}` |
 | axesLabelFont | optional | `{size: number, color: string, family: string, weight: number}` | The font used to display the labels for the axes and ticks | `{size: 14, color: '#fff'}` |
 | backgroundColor | optional | string | The background color of the plot. Technically, this property is carried over to the SVG element holding the entire plot | `'#202020'` |
 
@@ -145,8 +145,8 @@ The *data* properties define the data source, processing, and constraints.
 
 | Name |     | Type | Description | Example |
 | ---- | --- | ---- | ----------- | ------- |
-| seriesList | required | Array<[Series](src/app/charts/datumSeries.ts)> | A list of the series to plot. | `[seriesFrom('test1')]` |
-| seriesObservable | required | [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable) <[ChartData](src/app/charts/chartData.ts)> | An [rxjs](https://rxjs-dev.firebaseapp.com) observable that sources chart data. | see the [randomWeightDataObservable(...)](src/app/examples/randomData.ts) function. |
+| seriesList | required | Array of [Series](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/datumSeries.ts) | A list of the series to plot. | `[seriesFrom('test1')]` |
+| seriesObservable | required | [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable) of [ChartData](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/chartData.ts) | An [rxjs](https://rxjs-dev.firebaseapp.com) observable that sources chart data. | see the [randomWeightDataObservable(...)](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/randomData.ts) function. |
 | windowingTime | optional | number (ms) | Controls the update frequency of the chart. Depending on the number of time-series being plotted, this number can be comfortably set at 25 ms. The default value is 100 ms | `100` |
 | timeWindow | required | number (ms) | The maximum time between the `minTime` and the `maxTime`. | `2000` |
 
@@ -165,10 +165,10 @@ The filter enhancement differs from the others. This isn't a visible component, 
 
 | Name |  | Type | Description | Example |
 | ---- | --- | -------- | ----------- | ------- |
-| tooltip | optional | [TooltipStyle](src/app/charts/TooltipStyle.ts) | Styling for the tooltip control when it is active | `{visible: false, fontSize: 12, fontColor: '#d2933f'}`|
-| magnifier | optional | [RadialMagnifier](src/app/charts/ScatterChart.tsx) or [BarMagnifier](src/app/charts/RasterChart.tsx) | Defines the style of the radial magnifier used for the scatter chart and the bar magnifier used for the raster chart | `{visible: true}` |
-| tracker | optional | [TrackerStyle](src/app/charts/TrackerStyle.ts) | Style of the tracker line that draws a vertical line at the time represented by the current mouse position and shows that time, when the mouse is in the plot area. | `{visible: false, timeWindow: 50}` |
-| filter | optional | [RexExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) | A regular expression used to filter time-series based on their name. Generally, this would be specified by some control in the parent component. See for example [StreamingRasterChart](src/app/examples/StreamingRasterChart.tsx). | `^in[0-3]+$` | undefined | 
+| tooltip | optional | [TooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/TooltipStyle.ts) | Styling for the tooltip control when it is active | `{visible: false, fontSize: 12, fontColor: '#d2933f'}`|
+| magnifier | optional | [RadialMagnifier](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/ScatterChart.tsx) or [BarMagnifier](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/RasterChart.tsx) | Defines the style of the radial magnifier used for the scatter chart and the bar magnifier used for the raster chart | `{visible: true}` |
+| tracker | optional | [TrackerStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/TrackerStyle.ts) | Style of the tracker line that draws a vertical line at the time represented by the current mouse position and shows that time, when the mouse is in the plot area. | `{visible: false, timeWindow: 50}` |
+| filter | optional | [RexExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) | A regular expression used to filter time-series based on their name. Generally, this would be specified by some control in the parent component. See for example [StreamingRasterChart](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx). | `^in[0-3]+$` | undefined | 
 
 
 #### state
