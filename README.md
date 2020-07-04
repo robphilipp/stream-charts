@@ -138,6 +138,7 @@ The *style* properties common to all plots are listed in the table below.
 | margin | optional | [Margin](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/margins.ts) | The plot margin | `{top: 10, left: 10}` |
 | axesLabelFont | optional | `{size: number, color: string, family: string, weight: number}` | The font used to display the labels for the axes and ticks | `{size: 14, color: '#fff'}` |
 | backgroundColor | optional | string | The background color of the plot. Technically, this property is carried over to the SVG element holding the entire plot | `'#202020'` |
+| svgStyle | optional | css object | An object holding the React style CSS properties (i.e. camelCased) for the SVG container holding the chart. This can be used to set properties of the background. | `{width: '100%'}` |
 
 #### data
 
@@ -298,20 +299,6 @@ Please note that the font style of the tracker text is controlled by the axis-la
 
 ### time-series
 
-
-
-## running examples
-
-Install the dependencies.
-
-```
-$ npm install
-```
-
-Run the development server, which should fire up a browser and load the example app.
-```
-$ npm start
-```
 
 ##
 

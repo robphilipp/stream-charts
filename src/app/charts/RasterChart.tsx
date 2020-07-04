@@ -3,19 +3,19 @@ import * as d3 from "d3";
 import {Axis, ScaleBand, ScaleLinear, Selection, ZoomTransform} from "d3";
 import {BarMagnifier, barMagnifierWith, LensTransformation} from "./barMagnifier";
 import {TimeRange, TimeRangeType} from "./timeRange";
-import {adjustedDimensions, Margin} from "./margins";
+import {adjustedDimensions, Margin, PlotDimensions} from "./margins";
 import {Datum, emptySeries, PixelDatum, Series} from "./datumSeries";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
-import {Observable, Subscription} from "rxjs";
+import {fromEvent, Observable, Subscription} from "rxjs";
 import {ChartData} from "./chartData";
-import {windowTime} from "rxjs/operators";
+import {throttleTime, windowTime} from "rxjs/operators";
 import {defaultTrackerStyle, TrackerStyle} from "./TrackerStyle";
+import {grabWidth, initialSvgStyle, SvgStyle} from "./svgStyle";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultSpikesStyle = {
     margin: 2,
     color: '#008aad',
-    // color: '#c95d15',
     lineWidth: 2,
     highlightColor: '#d2933f',
     highlightWidth: 4
@@ -76,7 +76,7 @@ type TextSelection = Selection<SVGTextElement, any, HTMLElement, any>;
 const textWidthOf = (elem: TextSelection) => elem.node()?.getBBox()?.width || 0;
 
 interface Props {
-    width: number;
+    width?: number;
     height: number;
     margin?: Partial<Margin>;
     spikesStyle?: Partial<{ margin: number, color: string, lineWidth: number, highlightColor: string, highlightWidth: number }>;
@@ -87,6 +87,7 @@ interface Props {
     tooltip?: Partial<TooltipStyle>;
     magnifier?: Partial<LineMagnifierStyle>;
     tracker?: Partial<TrackerStyle>;
+    svgStyle?: Partial<SvgStyle>;
 
     // data to plot: time-window is the time-range of data shown (slides in time)
     timeWindow: number;
@@ -125,11 +126,9 @@ export function RasterChart(props: Props): JSX.Element {
         onUpdateTime = (_: number) => {},
         filter = /./,
         timeWindow,
-        width,
         height,
         backgroundColor = '#202020',
     } = props;
-
 
     // override the defaults with the parent's properties, leaving any unset values as the default value
     const margin = {...defaultMargin, ...props.margin};
@@ -140,9 +139,24 @@ export function RasterChart(props: Props): JSX.Element {
     const tooltip: TooltipStyle = {...defaultTooltipStyle, ...props.tooltip};
     const magnifier = {...defaultLineMagnifierStyle, ...props.magnifier};
     const tracker = {...defaultTrackerStyle, ...props.tracker};
+    const svgStyle = props.width ?
+        {...initialSvgStyle, ...props.svgStyle, width: props.width} :
+        {...initialSvgStyle, ...props.svgStyle};
 
-    // grab the dimensions of the actual plot after removing the margins from the specified width and height
-    const plotDimensions = adjustedDimensions(width, height, margin);
+    // id of the chart to avoid dom conflicts when multiple raster charts are used in the same app
+    const chartId = useRef<number>(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+
+    // hold a reference to the current width and the plot dimensions
+    const width = useRef<number>(props.width || 500);
+    const plotDimRef = useRef<PlotDimensions>(adjustedDimensions(width.current, height, margin));
+
+    // resize event throttling
+    const resizeEventFlowRef = useRef<Observable<Event>>(
+        fromEvent(window, 'resize')
+            .pipe(
+                throttleTime(50)
+            )
+    );
 
     // the container that holds the d3 svg element
     const containerRef = useRef<SVGSVGElement>(null);
@@ -178,9 +192,10 @@ export function RasterChart(props: Props): JSX.Element {
     /**
      * Initializes the axes
      * @param {SvgSelection} svg The main svg element
+     * @param {PlotDimensions} plotDimensions The dimensions of the plot
      * @return {Axes} The axes generators, selections, scales, and spike line height
      */
-    function initializeAxes(svg: SvgSelection): Axes {
+    function initializeAxes(svg: SvgSelection, plotDimensions: PlotDimensions): Axes {
         // calculate the mapping between the times in the data (domain) and the display
         // location on the screen (range)
         const xScale = d3.scaleLinear()
@@ -197,32 +212,34 @@ export function RasterChart(props: Props): JSX.Element {
         const yAxisGenerator = d3.axisLeft(yScale);
         const xAxisSelection = svg
             .append<SVGGElement>('g')
+            .attr('id', `x-axis-selection-${chartId.current}`)
             .attr('class', 'x-axis')
             .attr('transform', `translate(${margin.left}, ${lineHeight * liveDataRef.current.size + margin.top})`)
             .call(xAxisGenerator);
 
         const yAxisSelection = svg
             .append<SVGGElement>('g')
+            .attr('id', `y-axis-selection-${chartId.current}`)
             .attr('class', 'y-axis')
             .attr('transform', `translate(${margin.left}, ${margin.top})`)
             .call(yAxisGenerator);
 
         svg
             .append<SVGTextElement>('text')
-            .attr('id', 'raster-chart-x-axis-label')
+            .attr('id', `raster-chart-x-axis-label-${chartId.current}`)
             .attr('text-anchor', 'middle')
             .attr('font-size', axisLabelFont.size)
             .attr('fill', axisLabelFont.color)
             .attr('font-family', axisLabelFont.family)
             .attr('font-weight', axisLabelFont.weight)
-            .attr('transform', `translate(${margin.left + plotDimensions.width / 2}, ${plotDimensions.height + margin.top + (margin.bottom / 3)})`)
+            .attr('transform', `translate(${margin.left + plotDimensions.width / 2}, ${lineHeight + 2 * margin.top + (margin.bottom / 3)})`)
             .text("t (ms)");
 
         // create the clipping region so that the lines are clipped at the y-axis
         svg
             .append("defs")
             .append("clipPath")
-            .attr("id", "clip-spikes")
+            .attr("id", `clip-spikes-${chartId.current}`)
             .append("rect")
             .attr("width", plotDimensions.width)
             .attr("height", plotDimensions.height - margin.top)
@@ -241,27 +258,27 @@ export function RasterChart(props: Props): JSX.Element {
      * at the location of the mouse when the scroll wheel or gesture was applied.
      * @param {ZoomTransform} transform The d3 zoom transformation information
      * @param {number} x The x-position of the mouse when the scroll wheel or gesture is used
-     * @callback
-        */
-    function onZoom(transform: ZoomTransform, x: number): void {
+     * @param {PlotDimensions} plotDimensions The current dimensions of the plot
+     */
+    function onZoom(transform: ZoomTransform, x: number, plotDimensions: PlotDimensions): void {
         const time = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>().invert(x);
         timeRangeRef.current = timeRangeRef.current!.scale(transform.k, time);
         zoomFactorRef.current = transform.k;
-        updatePlot(timeRangeRef.current);
+        updatePlot(timeRangeRef.current, plotDimensions);
     }
 
     /**
      * Adjusts the time-range and updates the plot when the plot is dragged to the left or right
      * @param {number} deltaX The amount that the plot is dragged
-     * @callback
-        */
-    function onPan(deltaX: number): void {
+     * @param {PlotDimensions} plotDimensions The current dimensions of the plot
+     */
+    function onPan(deltaX: number, plotDimensions: PlotDimensions): void {
         const scale = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>();
         const currentTime = timeRangeRef!.current.start;
         const x = scale(currentTime);
         const deltaTime = scale.invert(x + deltaX) - currentTime;
         timeRangeRef.current = timeRangeRef.current!.translate(-deltaTime);
-        updatePlot(timeRangeRef.current);
+        updatePlot(timeRangeRef.current, plotDimensions);
     }
 
     /**
@@ -286,7 +303,7 @@ export function RasterChart(props: Props): JSX.Element {
             // create the rounded rectangle for the tooltip's background
             const rect = d3.select<SVGSVGElement | null, any>(containerRef.current)
                 .append<SVGRectElement>('rect')
-                .attr('id', `r${datum.time}-${seriesName}`)
+                .attr('id', `r${datum.time}-${seriesName}-${chartId.current}`)
                 .attr('class', 'tooltip')
                 .attr('rx', tooltipRef.current.borderRadius)
                 .attr('fill', tooltipRef.current.backgroundColor)
@@ -298,7 +315,7 @@ export function RasterChart(props: Props): JSX.Element {
             // display the neuron ID in the tooltip
             const header = d3.select<SVGSVGElement | null, any>(containerRef.current)
                 .append<SVGTextElement>("text")
-                .attr('id', `tn${datum.time}-${seriesName}`)
+                .attr('id', `tn${datum.time}-${seriesName}-${chartId.current}`)
                 .attr('class', 'tooltip')
                 .attr('fill', tooltipRef.current.fontColor)
                 .attr('font-family', 'sans-serif')
@@ -310,7 +327,7 @@ export function RasterChart(props: Props): JSX.Element {
             // display the time (ms) and spike strength (mV) in the tooltip
             const text = d3.select<SVGSVGElement | null, any>(containerRef.current)
                 .append<SVGTextElement>("text")
-                .attr('id', `t${datum.time}-${seriesName}`)
+                .attr('id', `t${datum.time}-${seriesName}-${chartId.current}`)
                 .attr('class', 'tooltip')
                 .attr('fill', tooltipRef.current.fontColor)
                 .attr('font-family', 'sans-serif')
@@ -361,7 +378,7 @@ export function RasterChart(props: Props): JSX.Element {
                     axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>()(time),
                     textWidth / 2
                 ),
-                plotDimensions.width - textWidth / 2
+                plotDimRef.current.width - textWidth / 2
             ) + margin.left - textWidth / 2 - tooltip.paddingLeft;
     }
 
@@ -382,7 +399,7 @@ export function RasterChart(props: Props): JSX.Element {
      * @return {number} The height of the spikes line
      */
     function spikeLineHeight(): number {
-        return plotDimensions.height / liveDataRef.current.size;
+        return plotDimRef.current.height / liveDataRef.current.size;
     }
 
     /**
@@ -445,17 +462,17 @@ export function RasterChart(props: Props): JSX.Element {
             ;
 
             // add the magnifier axes and label
-            d3.select('#magnifier-line')
+            d3.select(`#magnifier-line-${chartId.current}`)
                 .attr('x1', x)
                 .attr('x2', x)
                 .attr('opacity', () => isMouseInPlot ? magnifier.axisOpacity || 0.35 : 0)
             ;
 
-            const label = d3.select<SVGTextElement, any>('#magnifier-line-time')
+            const label = d3.select<SVGTextElement, any>(`#magnifier-line-time-${chartId.current}`)
                 .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
                 .text(() => `${d3.format(",.0f")(axesRef.current!.xScale.invert(x - margin.left))} ms`)
             ;
-            label.attr('x', Math.min(plotDimensions.width + margin.left - textWidthOf(label), x));
+            label.attr('x', Math.min(plotDimRef.current.width + margin.left - textWidthOf(label), x));
 
             const axesMagnifier: BarMagnifier = barMagnifierWith(deltaX, magnifier.magnification, x);
             magnifierXAxisRef.current!
@@ -528,12 +545,12 @@ export function RasterChart(props: Props): JSX.Element {
                 .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
             ;
 
-            const label = d3.select<SVGTextElement, any>('#raster-chart-tracker-time')
+            const label = d3.select<SVGTextElement, any>(`#raster-chart-tracker-time-${chartId.current}`)
                 .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
                 .text(() => `${d3.format(",.0f")(axesRef.current!.xScale.invert(x - margin.left))} ms`)
 
             const labelWidth = textWidthOf(label);
-            label.attr('x', Math.min(plotDimensions.width + margin.left - labelWidth, x))
+            label.attr('x', Math.min(plotDimRef.current.width + margin.left - labelWidth, x))
         }
     }
 
@@ -544,7 +561,7 @@ export function RasterChart(props: Props): JSX.Element {
      * @return {boolean} `true` if the mouse is in the plot area; `false` if the mouse is not in the plot area
      */
     function mouseInPlotArea(x: number, y: number): boolean {
-        return x > margin.left && x < width - margin.right &&
+        return x > margin.left && x < width.current - margin.right &&
             y > margin.top && y < height - margin.bottom;
     }
 
@@ -560,7 +577,7 @@ export function RasterChart(props: Props): JSX.Element {
             const linearGradient = svg
                 .append<SVGDefsElement>('defs')
                 .append<SVGLinearGradientElement>('linearGradient')
-                .attr('id', 'bar-magnifier-gradient')
+                .attr('id', `bar-magnifier-gradient-${chartId.current}`)
                 .attr('x1', '0%')
                 .attr('x2', '100%')
                 .attr('y1', '0%')
@@ -599,12 +616,12 @@ export function RasterChart(props: Props): JSX.Element {
                 .attr('class', 'bar-magnifier')
                 .attr('y', margin.top)
                 .attr('height', height)
-                .style('fill', 'url(#bar-magnifier-gradient')
+                .style('fill', `url(#bar-magnifier-gradient-${chartId.current})`)
             ;
 
             svg
                 .append<SVGLineElement>('line')
-                .attr('id', 'magnifier-line')
+                .attr('id', `magnifier-line-${chartId.current}`)
                 .attr('y1', margin.top)
                 .attr('y2', height + margin.top)
                 .attr('stroke', tooltip.borderColor)
@@ -615,7 +632,7 @@ export function RasterChart(props: Props): JSX.Element {
             // create the text element holding the tracker time
             svg
                 .append<SVGTextElement>('text')
-                .attr('id', 'magnifier-line-time')
+                .attr('id', `magnifier-line-time-${chartId.current}`)
                 .attr('y', Math.max(0, margin.top -3))
                 .attr('fill', axisLabelFont.color)
                 .attr('font-family', axisLabelFont.family)
@@ -627,7 +644,7 @@ export function RasterChart(props: Props): JSX.Element {
             const lensTickIndexes = d3.range(-5, 6, 1);
             const lensLabelIndexes = [-5, -1, 1, 5];
 
-            const xLensAxisTicks = svg.append('g').attr('id', 'x-lens-axis-ticks-raster');
+            const xLensAxisTicks = svg.append('g').attr('id', `x-lens-axis-ticks-raster-${chartId.current}`);
             magnifierXAxisRef.current = magnifierLensAxisTicks('x-lens-ticks', lensTickIndexes, xLensAxisTicks);
             magnifierXAxisLabelRef.current = magnifierLensAxisLabels(lensLabelIndexes, xLensAxisTicks);
 
@@ -719,7 +736,7 @@ export function RasterChart(props: Props): JSX.Element {
             // create the text element holding the tracker time
             svg
                 .append<SVGTextElement>('text')
-                .attr('id', 'raster-chart-tracker-time')
+                .attr('id', `raster-chart-tracker-time-${chartId.current}`)
                 .attr('y', Math.max(0, margin.top -3))
                 .attr('fill', axisLabelFont.color)
                 .attr('font-family', axisLabelFont.family)
@@ -749,8 +766,9 @@ export function RasterChart(props: Props): JSX.Element {
     /**
      * Adds grid lines, centered on the spikes, for each neuron
      * @param {SvgSelection} svg The SVG selection holding the grid-lines
+     * @param {PlotDimensions} plotDimensions The current dimensions of the plot
      */
-    function addGridLines(svg: SvgSelection): void {
+    function addGridLines(svg: SvgSelection, plotDimensions: PlotDimensions): void {
         const gridLines = svg
             .selectAll('.grid-line')
             .data(Array.from(liveDataRef.current.keys()).filter(name => name.match(seriesFilterRef.current)));
@@ -779,8 +797,9 @@ export function RasterChart(props: Props): JSX.Element {
     /**
      * Updates the plot data for the specified time-range, which may have changed due to zoom or pan
      * @param {TimeRange} timeRange The current time range
+     * @param {PlotDimensions} plotDimensions The current dimensions of the plot
      */
-    function updatePlot(timeRange: TimeRangeType) {
+    function updatePlot(timeRange: TimeRangeType, plotDimensions: PlotDimensions): void {
         tooltipRef.current = tooltip;
         timeRangeRef.current = timeRange;
 
@@ -792,12 +811,14 @@ export function RasterChart(props: Props): JSX.Element {
             const svg = d3.select<SVGSVGElement, any>(containerRef.current);
 
             // create or update the x-axis (user filters change the location of x-axis)
-            axesRef.current.xScale.domain([timeRangeRef.current.start, timeRangeRef.current.end]);
+            axesRef.current.xScale
+                .domain([timeRangeRef.current.start, timeRangeRef.current.end])
+                .range([0, plotDimensions.width]);
             axesRef.current.xAxisSelection
                 .attr('transform', `translate(${margin.left}, ${axesRef.current.lineHeight * filteredData.length + margin.top})`)
                 .call(axesRef.current.xAxisGenerator);
             svg
-                .select('#raster-chart-x-axis-label')
+                .select(`#raster-chart-x-axis-label-${chartId.current}`)
                 .attr('transform', `translate(${margin.left + plotDimensions.width / 2}, ${axesRef.current.lineHeight * filteredData.length + 2 *  margin.top + (margin.bottom / 3)})`);
 
             // create or update the y-axis (user filters change the scale of the y-axis)
@@ -816,7 +837,7 @@ export function RasterChart(props: Props): JSX.Element {
             // once
             if (mainGRef.current === undefined) {
                 mainGRef.current = svg
-                    .attr('width', width)
+                    .attr('width', width.current)
                     .attr('height', height)
                     .attr('color', axisStyle.color)
                     .append<SVGGElement>('g')
@@ -828,14 +849,14 @@ export function RasterChart(props: Props): JSX.Element {
                     .enter()
                     .append('g')
                     .attr('class', 'spikes-series')
-                    .attr('id', series => series.name)
+                    .attr('id', series => `${series.name}-${chartId.current}`)
                     .attr('transform', `translate(${margin.left}, ${margin.top})`);
             }
 
             // set up panning
             const drag = d3.drag<SVGSVGElement, Datum>()
                 .on("start", () => d3.select(containerRef.current).style("cursor", "move"))
-                .on("drag", () => onPan(d3.event.dx))
+                .on("drag", () => onPan(d3.event.dx, plotDimensions))
                 .on("end", () => d3.select(containerRef.current).style("cursor", "auto"))
             ;
 
@@ -844,28 +865,33 @@ export function RasterChart(props: Props): JSX.Element {
             // set up for zooming
             const zoom = d3.zoom<SVGSVGElement, Datum>()
                 .scaleExtent([0, 10])
-                .translateExtent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
-                .on("zoom", () => onZoom(d3.event.transform, d3.event.sourceEvent.offsetX - margin.left))
+                .translateExtent([[margin.left, margin.top], [width.current - margin.right, height - margin.bottom]])
+                .on("zoom", () => onZoom(d3.event.transform, d3.event.sourceEvent.offsetX - margin.left, plotDimensions))
             ;
 
             svg.call(zoom);
 
             // add the grid-lines is they are visible
             if (plotGridLines.visible) {
-                addGridLines(svg);
+                addGridLines(svg, plotDimensions);
             }
 
-            // adjust the clipping region
+            // remove the old clipping region and add a new one with the updated plot dimensions
+            svg.select('defs').remove();
             svg
-                .select('#clip-spikes')
+                .append('defs')
+                .append("clipPath")
+                .attr("id", `clip-spikes-${chartId.current}`)
+                .append("rect")
                 .attr("width", plotDimensions.width)
                 .attr("height", plotDimensions.height - margin.top)
+            ;
 
             liveDataRef.current.forEach(series => {
                 const plotSeries = (series.name.match(seriesFilterRef.current)) ? series : emptySeries(series.name);
 
                 const container = svg
-                    .select<SVGGElement>(`#${series.name}`)
+                    .select<SVGGElement>(`#${series.name}-${chartId.current}`)
                     .selectAll<SVGLineElement, PixelDatum>('line')
                     .data(plotSeries.data.filter(datum => datum.time >= timeRangeRef.current.start && datum.time <= timeRangeRef.current.end) as PixelDatum[])
                 ;
@@ -886,7 +912,7 @@ export function RasterChart(props: Props): JSX.Element {
                     .attr('stroke', spikesStyle.color)
                     .attr('stroke-width', spikesStyle.lineWidth)
                     .attr('stroke-linecap', "round")
-                    .attr("clip-path", "url(#clip-spikes)")
+                    .attr("clip-path", `url(#clip-spikes-${chartId.current})`)
                     // even though the tooltip may not be set to show up on the mouseover, we want to attach the handler
                     // so that when the use enables tooltips the handlers will show the the tooltip
                     .on("mouseover", (datum, i, group) => handleShowTooltip(datum, series.name, group[i]))
@@ -912,6 +938,12 @@ export function RasterChart(props: Props): JSX.Element {
         }
     }
 
+    /**
+     * Subscribes to the observable that streams chart events and hands the subscription a consumer
+     * that updates the charts as events enter. Also hands the subscription back to the parent
+     * component using the registered {@link onSubscribe} callback method from the properties.
+     * @return {Subscription} The subscription (disposable) for cancelling
+     */
     function subscribe(): Subscription {
         const subscription = seriesObservable
             .pipe(windowTime(windowingTime))
@@ -944,7 +976,7 @@ export function RasterChart(props: Props): JSX.Element {
                         // updates the caller with the current time
                         onUpdateTime(currentTimeRef.current);
 
-                        updatePlot(timeRangeRef.current);
+                        updatePlot(timeRangeRef.current, plotDimRef.current);
                     })
             });
 
@@ -954,12 +986,30 @@ export function RasterChart(props: Props): JSX.Element {
         return subscription;
     }
 
+    /**
+     * Updates the plot dimensions and then updates the plot
+     */
+    function updateDimensionsAndPlot(): void {
+        width.current = grabWidth(containerRef.current);
+        plotDimRef.current = adjustedDimensions(width.current, height, margin);
+        updatePlot(timeRangeRef.current, plotDimRef.current);
+    }
+
     // called on mount to set up the <g> element into which to render
     useEffect(
         () => {
             if (containerRef.current) {
                 const svg = d3.select<SVGSVGElement, any>(containerRef.current);
-                axesRef.current = initializeAxes(svg);
+                axesRef.current = initializeAxes(svg, plotDimRef.current);
+                updateDimensionsAndPlot();
+            }
+
+            // subscribe to the throttled resizing events using a consumer that updates the plot
+            const subscription = resizeEventFlowRef.current.subscribe(_ => updateDimensionsAndPlot());
+
+            // stop listening to resize events when this component unmounts
+            return () => {
+                subscription.unsubscribe();
             }
         },
         // currentTimeRef, seriesRef, initializeAxes, onSubscribe, onUpdateData, etc are not included
@@ -1013,10 +1063,10 @@ export function RasterChart(props: Props): JSX.Element {
             }
 
             seriesFilterRef.current = filter;
-            updatePlot(timeRangeRef.current);
+            updatePlot(timeRangeRef.current, plotDimRef.current);
         },
         // seriesFilterRef and timeRangeRef are not included in the dependencies because we don't want
-        // react involved in the SVG updates. Rather, the rxjs observable we subscribed to manage the
+        // react involved in the SVG updates. Rather, the rxjs observable we subscribed to manages the
         // updates to the time-range and the svg plot
         //
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1025,10 +1075,11 @@ export function RasterChart(props: Props): JSX.Element {
 
     return (
         <svg
-            className="streaming-raster-chart-d3"
-            width={width}
-            height={height * liveDataRef.current.size}
-            style={{backgroundColor: backgroundColor}}
+            style={{
+                ...svgStyle,
+                backgroundColor: backgroundColor,
+                height: `${height * liveDataRef.current.size}`
+            }}
             ref={containerRef}
         />
     );
