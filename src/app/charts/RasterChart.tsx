@@ -6,9 +6,9 @@ import {TimeRange, TimeRangeType} from "./timeRange";
 import {adjustedDimensions, Margin, PlotDimensions} from "./margins";
 import {Datum, emptySeries, PixelDatum, Series} from "./datumSeries";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
-import {Observable, Subscription} from "rxjs";
+import {fromEvent, Observable, Subscription} from "rxjs";
 import {ChartData} from "./chartData";
-import {windowTime} from "rxjs/operators";
+import {throttleTime, windowTime} from "rxjs/operators";
 import {defaultTrackerStyle, TrackerStyle} from "./TrackerStyle";
 import {grabWidth, initialSvgStyle, SvgStyle} from "./svgStyle";
 
@@ -150,6 +150,14 @@ export function RasterChart(props: Props): JSX.Element {
     const width = useRef<number>(props.width || 500);
     const plotDimRef = useRef<PlotDimensions>(adjustedDimensions(width.current, height, margin));
 
+    // resize event throttling
+    const resizeEventFlowRef = useRef<Observable<Event>>(
+        fromEvent(window, 'resize')
+            .pipe(
+                throttleTime(50)
+            )
+    );
+
     // the container that holds the d3 svg element
     const containerRef = useRef<SVGSVGElement>(null);
     const mainGRef = useRef<Selection<SVGGElement, any, null, undefined>>();
@@ -184,10 +192,10 @@ export function RasterChart(props: Props): JSX.Element {
     /**
      * Initializes the axes
      * @param {SvgSelection} svg The main svg element
-     * @param {{width: number, height: number}} plotDimensions The dimensions of the plot
+     * @param {PlotDimensions} plotDimensions The dimensions of the plot
      * @return {Axes} The axes generators, selections, scales, and spike line height
      */
-    function initializeAxes(svg: SvgSelection, plotDimensions: {width: number, height: number}): Axes {
+    function initializeAxes(svg: SvgSelection, plotDimensions: PlotDimensions): Axes {
         // calculate the mapping between the times in the data (domain) and the display
         // location on the screen (range)
         const xScale = d3.scaleLinear()
@@ -868,11 +876,16 @@ export function RasterChart(props: Props): JSX.Element {
                 addGridLines(svg, plotDimensions);
             }
 
-            // adjust the clipping region
+            // remove the old clipping region and add a new one with the updated plot dimensions
+            svg.select('defs').remove();
             svg
-                .select(`#clip-spikes-${chartId.current}`)
+                .append('defs')
+                .append("clipPath")
+                .attr("id", `clip-spikes-${chartId.current}`)
+                .append("rect")
                 .attr("width", plotDimensions.width)
                 .attr("height", plotDimensions.height - margin.top)
+            ;
 
             liveDataRef.current.forEach(series => {
                 const plotSeries = (series.name.match(seriesFilterRef.current)) ? series : emptySeries(series.name);
@@ -899,7 +912,7 @@ export function RasterChart(props: Props): JSX.Element {
                     .attr('stroke', spikesStyle.color)
                     .attr('stroke-width', spikesStyle.lineWidth)
                     .attr('stroke-linecap', "round")
-                    .attr("clip-path", "url(#clip-spikes)")
+                    .attr("clip-path", `url(#clip-spikes-${chartId.current})`)
                     // even though the tooltip may not be set to show up on the mouseover, we want to attach the handler
                     // so that when the use enables tooltips the handlers will show the the tooltip
                     .on("mouseover", (datum, i, group) => handleShowTooltip(datum, series.name, group[i]))
@@ -991,15 +1004,13 @@ export function RasterChart(props: Props): JSX.Element {
                 updateDimensionsAndPlot();
             }
 
-            // when the window is resized, update the dimensions and the plot (the dimensions
-            // will only change if the svg-style has the width set as a relative (percentage)
-            // value
-            window.addEventListener('resize', updateDimensionsAndPlot);
+            // subscribe to the throttled resizing events using a consumer that updates the plot
+            const subscription = resizeEventFlowRef.current.subscribe(_ => updateDimensionsAndPlot());
 
-            // clean-up method
+            // stop listening to resize events when this component unmounts
             return () => {
-                window.removeEventListener('resize', updateDimensionsAndPlot);
-            };
+                subscription.unsubscribe();
+            }
         },
         // currentTimeRef, seriesRef, initializeAxes, onSubscribe, onUpdateData, etc are not included
         // in the dependency list because we only want this to run when the component mounts. The
