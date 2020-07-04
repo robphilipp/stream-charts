@@ -1,5 +1,8 @@
 # change history
 
+## version 0.2.1 (raster chart height fix)
+The SVG container height was incorrectly calculated for the raster chart.
+
 ## version 0.2.0 (responsive, unique svg node ids)
 1. When the `width` property for the `ScatterChart` and for the `RasterChart` are not specified, and the `width` is specified as a percentage in the new `svgStyle` properties object, then the width of the chart will remain that percentage of the parent's width when the user resizes the window.
 2. Updated the SVG node ids so that they remain unique to each instance of a chart type.
