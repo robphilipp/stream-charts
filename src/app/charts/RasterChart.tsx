@@ -1078,7 +1078,7 @@ export function RasterChart(props: Props): JSX.Element {
             style={{
                 ...svgStyle,
                 backgroundColor: backgroundColor,
-                height: `${height * liveDataRef.current.size}`
+                height: `${height}`
             }}
             ref={containerRef}
         />
