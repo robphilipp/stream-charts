@@ -1,15 +1,16 @@
 import {default as React, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import {Axis, ScaleLinear, Selection, ZoomTransform} from "d3";
-import {adjustedDimensions, Margin} from "./margins";
+import {adjustedDimensions, Margin, PlotDimensions} from "./margins";
 import {Datum, emptySeries, Series} from "./datumSeries";
 import {TimeRange, TimeRangeType} from "./timeRange";
 import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
-import {Observable, Subscription} from "rxjs";
+import {fromEvent, Observable, Subscription} from "rxjs";
 import {ChartData} from "./chartData";
 import {LensTransformation2d, RadialMagnifier, radialMagnifierWith} from "./radialMagnifier";
-import {windowTime} from "rxjs/operators";
+import {throttleTime, windowTime} from "rxjs/operators";
 import {defaultTrackerStyle, TrackerStyle} from "./TrackerStyle";
+import {grabWidth, initialSvgStyle, SvgStyle} from "./svgStyle";
 
 const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
 const defaultAxesStyle = {color: '#d2933f'};
@@ -76,7 +77,7 @@ const defaultRadialMagnifierStyle: RadialMagnifierStyle = {
 };
 
 interface Props {
-    width: number;
+    width?: number;
     height: number;
     margin?: Partial<Margin>;
     axisLabelFont?: Partial<{ size: number, color: string, family: string, weight: number }>;
@@ -88,6 +89,7 @@ interface Props {
     tooltipValueLabel?: string;
     magnifier?: Partial<RadialMagnifierStyle>;
     tracker?: Partial<TrackerStyle>;
+    svgStyle?: Partial<SvgStyle>;
 
     minY?: number;
     maxY?: number;
@@ -125,7 +127,6 @@ interface Props {
 export function ScatterChart(props: Props): JSX.Element {
 
     const {
-        width,
         height,
         backgroundColor = '#202020',
         minY = -1, maxY = 1,
@@ -150,9 +151,24 @@ export function ScatterChart(props: Props): JSX.Element {
     const magnifier = {...defaultRadialMagnifierStyle, ...props.magnifier};
     const lineStyle = {...defaultLineStyle, ...props.lineStyle};
     const tracker = {...defaultTrackerStyle, ...props.tracker};
+    const svgStyle = props.width ?
+        {...initialSvgStyle, ...props.svgStyle, width: props.width} :
+        {...initialSvgStyle, ...props.svgStyle};
 
-    // grab the dimensions of the actual plot after removing the margins from the specified width and height
-    const plotDimensions = adjustedDimensions(width, height, margin);
+    // id of the chart to avoid dom conflicts when multiple raster charts are used in the same app
+    const chartId = useRef<number>(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+
+    // hold a reference to the current width and the plot dimensions
+    const width = useRef<number>(props.width || 500);
+    const plotDimRef = useRef<PlotDimensions>(adjustedDimensions(width.current, height, margin));
+
+    // resize event throttling
+    const resizeEventFlowRef = useRef<Observable<Event>>(
+        fromEvent(window, 'resize')
+            .pipe(
+                throttleTime(50)
+            )
+    );
 
     // the container that holds the d3 svg element
     const containerRef = useRef<SVGSVGElement>(null);
@@ -214,9 +230,10 @@ export function ScatterChart(props: Props): JSX.Element {
     /**
      * Initializes the x and y axes and returns the axes generators, axes, and scale functions
      * @param {SvgSelection} svg The main SVG container
+     * @param {PlotDimensions} plotDimensions The dimensions of the plot
      * @return {Axes} The axes generators, axes, and scale functions
      */
-    function initializeAxes(svg: SvgSelection): Axes {
+    function initializeAxes(svg: SvgSelection, plotDimensions: PlotDimensions): Axes {
         // initialize the x-axis
         const xScale = d3.scaleLinear()
             .domain([timeRangeRef.current.start, timeRangeRef.current.end])
@@ -231,6 +248,7 @@ export function ScatterChart(props: Props): JSX.Element {
 
         svg
             .append<SVGTextElement>('text')
+            .attr('id', `scatter-chart-x-axis-label-${chartId.current}`)
             .attr('text-anchor', 'middle')
             .attr('font-size', axisLabelFont.size)
             .attr('fill', axisLabelFont.color)
@@ -256,7 +274,7 @@ export function ScatterChart(props: Props): JSX.Element {
         svg
             .append("defs")
             .append("clipPath")
-            .attr("id", "clip-series")
+            .attr("id", `clip-series-${chartId.current}`)
             .append("rect")
             .attr("width", plotDimensions.width)
             .attr("height", plotDimensions.height - margin.top)
@@ -274,28 +292,30 @@ export function ScatterChart(props: Props): JSX.Element {
      * at the location of the mouse when the scroll wheel or gesture was applied.
      * @param {ZoomTransform} transform The d3 zoom transformation information
      * @param {number} x The x-position of the mouse when the scroll wheel or gesture is used
+     * @param {PlotDimensions} plotDimensions The dimensions of the plot
      */
-    function onZoom(transform: ZoomTransform, x: number): void {
+    function onZoom(transform: ZoomTransform, x: number, plotDimensions: PlotDimensions): void {
         // only zoom if the mouse is in the plot area
-        if (x > 0 && x < width - margin.right) {
+        if (x > 0 && x < width.current - margin.right) {
             const time = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>().invert(x);
             timeRangeRef.current = timeRangeRef.current!.scale(transform.k, time);
             zoomFactorRef.current = transform.k;
-            updatePlot(timeRangeRef.current);
+            updatePlot(timeRangeRef.current, plotDimensions);
         }
     }
 
     /**
      * Adjusts the time-range and updates the plot when the plot is dragged to the left or right
      * @param {number} deltaX The amount that the plot is dragged
+     * @param {PlotDimensions} plotDimensions The dimensions of the plot
      */
-    function onPan(deltaX: number): void {
+    function onPan(deltaX: number, plotDimensions: PlotDimensions): void {
         const scale = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>();
         const currentTime = timeRangeRef!.current.start;
         const x = scale(currentTime);
         const deltaTime = scale.invert(x + deltaX) - currentTime;
         timeRangeRef.current = timeRangeRef.current!.translate(-deltaTime);
-        updatePlot(timeRangeRef.current);
+        updatePlot(timeRangeRef.current, plotDimensions);
     }
 
     /**
@@ -365,7 +385,7 @@ export function ScatterChart(props: Props): JSX.Element {
         // create the rounded rectangle for the tooltip's background
         const rect = d3.select<SVGSVGElement | null, any>(containerRef.current)
             .append<SVGRectElement>('rect')
-            .attr('id', `r${time}-${seriesName}`)
+            .attr('id', `r${time}-${seriesName}-${chartId.current}`)
             .attr('class', 'tooltip')
             .attr('rx', tooltipRef.current.borderRadius)
             .attr('fill', tooltipRef.current.backgroundColor)
@@ -377,7 +397,7 @@ export function ScatterChart(props: Props): JSX.Element {
         // display the neuron ID in the tooltip
         const header = d3.select<SVGSVGElement | null, any>(containerRef.current)
             .append<SVGTextElement>("text")
-            .attr('id', `tn${time}-${seriesName}`)
+            .attr('id', `tn${time}-${seriesName}-${chartId.current}`)
             .attr('class', 'tooltip')
             .attr('fill', tooltipRef.current.fontColor)
             .attr('font-family', 'sans-serif')
@@ -390,7 +410,7 @@ export function ScatterChart(props: Props): JSX.Element {
         // changes in the time and value
         const table = d3.select<SVGSVGElement | null, any>(containerRef.current)
             .append("g")
-            .attr('id', `t${time}-${seriesName}-header`)
+            .attr('id', `t${time}-${seriesName}-header-${chartId.current}`)
             .attr('class', 'tooltip')
             .attr('fill', tooltipRef.current.fontColor)
             .attr('font-family', 'sans-serif')
@@ -426,8 +446,8 @@ export function ScatterChart(props: Props): JSX.Element {
         const textHeight = headerTextHeight + headerRowHeight + timeRowHeight + valueRowHeight;
 
         // set the header text location
-        const xTooltip = tooltipX(x, tooltipWidth) + tooltipRef.current.paddingLeft;
-        const yTooltip = tooltipY(y, textHeight) + tooltipRef.current.paddingTop;
+        const xTooltip = tooltipX(x, tooltipWidth, plotDimRef.current) + tooltipRef.current.paddingLeft;
+        const yTooltip = tooltipY(y, textHeight, plotDimRef.current) + tooltipRef.current.paddingTop;
         header
             .attr('x', () => xTooltip)
             .attr('y', () => yTooltip - (headerRowHeight + timeRowHeight + valueRowHeight) + textHeight)
@@ -454,8 +474,8 @@ export function ScatterChart(props: Props): JSX.Element {
         vrDelta.attr('x', () => xTooltip + hrDeltaX - textWidthOf(vrDelta)).attr('y', () => vrRowY);
 
         // set the position, width, and height of the tooltip rect based on the text height and width and the padding
-        rect.attr('x', () => tooltipX(x, tooltipWidth))
-            .attr('y', () => tooltipY(y, textHeight))
+        rect.attr('x', () => tooltipX(x, tooltipWidth, plotDimRef.current))
+            .attr('y', () => tooltipY(y, textHeight, plotDimRef.current))
             .attr('width', tooltipWidth + tooltipRef.current.paddingLeft + tooltipRef.current.paddingRight)
             .attr('height', textHeight + tooltipRef.current.paddingTop + tooltipRef.current.paddingBottom)
         ;
@@ -490,9 +510,10 @@ export function ScatterChart(props: Props): JSX.Element {
      * "rounded corners"). Adjusts the x-coordinate so that tooltip is visible on the edges of the plot.
      * @param {number} x The current x-coordinate of the mouse
      * @param {number} textWidth The width of the tooltip text
+     * @param {PlotDimensions} plotDimensions The dimensions of the plot
      * @return {number} The x-coordinate of the lower left-hand side of the tooltip rectangle
      */
-    function tooltipX(x: number, textWidth: number): number {
+    function tooltipX(x: number, textWidth: number, plotDimensions: PlotDimensions): number {
         if(x + textWidth + tooltip.paddingLeft + 10 > plotDimensions.width + margin.left) {
             return x - textWidth - tooltip.paddingRight - margin.right;
         }
@@ -504,16 +525,17 @@ export function ScatterChart(props: Props): JSX.Element {
      * so that the tooltip is visible on the upper edge of the plot
      * @param {number} y The y-coordinate of the series
      * @param {number} textHeight The height of the header and neuron ID text
+     * @param {PlotDimensions} plotDimensions The dimensions of the plot
      * @return {number} The y-coordinate of the lower-left-hand corner of the tooltip rectangle
      */
-    function tooltipY(y: number, textHeight: number): number {
+    function tooltipY(y: number, textHeight: number, plotDimensions: PlotDimensions): number {
         return y + margin.top - tooltip.paddingBottom - textHeight - tooltip.paddingTop;
     }
 
     /**
      * Removes the tooltip when the mouse has moved away from the spike
      * @param {SVGPathElement} [segment] The SVG line element representing the spike, over which the mouse is hovering.
-     * @param {series} [seriesName] The optional name of the series
+     * @param {string} [seriesName] The optional name of the series
      */
     function handleHideTooltip(segment?: SVGPathElement, seriesName?: string) {
         if(segment && seriesName) {
@@ -539,13 +561,13 @@ export function ScatterChart(props: Props): JSX.Element {
                 .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
             ;
 
-            const label = d3.select<SVGTextElement, any>('#scatter-chart-tracker-time')
+            const label = d3.select<SVGTextElement, any>(`#scatter-chart-tracker-time-${chartId.current}`)
                 .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
                 .text(() => `${d3.format(",.0f")(axesRef.current!.xScale.invert(x - margin.left))} ms`)
 
 
             const labelWidth = textWidthOf(label);
-            label.attr('x', Math.min(plotDimensions.width + margin.left - labelWidth, x))
+            label.attr('x', Math.min(plotDimRef.current.width + margin.left - labelWidth, x))
         }
     }
 
@@ -627,7 +649,7 @@ export function ScatterChart(props: Props): JSX.Element {
                 ;
 
                 svg
-                    .select('#x-lens-axis')
+                    .select(`#x-lens-axis-${chartId.current}`)
                     .attr('x1', x - magnifier.radius)
                     .attr('x2', x + magnifier.radius)
                     .attr('y1', y)
@@ -636,7 +658,7 @@ export function ScatterChart(props: Props): JSX.Element {
                 ;
 
                 svg
-                    .select('#y-lens-axis')
+                    .select(`#y-lens-axis-${chartId.current}`)
                     .attr('x1', x)
                     .attr('x2', x)
                     .attr('y1', y - magnifier.radius)
@@ -687,8 +709,8 @@ export function ScatterChart(props: Props): JSX.Element {
                     })
                 ;
 
-                svg.select('#x-lens-axis').attr('opacity', 0);
-                svg.select('#y-lens-axis').attr('opacity', 0);
+                svg.select(`#x-lens-axis-${chartId.current}`).attr('opacity', 0);
+                svg.select(`#y-lens-axis-${chartId.current}`).attr('opacity', 0);
                 magnifierXAxisRef.current!.attr('opacity', 0);
                 magnifierXAxisLabelRef.current!.text(() => '')
                 magnifierYAxisRef.current!.attr('opacity', 0);
@@ -704,7 +726,7 @@ export function ScatterChart(props: Props): JSX.Element {
      * @return {boolean} `true` if the mouse is in the plot area; `false` if the mouse is not in the plot area
      */
     function mouseInPlotArea(x: number, y: number): boolean {
-        return  x > margin.left && x < width - margin.right && y > margin.top && y < height - margin.bottom;
+        return  x > margin.left && x < width.current - margin.right && y > margin.top && y < height - margin.bottom;
     }
 
     /**
@@ -718,7 +740,7 @@ export function ScatterChart(props: Props): JSX.Element {
             const radialGradient = svg
                 .append<SVGDefsElement>('defs')
                 .append<SVGLinearGradientElement>('radialGradient')
-                .attr('id', 'radial-magnifier-gradient')
+                .attr('id', `radial-magnifier-gradient-${chartId.current}`)
                 .attr('cx', '47%')
                 .attr('cy', '47%')
                 .attr('r', '53%')
@@ -755,22 +777,22 @@ export function ScatterChart(props: Props): JSX.Element {
             const magnifierSelection = svg
                 .append<SVGCircleElement>('circle')
                 .attr('class', 'magnifier')
-                .style('fill', 'url(#radial-magnifier-gradient')
+                .style('fill', `url(#radial-magnifier-gradient-${chartId.current})`)
             ;
 
             // create the lens axes', ticks and tick labels. the labels hold the time and values of the
             // current mouse location
-            createMagnifierLensAxisLine('x-lens-axis', svg);
-            createMagnifierLensAxisLine('y-lens-axis', svg);
+            createMagnifierLensAxisLine(`x-lens-axis-${chartId.current}`, svg);
+            createMagnifierLensAxisLine(`y-lens-axis-${chartId.current}`, svg);
 
             const lensTickIndexes = d3.range(-5, 6, 1);
             const lensLabelIndexes = [-5, -1, 0, 1, 5];
 
-            const xLensAxisTicks = svg.append('g').attr('id', 'x-lens-axis-ticks');
+            const xLensAxisTicks = svg.append('g').attr('id', `x-lens-axis-ticks-${chartId.current}`);
             magnifierXAxisRef.current = magnifierLensAxisTicks('x-lens-ticks', lensTickIndexes, xLensAxisTicks);
             magnifierXAxisLabelRef.current = magnifierLensAxisLabels(lensLabelIndexes, xLensAxisTicks);
 
-            const yLensAxisTicks = svg.append('g').attr('id', 'y-lens-axis-ticks');
+            const yLensAxisTicks = svg.append('g').attr('id', `y-lens-axis-ticks-${chartId.current}`);
             magnifierYAxisRef.current = magnifierLensAxisTicks('y-lens-ticks', lensTickIndexes, yLensAxisTicks);
             magnifierYAxisLabelRef.current = magnifierLensAxisLabels(lensLabelIndexes, yLensAxisTicks);
 
@@ -858,7 +880,7 @@ export function ScatterChart(props: Props): JSX.Element {
                 .append<SVGLineElement>('line')
                 .attr('class', 'tracker')
                 .attr('y1', margin.top)
-                .attr('y2', plotDimensions.height)
+                .attr('y2', plotDimRef.current.height)
                 .attr('stroke', tracker.color)
                 .attr('stroke-width', tracker.lineWidth)
                 .attr('opacity', 0) as Selection<SVGLineElement, Datum, null, undefined>
@@ -867,7 +889,7 @@ export function ScatterChart(props: Props): JSX.Element {
             // create the text element holding the tracker time
             svg
                 .append<SVGTextElement>('text')
-                .attr('id', 'scatter-chart-tracker-time')
+                .attr('id', `scatter-chart-tracker-time-${chartId.current}`)
                 .attr('y', Math.max(0, margin.top -3))
                 .attr('fill', axisLabelFont.color)
                 .attr('font-family', axisLabelFont.family)
@@ -893,8 +915,9 @@ export function ScatterChart(props: Props): JSX.Element {
     /**
      * Updates the plot data for the specified time-range, which may have changed due to zoom or pan
      * @param {TimeRange} timeRange The current time range
+     * @param {PlotDimensions} plotDimensions The dimensions of the plot
      */
-    function updatePlot(timeRange: TimeRangeType) {
+    function updatePlot(timeRange: TimeRangeType, plotDimensions: PlotDimensions): void {
         // tooltipRef.current = tooltip;
         timeRangeRef.current = timeRange;
 
@@ -914,8 +937,14 @@ export function ScatterChart(props: Props): JSX.Element {
             maxValueRef.current = maxValue;
 
             // create the x-axis
-            axesRef.current.xScale.domain([timeRangeRef.current.start, timeRangeRef.current.end]);
+            axesRef.current.xScale
+                .domain([timeRangeRef.current.start, timeRangeRef.current.end])
+                .range([0, plotDimensions.width]);
             axesRef.current.xAxisSelection.call(axesRef.current.xAxisGenerator);
+
+            svg
+                .select(`#scatter-chart-x-axis-label-${chartId.current}`)
+                .attr('transform', `translate(${margin.left + plotDimensions.width / 2}, ${plotDimensions.height + margin.top + (margin.bottom / 3)})`);
 
             // create the y-axis
             axesRef.current.yScale.domain([Math.max(minY, minValue), Math.min(maxY, maxValue)]);
@@ -931,7 +960,7 @@ export function ScatterChart(props: Props): JSX.Element {
             // once
             if(mainGRef.current === undefined) {
                 mainGRef.current = svg
-                    .attr('width', width)
+                    .attr('width', width.current)
                     .attr('height', height)
                     .attr('color', axisStyle.color)
                     .append<SVGGElement>('g')
@@ -946,7 +975,7 @@ export function ScatterChart(props: Props): JSX.Element {
                     handleHideTooltip();
                     d3.select(containerRef.current).style("cursor", "move");
                 })
-                .on("drag", () => onPan(d3.event.dx))
+                .on("drag", () => onPan(d3.event.dx, plotDimensions))
                 .on("end", () => {
                     // if the tooltip was originally visible, then allow it to be seen again
                     tooltipRef.current.visible = tooltip.visible;
@@ -959,13 +988,24 @@ export function ScatterChart(props: Props): JSX.Element {
             // set up for zooming
             const zoom = d3.zoom<SVGSVGElement, Datum>()
                 .scaleExtent([0, 10])
-                .translateExtent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
+                .translateExtent([[margin.left, margin.top], [width.current - margin.right, height - margin.bottom]])
                 .on("zoom", () => {
-                    onZoom(d3.event.transform, d3.event.sourceEvent.offsetX - margin.left);
+                    onZoom(d3.event.transform, d3.event.sourceEvent.offsetX - margin.left, plotDimensions);
                 })
             ;
 
             svg.call(zoom);
+
+            // remove the old clipping region and add a new one with the updated plot dimensions
+            svg.select('defs').remove();
+            svg
+                .append('defs')
+                .append("clipPath")
+                .attr("id", `clip-series-${chartId.current}`)
+                .append("rect")
+                .attr("width", plotDimensions.width)
+                .attr("height", plotDimensions.height - margin.top)
+            ;
 
             liveDataRef.current.forEach((series, name) => {
                 const data = selectInTimeRange(series);
@@ -994,7 +1034,7 @@ export function ScatterChart(props: Props): JSX.Element {
                             .attr("stroke", colorsRef.current.get(series.name) || lineStyle.color)
                             .attr("stroke-width", lineStyle.lineWidth)
                             .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                            .attr("clip-path", "url(#clip-series)")
+                            .attr("clip-path", `url(#clip-series-${chartId.current})`)
                             .on(
                                 "mouseover",
                                 (datumArray, i, group) =>
@@ -1032,6 +1072,12 @@ export function ScatterChart(props: Props): JSX.Element {
             .map(datum => [datum.time, datum.value]);
     }
 
+    /**
+     * Subscribes to the observable that streams chart events and hands the subscription a consumer
+     * that updates the charts as events enter. Also hands the subscription back to the parent
+     * component using the registered {@link onSubscribe} callback method from the properties.
+     * @return {Subscription} The subscription (disposable) for cancelling
+     */
     function subscribe(): Subscription {
         const subscription = seriesObservable
             .pipe(windowTime(windowingTime))
@@ -1062,7 +1108,7 @@ export function ScatterChart(props: Props): JSX.Element {
                     // updates the caller with the current time
                     onUpdateTime(currentTimeRef.current);
 
-                    updatePlot(timeRangeRef.current);
+                    updatePlot(timeRangeRef.current, plotDimRef.current);
                 })
             });
 
@@ -1072,21 +1118,39 @@ export function ScatterChart(props: Props): JSX.Element {
         return subscription;
     }
 
+    /**
+     * Updates the plot dimensions and then updates the plot
+     */
+    function updateDimensionsAndPlot(): void {
+        width.current = grabWidth(containerRef.current);
+        plotDimRef.current = adjustedDimensions(width.current, height, margin);
+        updatePlot(timeRangeRef.current, plotDimRef.current);
+    }
+
     // called on mount to set up the <g> element into which to render
     useEffect(
         () => {
             if(containerRef.current) {
                 const svg = d3.select<SVGSVGElement, any>(containerRef.current);
-                axesRef.current = initializeAxes(svg);
+                axesRef.current = initializeAxes(svg, plotDimRef.current);
+                updateDimensionsAndPlot();
             }
 
-            // we really, really only want this called when the component mounts, and there are
-            // no stale closures in the this. recall that d3 manages the updates to the chart, and
-            // react is only used when certain props change (e.g. magnifier, tracker, tooltip visibility
-            // state, magnification power)
-            //
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, []
+            // subscribe to the throttled resizing events using a consumer that updates the plot
+            const subscription = resizeEventFlowRef.current.subscribe(_ => updateDimensionsAndPlot());
+
+            // stop listening to resize events when this component unmounts
+            return () => {
+                subscription.unsubscribe();
+            }
+        },
+        // we really, really only want this called when the component mounts, and there are
+        // no stale closures in the this. recall that d3 manages the updates to the chart, and
+        // react is only used when certain props change (e.g. magnifier, tracker, tooltip visibility
+        // state, magnification power)
+        //
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        []
     );
 
     // called on mount, dismount and when shouldSubscribe changes
@@ -1130,7 +1194,7 @@ export function ScatterChart(props: Props): JSX.Element {
                 }
             }
             seriesFilterRef.current = filter;
-            updatePlot(timeRangeRef.current);
+            updatePlot(timeRangeRef.current, plotDimRef.current);
         },
         // seriesFilterRef and timeRangeRef are not included in the dependencies because we don't want
         // react involved in the SVG updates. Rather, the rxjs observable we subscribed to manage the
@@ -1142,10 +1206,11 @@ export function ScatterChart(props: Props): JSX.Element {
 
     return (
         <svg
-            className="streaming-scatter-chart-d3"
-            width={width}
-            height={height}
-            style={{backgroundColor: backgroundColor}}
+            style={{
+                ...svgStyle,
+                backgroundColor: backgroundColor,
+                height: height
+            }}
             ref={containerRef}
         />
     );

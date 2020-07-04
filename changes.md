@@ -1,5 +1,10 @@
 # change history
 
+## version 0.2.0 (responsive, unique svg node ids)
+1. When the `width` property for the `ScatterChart` and for the `RasterChart` are not specified, and the `width` is specified as a percentage in the new `svgStyle` properties object, then the width of the chart will remain that percentage of the parent's width when the user resizes the window.
+2. Updated the SVG node ids so that they remain unique to each instance of a chart type.
+
+
 ## version 0.1.0 (pure lib)
 Updated project to be a pure library and moved [examples](https://github.com/robphilipp/stream-charts-examples), that uses this library, to a separate project.
 
