@@ -4,8 +4,15 @@ import {Datum} from "./datumSeries";
  * The spike-chart data produced by the rxjs observable that is pushed to the `RasterChart`
  */
 export interface ChartData {
+    /**
+     * The max (latest) time for the data in the newPoints map
+     */
     maxTime: number;
-    // map(series_name -> array(datum))
+
+    /**
+     * Map holding the name of the series (the time-series identifier) and the associated
+     * data points for that time-series (`map(series_name -> array(datum))`)
+     */
     newPoints: Map<string, Array<Datum>>;
 }
 

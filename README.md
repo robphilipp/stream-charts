@@ -299,20 +299,6 @@ Please note that the font style of the tracker text is controlled by the axis-la
 ### time-series
 
 
-
-## running examples
-
-Install the dependencies.
-
-```
-$ npm install
-```
-
-Run the development server, which should fire up a browser and load the example app.
-```
-$ npm start
-```
-
 ##
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
