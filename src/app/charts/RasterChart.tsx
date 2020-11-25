@@ -189,6 +189,17 @@ export function RasterChart(props: Props): JSX.Element {
     const seriesRef = useRef<Map<string, Series>>(new Map<string, Series>(seriesList.map(series => [series.name, series])));
     const currentTimeRef = useRef<number>(0);
 
+    // when the series list changes, then clear out the data
+    useEffect(
+        () => {
+            liveDataRef.current = new Map<string, Series>(seriesList.map(series => [series.name, series]));
+            seriesRef.current = new Map<string, Series>(seriesList.map(series => [series.name, series]));
+            currentTimeRef.current = 0;
+            timeRangeRef.current = TimeRange(0, timeWindow);
+        },
+        [seriesList]
+    )
+
     /**
      * Initializes the axes
      * @param {SvgSelection} svg The main svg element
