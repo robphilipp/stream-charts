@@ -189,16 +189,7 @@ export function RasterChart(props: Props): JSX.Element {
     const seriesRef = useRef<Map<string, Series>>(new Map<string, Series>(seriesList.map(series => [series.name, series])));
     const currentTimeRef = useRef<number>(0);
 
-    // when the series list changes, then clear out the data
-    useEffect(
-        () => {
-            liveDataRef.current = new Map<string, Series>(seriesList.map(series => [series.name, series]));
-            seriesRef.current = new Map<string, Series>(seriesList.map(series => [series.name, series]));
-            currentTimeRef.current = 0;
-            timeRangeRef.current = TimeRange(0, timeWindow);
-        },
-        [seriesList]
-    )
+    const subscriptionRef = useRef<Subscription>();
 
     /**
      * Initializes the axes
@@ -1006,6 +997,18 @@ export function RasterChart(props: Props): JSX.Element {
         updatePlot(timeRangeRef.current, plotDimRef.current);
     }
 
+    // when the series list changes, then clear out the data
+    useEffect(
+        () => {
+            liveDataRef.current = new Map<string, Series>(seriesList.map(series => [series.name, series]));
+            seriesRef.current = new Map<string, Series>(seriesList.map(series => [series.name, series]));
+            currentTimeRef.current = 0;
+            timeRangeRef.current = TimeRange(0, timeWindow);
+            updateDimensionsAndPlot();
+        },
+        [seriesList]
+    )
+
     // called on mount to set up the <g> element into which to render
     useEffect(
         () => {
@@ -1036,10 +1039,13 @@ export function RasterChart(props: Props): JSX.Element {
     useEffect(
         () => {
             if (shouldSubscribe) {
-                const subscription = subscribe();
+                if (subscriptionRef.current !== undefined) {
+                    subscriptionRef.current?.unsubscribe();
+                }
+                subscriptionRef.current = subscribe();
 
                 // stop the stream on dismount
-                return () => subscription.unsubscribe();
+                return () => subscriptionRef.current?.unsubscribe();
             }
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps
