@@ -1,19 +1,19 @@
-import {default as React, useEffect, useRef} from "react";
+import { default as React, useEffect, useRef } from "react";
 import * as d3 from "d3";
-import {Axis, ScaleLinear, Selection, ZoomTransform} from "d3";
-import {adjustedDimensions, Margin, PlotDimensions} from "./margins";
-import {Datum, emptySeries, Series} from "./datumSeries";
-import {TimeRange, TimeRangeType} from "./timeRange";
-import {defaultTooltipStyle, TooltipStyle} from "./TooltipStyle";
-import {fromEvent, Observable, Subscription} from "rxjs";
-import {ChartData} from "./chartData";
-import {LensTransformation2d, RadialMagnifier, radialMagnifierWith} from "./radialMagnifier";
-import {throttleTime, windowTime} from "rxjs/operators";
-import {defaultTrackerStyle, TrackerStyle} from "./TrackerStyle";
-import {grabWidth, initialSvgStyle, SvgStyle} from "./svgStyle";
+import { Axis, ScaleLinear, Selection, ZoomTransform } from "d3";
+import { adjustedDimensions, Margin, PlotDimensions } from "./margins";
+import { Datum, emptySeries, Series } from "./datumSeries";
+import { TimeRange, TimeRangeType } from "./timeRange";
+import { defaultTooltipStyle, TooltipStyle } from "./TooltipStyle";
+import { fromEvent, Observable, Subscription } from "rxjs";
+import { ChartData } from "./chartData";
+import { LensTransformation2d, RadialMagnifier, radialMagnifierWith } from "./radialMagnifier";
+import { throttleTime, windowTime } from "rxjs/operators";
+import { defaultTrackerStyle, TrackerStyle } from "./TrackerStyle";
+import { grabWidth, initialSvgStyle, SvgStyle } from "./svgStyle";
 
-const defaultMargin = {top: 30, right: 20, bottom: 30, left: 50};
-const defaultAxesStyle = {color: '#d2933f'};
+const defaultMargin = { top: 30, right: 20, bottom: 30, left: 50 };
+const defaultAxesStyle = { color: '#d2933f' };
 const defaultAxesLabelFont = {
     size: 12,
     color: '#d2933f',
@@ -28,8 +28,8 @@ const defaultLineStyle = {
 };
 
 interface Axes {
-    xAxisGenerator: Axis<number | {valueOf(): number}>;
-    yAxisGenerator: Axis<number | {valueOf(): number}>;
+    xAxisGenerator: Axis<number | { valueOf(): number }>;
+    yAxisGenerator: Axis<number | { valueOf(): number }>;
     xAxisSelection: AxisElementSelection;
     yAxisSelection: AxisElementSelection;
     xScale: ScaleLinear<number, number>;
@@ -83,7 +83,7 @@ interface Props {
     axisLabelFont?: Partial<{ size: number, color: string, family: string, weight: number }>;
     axisStyle?: Partial<{ color: string }>;
     backgroundColor?: string;
-    lineStyle?: Partial<{color: string, lineWidth: number, highlightColor: string, highlightWidth: number}>;
+    lineStyle?: Partial<{ color: string, lineWidth: number, highlightColor: string, highlightWidth: number }>;
     plotGridLines?: Partial<{ visible: boolean, color: string }>;
     tooltip?: Partial<TooltipStyle>;
     tooltipValueLabel?: string;
@@ -97,6 +97,7 @@ interface Props {
     // data to plot: time-window is the time-range of data shown (slides in time)
     timeWindow: number;
     seriesList: Array<Series>;
+    dropDataAfter: number;
 
     // data stream
     seriesObservable: Observable<ChartData>;
@@ -135,25 +136,26 @@ export function ScatterChart(props: Props): JSX.Element {
         seriesList,
         seriesObservable,
         windowingTime = 100,
+        dropDataAfter = Infinity,
         shouldSubscribe = true,
         onSubscribe = (_: Subscription) => {},
-        onUpdateData = () => {},
-        onUpdateTime = (_: number) => {},
+        onUpdateData = () => { },
+        onUpdateTime = (_: number) => { },
         filter = /./,
         seriesColors = seriesColorsFor(seriesList, defaultLineStyle.color, "#a9a9b4")
     } = props;
 
     // override the defaults with the parent's properties, leaving any unset values as the default value
-    const margin = {...defaultMargin, ...props.margin};
-    const axisStyle = {...defaultAxesStyle, ...props.axisStyle};
-    const axisLabelFont = {...defaultAxesLabelFont, ...props.axisLabelFont};
-    const tooltip: TooltipStyle = {...defaultTooltipStyle, ...props.tooltip};
-    const magnifier = {...defaultRadialMagnifierStyle, ...props.magnifier};
-    const lineStyle = {...defaultLineStyle, ...props.lineStyle};
-    const tracker = {...defaultTrackerStyle, ...props.tracker};
+    const margin = { ...defaultMargin, ...props.margin };
+    const axisStyle = { ...defaultAxesStyle, ...props.axisStyle };
+    const axisLabelFont = { ...defaultAxesLabelFont, ...props.axisLabelFont };
+    const tooltip: TooltipStyle = { ...defaultTooltipStyle, ...props.tooltip };
+    const magnifier = { ...defaultRadialMagnifierStyle, ...props.magnifier };
+    const lineStyle = { ...defaultLineStyle, ...props.lineStyle };
+    const tracker = { ...defaultTrackerStyle, ...props.tracker };
     const svgStyle = props.width ?
-        {...initialSvgStyle, ...props.svgStyle, width: props.width} :
-        {...initialSvgStyle, ...props.svgStyle};
+        { ...initialSvgStyle, ...props.svgStyle, width: props.width } :
+        { ...initialSvgStyle, ...props.svgStyle };
 
     // id of the chart to avoid dom conflicts when multiple raster charts are used in the same app
     const chartId = useRef<number>(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
@@ -238,13 +240,13 @@ export function ScatterChart(props: Props): JSX.Element {
         const xScale = d3.scaleLinear()
             .domain([timeRangeRef.current.start, timeRangeRef.current.end])
             .range([0, plotDimensions.width])
-        ;
+            ;
         const xAxisGenerator = d3.axisBottom(xScale);
         const xAxisSelection = svg
             .append<SVGGElement>('g')
             .attr('class', 'x-axis')
             .attr('transform', `translate(${margin.left}, ${plotDimensions.height})`)
-        ;
+            ;
 
         svg
             .append<SVGTextElement>('text')
@@ -262,13 +264,13 @@ export function ScatterChart(props: Props): JSX.Element {
         const yScale = d3.scaleLinear()
             .domain([minY, maxY])
             .range([plotDimensions.height - margin.bottom, 0])
-        ;
+            ;
         const yAxisGenerator = d3.axisLeft(yScale);
         const yAxisSelection = svg
             .append<SVGGElement>('g')
             .attr('class', 'y-axis')
             .attr('transform', `translate(${margin.left}, ${margin.top})`)
-        ;
+            ;
 
         // create the clipping region so that the lines are clipped at the y-axis
         svg
@@ -278,7 +280,7 @@ export function ScatterChart(props: Props): JSX.Element {
             .append("rect")
             .attr("width", plotDimensions.width)
             .attr("height", plotDimensions.height - margin.top)
-        ;
+            ;
 
         return {
             xAxisGenerator, yAxisGenerator,
@@ -330,14 +332,14 @@ export function ScatterChart(props: Props): JSX.Element {
      */
     function boundingPointsIndex(data: TimeSeries, time: number): number {
         const length = data.length;
-        if(time > data[length-1][0]) {
+        if (time > data[length - 1][0]) {
             return length;
         }
-        if(time < data[0][0]) {
+        if (time < data[0][0]) {
             return 0;
         }
         return data.findIndex((value, index, array) => {
-            const lowerIndex = Math.max(0, index-1);
+            const lowerIndex = Math.max(0, index - 1);
             return array[lowerIndex][0] <= time && time <= array[index][0];
         })
     }
@@ -352,13 +354,13 @@ export function ScatterChart(props: Props): JSX.Element {
      */
     function boundingPoints(data: TimeSeries, time: number): [[number, number], [number, number]] {
         const upperIndex = boundingPointsIndex(data, time);
-        if(upperIndex <= 0) {
+        if (upperIndex <= 0) {
             return [[NaN, NaN], data[0]];
         }
-        if(upperIndex >= data.length) {
-            return [data[data.length-1], [NaN, NaN]];
+        if (upperIndex >= data.length) {
+            return [data[data.length - 1], [NaN, NaN]];
         }
-        return [data[upperIndex-1], data[upperIndex]];
+        return [data[upperIndex - 1], data[upperIndex]];
     }
 
     /**
@@ -368,7 +370,7 @@ export function ScatterChart(props: Props): JSX.Element {
      * @param {SVGPathElement} segment The SVG line element representing the spike, over which the mouse is hovering.
      */
     function handleShowTooltip(datum: TimeSeries, seriesName: string, segment: SVGPathElement): void {
-        if(!(tooltipRef.current.visible || magnifier.visible) || !containerRef.current || !axesRef.current) {
+        if (!(tooltipRef.current.visible || magnifier.visible) || !containerRef.current || !axesRef.current) {
             return;
         }
 
@@ -380,7 +382,7 @@ export function ScatterChart(props: Props): JSX.Element {
         d3.select<SVGPathElement, Datum>(segment)
             .attr('stroke', lineStyle.highlightColor)
             .attr('stroke-width', lineStyle.highlightWidth)
-        ;
+            ;
 
         // create the rounded rectangle for the tooltip's background
         const rect = d3.select<SVGSVGElement | null, any>(containerRef.current)
@@ -392,7 +394,7 @@ export function ScatterChart(props: Props): JSX.Element {
             .attr('fill-opacity', tooltipRef.current.backgroundOpacity)
             .attr('stroke', tooltipRef.current.borderColor)
             .attr('stroke-width', tooltipRef.current.borderWidth)
-        ;
+            ;
 
         // display the neuron ID in the tooltip
         const header = d3.select<SVGSVGElement | null, any>(containerRef.current)
@@ -404,7 +406,7 @@ export function ScatterChart(props: Props): JSX.Element {
             .attr('font-size', tooltipRef.current.fontSize)
             .attr('font-weight', tooltipRef.current.fontWeight)
             .text(() => seriesName)
-        ;
+            ;
 
         // create the table that shows the points that come before and after the mouse time, and the
         // changes in the time and value
@@ -416,7 +418,7 @@ export function ScatterChart(props: Props): JSX.Element {
             .attr('font-family', 'sans-serif')
             .attr('font-size', tooltipRef.current.fontSize + 2)
             .attr('font-weight', tooltipRef.current.fontWeight + 150)
-        ;
+            ;
 
         const headerRow = table.append('g').attr('font-weight', tooltipRef.current.fontWeight + 550);
         const hrLower = headerRow.append<SVGTextElement>("text").text(() => 'before');
@@ -451,7 +453,7 @@ export function ScatterChart(props: Props): JSX.Element {
         header
             .attr('x', () => xTooltip)
             .attr('y', () => yTooltip - (headerRowHeight + timeRowHeight + valueRowHeight) + textHeight)
-        ;
+            ;
 
         const hrRowY = yTooltip + headerTextHeight + headerRowHeight;
         const hrLowerX = spacesWidthFor(14);
@@ -478,7 +480,7 @@ export function ScatterChart(props: Props): JSX.Element {
             .attr('y', () => tooltipY(y, textHeight, plotDimRef.current))
             .attr('width', tooltipWidth + tooltipRef.current.paddingLeft + tooltipRef.current.paddingRight)
             .attr('height', textHeight + tooltipRef.current.paddingTop + tooltipRef.current.paddingBottom)
-        ;
+            ;
     }
 
     function formatNumber(value: number, format: string): string {
@@ -514,7 +516,7 @@ export function ScatterChart(props: Props): JSX.Element {
      * @return {number} The x-coordinate of the lower left-hand side of the tooltip rectangle
      */
     function tooltipX(x: number, textWidth: number, plotDimensions: PlotDimensions): number {
-        if(x + textWidth + tooltip.paddingLeft + 10 > plotDimensions.width + margin.left) {
+        if (x + textWidth + tooltip.paddingLeft + 10 > plotDimensions.width + margin.left) {
             return x - textWidth - tooltip.paddingRight - margin.right;
         }
         return x + tooltip.paddingLeft;
@@ -538,11 +540,11 @@ export function ScatterChart(props: Props): JSX.Element {
      * @param {string} [seriesName] The optional name of the series
      */
     function handleHideTooltip(segment?: SVGPathElement, seriesName?: string) {
-        if(segment && seriesName) {
+        if (segment && seriesName) {
             d3.select<SVGPathElement, Datum>(segment)
                 .attr('stroke', colorsRef.current.get(seriesName) || lineStyle.color)
                 .attr('stroke-width', lineStyle.lineWidth)
-            ;
+                ;
         }
 
         d3.selectAll<SVGPathElement, Datum>('.tooltip').remove();
@@ -559,7 +561,7 @@ export function ScatterChart(props: Props): JSX.Element {
                 .attr('x1', x)
                 .attr('x2', x)
                 .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
-            ;
+                ;
 
             const label = d3.select<SVGTextElement, any>(`#scatter-chart-tracker-time-${chartId.current}`)
                 .attr('opacity', () => mouseInPlotArea(x, y) ? 1 : 0)
@@ -591,7 +593,7 @@ export function ScatterChart(props: Props): JSX.Element {
         function inMagnifier(datum: [number, number], mouse: [number, number], radius: number): boolean {
             const dx = mouse[0] - datum[0];
             const dy = mouse[1] - datum[1];
-            return Math.sqrt(dx*dx + dy*dy) < radius;
+            return Math.sqrt(dx * dx + dy * dy) < radius;
         }
 
         /**
@@ -605,14 +607,14 @@ export function ScatterChart(props: Props): JSX.Element {
          * @return {Array<MagnifiedData>} The transformed paths
          */
         function magnify(datum: [number, number],
-                         mouse: [number, number],
-                         radius: number,
-                         magnifier: RadialMagnifier,
-                         xScale: ScaleLinear<number, number>,
-                         yScale: ScaleLinear<number, number>): [number, number] {
+            mouse: [number, number],
+            radius: number,
+            magnifier: RadialMagnifier,
+            xScale: ScaleLinear<number, number>,
+            yScale: ScaleLinear<number, number>): [number, number] {
             const datumX = xScale(datum[0]);
             const datumY = yScale(datum[1]);
-            if(inMagnifier([datumX + margin.left, datumY + margin.top], mouse, radius)) {
+            if (inMagnifier([datumX + margin.left, datumY + margin.top], mouse, radius)) {
                 const transform = magnifier.magnify(datumX, datumY);
                 return [transform.xPrime, transform.yPrime];
             }
@@ -620,7 +622,7 @@ export function ScatterChart(props: Props): JSX.Element {
         }
 
         // create the lens
-        if(containerRef.current && path && svg) {
+        if (containerRef.current && path && svg) {
             const [x, y] = d3.mouse(containerRef.current);
             const isMouseInPlotArea = mouseInPlotArea(x, y)
             path
@@ -628,12 +630,12 @@ export function ScatterChart(props: Props): JSX.Element {
                 .attr('cx', x)
                 .attr('cy', y)
                 .attr('opacity', () => isMouseInPlotArea ? 1 : 0)
-            ;
+                ;
 
             const xScale = axesRef.current!.xAxisGenerator.scale<ScaleLinear<number, number>>();
             const yScale = axesRef.current!.yAxisGenerator.scale<ScaleLinear<number, number>>();
 
-            if(isMouseInPlotArea) {
+            if (isMouseInPlotArea) {
                 const radialMagnifier: RadialMagnifier = radialMagnifierWith(
                     magnifier.radius,
                     magnifier.magnification,
@@ -646,7 +648,7 @@ export function ScatterChart(props: Props): JSX.Element {
                             .map(datum => magnify(datum, [x, y], magnifier.radius, radialMagnifier, xScale, yScale));
                         return d3.line()(magnified);
                     })
-                ;
+                    ;
 
                 svg
                     .select(`#x-lens-axis-${chartId.current}`)
@@ -655,7 +657,7 @@ export function ScatterChart(props: Props): JSX.Element {
                     .attr('y1', y)
                     .attr('y2', y)
                     .attr('opacity', 0.3)
-                ;
+                    ;
 
                 svg
                     .select(`#y-lens-axis-${chartId.current}`)
@@ -664,7 +666,7 @@ export function ScatterChart(props: Props): JSX.Element {
                     .attr('y1', y - magnifier.radius)
                     .attr('y2', y + magnifier.radius)
                     .attr('opacity', 0.3)
-                ;
+                    ;
 
                 const axesMagnifier: RadialMagnifier = radialMagnifierWith(magnifier.radius, magnifier.magnification, [x, y]);
                 magnifierXAxisRef.current!
@@ -675,13 +677,13 @@ export function ScatterChart(props: Props): JSX.Element {
                     .attr('x2', datum => axesMagnifier.magnify(x + datum * magnifier.radius / 5, y).xPrime)
                     .attr('y1', y)
                     .attr('y2', datum => axesMagnifier.magnify(x, y + magnifier.radius * (1 - Math.abs(datum / 5)) / 40).yPrime + 5)
-                ;
+                    ;
 
                 magnifierXAxisLabelRef.current!
                     .attr('x', datum => axesMagnifier.magnify(x + datum * magnifier.radius / 5, y).xPrime - 12)
                     .attr('y', datum => axesMagnifier.magnify(x, y + magnifier.radius * (1 - Math.abs(datum / 5)) / 30).yPrime + 20)
                     .text(datum => Math.round(xScale.invert(x - margin.left + datum * magnifier.radius / 5)))
-                ;
+                    ;
 
                 magnifierYAxisRef.current!
                     .attr('stroke', magnifier.color)
@@ -691,13 +693,13 @@ export function ScatterChart(props: Props): JSX.Element {
                     .attr('x2', datum => axesMagnifier.magnify(x + magnifier.radius * (1 - Math.abs(datum / 5)) / 40, y).xPrime + 2)
                     .attr('y1', datum => axesMagnifier.magnify(x, y + datum * magnifier.radius / 5).yPrime)
                     .attr('y2', datum => axesMagnifier.magnify(x, y + datum * magnifier.radius / 5).yPrime)
-                ;
+                    ;
 
                 magnifierYAxisLabelRef.current!
                     .attr('x', datum => axesMagnifier.magnify(x + magnifier.radius * (1 - Math.abs(datum / 5)) / 40, y).xPrime + 10)
                     .attr('y', datum => axesMagnifier.magnify(x, y + datum * magnifier.radius / 5).yPrime - 2)
                     .text(datum => formatValue(yScale.invert(y - margin.top + datum * magnifier.radius / 5)))
-                ;
+                    ;
             }
             else {
                 mainGRef.current!
@@ -707,7 +709,7 @@ export function ScatterChart(props: Props): JSX.Element {
                             .map(([x, y]) => [xScale(x), yScale(y)]);
                         return d3.line()(magnified);
                     })
-                ;
+                    ;
 
                 svg.select(`#x-lens-axis-${chartId.current}`).attr('opacity', 0);
                 svg.select(`#y-lens-axis-${chartId.current}`).attr('opacity', 0);
@@ -726,7 +728,7 @@ export function ScatterChart(props: Props): JSX.Element {
      * @return {boolean} `true` if the mouse is in the plot area; `false` if the mouse is not in the plot area
      */
     function mouseInPlotArea(x: number, y: number): boolean {
-        return  x > margin.left && x < width.current - margin.right && y > margin.top && y < height - margin.bottom;
+        return x > margin.left && x < width.current - margin.right && y > margin.top && y < height - margin.bottom;
     }
 
     /**
@@ -736,7 +738,7 @@ export function ScatterChart(props: Props): JSX.Element {
      * @return {MagnifierSelection | undefined} The magnifier selection if visible; otherwise undefined
      */
     function magnifierLens(svg: SvgSelection, visible: boolean): MagnifierSelection | undefined {
-        if(visible && magnifierRef.current === undefined) {
+        if (visible && magnifierRef.current === undefined) {
             const radialGradient = svg
                 .append<SVGDefsElement>('defs')
                 .append<SVGLinearGradientElement>('radialGradient')
@@ -746,39 +748,39 @@ export function ScatterChart(props: Props): JSX.Element {
                 .attr('r', '53%')
                 .attr('fx', '25%')
                 .attr('fy', '25%')
-            ;
+                ;
 
             radialGradient
                 .append<SVGStopElement>('stop')
                 .attr('offset', '0%')
                 .attr('stop-color', borderColor)
-            ;
+                ;
 
             radialGradient
                 .append<SVGStopElement>('stop')
                 .attr('offset', '30%')
                 .attr('stop-color', tooltip.backgroundColor)
                 .attr('stop-opacity', 0)
-            ;
+                ;
 
             radialGradient
                 .append<SVGStopElement>('stop')
                 .attr('offset', '70%')
                 .attr('stop-color', tooltip.backgroundColor)
                 .attr('stop-opacity', 0)
-            ;
+                ;
 
             radialGradient
                 .append<SVGStopElement>('stop')
                 .attr('offset', '100%')
                 .attr('stop-color', borderColor)
-            ;
+                ;
 
             const magnifierSelection = svg
                 .append<SVGCircleElement>('circle')
                 .attr('class', 'magnifier')
                 .style('fill', `url(#radial-magnifier-gradient-${chartId.current})`)
-            ;
+                ;
 
             // create the lens axes', ticks and tick labels. the labels hold the time and values of the
             // current mouse location
@@ -805,7 +807,7 @@ export function ScatterChart(props: Props): JSX.Element {
             svg.on('mousemove', () => null);
             return undefined;
         }
-        else if(visible && magnifierRef.current) {
+        else if (visible && magnifierRef.current) {
             svg.on('mousemove', () => handleShowMagnify(svg));
         }
         return magnifierRef.current;
@@ -834,7 +836,7 @@ export function ScatterChart(props: Props): JSX.Element {
      * @return {LineSelection} A line selection these ticks
      */
     function magnifierLensAxisTicks(className: string, ticks: Array<number>, selection: GSelection): LineSelection {
-        return  selection
+        return selection
             .selectAll('line')
             .data(ticks)
             .enter()
@@ -884,13 +886,13 @@ export function ScatterChart(props: Props): JSX.Element {
                 .attr('stroke', tracker.color)
                 .attr('stroke-width', tracker.lineWidth)
                 .attr('opacity', 0) as Selection<SVGLineElement, Datum, null, undefined>
-            ;
+                ;
 
             // create the text element holding the tracker time
             svg
                 .append<SVGTextElement>('text')
                 .attr('id', `scatter-chart-tracker-time-${chartId.current}`)
-                .attr('y', Math.max(0, margin.top -3))
+                .attr('y', Math.max(0, margin.top - 3))
                 .attr('fill', axisLabelFont.color)
                 .attr('font-family', axisLabelFont.family)
                 .attr('font-size', axisLabelFont.size)
@@ -958,13 +960,13 @@ export function ScatterChart(props: Props): JSX.Element {
 
             // set up the main <g> container for svg and translate it based on the margins, but do it only
             // once
-            if(mainGRef.current === undefined) {
+            if (mainGRef.current === undefined) {
                 mainGRef.current = svg
                     .attr('width', width.current)
                     .attr('height', height)
                     .attr('color', axisStyle.color)
                     .append<SVGGElement>('g')
-                ;
+                    ;
             }
 
             // set up panning
@@ -981,7 +983,7 @@ export function ScatterChart(props: Props): JSX.Element {
                     tooltipRef.current.visible = tooltip.visible;
                     d3.select(containerRef.current).style("cursor", "auto")
                 })
-            ;
+                ;
 
             svg.call(drag);
 
@@ -992,7 +994,7 @@ export function ScatterChart(props: Props): JSX.Element {
                 .on("zoom", () => {
                     onZoom(d3.event.transform, d3.event.sourceEvent.offsetX - margin.left, plotDimensions);
                 })
-            ;
+                ;
 
             svg.call(zoom);
 
@@ -1005,7 +1007,7 @@ export function ScatterChart(props: Props): JSX.Element {
                 .append("rect")
                 .attr("width", plotDimensions.width)
                 .attr("height", plotDimensions.height - margin.top)
-            ;
+                ;
 
             liveDataRef.current.forEach((series, name) => {
                 const data = selectInTimeRange(series);
@@ -1024,7 +1026,7 @@ export function ScatterChart(props: Props): JSX.Element {
                         enter => enter
                             .append("path")
                             .attr("class", 'time-series-lines')
-                            .attr("id",`${series.name}`)
+                            .attr("id", `${series.name}`)
                             .attr("d", d3.line()
                                 .x((d: [number, number]) => axesRef.current!.xScale(d[0]))
                                 .y((d: [number, number]) => axesRef.current!.yScale(d[1]))
@@ -1047,7 +1049,7 @@ export function ScatterChart(props: Props): JSX.Element {
                             ),
                         update => update,
                         exit => exit.remove()
-                );
+                    );
             });
         }
     }
@@ -1094,7 +1096,13 @@ export function ScatterChart(props: Props): JSX.Element {
                         // update the handler with the new data point
                         onUpdateData(name, newData);
 
+                        // add the new data to the series
                         series.data.push(...newData);
+
+                        // drop data that is older than the max time-window
+                        while (currentTimeRef.current - series.data[0].time > dropDataAfter) {
+                            series.data.shift();
+                        }
                     })
 
                     // update the data
@@ -1130,7 +1138,7 @@ export function ScatterChart(props: Props): JSX.Element {
     // called on mount to set up the <g> element into which to render
     useEffect(
         () => {
-            if(containerRef.current) {
+            if (containerRef.current) {
                 const svg = d3.select<SVGSVGElement, any>(containerRef.current);
                 axesRef.current = initializeAxes(svg, plotDimRef.current);
                 updateDimensionsAndPlot();

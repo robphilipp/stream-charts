@@ -471,7 +471,6 @@ export function RasterChart(props: Props): JSX.Element {
                 .attr('width', tooltipWidth + tooltipRef.current.paddingLeft + tooltipRef.current.paddingRight)
                 .attr('height', textHeight + tooltipRef.current.paddingTop + tooltipRef.current.paddingBottom)
                 ;
-
         }
     }
 
