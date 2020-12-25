@@ -92,6 +92,7 @@ interface Props {
     // data to plot: time-window is the time-range of data shown (slides in time)
     timeWindow: number;
     seriesList: Array<Series>;
+    dropDataAfter?: number;
 
     // regex filter used to select which series are displayed
     filter?: RegExp;
@@ -126,6 +127,7 @@ export function RasterChart(props: Props): JSX.Element {
         onUpdateTime = (_: number) => { },
         filter = /./,
         timeWindow,
+        dropDataAfter = Infinity,
         height,
         backgroundColor = '#202020',
     } = props;
@@ -1084,6 +1086,11 @@ export function RasterChart(props: Props): JSX.Element {
 
                             // add the new data to the series
                             series.data.push(...newData);
+
+                            // drop data that is older than the max time-window
+                            while (currentTimeRef.current - series.data[0].time > dropDataAfter) {
+                                series.data.shift();
+                            }
                         })
 
                         // update the data

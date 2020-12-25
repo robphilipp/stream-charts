@@ -24,4 +24,7 @@ yarn-debug.log*
 yarn-error.log*
 
 .idea/
+.vscode/
+.history/
+
 stream-charts-*.tgz
