@@ -5,12 +5,14 @@
 [Homepage](https://robphilipp.github.io/stream-charts/)
 
 Although still under development, there are two charts available:
+
 1. A neuron raster chart, and a
 2. scatter chart.
 
 Over time, I'll add additional chart types. In the meantime, I welcome any contributions to create new chart types (bar, gauges, etc).
 
 Both charts provide
+
 1. A tracker that shows the current time of the mouse position
 2. A tooltip that gives information about the current datum
 3. A magnifier that zooms in on the data giving a more detailed look.
@@ -18,13 +20,12 @@ Both charts provide
 5. Themeable properties to change the look of the plots.
 6. Zooming and panning.
 
-
 Please see [change history](changes.md) for a history of changes.
 
 ## quick start
 
-```
-$ npm install stream-charts
+```shell
+npm install stream-charts
 ```
 
 For the neuron raster chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx))
@@ -95,7 +96,7 @@ Another example of a scatter plot is shown below. In this plot, a tooltip shows 
 
 ![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/master/docs/images/scatter-tooltip.png?raw=true)
 
-In both cases the plots were updated in real-time with an average update time interval of 25 ms. 
+In both cases the plots were updated in real-time with an average update time interval of 25 ms.
 
 ## usage
 
@@ -103,15 +104,16 @@ In both cases the plots were updated in real-time with an average update time in
 
 The [examples](https://github.com/robphilipp/stream-charts-examples) project has example code that was used to generate the charts in the images above. The [StreamingRasterChart](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx) provides an example of using the raster chart. The [StreamingScatterChart](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx) provides an example of using the scatter chart. Both of these examples provide controls for enabling the filtering, tooltip, tracker, and magnifier enhancements.
 
-Each chart accepts a number of required and optional properties. The properties are divided into 
-1. style, 
-2. data, 
+Each chart accepts a number of required and optional properties. The properties are divided into
+
+1. style,
+2. data,
 3. enhancements, and
-4. state. 
+4. state.
 
 #### styles
 
-Except for the plot height and width, *style* properties are optional. Style properties define how the plot will look. For example, the *margin* property defines the space between the rectangle defined by the *height* and *width* property and the plot area. 
+Except for the plot height and width, *style* properties are optional. Style properties define how the plot will look. For example, the *margin* property defines the space between the rectangle defined by the *height* and *width* property and the plot area.
 
 All the optional *style* properties have defaults (the defaults look like the example charts above). The defaults can be overridden by specifying the properties you would like to change. For example, if you would like to change only the size of the font used for the axes labels, then you can specify the property as,
 
@@ -125,7 +127,7 @@ All the optional *style* properties have defaults (the defaults look like the ex
     .
     .
 />
-``` 
+```
 
 In this case, the size, family, and weight of the axis labels will remain at their default values, and only the color will change from its default value to the one specified, which in this case is "blue".
 
@@ -151,30 +153,29 @@ The *data* properties define the data source, processing, and constraints.
 | windowingTime | optional | number (ms) | Controls the update frequency of the chart. Depending on the number of time-series being plotted, this number can be comfortably set at 25 ms. The default value is 100 ms | `100` |
 | timeWindow | required | number (ms) | The maximum time between the `minTime` and the `maxTime`. | `2000` |
 
-##### Understanding the time-window.
+##### Understanding the time-window
 
 These charts have been develop to be used with high-frequency dynamic data that my run for a considerable amount of time. For example, you may stream in data for a few hundred seconds, and have the plot show the last 10 seconds worth of data. To achieve this you use the `timeWindow` property. Because you want to see the most recent 10 seconds of data, you set the time-window property to 10,000 ms (`timeWindow={10000}`). The charts use the time-window property and the current simulation time to show the most recent `timeWindow` milliseconds of data (in our example, the past 10 seconds). This causes the data to "slide" to the left after `timeWindow` has elapsed.
 
-
 #### enhancements
 
-The tracker, tooltip, magnifier, and filter are enhancements to the plots for exploring the displayed data. Each of these enhancements has a set of properties for determining how they are displayed. The details of the styles are given in sections below. All enhancements are optional, and, inactive by default. 
+The tracker, tooltip, magnifier, and filter are enhancements to the plots for exploring the displayed data. Each of these enhancements has a set of properties for determining how they are displayed. The details of the styles are given in sections below. All enhancements are optional, and, inactive by default.
 
 The tracker, tooltip, and magnifier are activated (shown) when the mouse is in the plot area **and** the enhancement's `visible` property is set to true. Generally, only one enhancement is used at one time.
 
-The filter enhancement differs from the others. This isn't a visible component, rather, it controls what data is displayed in the chart. The filter allows the user to specify a regular expression that is used to filter time-series based on their name. 
+The filter enhancement differs from the others. This isn't a visible component, rather, it controls what data is displayed in the chart. The filter allows the user to specify a regular expression that is used to filter time-series based on their name.
 
 | Name |  | Type | Description | Example |
 | ---- | --- | -------- | ----------- | ------- |
 | tooltip | optional | [TooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/TooltipStyle.ts) | Styling for the tooltip control when it is active | `{visible: false, fontSize: 12, fontColor: '#d2933f'}`|
 | magnifier | optional | [RadialMagnifier](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/ScatterChart.tsx) or [BarMagnifier](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/RasterChart.tsx) | Defines the style of the radial magnifier used for the scatter chart and the bar magnifier used for the raster chart | `{visible: true}` |
 | tracker | optional | [TrackerStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/TrackerStyle.ts) | Style of the tracker line that draws a vertical line at the time represented by the current mouse position and shows that time, when the mouse is in the plot area. | `{visible: false, timeWindow: 50}` |
-| filter | optional | [RexExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) | A regular expression used to filter time-series based on their name. Generally, this would be specified by some control in the parent component. See for example [StreamingRasterChart](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx). | `^in[0-3]+$` | undefined | 
-
+| filter | optional | [RexExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) | A regular expression used to filter time-series based on their name. Generally, this would be specified by some control in the parent component. See for example [StreamingRasterChart](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx). | `^in[0-3]+$` | undefined |
 
 #### state
 
 The *state* properties allow you to provide callbacks when the chart state changes. There are three state changes you can plug into
+
 1. on subscription to the rxjs observable
 2. when data changes
 3. when the current time changes.
@@ -191,7 +192,7 @@ By default, when the charts mount, they subscribe to the specified observable. T
 
 You hand the `stream-charts` an [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable). This defines how (i.e. the pipeline) the data is generated. Only upon subscription does data flow through this pipeline. The rxjs `Observable.subscribe(...)` function returns a [Subscription](https://rxjs-dev.firebaseapp.com/api/index/class/Subscription) that can be used to stop the data.
 
-An example of an observable can be found in the [randomSpikeDataObservable(...)](src/app/examples/randomData.ts) function. 
+An example of an observable can be found in the [randomSpikeDataObservable(...)](src/app/examples/randomData.ts) function.
 
 One reason to provide an `onSubscription` callback is so that you have a handle on the subscription so that you can stop the data. For example, you may want to provide the user of your application a button to stop the data. Or, you may wish to stop the simulation after a certain period of time.
 
@@ -235,9 +236,9 @@ The axis-label font style is used as a `Partial<{size: number, color: string, fa
 | family | string | The font family | `'sans-serif'` | `'sans-serif'` |
 | weight | number | The weight of the font | `350` | `300` |
 
-#### tooltip 
+#### tooltip
 
-The tooltip style is defined in the [TooltipStyle](src/app/charts/TooltipStyle.ts) interface. The `TooltipStyle` is used as a `Partial<TooltipStyle>`. This means that you only need to specify the values of the style that you wish to change. 
+The tooltip style is defined in the [TooltipStyle](src/app/charts/TooltipStyle.ts) interface. The `TooltipStyle` is used as a `Partial<TooltipStyle>`. This means that you only need to specify the values of the style that you wish to change.
 
 | Name | Type | Description | Example | Default Value |
 | ---- | ---- | ----------- | ------- | ------- |
@@ -251,10 +252,10 @@ The tooltip style is defined in the [TooltipStyle](src/app/charts/TooltipStyle.t
 | borderColor | string | Color of the tooltip's border. | `'#f8ebc6'` | `'#d2933f'` |
 | borderWidth | number | The width, in pixels, of the tooltip's border. | `3` | `1` |
 | borderRadius | number | The radius, in pixels, of the rectangles "corners". A value of 0 is a sharp corner. A value of 5 means that the corner is replaced by a circle of radius 5 px. | `3` | `5` |
-| paddingTop | number | The number of pixels between the top of the tooltip and the content. | `8` | `10` |   
-| paddingRight | number | The number of pixels between the right side of the tooltip and the content. | `8` | `10` |   
-| paddingLeft | number | The number of pixels between the left side of the tooltip and the content. | `8` | `10` |   
-| paddingBottom | number | The number of pixels between the bottom of the tooltip and the content. | `8` | `10` |   
+| paddingTop | number | The number of pixels between the top of the tooltip and the content. | `8` | `10` |
+| paddingRight | number | The number of pixels between the right side of the tooltip and the content. | `8` | `10` |
+| paddingLeft | number | The number of pixels between the left side of the tooltip and the content. | `8` | `10` |
+| paddingBottom | number | The number of pixels between the bottom of the tooltip and the content. | `8` | `10` |
 
 #### magnifier
 
@@ -270,7 +271,6 @@ The radial magnifier style is defined in the [ScatterChart](src/app/charts/Scatt
 | color | string | Lens axes and tick color. | `'purple'` | `'#d2933f'` |
 | lineWidth | number | Width, in pixels, of the axes and ticks. | `1` | `2` |
 
-
 The bar magnifier style is defined in the [RasterChart](src/app/charts/RasterChart.tsx) component and is used as a `Partial<LineMagnifierStyle>`, which means you only need to specify the values you wish to change.
 
 | Name | Type | Description | Example | Default Value |
@@ -282,8 +282,7 @@ The bar magnifier style is defined in the [RasterChart](src/app/charts/RasterCha
 | lineWidth | number | Width, in pixels, of the axes and ticks. | `1` | `2` |
 | axisOpacity | number | A number between 0 and 1 that defines how opaque the magnifier's axes are. A value of 0 means that the axes are completely transparent. A value of 1 means that the axes are completely opaque. | `0.5` | `0.35` |
 
-
-#### tracker 
+#### tracker
 
 The tracker displays a vertical line in the chart area at the current mouse position, and show the time represented by that mouse position. The styles for the tracker determine how that line looks.
 
@@ -293,13 +292,12 @@ The tracker styles are defined in the [TrackerStyle](src/app/charts/TrackerStyle
 | ---- | ---- | ----------- | ------- | ------- |
 | visible | boolean | Defines whether the tracker is visible when the mouse is in the plot area. Generally, this would be managed by a control in the parent component. | `true` | `false` |
 | color | string | Color of the tracker line. | `'rgba(55,66,77,0.88)'` | `'#d2933f'` |
-| lineWidth | number | Width, in pixels, of the vertical tracker line. | `2` | `1` | 
+| lineWidth | number | Width, in pixels, of the vertical tracker line. | `2` | `1` |
 
-Please note that the font style of the tracker text is controlled by the axis-label font styles described above. 
+Please note that the font style of the tracker text is controlled by the axis-label font styles described above.
 
 ### time-series
 
-
-##
+## built with
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

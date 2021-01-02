@@ -214,6 +214,83 @@ export function ScatterChart(props: Props): JSX.Element {
 
     const borderColor = d3.rgb(tooltip.backgroundColor).brighter(3.5).hex();
 
+    // called on mount to set up the <g> element into which to render
+    useEffect(
+        () => {
+            if (containerRef.current) {
+                const svg = d3.select<SVGSVGElement, any>(containerRef.current);
+                axesRef.current = initializeAxes(svg, plotDimRef.current);
+                updateDimensionsAndPlot();
+            }
+
+            // subscribe to the throttled resizing events using a consumer that updates the plot
+            const subscription = resizeEventFlowRef.current.subscribe(_ => updateDimensionsAndPlot());
+
+            // stop listening to resize events when this component unmounts
+            return () => {
+                subscription.unsubscribe();
+            }
+        },
+        // we really, really only want this called when the component mounts, and there are
+        // no stale closures in the this. recall that d3 manages the updates to the chart, and
+        // react is only used when certain props change (e.g. magnifier, tracker, tooltip visibility
+        // state, magnification power)
+        //
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        []
+    );
+
+    // called on mount, dismount and when shouldSubscribe changes
+    useEffect(
+        () => {
+            if (shouldSubscribe) {
+                const subscription = subscribe();
+
+                // stop the stream on dismount
+                return () => subscription.unsubscribe();
+            }
+        },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [shouldSubscribe]
+    )
+
+    // update the plot for tooltip, magnifier, or tracker if their visibility changes
+    useEffect(
+        () => {
+            // update the reference to reflect the selection (only one is allowed)
+            if (tooltip.visible) {
+                tooltipRef.current.visible = true;
+                trackerRef.current = undefined;
+                magnifierRef.current = undefined;
+            }
+            else if (tracker.visible) {
+                tooltipRef.current.visible = false;
+                magnifierRef.current = undefined;
+            }
+            else if (magnifier.visible) {
+                tooltipRef.current.visible = false;
+                trackerRef.current = undefined;
+            }
+            // when no enhancements are selected, then make sure they are all off
+            else {
+                tooltipRef.current.visible = false;
+                trackerRef.current = undefined;
+                magnifierRef.current = undefined;
+                if (containerRef.current) {
+                    d3.select<SVGSVGElement, any>(containerRef.current).on('mousemove', () => null);
+                }
+            }
+            seriesFilterRef.current = filter;
+            updatePlot(timeRangeRef.current, plotDimRef.current);
+        },
+        // seriesFilterRef and timeRangeRef are not included in the dependencies because we don't want
+        // react involved in the SVG updates. Rather, the rxjs observable we subscribed to manage the
+        // updates to the time-range and the svg plot
+        //
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [tooltip.visible, magnifier.visible, magnifier.magnification, tracker.visible, filter]
+    )
+
     /**
      * Calculates the min and max values for the specified array of time-series
      * @param {Array<TimeSeries>} data The array of time-series
@@ -1134,83 +1211,6 @@ export function ScatterChart(props: Props): JSX.Element {
         plotDimRef.current = adjustedDimensions(width.current, height, margin);
         updatePlot(timeRangeRef.current, plotDimRef.current);
     }
-
-    // called on mount to set up the <g> element into which to render
-    useEffect(
-        () => {
-            if (containerRef.current) {
-                const svg = d3.select<SVGSVGElement, any>(containerRef.current);
-                axesRef.current = initializeAxes(svg, plotDimRef.current);
-                updateDimensionsAndPlot();
-            }
-
-            // subscribe to the throttled resizing events using a consumer that updates the plot
-            const subscription = resizeEventFlowRef.current.subscribe(_ => updateDimensionsAndPlot());
-
-            // stop listening to resize events when this component unmounts
-            return () => {
-                subscription.unsubscribe();
-            }
-        },
-        // we really, really only want this called when the component mounts, and there are
-        // no stale closures in the this. recall that d3 manages the updates to the chart, and
-        // react is only used when certain props change (e.g. magnifier, tracker, tooltip visibility
-        // state, magnification power)
-        //
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        []
-    );
-
-    // called on mount, dismount and when shouldSubscribe changes
-    useEffect(
-        () => {
-            if (shouldSubscribe) {
-                const subscription = subscribe();
-
-                // stop the stream on dismount
-                return () => subscription.unsubscribe();
-            }
-        },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [shouldSubscribe]
-    )
-
-    // update the plot for tooltip, magnifier, or tracker if their visibility changes
-    useEffect(
-        () => {
-            // update the reference to reflect the selection (only one is allowed)
-            if (tooltip.visible) {
-                tooltipRef.current.visible = true;
-                trackerRef.current = undefined;
-                magnifierRef.current = undefined;
-            }
-            else if (tracker.visible) {
-                tooltipRef.current.visible = false;
-                magnifierRef.current = undefined;
-            }
-            else if (magnifier.visible) {
-                tooltipRef.current.visible = false;
-                trackerRef.current = undefined;
-            }
-            // when no enhancements are selected, then make sure they are all off
-            else {
-                tooltipRef.current.visible = false;
-                trackerRef.current = undefined;
-                magnifierRef.current = undefined;
-                if (containerRef.current) {
-                    d3.select<SVGSVGElement, any>(containerRef.current).on('mousemove', () => null);
-                }
-            }
-            seriesFilterRef.current = filter;
-            updatePlot(timeRangeRef.current, plotDimRef.current);
-        },
-        // seriesFilterRef and timeRangeRef are not included in the dependencies because we don't want
-        // react involved in the SVG updates. Rather, the rxjs observable we subscribed to manage the
-        // updates to the time-range and the svg plot
-        //
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [tooltip.visible, magnifier.visible, magnifier.magnification, tracker.visible, filter]
-    )
 
     return (
         <svg
