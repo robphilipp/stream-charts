@@ -196,14 +196,23 @@ export function RasterChart(props: Props): JSX.Element {
     // when the series list changes, then clear out the data
     useEffect(
         () => {
-            liveDataRef.current = new Map<string, Series>(seriesList.map(series => [series.name, series]));
-            seriesRef.current = new Map<string, Series>(seriesList.map(series => [series.name, series]));
-            currentTimeRef.current = 0;
-            timeRangeRef.current = TimeRange(0, timeWindow);
-            updateDimensionsAndPlot();
+            // liveDataRef.current = new Map<string, Series>(seriesList.map(series => [series.name, series]));
+            // seriesRef.current = new Map<string, Series>(seriesList.map(series => [series.name, series]));
+            // currentTimeRef.current = 0;
+            // timeRangeRef.current = TimeRange(0, timeWindow);
+            // updateDimensionsAndPlot();
+            resetPlot();
         },
         [seriesList]
     )
+
+    function resetPlot(): void {
+        liveDataRef.current = new Map<string, Series>(seriesList.map(series => [series.name, series]));
+        seriesRef.current = new Map<string, Series>(seriesList.map(series => [series.name, series]));
+        currentTimeRef.current = 0;
+        timeRangeRef.current = TimeRange(0, timeWindow);
+        updateDimensionsAndPlot();
+    }
 
     // called on mount to set up the <g> element into which to render
     useEffect(
@@ -218,9 +227,7 @@ export function RasterChart(props: Props): JSX.Element {
             const subscription = resizeEventFlowRef.current.subscribe(_ => updateDimensionsAndPlot());
 
             // stop listening to resize events when this component unmounts
-            return () => {
-                subscription.unsubscribe();
-            }
+            return () => subscription.unsubscribe();
         },
         // currentTimeRef, seriesRef, initializeAxes, onSubscribe, onUpdateData, etc are not included
         // in the dependency list because we only want this to run when the component mounts. The
@@ -235,14 +242,18 @@ export function RasterChart(props: Props): JSX.Element {
     useEffect(
         () => {
             if (shouldSubscribe) {
-                if (subscriptionRef.current !== undefined) {
-                    subscriptionRef.current?.unsubscribe();
-                }
+                // if (subscriptionRef.current !== undefined) {
+                //     subscriptionRef.current?.unsubscribe();
+                // }
                 subscriptionRef.current = subscribe();
-
-                // stop the stream on dismount
-                return () => subscriptionRef.current?.unsubscribe();
+                console.log("subscribed to chart observable");
+            } else {
+                subscriptionRef.current?.unsubscribe();
+                console.log("unsubscribed to chart observable");
             }
+
+            // stop the stream on dismount
+            return () => subscriptionRef.current?.unsubscribe();
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [shouldSubscribe]
@@ -935,7 +946,7 @@ export function RasterChart(props: Props): JSX.Element {
             svg
                 .select(`#raster-chart-x-axis-label-${chartId.current}`)
                 .attr('transform', `translate(${margin.left + plotDimensions.width / 2}, ${axesRef.current.lineHeight * filteredData.length + 2 * margin.top + (margin.bottom / 3)})`)
-                .attr('fill', axisLabelFont.color);
+                .attr('fill', axisLabelFont.color)
                 ;
 
             // create or update the y-axis (user filters change the scale of the y-axis)
@@ -1054,8 +1065,7 @@ export function RasterChart(props: Props): JSX.Element {
                     ;
 
                 // exit old elements
-                container.exit().remove()
-                    ;
+                container.exit().remove();
             });
         }
     }
@@ -1067,6 +1077,7 @@ export function RasterChart(props: Props): JSX.Element {
      * @return {Subscription} The subscription (disposable) for cancelling
      */
     function subscribe(): Subscription {
+        resetPlot();
         const subscription = seriesObservable
             .pipe(windowTime(windowingTime))
             .subscribe(dataList => {
