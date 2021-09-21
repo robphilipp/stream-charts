@@ -30,11 +30,11 @@ npm install stream-charts
 
 For the neuron raster chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx))
 
-```typescript
+```typescript jsx
 import {RasterChart} from "stream-charts";
-.
-.
-.
+// .
+// .
+// .
 <RasterChart
     width={plotWidth}
     height={seriesHeight}
@@ -56,11 +56,11 @@ import {RasterChart} from "stream-charts";
 
 and for the scatter chart  (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx))
 
-```typescript
+```typescript jsx
 import {ScatterChart} from "stream-charts";
-.
-.
-.
+// .
+// .
+// .
 <ScatterChart
     width={plotWidth}
     height={plotHeight}
@@ -117,15 +117,15 @@ Except for the plot height and width, *style* properties are optional. Style pro
 
 All the optional *style* properties have defaults (the defaults look like the example charts above). The defaults can be overridden by specifying the properties you would like to change. For example, if you would like to change only the size of the font used for the axes labels, then you can specify the property as,
 
-```typescript
+```typescript jsx
 <ScatterChart
-    .
-    .
-    .
+    // .
+    // .
+    // .
     axisLabelFont={{color: 'blue'}}
-    .
-    .
-    .
+    // .
+    // .
+    // .
 />
 ```
 
@@ -155,7 +155,7 @@ The *data* properties define the data source, processing, and constraints.
 
 ##### Understanding the time-window
 
-These charts have been develop to be used with high-frequency dynamic data that my run for a considerable amount of time. For example, you may stream in data for a few hundred seconds, and have the plot show the last 10 seconds worth of data. To achieve this you use the `timeWindow` property. Because you want to see the most recent 10 seconds of data, you set the time-window property to 10,000 ms (`timeWindow={10000}`). The charts use the time-window property and the current simulation time to show the most recent `timeWindow` milliseconds of data (in our example, the past 10 seconds). This causes the data to "slide" to the left after `timeWindow` has elapsed.
+These charts have been developed to be used with high-frequency dynamic data that my run for a considerable amount of time. For example, you may stream in data for a few hundred seconds, and have the plot show the last 10 seconds worth of data. To achieve this you use the `timeWindow` property. Because you want to see the most recent 10 seconds of data, you set the time-window property to 10,000 ms (`timeWindow={10000}`). The charts use the time-window property, and the current simulation time, to show the most recent `timeWindow` milliseconds of data (in our example, the past 10 seconds). This causes the data to "slide" to the left after `timeWindow` has elapsed.
 
 #### enhancements
 
@@ -192,7 +192,7 @@ By default, when the charts mount, they subscribe to the specified observable. T
 
 You hand the `stream-charts` an [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable). This defines how (i.e. the pipeline) the data is generated. Only upon subscription does data flow through this pipeline. The rxjs `Observable.subscribe(...)` function returns a [Subscription](https://rxjs-dev.firebaseapp.com/api/index/class/Subscription) that can be used to stop the data.
 
-An example of an observable can be found in the [randomSpikeDataObservable(...)](src/app/examples/randomData.ts) function.
+An example of an observable can be found in the [randomSpikeDataObservable(...)](./src/app/examples/randomData.ts) function.
 
 One reason to provide an `onSubscription` callback is so that you have a handle on the subscription so that you can stop the data. For example, you may want to provide the user of your application a button to stop the data. Or, you may wish to stop the simulation after a certain period of time.
 
@@ -210,18 +210,18 @@ If you are only interested in the current time, you can use the `onUpdateTime` c
 
 When the time associated with the data in the stream changes, this callback provides a hook into that time. In the [StreamingScatterChart](src/app/examples/StreamingScatterChart.tsx), for example, this callback is used to stop the random data after 1 second (1000 ms) by cancelling the subscription.
 
-```typescript
+```typescript jsx
 <ScatterChart
-    .
-    .
-    .
+    // .
+    // .
+    // .
     onSubscribe={subscription => subscriptionRef.current = subscription}
     onUpdateTime={(t: number) => {
         if(t > 1000) subscriptionRef.current!.unsubscribe()
     }}
-    .
-    .
-    .
+    // .
+    // .
+    // .
 />
 ```
 

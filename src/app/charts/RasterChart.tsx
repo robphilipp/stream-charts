@@ -6,7 +6,7 @@ import { TimeRange, TimeRangeType } from "./timeRange";
 import { adjustedDimensions, Margin, PlotDimensions } from "./margins";
 import { Datum, emptySeries, PixelDatum, Series } from "./datumSeries";
 import { defaultTooltipStyle, TooltipStyle } from "./TooltipStyle";
-import { fromEvent, Observable, Subscription } from "rxjs";
+import {fromEvent, noop, Observable, Subscription} from "rxjs";
 import { ChartData } from "./chartData";
 import { throttleTime, windowTime } from "rxjs/operators";
 import { defaultTrackerStyle, TrackerStyle } from "./TrackerStyle";
@@ -122,9 +122,9 @@ export function RasterChart(props: Props): JSX.Element {
         seriesObservable,
         windowingTime = 100,
         shouldSubscribe = true,
-        onSubscribe = (_: Subscription) => { },
-        onUpdateData = () => { },
-        onUpdateTime = (_: number) => { },
+        onSubscribe = noop,
+        onUpdateData = noop,
+        onUpdateTime = noop,
         filter = /./,
         timeWindow,
         dropDataAfter = Infinity,
