@@ -59,6 +59,11 @@ interface Props {
      * to the current time.
      */
     withCadenceOf?: number
+    /**
+     * The (optional, default = 2 pixels) top and bottom margin (in pixels) for the spike lines in the plot.
+     * Margins on individual series can also be set through the {@link Chart.seriesStyles} property.
+     */
+    spikeMargin?: number
 }
 
 export function RasterPlot(props: Props): null {
@@ -96,7 +101,8 @@ export function RasterPlot(props: Props): null {
         panEnabled = false,
         zoomEnabled = false,
         zoomKeyModifiersRequired = true,
-        withCadenceOf
+        withCadenceOf,
+        spikeMargin = 2,
     } = props
 
     // some 'splainin: the dataRef holds on to a copy of the initial data, but, the Series in the array
@@ -244,15 +250,6 @@ export function RasterPlot(props: Props): null {
                 // select the svg element bind the data to them
                 const svg = d3.select<SVGSVGElement, any>(container)
 
-                // mainGElem
-                //     .selectAll<SVGGElement, Series>('g')
-                //     .data<Series>(dataRef.current)
-                //     .enter()
-                //     .append('g')
-                //     .attr('class', 'spikes-series')
-                //     .attr('id', series => `${series.name}-${chartId}-raster`)
-                //     .attr('transform', `translate(${margin.left}, ${margin.top})`);
-
                 // set up panning
                 if (panEnabled) {
                     const drag = d3.drag<SVGSVGElement, Datum>()
@@ -289,25 +286,18 @@ export function RasterPlot(props: Props): null {
                     svg.call(zoom)
                 }
 
-                // define the clip-path so that the series lines don't go beyond the plot area
-                // const clipPathId = setClipPath(chartId, svg, plotDimensions, margin)
-
+                // enter, update, delete the raster data
                 dataRef.current.forEach(series => {
                     const [xAxis, yAxis] = axesFor(series.name, axisAssignments, xAxesState.axisFor, yAxesState.axisFor)
 
                     // grab the series styles, or the defaults if none exist
-                    const {color, lineWidth, margin: spikeMargin = 5} = seriesStyles.get(series.name) || {
+                    const {color, lineWidth, margin: spikeLineMargin = spikeMargin} = seriesStyles.get(series.name) || {
                         ...defaultLineStyle,
                         highlightColor: defaultLineStyle.color
                     }
 
-                    // only show the data for which the filter matches
-                    const plotData = (series.name.match(seriesFilter)) ?
-                        series.data.filter(datum => {
-                            const range = timeRanges.get(xAxis.axisId)
-                            return range === undefined ? true : datum.time >= range.start && datum.time <= range.end
-                        }) :
-                        []
+                    // only show the data for which the regex filter matches
+                    const plotData = (series.name.match(seriesFilter)) ? series.data : []
 
                     const seriesContainer = svg
                         .select<SVGGElement>(`#${series.name}-${chartId}-raster`)
@@ -316,7 +306,7 @@ export function RasterPlot(props: Props): null {
 
                     //
                     // enter new elements
-                    const {yUpper, yLower} = yCoordsFn(yAxis.categorySize, lineWidth, spikeMargin)
+                    const {yUpper, yLower} = yCoordsFn(yAxis.categorySize, lineWidth, spikeLineMargin)
 
                     // grab the value (index) associated with the series name (this is a category axis)
                     const y = yAxis.scale(series.name) || 0
@@ -324,25 +314,13 @@ export function RasterPlot(props: Props): null {
                     seriesContainer
                         .enter()
                         .append<SVGLineElement>('line')
-                        .each(datum => datum.x = xAxis.scale(datum.time))
-                        .attr('class', 'spikes-lines')
                         .attr('x1', datum => datum.x)
                         .attr('x2', datum => datum.x)
                         .attr('y1', _ => yUpper(y))
                         .attr('y2', _ => yLower(y))
                         .attr('stroke', color)
                         .attr('stroke-width', lineWidth)
-                        // .attr('stroke-linecap', "round")
-                        // .attr("clip-path", `url(#${clipPathId})`)
-
-                    // update
-                    seriesContainer
-                        .each(datum => datum.x = xAxis.scale(datum.time))
-                        .attr('x1', datum => datum.x)
-                        .attr('x2', datum => datum.x)
-                        .attr('y1', _ => yUpper(y))
-                        .attr('y2', _ => yLower(y))
-                        .attr('stroke', color)
+                        .attr('class', 'spikes-lines')
                         .on(
                             "mouseover",
                             (event, datumArray) =>
@@ -369,6 +347,14 @@ export function RasterPlot(props: Props): null {
                                 mouseLeaveHandlerFor(`tooltip-${chartId}`)
                             )
                         )
+                        .each(datum => datum.x = xAxis.scale(datum.time))
+
+                    // update
+                    seriesContainer
+                        .attr('x1', datum => datum.x)
+                        .attr('x2', datum => datum.x)
+                        .attr('stroke', color)
+                        .each(datum => datum.x = xAxis.scale(datum.time))
 
                     // exit old elements
                     seriesContainer.exit().remove()
@@ -382,7 +368,8 @@ export function RasterPlot(props: Props): null {
             plotDimensions,
             seriesFilter, seriesStyles,
             xAxesState.axisFor, yAxesState.axisFor,
-            zoomEnabled, zoomKeyModifiersRequired
+            zoomEnabled, zoomKeyModifiersRequired,
+            spikeMargin
         ]
     )
 
@@ -411,15 +398,9 @@ export function RasterPlot(props: Props): null {
                 updatePlotRef.current = updatePlot
             }
         },
-        [updatePlot]
+        [chartId, container, mainG, margin, plotDimensions, updatePlot]
     )
-    // const updatePlotRef = useRef(updatePlot)
-    // useEffect(
-    //     () => {
-    //         updatePlotRef.current = updatePlot
-    //     },
-    //     [updatePlot]
-    // )
+
     const onUpdateTimeRef = useRef(onUpdateTime)
     useEffect(
         () => {

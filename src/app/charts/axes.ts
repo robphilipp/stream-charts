@@ -36,7 +36,6 @@ export const defaultLineStyle: SeriesLineStyle = {
     lineWidth: 1,
     highlightColor: '#008aad',
     highlightWidth: 3,
-    // margin: 0
 }
 
 export interface Axes<X extends BaseAxis, Y extends BaseAxis> {
