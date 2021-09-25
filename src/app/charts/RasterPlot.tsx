@@ -351,10 +351,10 @@ export function RasterPlot(props: Props): null {
 
                     // update
                     seriesContainer
+                        .each(datum => datum.x = xAxis.scale(datum.time))
                         .attr('x1', datum => datum.x)
                         .attr('x2', datum => datum.x)
                         .attr('stroke', color)
-                        .each(datum => datum.x = xAxis.scale(datum.time))
 
                     // exit old elements
                     seriesContainer.exit().remove()

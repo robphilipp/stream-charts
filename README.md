@@ -218,20 +218,15 @@ import {ScatterChart} from "stream-charts";
 
 `stream-charts` are high-performance charts for displaying large amounts of data in real-time. The charts are wrapped in [react](https://reactjs.org) and fed data using [rxjs](https://rxjs-dev.firebaseapp.com) `Observable`s. The goal `stream-charts` is to display large amounts of time-series data at high frequencies while providing tools to understand the time-series.
 
-There are currently two chart types available: a raster chart for display neuron spikes as a function of time, and a scatter chart. The chart below shows the raster chart with the bar magnifier enabled. The controls at the top of the chart are part of the example. These controls allow filtering time-series by their assigned names in real-time, displaying a tooltip when the mouse pointer is on top of a datum, displaying a tracker that show a vertical line and the current time of the mouse, and a bar magnifier, as shown in the image.
+There are currently two chart types available: a raster chart for displaying neuron spikes as a function of time, and a scatter chart for displaying time-series of data. 
 
-![raster-chart](https://github.com/robphilipp/stream-charts/blob/master/docs/images/raster-magnifier.png?raw=true)
-![raster-chart](./docs/images/raster-chart.gif)
+The chart below shows the raster chart with the bar magnifier enabled. The controls at the top of the chart are part of the example. These controls allow filtering time-series by their assigned names in real-time, displaying a tooltip when the mouse pointer is on top of a datum, displaying a tracker that show a vertical line and the current time of the mouse, and a bar magnifier, as shown in the image.
 
-A scatter plot is shown below. In this plot, the neurons' weights are plotted as a function of time. In this plot, the magnifier is enabled, and magnifies the data near the mouse pointer.
+![raster-chart](./docs/images/raster-magnifier.png?raw=true)
 
-![scatter-chart](https://github.com/robphilipp/stream-charts/blob/master/docs/images/scatter.png?raw=true)  
+The scatter plot shown below has 30 time-series of test data, with two time axes, in which the data are updated every 25 milliseconds. A tooltip shows the times and values that came just before and just after the mouse cursor and, as well as the time and value changes.
 
-Another example of a scatter plot is shown below. In this plot, a tooltip shows the weight updates that came just before the mouse cursor and just after, as well as the time and weight changes.
-
-![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/master/docs/images/scatter-tooltip.png?raw=true)
-
-In both cases the plots were updated in real-time with an average update time interval of 25 ms.
+![scatter-chart-tooltip](./docs/images/scatter-tooltip.png?raw=true)
 
 ## usage
 
