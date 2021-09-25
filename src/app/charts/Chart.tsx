@@ -17,16 +17,15 @@ const defaultBackground = '#202020';
 interface Props {
     width: number
     height: number
+
+    // styling
     margin?: Partial<Margin>
-    // axisLabelFont?: Partial<AxesLabelFont>
-    // axisStyle?: Partial<CSSProperties>
     color?: string
     backgroundColor?: string
     svgStyle?: Partial<SvgStyle>
     seriesStyles?: Map<string, SeriesLineStyle>
 
     // initial data
-    // initialData: Map<string, Series>
     initialData: Array<Series>
     seriesFilter?: RegExp
 
@@ -38,8 +37,8 @@ interface Props {
     onUpdateData?: (seriesName: string, data: Array<Datum>) => void
     onUpdateTime?: (time: number) => void
 
-    // regex filter used to select which series are displayed
-    filter?: RegExp
+    // // regex filter used to select which series are displayed
+    // filter?: RegExp
 
     children: JSX.Element | Array<JSX.Element>;
 }

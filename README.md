@@ -230,6 +230,114 @@ The scatter plot shown below has 30 time-series of test data, with two time axes
 
 ## usage
 
+The `stream-charts` module wraps [d3](http://d3js.org) elements with functional [react](http://reactjs.org) in a way that keeps the chart (d3) updates out of the react render cycle. All `stream-charts` start with the [`<Chart/>`](./src/app/charts/Chart.tsx) root element.
+
+### `<Chart/>`
+
+The `Chart` component creates the main SVG element (container) holding the chart, manages a reference to that container, and is the wraps the children in the chart context provider so that they have access to the [useChart](./src/app/charts/hooks/useChart.tsx) hook which holds properties, styles, callbacks, subscription needed to construct the charts and make them interactive.
+
+The `Chart`s properties fall into four categories:
+1. container dimensions
+2. chart style
+3. initial (static data)
+4. streamed data and how to manage the stream of data
+
+#### Chart dimensions
+> **width (pixels)**<br>
+> The width (in pixels) of the container that holds the chart. The actual plot will be smaller based on the margins.
+
+> **height (pixels)**<br>
+> The height (in pixels) of the container that holds the chart. The actual plot will be smaller based on the margins.
+
+#### Chart styling
+> **margin ([Margin](./src/app/charts/margins.ts), optional)**
+> The margin (in pixels) around plot. For example, if the container has a (h, w) = (300, 600) and a margin of 10 pixels for the top, left, right, bottom, then the actual plot will have a (h, w) = (290, 590), leaving only 10 pixels around the plot for axis titles, ticks, and axis labels. 
+> 
+> The Margin has the following shape 
+>```typescript
+>interface Margin {
+>   top: number
+>   bottom: number
+>   left: number
+>   right: number
+>}
+>```
+
+
+> **color (string, optional)**<br>
+> The color of the axis lines and text, which can be overridden specifically by the axes styles.
+
+> **backgroundColor (string, optional)**<br>
+> The color of the chart background (the whole chart, not just the plot).
+
+> **svgStyle ([SvgStyle](./src/app/charts/svgStyle.ts), optional)**<br>
+> The style attributes for the main SVG element, in case you want to change those. Generally, this is not needed.
+> 
+> The SvgStyle has the following shape 
+>```typescript
+>interface SvgStyle {
+>   height?: string | number 
+>   width?: string | number 
+>   outline?: string
+>   // any valid SVG CSS attribute
+>   [propName: string]: any
+>}
+>```
+
+> **seriesStyles (Map<string, [SeriesLineStyle](./src/app/charts/axes.ts)>, optional)**<br>
+> A map holding the data series name with an associated SeriesLineStyle. Any series listed in this map will use the associated styles for that series. Any series not in the map will use the default series styles.
+> 
+> The SeriesLineStyle has the following shape
+> ```typescript
+> interface SeriesLineStyle {
+>    color: string
+>    lineWidth: number
+>    // the color of the series when the user mouses over the series
+>    highlightColor: string
+>    // the line width of the series when the user mouses over the series 
+>    highlightWidth: number
+>    // the line margin used for raster charts
+>    margin?: number
+> }
+>```
+
+#### Chart initial data
+
+Holds the initial (static data). This data is displayed in the chart even before subscribing to the chart-data observable. The initial data can be used to generate static charts.
+
+> **initialData (Array<[Series](./src/app/charts/datumSeries.ts)>)**<br>
+> An array holding the initial data series to be plotted before subscribing to the chart-data observable.  
+>
+> The Series has the following shape
+> ```typescript
+> interface Series {
+>    // the series name
+>    readonly name: string;
+>    // the array of time-value pairs
+>    data: Array<Datum>;
+>    // ... accessor functions
+>    . 
+>    . 
+>    . 
+> }
+>
+>```
+> And the [Datum](./src/app/charts/datumSeries.ts) has the following shape 
+> ```typescript
+> interface Datum {
+>    readonly time: number;
+>    readonly value: number;
+> }
+>```
+> Please note that there are a number of helper functions for creating `Series` and `Datum`.
+> 
+
+todo list the factory functions
+
+    initialData: Array<Series>
+    seriesFilter?: RegExp
+
+
 ### properties
 
 The [examples](https://github.com/robphilipp/stream-charts-examples) project has example code that was used to generate the charts in the images above. The [StreamingRasterChart](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx) provides an example of using the raster chart. The [StreamingScatterChart](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx) provides an example of using the scatter chart. Both of these examples provide controls for enabling the filtering, tooltip, tracker, and magnifier enhancements.
