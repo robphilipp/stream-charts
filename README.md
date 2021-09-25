@@ -2,7 +2,7 @@
 
 `stream-charts` are [react](https://reactjs.org)-based time-series charts for viewing high frequency data, streamed in real-time using [rxjs](https://rxjs-dev.firebaseapp.com). Generally, update periods of 25 ms aren't a problem for about a hundred or so time-series. To achieve this type of performance, the charts are implemented in [d3](https://d3js.org) and wrapped in react functional components using hooks.
 
-[Homepage](https://robphilipp.github.io/stream-charts/)
+[Homepage](https://robphilipp.github.io/stream-charts/) • [Code Docs](docs/index.html)
 
 Although still under development, there are two charts available:
 
