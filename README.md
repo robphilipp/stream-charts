@@ -222,11 +222,11 @@ There are currently two chart types available: a raster chart for displaying neu
 
 The chart below shows the raster chart with the bar magnifier enabled. The controls at the top of the chart are part of the example. These controls allow filtering time-series by their assigned names in real-time, displaying a tooltip when the mouse pointer is on top of a datum, displaying a tracker that show a vertical line and the current time of the mouse, and a bar magnifier, as shown in the image.
 
-![raster-chart](./docs/images/raster-magnifier.png?raw=true)
+![raster-chart](images/raster-magnifier.png?raw=true)
 
 The scatter plot shown below has 30 time-series of test data, with two time axes, in which the data are updated every 25 milliseconds. A tooltip shows the times and values that came just before and just after the mouse cursor and, as well as the time and value changes.
 
-![scatter-chart-tooltip](./docs/images/scatter-tooltip.png?raw=true)
+![scatter-chart-tooltip](images/scatter-tooltip.png?raw=true)
 
 ## usage
 
@@ -536,6 +536,26 @@ Please note that the font style of the tracker text is controlled by the axis-la
 
 ### time-series
 
-## built with
+## building
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Building
+```shell
+npm install
+npm run build
+```
+
+Packaging
+```shell
+npm pack
+```
+
+Testing
+```shell
+npm run test
+```
+
+Creating docs
+```shell
+npm install typedoc
+npx typedoc src/app/charts/*
+```
