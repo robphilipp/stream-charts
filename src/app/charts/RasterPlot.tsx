@@ -23,6 +23,7 @@ import {Subscription} from "rxjs";
 import {Dimensions, Margin} from "./margins";
 import {defaultTooltipStyle, TooltipStyle} from "./tooltipUtils";
 import {subscriptionFor, subscriptionWithCadenceFor} from "./subscriptions";
+import {ContinuousAxis} from "./ContinuousAxis";
 
 interface Props {
     /**
@@ -243,14 +244,14 @@ export function RasterPlot(props: Props): null {
                 // select the svg element bind the data to them
                 const svg = d3.select<SVGSVGElement, any>(container)
 
-                mainGElem
-                    .selectAll<SVGGElement, Series>('g')
-                    .data<Series>(dataRef.current)
-                    .enter()
-                    .append('g')
-                    .attr('class', 'spikes-series')
-                    .attr('id', series => `${series.name}-${chartId}-raster`)
-                    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+                // mainGElem
+                //     .selectAll<SVGGElement, Series>('g')
+                //     .data<Series>(dataRef.current)
+                //     .enter()
+                //     .append('g')
+                //     .attr('class', 'spikes-series')
+                //     .attr('id', series => `${series.name}-${chartId}-raster`)
+                //     .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
                 // set up panning
                 if (panEnabled) {
@@ -289,7 +290,7 @@ export function RasterPlot(props: Props): null {
                 }
 
                 // define the clip-path so that the series lines don't go beyond the plot area
-                const clipPathId = setClipPath(chartId, svg, plotDimensions, margin)
+                // const clipPathId = setClipPath(chartId, svg, plotDimensions, margin)
 
                 dataRef.current.forEach(series => {
                     const [xAxis, yAxis] = axesFor(series.name, axisAssignments, xAxesState.axisFor, yAxesState.axisFor)
@@ -331,8 +332,8 @@ export function RasterPlot(props: Props): null {
                         .attr('y2', _ => yLower(y))
                         .attr('stroke', color)
                         .attr('stroke-width', lineWidth)
-                        .attr('stroke-linecap', "round")
-                        .attr("clip-path", `url(#${clipPathId})`)
+                        // .attr('stroke-linecap', "round")
+                        // .attr("clip-path", `url(#${clipPathId})`)
 
                     // update
                     seriesContainer
@@ -388,13 +389,37 @@ export function RasterPlot(props: Props): null {
     // need to keep the function references for use by the subscription, which forms a closure
     // on them. without the references, the closures become stale, and resizing during streaming
     // doesn't work properly
-    const updatePlotRef = useRef(updatePlot)
+    const updatePlotRef = useRef<(r: Map<string, ContinuousAxisRange>, g: GSelection) => void>(noop)
     useEffect(
         () => {
-            updatePlotRef.current = updatePlot
+            if (mainG !== null && container !== null) {
+                // when the update plot function doesn't yet exist, then create the container holding the plot
+                if (updatePlotRef.current === noop) {
+                    const svg = d3.select<SVGSVGElement, any>(container)
+                    const clipPathId = setClipPath(chartId, svg, plotDimensions, margin)
+                    mainG
+                        .selectAll<SVGGElement, Series>('g')
+                        .data<Series>(dataRef.current)
+                        .enter()
+                        .append('g')
+                        .attr('class', 'spikes-series')
+                        .attr('id', series => `${series.name}-${chartId}-raster`)
+                        .attr('transform', `translate(${margin.left}, ${margin.top})`)
+                        .attr("clip-path", `url(#${clipPathId})`)
+
+                }
+                updatePlotRef.current = updatePlot
+            }
         },
         [updatePlot]
     )
+    // const updatePlotRef = useRef(updatePlot)
+    // useEffect(
+    //     () => {
+    //         updatePlotRef.current = updatePlot
+    //     },
+    //     [updatePlot]
+    // )
     const onUpdateTimeRef = useRef(onUpdateTime)
     useEffect(
         () => {

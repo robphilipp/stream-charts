@@ -6,19 +6,23 @@
 
 Although still under development, there are two charts available:
 
-1. A neuron raster chart, and a
+1. a neuron raster chart, and a
 2. scatter chart.
 
 Over time, I'll add additional chart types. In the meantime, I welcome any contributions to create new chart types (bar, gauges, etc).
 
-Both charts provide
+Stream charts:
+1. are composable react components
+2. are able to plot static data as well as streamed, live data
+3. are themeable using your current theme provider of choice
+4. can use up to two x-axes and up to two y-axes, which can represent different time scales
+5. are filterable in real-time using regular expressions on the series names
+6. have tooltips and trackers
+7. can drop data based on a time-to-live (ttl)
+8. allow panning and zooming
+9. can be used with a cadence
 
-1. A tracker that shows the current time of the mouse position
-2. A tooltip that gives information about the current datum
-3. A magnifier that zooms in on the data giving a more detailed look.
-4. A regular expression filter to remove time-series whose names don't match.
-5. Themeable properties to change the look of the plots.
-6. Zooming and panning.
+All these capabilities are on display in the [example project](https://github.com/robphilipp/stream-charts-examples)
 
 Please see [change history](changes.md) for a history of changes.
 
@@ -35,22 +39,88 @@ import {RasterChart} from "stream-charts";
 // .
 // .
 // .
-<RasterChart
-    width={plotWidth}
-    height={seriesHeight}
-    seriesList={seriesList}
+<Chart
+    width={useGridCellWidth()}
+    height={useGridCellHeight()}
+    margin={{...defaultMargin, top: 60, right: 60}}
+    color={theme.color}
+    backgroundColor={theme.backgroundColor}
+    seriesStyles={new Map([
+        ['test1', {...defaultLineStyle, color: 'orange', lineWidth: 1, highlightColor: 'orange'}],
+        ['test2', {...defaultLineStyle, 
+            color: theme.name === 'light' ? 'blue' : 'gray', 
+            lineWidth: 3, 
+            highlightColor: theme.name === 'light' ? 'blue' : 'gray', 
+            highlightWidth: 5}
+        ],
+    ])}
+    initialData={initialDataRef.current}
+    seriesFilter={filter}
     seriesObservable={observableRef.current}
-    onSubscribe={subscription => subscriptionRef.current = subscription}
-    onUpdateTime={(t: number) => {
-        if(t > 1000) subscriptionRef.current!.unsubscribe()
-    }}
-    timeWindow={timeWindow}
-    margin={{top: 30, right: 20, bottom: 30, left: 75}}
-    tooltip={{visible: visibility.tooltip}}
-    magnifier={{visible: visibility.magnifier, magnification: 5}}
-    tracker={{visible: visibility.tracker}}
-    filter={filter}
-/>
+    shouldSubscribe={running}
+    windowingTime={35}
+>
+    <ContinuousAxis
+        axisId="x-axis-1"
+        location={AxisLocation.Bottom}
+        domain={[0, 5000]}
+        label="x-axis"
+        // font={{color: theme.color}}
+    />
+    <ContinuousAxis
+        axisId="x-axis-2"
+        location={AxisLocation.Top}
+        domain={[0, 10000]}
+        label="x-axis"
+        // font={{color: theme.color}}
+    />
+    <CategoryAxis
+        axisId="y-axis-1"
+        location={AxisLocation.Left}
+        categories={initialDataRef.current.map(series => series.name)}
+        label="y-axis"
+    />
+    <CategoryAxis
+        axisId="y-axis-2"
+        location={AxisLocation.Right}
+        categories={initialDataRef.current.map(series => series.name)}
+        label="y-axis"
+    />
+    <Tracker
+        visible={visibility.tracker}
+        labelLocation={TrackerLabelLocation.WithMouse}
+        style={{color: theme.color}}
+        font={{color: theme.color}}
+        // onTrackerUpdate={update => console.dir(update)}
+    />
+    <Tooltip
+        visible={visibility.tooltip}
+        style={{
+            fontColor: theme.color,
+            backgroundColor: theme.backgroundColor,
+            borderColor: theme.color,
+            backgroundOpacity: 0.9,
+        }}
+    >
+        <RasterPlotTooltipContent
+            xFormatter={value => formatNumber(value, " ,.0f") + ' ms'}
+            yFormatter={value => formatNumber(value, " ,.1f") + ' mV'}
+        />
+    </Tooltip>
+    <RasterPlot
+        axisAssignments={new Map([
+            // ['test', assignAxes("x-axis-1", "y-axis-1")],
+            ['test1', assignAxes("x-axis-2", "y-axis-2")],
+            // ['test3', assignAxes("x-axis-1", "y-axis-1")],
+        ])}
+        dropDataAfter={10000}
+        panEnabled={true}
+        zoomEnabled={true}
+        zoomKeyModifiersRequired={true}
+        withCadenceOf={30}
+    />
+</Chart>
+
 
 ```
 
@@ -61,23 +131,87 @@ import {ScatterChart} from "stream-charts";
 // .
 // .
 // .
-<ScatterChart
-    width={plotWidth}
-    height={plotHeight}
-    seriesList={seriesList}
+<Chart
+    width={useGridCellWidth()}
+    height={useGridCellHeight()}
+    margin={{...defaultMargin, top: 60, right: 60}}
+    color={theme.color}
+    backgroundColor={theme.backgroundColor}
+    seriesStyles={new Map([
+        ['test1', {...defaultLineStyle, color: 'orange', lineWidth: 1, highlightColor: 'orange'}],
+        ['test2', {...defaultLineStyle, 
+            color: theme.name === 'light' ? 'blue' : 'gray', 
+            lineWidth: 3, 
+            highlightColor: theme.name === 'light' ? 'blue' : 'gray', 
+            highlightWidth: 5}
+        ],
+    ])}
+    initialData={initialDataRef.current}
+    seriesFilter={filter}
     seriesObservable={observableRef.current}
-    onSubscribe={subscription => subscriptionRef.current = subscription}
-    onUpdateTime={(t: number) => {
-        if(t > 1000) subscriptionRef.current!.unsubscribe()
-    }}
-    timeWindow={timeWindow}
-    margin={{top: 30, right: 20, bottom: 30, left: 75}}
-    tooltip={{visible: visibility.tooltip}}
-    tooltipValueLabel='weight'
-    magnifier={{visible: visibility.magnifier, magnification: magnification, radius: 150}}
-    tracker={{visible: visibility.tracker}}
-    filter={filter}
-/>
+    shouldSubscribe={running}
+    windowingTime={25}
+>
+    <ContinuousAxis
+        axisId="x-axis-1"
+        location={AxisLocation.Bottom}
+        domain={[10, 5000]}
+        label="x-axis"
+    />
+    <ContinuousAxis
+        axisId="y-axis-1"
+        location={AxisLocation.Left}
+        domain={[0, 1000]}
+        label="y-axis"
+    />
+    <ContinuousAxis
+        axisId="x-axis-2"
+        location={AxisLocation.Top}
+        domain={[100, 2500]}
+        label="x-axis (2)"
+    />
+    <ContinuousAxis
+        axisId="y-axis-2"
+        location={AxisLocation.Right}
+        scale={d3.scaleLog()}
+        domain={[100, 1200]}
+        label="y-axis (2)"
+    />
+    <Tracker
+        visible={visibility.tracker}
+        labelLocation={TrackerLabelLocation.WithMouse}
+        style={{color: theme.color}}
+        font={{color: theme.color}}
+        // onTrackerUpdate={update => console.dir(update)}
+    />
+    <Tooltip
+        visible={visibility.tooltip}
+        style={{
+            fontColor: theme.color,
+            backgroundColor: theme.backgroundColor,
+            borderColor: theme.color,
+            backgroundOpacity: 0.9,
+        }}
+    >
+        <ScatterPlotTooltipContent
+            xLabel="t (ms)"
+            yLabel="count"
+            yValueFormatter={value => formatNumber(value, " ,.0f")}
+            yChangeFormatter={value => formatNumber(value, " ,.0f")}
+        />
+    </Tooltip>
+    <ScatterPlot
+        interpolation={interpolation}
+        axisAssignments={new Map([
+            ['test2', assignAxes("x-axis-2", "y-axis-2")],
+        ])}
+        dropDataAfter={10000}
+        panEnabled={true}
+        zoomEnabled={true}
+        zoomKeyModifiersRequired={true}
+        withCadenceOf={30}
+    />
+</Chart>
 ```
 
 ## intro
