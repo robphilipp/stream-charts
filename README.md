@@ -221,6 +221,7 @@ import {ScatterChart} from "stream-charts";
 There are currently two chart types available: a raster chart for display neuron spikes as a function of time, and a scatter chart. The chart below shows the raster chart with the bar magnifier enabled. The controls at the top of the chart are part of the example. These controls allow filtering time-series by their assigned names in real-time, displaying a tooltip when the mouse pointer is on top of a datum, displaying a tracker that show a vertical line and the current time of the mouse, and a bar magnifier, as shown in the image.
 
 ![raster-chart](https://github.com/robphilipp/stream-charts/blob/master/docs/images/raster-magnifier.png?raw=true)
+![raster-chart](./docs/images/raster-chart.gif)
 
 A scatter plot is shown below. In this plot, the neurons' weights are plotted as a function of time. In this plot, the magnifier is enabled, and magnifies the data near the mouse pointer.
 
