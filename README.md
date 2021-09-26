@@ -1,9 +1,27 @@
-# stream-charts
+# <span id="top">stream-charts</span>
+[Homepage](https://robphilipp.github.io/stream-charts/) •
+[Code Docs](docs/index.html) •
+[Change History](changes.md) •
+[Example Project](https://github.com/robphilipp/stream-charts-examples)
 
-`stream-charts` are [react](https://reactjs.org)-based time-series charts for viewing high frequency data, streamed in real-time using [rxjs](https://rxjs-dev.firebaseapp.com). Generally, update periods of 25 ms aren't a problem for about a hundred or so time-series. To achieve this type of performance, the charts are implemented in [d3](https://d3js.org) and wrapped in react functional components using hooks.
+`stream-charts` are [react](https://reactjs.org)-based time-series charts for viewing high frequency data, streamed in real-time using [rxjs](https://rxjs-dev.firebaseapp.com). Generally, update periods of 25 ms aren't a problem for about a hundred or so time-series. To achieve this type of performance, the charts are implemented using [d3](https://d3js.org) SVG elements, wrapped in react functional components, and keeping the chart updates outside the react render cycle.
 
-[Homepage](https://robphilipp.github.io/stream-charts/) • [Code Docs](docs/index.html)
+### quick overview
 
+With `stream-charts` you can display initial (or static) data as well as live data from an `Observable`.
+
+`Charts` are composable using react components. So you can add different axis types, multiple axes, trackers, tooltips, and plots.
+
+All aspects of the `Charts` style are exposed allowing you to use your favorite frameworks theme provider, or none at all.
+
+`Charts` provide zooming and panning can be enabled or disabled. And zooming is set to use a modifier key by default so that it doesn't interfere with normal scrolling.
+
+When using lower update frequencies, such as < 250 ms, and data updates are sparse, you can set an update cadence so that the plot's time smoothly scrolls, rather than updating only when new data arrives.
+
+`Charts` can have a data TTL (time-to-live) to drop older data to allow long-running streams of data. With the data-update callback you can capture that data and store it in local storage, memory, or a location of your choice.
+
+
+### project status
 Although still under development, there are two charts available:
 
 1. a neuron raster chart, and a
@@ -11,28 +29,30 @@ Although still under development, there are two charts available:
 
 Over time, I'll add additional chart types. In the meantime, I welcome any contributions to create new chart types (bar, gauges, etc).
 
-Stream charts:
-1. are composable react components
-2. are able to plot static data as well as streamed, live data
-3. are themeable using your current theme provider of choice
-4. can use up to two x-axes and up to two y-axes, which can represent different time scales
-5. are filterable in real-time using regular expressions on the series names
-6. have tooltips and trackers
-7. can drop data based on a time-to-live (ttl)
-8. allow panning and zooming
-9. can be used with a cadence
+## [&#10514;](#top) <span id="content">content</span>
 
-All these capabilities are on display in the [example project](https://github.com/robphilipp/stream-charts-examples)
+**[quick start](#quick-start)**<br>
+<span style="margin-left: 15px">[example raster chart code](#example-raster-chart-code)</span><br>
+<span style="margin-left: 15px">[example scatter chart code](#example-scatter-chart-code)</span>
 
-Please see [change history](changes.md) for a history of changes.
+**[intro](#intro)**<br>
+<span style="margin-left: 15px">[terminology](#terminology)</span><br>
 
-## quick start
+**[usage](#usage)**<br>
+<span style="margin-left: 15px">[&lt;Chart/&gt;](#chart-usage)</span><br>
+
+
+
+## [&#10514;](#content) <span id="quick-start">quick start</span>
 
 ```shell
 npm install stream-charts
 ```
 
+### [&#10514;](#content) <span id="example-raster-chart-code">example raster chart</span>
 For the neuron raster chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx))
+
+![raster-chart](images/raster-magnifier.png?raw=true)
 
 ```typescript jsx
 import {RasterChart} from "stream-charts";
@@ -124,7 +144,11 @@ import {RasterChart} from "stream-charts";
 
 ```
 
-and for the scatter chart  (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx))
+### [&#10514;](#content) <span id="example-scatter-chart-code">example scatter chart</span>
+
+An example scatter chart  (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx))
+
+![scatter-chart-tooltip](images/scatter-tooltip.png?raw=true)
 
 ```typescript jsx
 import {ScatterChart} from "stream-charts";
@@ -214,25 +238,38 @@ import {ScatterChart} from "stream-charts";
 </Chart>
 ```
 
-## intro
+## [&#10514;](#content) <span id="intro">intro</span>
 
-`stream-charts` are high-performance charts for displaying large amounts of data in real-time. The charts are wrapped in [react](https://reactjs.org) and fed data using [rxjs](https://rxjs-dev.firebaseapp.com) `Observable`s. The goal `stream-charts` is to display large amounts of time-series data at high frequencies while providing tools to understand the time-series.
+`stream-charts` aim to provide high-performance charts for displaying large amounts of data in real-time. The examples (above) show a scatter plot and raster plot whose data was updated about every 25 ms. These plots show 30 time-series of data each. 
 
-There are currently two chart types available: a raster chart for displaying neuron spikes as a function of time, and a scatter chart for displaying time-series of data. 
+> There are obviously limits to the amount of data, and the performance of the plots. For example, the raster chart plots thousands of lines in the chart. When displaying more data in the raster plot, update performance will suffer. Therefore, you must tune your plots somewhat when you are working in the limits of their performance. 
+>
+> The scatter chart can handle a larger number of series at 25 ms update frequency.
 
-The chart below shows the raster chart with the bar magnifier enabled. The controls at the top of the chart are part of the example. These controls allow filtering time-series by their assigned names in real-time, displaying a tooltip when the mouse pointer is on top of a datum, displaying a tracker that show a vertical line and the current time of the mouse, and a bar magnifier, as shown in the image.
+### [&#10514;](#content) <span id="terminology">terminology</span>
 
-![raster-chart](images/raster-magnifier.png?raw=true)
+A `chart` holds the `plot`, the `axes`, `tracker`, and `tooltip`. A `chart` is generic, and holds a specific type of `plot`, for example, a raster plot or a scatter plot. The `plot` holds the data, and provides pan and zoom. The `axes` provide the scale of the data. For example, the scale could be a continuous numeric logarithmic scale, or a category scale. The `axes` are also generic. Though, a `plot` can restrict what `axes` are allowed. For example, a raster plot requires that the y-axes are category axes. `trackers` are generic. `tooltips` are also generic, though they have a child that is specific to a plot so that it knows how to interpret and present the data.
 
-The scatter plot shown below has 30 time-series of test data, with two time axes, in which the data are updated every 25 milliseconds. A tooltip shows the times and values that came just before and just after the mouse cursor and, as well as the time and value changes.
+> **&lt;Chart/&gt;** [&#8628;](#chart-usage)<br>
+> Generic container which holds the `Axes`, `Plot`, `Tracker`, `Tooltip`.
 
-![scatter-chart-tooltip](images/scatter-tooltip.png?raw=true)
+> **Axes** [&#8628;](#)<br>
+> Defines the scale of the data. `stream-charts` current has two axis types: `ContinuousAxis` and `CategoryAxis`. The `ContinuousAxis` can be used as an x-axis or y-axis. However, the `CategoryAxis` can only be used as a y-axes because these are all time-series charts and the x-axis currently only represents time (this will change in the future with additional plot types). 
 
-## usage
+> **Plot** [&#8628;](#)<br>
+> The plot is a container for the data that uses the `axes` for scale, domain, and range information. Plots provide panning and zooming of the x-axis (time), interacting with the `axes` to update the time-range. The plot is the visual representation of the data.
+
+> **&lt;Tracker/&gt;** [&#8628;](#)<br>
+> The tracker displays the current plot time of the mouse. When multiple x-axes are used in the chart, then the tracker displays both times (i.e. from the upper and lower x-axis).
+
+> **&lt;Tooltip/&gt;** [&#8628;](#)<br>
+> The tooltip is a generic component for rendering information about the data when the user mouses over a series or datum. The `<Tooltip/>` expects a child component that understands the data and renders the information show in the tooltip. For example, when using a `<RasterPlot/>`, the `<RasterPlotTooltipContent/>` renders the data for the raster plot. The tooltip content can be extended.
+
+## [&#10514;](#content) <span id="usage">usage</span>
 
 The `stream-charts` module wraps [d3](http://d3js.org) elements with functional [react](http://reactjs.org) in a way that keeps the chart (d3) updates out of the react render cycle. All `stream-charts` start with the [`<Chart/>`](./src/app/charts/Chart.tsx) root element.
 
-### `<Chart/>`
+### [&#10514;](#content) <span id="chart-usage">&lt;Chart/&gt;</span>
 
 The `Chart` component creates the main SVG element (container) holding the chart, manages a reference to that container, and is the wraps the children in the chart context provider so that they have access to the [useChart](./src/app/charts/hooks/useChart.tsx) hook which holds properties, styles, callbacks, subscription needed to construct the charts and make them interactive.
 
@@ -242,14 +279,14 @@ The `Chart`s properties fall into four categories:
 3. initial (static data)
 4. streamed data and how to manage the stream of data
 
-#### Chart dimensions
+#### &lt;Chart/&gt; dimensions
 > **width (pixels)**<br>
 > The width (in pixels) of the container that holds the chart. The actual plot will be smaller based on the margins.
 
 > **height (pixels)**<br>
 > The height (in pixels) of the container that holds the chart. The actual plot will be smaller based on the margins.
 
-#### Chart styling
+#### &lt;Chart/&gt; styling
 > **margin ([Margin](./src/app/charts/margins.ts), optional)**
 > The margin (in pixels) around plot. For example, if the container has a (h, w) = (300, 600) and a margin of 10 pixels for the top, left, right, bottom, then the actual plot will have a (h, w) = (290, 590), leaving only 10 pixels around the plot for axis titles, ticks, and axis labels. 
 > 
@@ -301,7 +338,7 @@ The `Chart`s properties fall into four categories:
 > }
 >```
 
-#### Chart initial data
+#### &lt;Chart/&gt; initial data
 
 Holds the initial (static data). This data is displayed in the chart even before subscribing to the chart-data observable. The initial data can be used to generate static charts.
 
