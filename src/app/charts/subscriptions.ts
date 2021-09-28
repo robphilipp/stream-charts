@@ -1,4 +1,4 @@
-import {map, mergeAll, mergeWith, windowTime} from "rxjs/operators";
+import {bufferTime, map, mergeAll, mergeWith} from "rxjs/operators";
 import {ContinuousNumericAxis, timeRanges} from "./axes";
 import {Datum, emptySeries, Series} from "./datumSeries";
 import {ContinuousAxisRange, continuousAxisRangeFor} from "./continuousAxisRangeFor";
@@ -36,7 +36,7 @@ export function subscriptionFor(
     setCurrentTime: (axisId: string, end: number) => void
 ): Subscription {
     const subscription = seriesObservable
-        .pipe(windowTime(windowingTime))
+        .pipe(bufferTime(windowingTime))
         .subscribe(async dataList => {
             await dataList.forEach(data => {
                 // grab the time-winds for the x-axes
@@ -155,7 +155,7 @@ export function subscriptionWithCadenceFor(
     const subscription = seriesObservable
         .pipe(
             mergeWith(cadence),
-            windowTime(windowingTime),
+            bufferTime(windowingTime),
             mergeAll(),
         )
         .subscribe(data => {

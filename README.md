@@ -359,20 +359,54 @@ Holds the initial (static data). This data is displayed in the chart even before
 > }
 >
 >```
-> And the [Datum](./src/app/charts/datumSeries.ts) has the following shape 
+> And the [Datum](./src/app/charts/datumSeries.ts) is an immutable object that has the following shape 
 > ```typescript
 > interface Datum {
 >    readonly time: number;
 >    readonly value: number;
 > }
 >```
-> Please note that there are a number of helper functions for creating `Series` and `Datum`.
-> 
+> There are a number of helper functions for creating `Series` and `Datum`.
+>> `seriesFrom(name: string, data: Array<Datum> = []): Series`<br>
+>> `seriesFromTuples(name: string, data: Array<[number, number]> = []): Series`<br>
+>> `emptySeries(name: string): Series`<br>
+>> `emptySeriesFor(names: Array<string>): Array<Series>`<br>
 
-todo list the factory functions
+#### &lt;Chart/&gt; streaming data
+A set of properties, functions, and callbacks to control and observe the streaming of live data into the chart.
 
-    initialData: Array<Series>
-    seriesFilter?: RegExp
+> **seriesObservable (Observable<[ChartData](./src/app/charts/chartData.ts)>)**<br>
+> An observable of (source for) chart-data. The `shouldSubscribe` property controls whether the chart subscribes to the observable, or unsubscribes. This is the source of live data to the chart. An example of an observable is shown below.
+> ```typescript
+> function randomSpikeDataObservable(
+>     series: Array<Series>,
+>     updatePeriod: number = UPDATE_PERIOD_MS,
+>     spikeProbability: number = 0.1
+> ): Observable<ChartData> {
+>   const seriesNames = series.map(series => series.name)
+>   const initialData = initialChartData(series)
+>   return interval(updatePeriod).pipe(
+>     // convert the number sequence to a time
+>     map(sequence => (sequence + 1) * updatePeriod),
+>     // create a random spike for each series
+>     map((time) => randomSpikeData(time, seriesNames, initialData.maxTimes, updatePeriod, spikeProbability))
+>   )
+> }
+> ```
+
+> **shouldSubscribe (boolean, optional)**<br>
+> Optional property, that when set from `false` to `true`, causes the &lt;Chart/&gt; to subscribe to the chart-data observable. When set to `false` after a subscription, causes the &lt;Chart/&gt; to unsubscribe from the chart-data observable. 
+
+> **windowingTime (number, milliseconds, optional, default = 100 ms)**<br>
+> Optional property that defines a time-window during which incoming events are buffered, and then handed to plot, causing the plot to update. The `windowingTime` defines the maximum plot update rate, though not the maximum data update rate. The larger the window, the fewer updates per time, and the more choppy the updates. Large amounts of data with high update rates can cause rendering delays. The windowing time provides a lever to manage the plot update rates to get the smoothest plot updates that keep up with real-time.
+
+    // data stream
+    seriesObservable?: Observable<ChartData>
+    windowingTime?: number
+    shouldSubscribe?: boolean
+    onSubscribe?: (subscription: Subscription) => void
+    onUpdateData?: (seriesName: string, data: Array<Datum>) => void
+    onUpdateTime?: (time: number) => void
 
 
 ### properties

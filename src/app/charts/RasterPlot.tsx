@@ -23,7 +23,6 @@ import {Subscription} from "rxjs";
 import {Dimensions, Margin} from "./margins";
 import {defaultTooltipStyle, TooltipStyle} from "./tooltipUtils";
 import {subscriptionFor, subscriptionWithCadenceFor} from "./subscriptions";
-import {ContinuousAxis} from "./ContinuousAxis";
 
 interface Props {
     /**
@@ -354,6 +353,8 @@ export function RasterPlot(props: Props): null {
                         .each(datum => datum.x = xAxis.scale(datum.time))
                         .attr('x1', datum => datum.x)
                         .attr('x2', datum => datum.x)
+                        .attr('y1', _ => yUpper(y))
+                        .attr('y2', _ => yLower(y))
                         .attr('stroke', color)
 
                     // exit old elements
