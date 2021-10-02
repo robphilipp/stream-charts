@@ -1,8 +1,8 @@
-import {bufferTime, map, mergeAll, mergeWith} from "rxjs/operators";
+import {bufferTime, map, mergeAll, mergeWith, windowTime} from "rxjs/operators";
 import {ContinuousNumericAxis, timeRanges} from "./axes";
 import {Datum, emptySeries, Series} from "./datumSeries";
 import {ContinuousAxisRange, continuousAxisRangeFor} from "./continuousAxisRangeFor";
-import {interval, Observable, Subscription} from "rxjs";
+import {animationFrameScheduler, asyncScheduler, interval, Observable, Subscription} from "rxjs";
 import {ChartData} from "./chartData";
 import {AxesAssignment} from "./plot";
 import {AxesState} from "./hooks/AxesState";
@@ -29,7 +29,7 @@ export function subscriptionFor(
     windowingTime: number,
     axisAssignments: Map<string, AxesAssignment>,
     xAxesState: AxesState,
-    onUpdateData: (seriesName: string, data: Array<Datum>) => void,
+    onUpdateData: ((seriesName: string, data: Array<Datum>) => void) | undefined,
     dropDataAfter: number,
     updateTimingAndPlot: (ranges: Map<string, ContinuousAxisRange>) => void,
     seriesMap: Map<string, Series>,
@@ -63,7 +63,7 @@ export function subscriptionFor(
                     const series = seriesMap.get(name) || emptySeries(name);
 
                     // update the handler with the new data point
-                    onUpdateData(name, newData);
+                    if (onUpdateData) onUpdateData(name, newData);
 
                     // add the new data to the series
                     series.data.push(...newData);
@@ -129,7 +129,7 @@ export function subscriptionWithCadenceFor(
     windowingTime: number,
     axisAssignments: Map<string, AxesAssignment>,
     xAxesState: AxesState,
-    onUpdateData: (seriesName: string, data: Array<Datum>) => void,
+    onUpdateData: ((seriesName: string, data: Array<Datum>) => void) | undefined,
     dropDataAfter: number,
     updateTimingAndPlot: (ranges: Map<string, ContinuousAxisRange>) => void,
     seriesMap: Map<string, Series>,
@@ -202,7 +202,7 @@ export function subscriptionWithCadenceFor(
                 const series = seriesMap.get(name) || emptySeries(name);
 
                 // update the handler with the new data point
-                onUpdateData(name, newData);
+                if (onUpdateData) onUpdateData(name, newData);
 
                 // add the new data to the series
                 series.data.push(...newData);

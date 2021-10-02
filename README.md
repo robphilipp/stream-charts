@@ -40,7 +40,14 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 
 **[usage](#usage)**<br>
 <span style="margin-left: 15px">[&lt;Chart/&gt;](#chart-usage)</span><br>
+<span style="margin-left: 30px">[dimensions](#chart-usage-dimensions)</span><br>
+<span style="margin-left: 30px">[styling](#chart-usage-styling)</span><br>
+<span style="margin-left: 30px">[initial data](#chart-usage-initial-data)</span><br>
+<span style="margin-left: 30px">[streaming data](#chart-usage-streaming-data)</span><br>
 
+<span style="margin-left: 15px">[&lt;ContinousAxis/&gt;](#axes-usage)</span><br>
+<span style="margin-left: 30px">[base properties](#axes-usage-base)</span><br>
+<span style="margin-left: 30px">[styling](#axes-usage-styling)</span><br>
 
 
 ## [&#10514;](#content) <span id="quick-start">quick start</span>
@@ -279,14 +286,14 @@ The `Chart`s properties fall into four categories:
 3. initial (static data)
 4. streamed data and how to manage the stream of data
 
-#### &lt;Chart/&gt; dimensions
+#### [&#10514;](#content) <span id="chart-usage-dimensions">&lt;Chart/&gt; dimensions</span>
 > **width (pixels)**<br>
 > The width (in pixels) of the container that holds the chart. The actual plot will be smaller based on the margins.
 
 > **height (pixels)**<br>
 > The height (in pixels) of the container that holds the chart. The actual plot will be smaller based on the margins.
 
-#### &lt;Chart/&gt; styling
+#### [&#10514;](#content) <span id="chart-usage-styling">&lt;Chart/&gt; styling</span>
 > **margin ([Margin](./src/app/charts/margins.ts), optional)**
 > The margin (in pixels) around plot. For example, if the container has a (h, w) = (300, 600) and a margin of 10 pixels for the top, left, right, bottom, then the actual plot will have a (h, w) = (290, 590), leaving only 10 pixels around the plot for axis titles, ticks, and axis labels. 
 > 
@@ -338,7 +345,7 @@ The `Chart`s properties fall into four categories:
 > }
 >```
 
-#### &lt;Chart/&gt; initial data
+#### [&#10514;](#content) <span id="chart-usage-initial-data">&lt;Chart/&gt; initial data</span>
 
 Holds the initial (static data). This data is displayed in the chart even before subscribing to the chart-data observable. The initial data can be used to generate static charts.
 
@@ -372,7 +379,8 @@ Holds the initial (static data). This data is displayed in the chart even before
 >> `emptySeries(name: string): Series`<br>
 >> `emptySeriesFor(names: Array<string>): Array<Series>`<br>
 
-#### &lt;Chart/&gt; streaming data
+#### [&#10514;](#content) <span id="chart-usage-streaming-data">&lt;Chart/&gt; streaming data</span>
+
 A set of properties, functions, and callbacks to control and observe the streaming of live data into the chart.
 
 > **seriesObservable (Observable<[ChartData](./src/app/charts/chartData.ts)>)**<br>
@@ -398,15 +406,63 @@ A set of properties, functions, and callbacks to control and observe the streami
 > Optional property, that when set from `false` to `true`, causes the &lt;Chart/&gt; to subscribe to the chart-data observable. When set to `false` after a subscription, causes the &lt;Chart/&gt; to unsubscribe from the chart-data observable. 
 
 > **windowingTime (number, milliseconds, optional, default = 100 ms)**<br>
-> Optional property that defines a time-window during which incoming events are buffered, and then handed to plot, causing the plot to update. The `windowingTime` defines the maximum plot update rate, though not the maximum data update rate. The larger the window, the fewer updates per time, and the more choppy the updates. Large amounts of data with high update rates can cause rendering delays. The windowing time provides a lever to manage the plot update rates to get the smoothest plot updates that keep up with real-time.
+> Optional property that defines a time-window during which incoming events are buffered, and then handed to plot, causing the plot to update. The `windowingTime` defines the maximum plot update rate, though not the maximum data update rate. The larger the windowing time, the fewer updates per unit time, and the more choppy the updates. Large amounts of data with high update rates can cause rendering delays. The windowing time provides a lever to manage the plot update rates to get the smoothest plot updates that keep up with real-time.
 
-    // data stream
-    seriesObservable?: Observable<ChartData>
-    windowingTime?: number
-    shouldSubscribe?: boolean
-    onSubscribe?: (subscription: Subscription) => void
-    onUpdateData?: (seriesName: string, data: Array<Datum>) => void
-    onUpdateTime?: (time: number) => void
+> **shouldSubscribe (number, optional, default = false)**<br>
+> Optional property that default to `false`. When changed to `true`, from `false`, signals the &lt;Chart/&gt; to subscribe to the `seriesObservable`, streaming in the `ChartData` and updating the &lt;Chart/&gt; in real-time.
+
+> **onSubscribe (callback function, (subscription: Subscription) => void)**<br>
+> Optional callback function that is called when the &lt;Chart/&gt; subscribes to the `ChartData` observable.
+
+> **onUpdateData (callback function, (seriesName: string, data: Array<Datum>) => void)**<br>
+> Optional callback function that is called when the data updates. This callback can be used if you would like to respond to data updates. For example, use this callback if you would like to have the plot drop data after 10 seconds, but would like to store that data in an in-browser database.
+
+> **onUpdateTime (callback function, (times: Map<string, [start: number, end: number]>) => void)**<br>
+> Optional callback this is called whenever the time-ranges change. Use this to track the current time of the plot.
+
+
+### [&#10514;](#content) <span id="axes-usage">&lt;ContinuousAxis/&gt;</span>
+
+The &lt;ContinuousAxis/&gt; must be a child of the &lt;Chart/&gt;. Each &lt;Chart/&gt can one or two continuous axes for the x-axes and for the y-axes. When a &lt;Chart/&gt has multiple x-axes or y-axes then you must assign series to the axes in one of the `Plot` components. Any series that are not explicitly assigned an axis will be assigned to the default x-axis or y-axis. The default x-axis is the bottom axis in the &lt;Chart/&gt, and the default y-axis is the left-hand side axis in the &lt;Chart/&gt.
+
+When creating a &lt;ContinuousAxis/&gt;, you must specify its location using the `AxisLocation` enum defined in the [axes.ts](./src/app/charts/axes.ts) file. Each axis must have a unique axis ID. By default a &lt;ContinuousAxis/&gt; will have a linear scale (d3.scaleLinear). The `scale` property can by used to set the scale to a `log` (d3.scaleLog) or `power` (d3.scalePow) scale or any other continuous numeric scale available in `d3`. The `domain` property defines the initial min and max values for the axis, and when data streams into the plot, that defines the time-window displayed for the axis (unless changed by a zoom event).
+
+#### [&#10514;](#content) <span id="axes-usage-base">&lt;ContinuousAxis/&gt; base properties</span>
+
+The base properties defining the axis.
+
+> **axisId (string)**<br>
+> The unique ID of the axis. The axis can then be referred to by this ID. For example, when assigning axes to series, the assignment is made by associating the axis ID to the series name.
+
+> **location ([AxisLocation](./src/app/charts/axes.ts))**<br>
+> The location of the axis. As defined by the `AxisLocation` in the the [axes.ts](./src/app/charts/axes.ts) file, x-axes can be placed on the `bottom` or the `top`, and y-axes can be placed on the `left` or the `right`. 
+
+> **scale (ScaleContinuousNumeric<number, number>)**<br>
+> The optional scale of the continous axis. This can be a linear scale (default scale, d3.scaleLinear), a logarithmic scale (d3.scaleLog), a power scale (d3.scalePower), or any other d3 continouos numeric scale that works. Not that if a chart, for example, has two x-axes, that the x-axes are **not** required to have the same scale.
+
+> **domain ([min: number, max: number])**<br>
+> The domain of the axis (in d3 terminology) is effectively the minimum value of the displayed axis and the maximum value of the displayed axis when the initial data is displayed. The domain defines the time-window of the displayed data. For example, if the `domain` for an x-axis is specified as `[1000, 6000]`, then the axis starts at `1000` and ends at `6000`, and the time-window is `5000`. Once data starts to stream past the axis end, the plot starts to scroll, maintaining the calculated time-window (in out example, 5000). Of course, a zooming event will change the domain, and also the time-window.
+
+> **label (string)**<br>
+> The axis label.
+
+#### [&#10514;](#content) <span id="axes-usage-styling">&lt;ContinuousAxis/&gt; styling</span>
+
+A set of properties to update the style of the axes.
+
+> **font (Partial<[AxesLabelFont](./src/app/charts/axes.ts)>)**<br>
+> An optional CSS properties specifying the font for the axis and tick labels.
+
+    // linear, log, or power scale that defaults to linear scale when not specified
+    scale?: ScaleContinuousNumeric<number, number>
+    // the min and max values for the axis
+    domain: [min: number, max: number]
+    // the font for drawing the axis ticks and labels
+    font?: Partial<AxesLabelFont>
+    // the axis label
+    label: string
+
+
 
 
 ### properties

@@ -65,6 +65,27 @@ interface Props {
     spikeMargin?: number
 }
 
+/**
+ * Renders a streaming neuron raster plot for the series in the initial data and those sourced by the
+ * observable specified as a property in the {@link Chart}. This component uses the {@link useChart}
+ * hook, and therefore must be a child of the {@link Chart} in order to be plugged in to the
+ * chart ecosystem (axes, tracker, tooltip).
+ *
+ * @param props The properties associated with the raster plot
+ * @constructor
+ * @example
+ <RasterPlot
+     axisAssignments={new Map([
+        ['neuron1', assignAxes("x-axis-2", "y-axis-2")],
+        ['neuron2', assignAxes("x-axis-2", "y-axis-2")],
+     ])}
+     spikeMargin={1}
+     dropDataAfter={5000}
+     panEnabled={true}
+     zoomEnabled={true}
+     zoomKeyModifiersRequired={true}
+ />
+ */
 export function RasterPlot(props: Props): null {
     const {
         chartId,
@@ -87,8 +108,10 @@ export function RasterPlot(props: Props): null {
         shouldSubscribe,
 
         onSubscribe = noop,
-        onUpdateData = noop,
-        onUpdateTime = noop,
+        onUpdateTime,
+        onUpdateData,
+
+        updateTimeRanges = noop,
 
         mouseOverHandlerFor,
         mouseLeaveHandlerFor,
@@ -143,9 +166,16 @@ export function RasterPlot(props: Props): null {
             if (mainG !== null) {
                 onUpdateTimeRef.current(ranges)
                 updatePlotRef.current(ranges, mainG)
+                if (onUpdateTime) {
+                    setTimeout(() => {
+                        const times = new Map<string, [number, number]>()
+                        ranges.forEach((range, name) => times.set(name, [range.start, range.end]))
+                        onUpdateTime(times)
+                    }, 0)
+                }
             }
         },
-        [mainG]
+        [mainG, onUpdateTime]
     )
 
     // todo find better way
@@ -382,19 +412,23 @@ export function RasterPlot(props: Props): null {
         () => {
             if (mainG !== null && container !== null) {
                 // when the update plot function doesn't yet exist, then create the container holding the plot
+                const svg = d3.select<SVGSVGElement, any>(container)
+                const clipPathId = setClipPath(chartId, svg, plotDimensions, margin)
                 if (updatePlotRef.current === noop) {
-                    const svg = d3.select<SVGSVGElement, any>(container)
-                    const clipPathId = setClipPath(chartId, svg, plotDimensions, margin)
                     mainG
                         .selectAll<SVGGElement, Series>('g')
+                        .attr("clip-path", `url(#${clipPathId})`)
                         .data<Series>(dataRef.current)
                         .enter()
                         .append('g')
                         .attr('class', 'spikes-series')
                         .attr('id', series => `${series.name}-${chartId}-raster`)
                         .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                        .attr("clip-path", `url(#${clipPathId})`)
 
+                } else {
+                    mainG
+                        .selectAll<SVGGElement, Series>('g')
+                        .attr("clip-path", `url(#${clipPathId})`)
                 }
                 updatePlotRef.current = updatePlot
             }
@@ -402,12 +436,14 @@ export function RasterPlot(props: Props): null {
         [chartId, container, mainG, margin, plotDimensions, updatePlot]
     )
 
-    const onUpdateTimeRef = useRef(onUpdateTime)
+    // grab a reference to the function used to update the time ranges and update that reference
+    // if the function changes (solve for stale closures)
+    const onUpdateTimeRef = useRef(updateTimeRanges)
     useEffect(
         () => {
-            onUpdateTimeRef.current = onUpdateTime
+            onUpdateTimeRef.current = updateTimeRanges
         },
-        [onUpdateTime]
+        [updateTimeRanges]
     )
 
     // memoized function for subscribing to the chart-data observable

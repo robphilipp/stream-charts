@@ -65,10 +65,24 @@ interface Props {
 }
 
 /**
- * Renders a streaming scatter plot for the series in the initial data and those streamed in
- * by the observable.
- * @param props
+ * Renders a streaming scatter plot for the series in the initial data and those sourced by the
+ * observable specified as a property in the {@link Chart}. This component uses the {@link useChart}
+ * hook, and therefore must be a child of the {@link Chart} in order to be plugged in to the
+ * chart ecosystem (axes, tracker, tooltip).
+ *
+ * @param props The properties associated with the scatter plot
  * @constructor
+ * @example
+ <ScatterPlot
+     interpolation={interpolation}
+     axisAssignments={new Map([
+        ['test2', assignAxes("x-axis-2", "y-axis-2")],
+     ])}
+     dropDataAfter={10000}
+     panEnabled={true}
+     zoomEnabled={true}
+     zoomKeyModifiersRequired={true}
+ />
  */
 export function ScatterPlot(props: Props): null {
     const {
@@ -90,8 +104,10 @@ export function ScatterPlot(props: Props): null {
         shouldSubscribe,
 
         onSubscribe = noop,
-        onUpdateData = noop,
-        onUpdateTime = noop,
+        onUpdateTime,
+        onUpdateData,
+
+        updateTimeRanges = noop,
 
         mouseOverHandlerFor,
         mouseLeaveHandlerFor,
@@ -138,9 +154,16 @@ export function ScatterPlot(props: Props): null {
             if (mainG !== null) {
                 onUpdateTimeRef.current(ranges)
                 updatePlotRef.current(ranges, mainG)
+                if (onUpdateTime) {
+                    setTimeout(() => {
+                        const times = new Map<string, [number, number]>()
+                        ranges.forEach((range, name) => times.set(name, [range.start, range.end]))
+                        onUpdateTime(times)
+                    }, 0)
+                }
             }
         },
-        [mainG]
+        [mainG, onUpdateTime]
     )
 
     // todo find better way
@@ -373,12 +396,12 @@ export function ScatterPlot(props: Props): null {
         },
         [updatePlot]
     )
-    const onUpdateTimeRef = useRef(onUpdateTime)
+    const onUpdateTimeRef = useRef(updateTimeRanges)
     useEffect(
         () => {
-            onUpdateTimeRef.current = onUpdateTime
+            onUpdateTimeRef.current = updateTimeRanges
         },
-        [onUpdateTime]
+        [updateTimeRanges]
     )
 
     // memoized function for subscribing to the chart-data observable
