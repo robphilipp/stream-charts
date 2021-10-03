@@ -45,9 +45,13 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 <span style="margin-left: 30px">[initial data](#chart-usage-initial-data)</span><br>
 <span style="margin-left: 30px">[streaming data](#chart-usage-streaming-data)</span><br>
 
-<span style="margin-left: 15px">[&lt;ContinousAxis/&gt;](#axes-usage)</span><br>
-<span style="margin-left: 30px">[base properties](#axes-usage-base)</span><br>
-<span style="margin-left: 30px">[styling](#axes-usage-styling)</span><br>
+<span style="margin-left: 15px">[&lt;ContinousAxis/&gt;](#continuous-axes-usage)</span><br>
+<span style="margin-left: 30px">[base properties](#continuous-axes-usage-base)</span><br>
+<span style="margin-left: 30px">[styling](#continuous-axes-usage-styling)</span><br>
+
+<span style="margin-left: 15px">[&lt;CategoryAxis/&gt;](#category-axes-usage)</span><br>
+<span style="margin-left: 30px">[base properties](#category-axes-usage-base)</span><br>
+<span style="margin-left: 30px">[styling](#category-axes-usage-styling)</span><br>
 
 
 ## [&#10514;](#content) <span id="quick-start">quick start</span>
@@ -415,19 +419,19 @@ A set of properties, functions, and callbacks to control and observe the streami
 > Optional callback function that is called when the &lt;Chart/&gt; subscribes to the `ChartData` observable.
 
 > **onUpdateData (callback function, (seriesName: string, data: Array<Datum>) => void)**<br>
-> Optional callback function that is called when the data updates. This callback can be used if you would like to respond to data updates. For example, use this callback if you would like to have the plot drop data after 10 seconds, but would like to store that data in an in-browser database.
+> Optional callback function that is called when the data updates. This callback can be used if you would like to respond to data updates. For example, use this callback if you would like to have the plot drop data after 10 seconds, but would like to store that data in an in-browser database. Though, a more efficient way to store the data would be to subscribe to the series-observable separately, and then use that observer to stream the data to the storage.
 
 > **onUpdateTime (callback function, (times: Map<string, [start: number, end: number]>) => void)**<br>
 > Optional callback this is called whenever the time-ranges change. Use this to track the current time of the plot.
 
 
-### [&#10514;](#content) <span id="axes-usage">&lt;ContinuousAxis/&gt;</span>
+### [&#10514;](#content) <span id="continuous-axes-usage">&lt;ContinuousAxis/&gt;</span>
 
 The &lt;ContinuousAxis/&gt; must be a child of the &lt;Chart/&gt;. Each &lt;Chart/&gt can one or two continuous axes for the x-axes and for the y-axes. When a &lt;Chart/&gt has multiple x-axes or y-axes then you must assign series to the axes in one of the `Plot` components. Any series that are not explicitly assigned an axis will be assigned to the default x-axis or y-axis. The default x-axis is the bottom axis in the &lt;Chart/&gt, and the default y-axis is the left-hand side axis in the &lt;Chart/&gt.
 
 When creating a &lt;ContinuousAxis/&gt;, you must specify its location using the `AxisLocation` enum defined in the [axes.ts](./src/app/charts/axes.ts) file. Each axis must have a unique axis ID. By default a &lt;ContinuousAxis/&gt; will have a linear scale (d3.scaleLinear). The `scale` property can by used to set the scale to a `log` (d3.scaleLog) or `power` (d3.scalePow) scale or any other continuous numeric scale available in `d3`. The `domain` property defines the initial min and max values for the axis, and when data streams into the plot, that defines the time-window displayed for the axis (unless changed by a zoom event).
 
-#### [&#10514;](#content) <span id="axes-usage-base">&lt;ContinuousAxis/&gt; base properties</span>
+#### [&#10514;](#content) <span id="continuous-axes-usage-base">&lt;ContinuousAxis/&gt; base properties</span>
 
 The base properties defining the axis.
 
@@ -438,7 +442,40 @@ The base properties defining the axis.
 > The location of the axis. As defined by the `AxisLocation` in the the [axes.ts](./src/app/charts/axes.ts) file, x-axes can be placed on the `bottom` or the `top`, and y-axes can be placed on the `left` or the `right`. 
 
 > **scale (ScaleContinuousNumeric<number, number>)**<br>
-> The optional scale of the continous axis. This can be a linear scale (default scale, d3.scaleLinear), a logarithmic scale (d3.scaleLog), a power scale (d3.scalePower), or any other d3 continouos numeric scale that works. Not that if a chart, for example, has two x-axes, that the x-axes are **not** required to have the same scale.
+> The optional scale (factory) of the continuous axis. The scale of the axis is like the axis ruler and determines how the points are placed on the screen. For example, a linear scale is like an evenly spaced ruler, and the mapping between screen location and data value are linear. As another example, the log scale has a logarithmic mapping between the screen location and the data. The scale can be a linear scale (default scale, d3.scaleLinear), a logarithmic scale (d3.scaleLog), a power scale (d3.scalePower), or any other d3 continouos numeric scale that works. Not that if a chart, for example, has two x-axes, that the x-axes are **not** required to have the same scale.
+
+> **domain ([min: number, max: number])**<br>
+> The domain of the axis (in d3 terminology) is effectively the minimum value of the axis and the maximum value of the axis when the initial data is displayed. The domain defines the time-window of the displayed data. For example, if the `domain` for an x-axis is specified as `[1000, 6000]`, then the axis starts at `1000` and ends at `6000`, and the time-window is `5000`. Once data starts to stream past the axis end, the plot starts to scroll, maintaining the calculated time-window (in out example, 5000). Of course, a zooming event will change the domain, and also the time-window.
+
+> **label (string)**<br>
+> The axis label.
+
+#### [&#10514;](#content) <span id="continuous-axes-usage-styling">&lt;ContinuousAxis/&gt; styling</span>
+
+A set of properties to update the style of the axes.
+
+> **font (Partial<[AxesLabelFont](./src/app/charts/axes.ts)>)**<br>
+> An optional CSS properties specifying the font for the axis and tick labels.
+
+
+### [&#10514;](#content) <span id="category-axes-usage">&lt;CategoryAxis/&gt;</span>
+
+The &lt;CategoryAxis/&gt; must be a child of the &lt;Chart/&gt;. Each &lt;Chart/&gt can one or two category axes for the y-axes. Unlike the [&lt;ContinousAxis/&gt;](#continuous-axes-usage), the &lt;CategoryAxis/&gt; can only be used as a y-axis because for stream charts (at this point) the x-axes represent time. In the same way as with the [&lt;ContinousAxis/&gt;](#continuous-axes-usage), when using multiple multiple y-axes you must assign the series to the axes in one of the `Plot` components. Any series that are not explicitly assigned an axis will be assigned to the default y-axis, which is the left-hand side axis in the &lt;Chart/&gt.
+
+When creating a &lt;CategoryAxis/&gt;, you must specify its location using the `AxisLocation` enum defined in the [axes.ts](./src/app/charts/axes.ts) file. Each axis must have a unique axis ID. The &lt;CategoryAxis/&gt; uses a band scale (d3.scaleLinear).
+
+#### [&#10514;](#content) <span id="category-axes-usage-base">&lt;CategoryAxis/&gt; base properties</span>
+
+The base properties defining the axis.
+
+> **axisId (string)**<br>
+> The unique ID of the axis. The axis can then be referred to by this ID. For example, when assigning axes to series, the assignment is made by associating the axis ID to the series name.
+
+> **location ([AxisLocation](./src/app/charts/axes.ts))**<br>
+> The location of the axis. As defined by the `AxisLocation` in the the [axes.ts](./src/app/charts/axes.ts) file, x-axes can be placed on the `bottom` or the `top`, and y-axes can be placed on the `left` or the `right`.
+
+> **categories (Array<string>)**<br>
+> The required `categories` property holds the names of the categories, in the order that they will be displayed on the axis. The first element in the array will be on shown at the top of the axis. The second element will be on lower, and the last element will be at the bottom of the axis.
 
 > **domain ([min: number, max: number])**<br>
 > The domain of the axis (in d3 terminology) is effectively the minimum value of the displayed axis and the maximum value of the displayed axis when the initial data is displayed. The domain defines the time-window of the displayed data. For example, if the `domain` for an x-axis is specified as `[1000, 6000]`, then the axis starts at `1000` and ends at `6000`, and the time-window is `5000`. Once data starts to stream past the axis end, the plot starts to scroll, maintaining the calculated time-window (in out example, 5000). Of course, a zooming event will change the domain, and also the time-window.
@@ -446,21 +483,12 @@ The base properties defining the axis.
 > **label (string)**<br>
 > The axis label.
 
-#### [&#10514;](#content) <span id="axes-usage-styling">&lt;ContinuousAxis/&gt; styling</span>
+#### [&#10514;](#content) <span id="category-axes-usage-styling">&lt;CategoryAxis/&gt; styling</span>
 
 A set of properties to update the style of the axes.
 
 > **font (Partial<[AxesLabelFont](./src/app/charts/axes.ts)>)**<br>
 > An optional CSS properties specifying the font for the axis and tick labels.
-
-    // linear, log, or power scale that defaults to linear scale when not specified
-    scale?: ScaleContinuousNumeric<number, number>
-    // the min and max values for the axis
-    domain: [min: number, max: number]
-    // the font for drawing the axis ticks and labels
-    font?: Partial<AxesLabelFont>
-    // the axis label
-    label: string
 
 
 
