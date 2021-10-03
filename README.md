@@ -4,7 +4,7 @@
 [Change History](changes.md) •
 [Example Project](https://github.com/robphilipp/stream-charts-examples)
 
-`stream-charts` are [react](https://reactjs.org)-based time-series charts for viewing high frequency data, streamed in real-time using [rxjs](https://rxjs-dev.firebaseapp.com). Generally, update periods of 25 ms aren't a problem for about a hundred or so time-series. To achieve this type of performance, the charts are implemented using [d3](https://d3js.org) SVG elements, wrapped in react functional components, and keeping the chart updates outside the react render cycle.
+`stream-charts` are [react](https://reactjs.org)-based time-series charts for viewing high frequency data, streamed in real-time using [rxjs](https://rxjs-dev.firebaseapp.com). Generally, update periods of 25 ms aren't a problem for about a hundred or so time-series. To achieve this type of performance, the charts are implemented using [d3](https://d3js.org) SVG elements, wrapped in react functional components, and keep chart updates outside the react render cycle.
 
 ### quick overview
 
@@ -52,6 +52,18 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 &nbsp;&nbsp;&nbsp;&nbsp;[&lt;CategoryAxis/&gt;](#category-axes-usage)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#category-axes-usage-base)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#category-axes-usage-styling)<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;[&lt;ScatterPlot/&gt;](#scatter-plot-usage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#scatter-plot-usage-base)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[view-modifying interactions](#scatter-plot-usage-view)<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;[&lt;RasterPlot/&gt;](#raster-plot-usage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#raster-plot-usage-base)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[view-modifying interactions](#raster-plot-usage-view)<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;[&lt;Tracker/&gt;](#tracker-usage)<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;[&lt;Tooltip/&gt;](#tooltip-usage)<br>
 
 
 ## [&#10514;](#content) <span id="quick-start">quick start</span>
@@ -406,7 +418,7 @@ A set of properties, functions, and callbacks to control and observe the streami
 > }
 > ```
 
-> **shouldSubscribe (boolean, optional)**<br>
+> **shouldSubscribe (boolean, optional, default = false)**<br>
 > Optional property, that when set from `false` to `true`, causes the &lt;Chart/&gt; to subscribe to the chart-data observable. When set to `false` after a subscription, causes the &lt;Chart/&gt; to unsubscribe from the chart-data observable. 
 
 > **windowingTime (number, milliseconds, optional, default = 100 ms)**<br>
@@ -415,13 +427,13 @@ A set of properties, functions, and callbacks to control and observe the streami
 > **shouldSubscribe (number, optional, default = false)**<br>
 > Optional property that default to `false`. When changed to `true`, from `false`, signals the &lt;Chart/&gt; to subscribe to the `seriesObservable`, streaming in the `ChartData` and updating the &lt;Chart/&gt; in real-time.
 
-> **onSubscribe (callback function, (subscription: Subscription) => void)**<br>
+> **onSubscribe (callback function, (subscription: Subscription) => void, optional, default = noop**<br>
 > Optional callback function that is called when the &lt;Chart/&gt; subscribes to the `ChartData` observable.
 
-> **onUpdateData (callback function, (seriesName: string, data: Array<Datum>) => void)**<br>
+> **onUpdateData (callback function, (seriesName: string, data: Array<Datum>)) => void, optional, default = noop)**<br>
 > Optional callback function that is called when the data updates. This callback can be used if you would like to respond to data updates. For example, use this callback if you would like to have the plot drop data after 10 seconds, but would like to store that data in an in-browser database. Though, a more efficient way to store the data would be to subscribe to the series-observable separately, and then use that observer to stream the data to the storage.
 
-> **onUpdateTime (callback function, (times: Map<string, [start: number, end: number]>) => void)**<br>
+> **onUpdateTime (callback function, (times: Map<string, [start: number, end: number]>) => void, optional, default = noop)**<br>
 > Optional callback this is called whenever the time-ranges change. Use this to track the current time of the plot.
 
 
@@ -441,7 +453,7 @@ The base properties defining the axis.
 > **location ([AxisLocation](./src/app/charts/axes.ts))**<br>
 > The location of the axis. As defined by the `AxisLocation` in the the [axes.ts](./src/app/charts/axes.ts) file, x-axes can be placed on the `bottom` or the `top`, and y-axes can be placed on the `left` or the `right`. 
 
-> **scale (ScaleContinuousNumeric<number, number>)**<br>
+> **scale (ScaleContinuousNumeric<number, number>, optional, default = d3.scaleLinear)**<br>
 > The optional scale (factory) of the continuous axis. The scale of the axis is like the axis ruler and determines how the points are placed on the screen. For example, a linear scale is like an evenly spaced ruler, and the mapping between screen location and data value are linear. As another example, the log scale has a logarithmic mapping between the screen location and the data. The scale can be a linear scale (default scale, d3.scaleLinear), a logarithmic scale (d3.scaleLog), a power scale (d3.scalePower), or any other d3 continouos numeric scale that works. Not that if a chart, for example, has two x-axes, that the x-axes are **not** required to have the same scale.
 
 > **domain ([min: number, max: number])**<br>
@@ -487,10 +499,80 @@ The base properties defining the axis.
 
 A set of properties to update the style of the axes.
 
-> **font (Partial<[AxesLabelFont](./src/app/charts/axes.ts)>)**<br>
+> **font (Partial<[AxesLabelFont](./src/app/charts/axes.ts)>, optional)**<br>
 > An optional CSS properties specifying the font for the axis and tick labels.
 
 
+### [&#10514;](#content) <span id="scatter-plot-usage">&lt;ScatterPlot/&gt;</span>
+
+In `stream-charts`, the `plot` is the data visualization component. To work, a plot must be a child of the &lt;Chart/&gt; component so that it is plugged into the `stream-charts` ecosystem. The plot determines how to render the data. But it relies on the axes to determine scaling information so that it can map data to screen locations. And therefore, a plot must have sibling axes ([&lt;ContinousAxis/&gt;](#continuous-axes-usage), [&lt;CategoryAxis/&gt;](#category-axes-usage)) components for the x-axis and the y-axis. Because the plot is responsible for data visualization, it is also where the data series are assigned to axes. The assignment of axes to series is optional, and any series not explicitly assigned to an axis will be assigned to the default axes. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot. 
+
+The plot determines what view-modifying user interactions are available. Specifically, panning the data to the left and right in time, and zooming in time.
+
+The &lt;ScatterPlot/&gt; specifically is used to plot time-series data, where the x-values are time. The x-axis and y-axis are required to be a [&lt;ContinousAxis/&gt;](#continuous-axes-usage).
+
+#### [&#10514;](#content) <span id="scatter-plot-usage-base">&lt;ScatterPlot/&gt; base properties</span>
+
+> **axisAssignments (Map<string, [AxesAssignment](./src/app/charts/plot.ts)>, optional, default = Map())**<br>
+> An optional property that assigns data series to (x, y)-axes. Any series not assigned to an axis will use the default axis. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot. The `Map` associates the series name with an [AxesAssignment](./src/app/charts/plot.ts), which is a simple object (`{xAxis: string, yAxis: string}`) that holds the axis ID for the x-axis and for the y-axis assigned to the series.
+
+> **interpolation (d3.CurveFactory, optional, default = d3.curveLinear)**<br>
+> An optional property that defines how the data series line will be interpolated between individual data points. You can use any valid [d3.CurveFactory](https://github.com/d3/d3-shape#curves) for the interpolation. Changing the interpolation once the data is already display, will cause a re-render of the data with the new interpolation.
+
+> **dropDataAfter (number, milliseconds, opitional, default = Infinity)**<br>
+> Optional property that sets when to drop data (effectively a TTL). This only drops data while streaming. Don't worry, your data won't disappear after the streaming has stopped. By default, none of the data is dropped. However, when large amounts of data are being streamed and plotted over long periods of time, memory and performance may become an issue. Setting this value allows a scrolling chart to run forever without running into resource issues.
+
+#### [&#10514;](#content) <span id="scatter-plot-usage-view">&lt;ScatterPlot/&gt; view-modifying interactions</span>
+
+View-modifying interactions are those that change the way the data is displayed. For example, zooming in time, panning in time.
+
+> **panEnabled (boolean, optional, default = false)**<br>
+> Optional property that defaults to `false`. When set to `true` then enables "panning" which allows the user to drag the plot to the left and right.
+
+> **zoomEnabled (boolean, optional, default = false)**<br>
+> Optional property that defaults for `false`. When set to `true` then enables "zooming" which allows the user to increase or decrease the displayed time range. By default, scrolling will cause the zoom effect. See the `zoomKeyModifiersRequired` property which requires the `shift` key to be pressed in order for the zoom action to apply.
+
+> **zoomKeyModifiersRequired (boolean, optional, default = false)**<br>
+> An optional property that defaults to `false`. When set to `true`, and the `zoomEnabled` property is also set to `true`, then requires that the `shift` key be pressed when scrolling in order to activate the zoom. This is nice when a user can scroll through your page containing the plot, so that zooming doesn't interfere with scrolling. 
+
+> **withCadenceOf (number, optional, default = undefinded)**<br>
+> An optional property that defaults to `undefined`. When set, uses a cadence with the specified refresh period (in milliseconds). For plots with slow data updates (> 100 ms) using a cadence of 10 to 25 ms smooths out the updates so the time scrolling doesn't appear choppy. When updates are around 25 ms or less, then setting the cadence period too small will result in poor update performance. Generally at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time to the current time. See also the related &lt;Chart/&gt's `windowingTime` property.
+
+
+### [&#10514;](#content) <span id="raster-plot-usage">&lt;RasterPlot/&gt;</span>
+
+In `stream-charts`, the `plot` is the data visualization component. To work, a plot must be a child of the &lt;Chart/&gt; component so that it is plugged into the `stream-charts` ecosystem. The plot determines how to render the data. But it relies on the axes to determine scaling information so that it can map data to screen locations. And therefore, a plot must have sibling axes ([&lt;ContinousAxis/&gt;](#continuous-axes-usage), [&lt;CategoryAxis/&gt;](#category-axes-usage)) components for the x-axis and the y-axis. Because the plot is responsible for data visualization, it is also where the data series are assigned to axes. The assignment of axes to series is optional, and any series not explicitly assigned to an axis will be assigned to the default axes. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot.
+
+The plot determines what view-modifying user interactions are available. Specifically, panning the data to the left and right in time, and zooming in time.
+
+The &lt;RasterPlot/&gt; specifically is used to plot event-timing data, where the x-values are time, and the y-values are a category to which the event belongs. The x-axis is required to be a [&lt;ContinousAxis/&gt;](#continuous-axes-usage), and the y-axis is required to the a [&lt;CategoryAxis/&gt;](#category-axes-usage). 
+
+#### [&#10514;](#content) <span id="raster-plot-usage-base">&lt;RasterPlot/&gt; base properties</span>
+
+> **axisAssignments (Map<string, [AxesAssignment](./src/app/charts/plot.ts)>, optional, default = Map())**<br>
+> An optional property that assigns data series to (x, y)-axes. Any series not assigned to an axis will use the default axis. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot. The `Map` associates the series name with an [AxesAssignment](./src/app/charts/plot.ts), which is a simple object (`{xAxis: string, yAxis: string}`) that holds the axis ID for the x-axis and for the y-axis assigned to the series.
+
+> **dropDataAfter (number, milliseconds, opitional, default = Infinity)**<br>
+> Optional property that sets when to drop data (effectively a TTL). This only drops data while streaming. Don't worry, your data won't disappear after the streaming has stopped. By default, none of the data is dropped. However, when large amounts of data are being streamed and plotted over long periods of time, memory and performance may become an issue. Setting this value allows a scrolling chart to run forever without running into resource issues.
+
+> **spikeMargin (number, pixels, default = 2)**<br>
+> Optional property that adds a margin to the top and bottom of the raster (event) lines to give vertical spacing to the events in the plot. Margins on individual series can also be set through the [Chart.seriesStyles](./src/app/charts/hooks/useChart.tsx) property.
+
+#### [&#10514;](#content) <span id="raster-plot-usage-view">&lt;RasterPlot/&gt; view-modifying interactions</span>
+
+View-modifying interactions are those that change the way the data is displayed. For example, zooming in time, panning in time.
+
+> **panEnabled (boolean, optional, default = false)**<br>
+> Optional property that defaults to `false`. When set to `true` then enables "panning" which allows the user to drag the plot to the left and right.
+
+> **zoomEnabled (boolean, optional, default = false)**<br>
+> Optional property that defaults for `false`. When set to `true` then enables "zooming" which allows the user to increase or decrease the displayed time range. By default, scrolling will cause the zoom effect. See the `zoomKeyModifiersRequired` property which requires the `shift` key to be pressed in order for the zoom action to apply.
+
+> **zoomKeyModifiersRequired (boolean, optional, default = false)**<br>
+> An optional property that defaults to `false`. When set to `true`, and the `zoomEnabled` property is also set to `true`, then requires that the `shift` key be pressed when scrolling in order to activate the zoom. This is nice when a user can scroll through your page containing the plot, so that zooming doesn't interfere with scrolling.
+
+> **withCadenceOf (number, optional, default = undefinded)**<br>
+> An optional property that defaults to `undefined`. When set, uses a cadence with the specified refresh period (in milliseconds). For plots with slow data updates (> 100 ms) using a cadence of 10 to 25 ms smooths out the updates so the time scrolling doesn't appear choppy. When updates are around 25 ms or less, then setting the cadence period too small will result in poor update performance. Generally at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time to the current time. See also the related &lt;Chart/&gt's `windowingTime` property.
 
 
 ### properties
