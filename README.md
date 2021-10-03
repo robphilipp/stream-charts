@@ -32,26 +32,26 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 ## [&#10514;](#top) <span id="content">content</span>
 
 **[quick start](#quick-start)**<br>
-<span style="margin-left: 15px">[example raster chart code](#example-raster-chart-code)</span><br>
-<span style="margin-left: 15px">[example scatter chart code](#example-scatter-chart-code)</span>
+&nbsp;&nbsp;&nbsp;&nbsp;[example raster chart code](#example-raster-chart-code)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[example scatter chart code](#example-scatter-chart-code)
 
 **[intro](#intro)**<br>
-<span style="margin-left: 15px">[terminology](#terminology)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;[terminology](#terminology)<br>
 
 **[usage](#usage)**<br>
-<span style="margin-left: 15px">[&lt;Chart/&gt;](#chart-usage)</span><br>
-<span style="margin-left: 30px">[dimensions](#chart-usage-dimensions)</span><br>
-<span style="margin-left: 30px">[styling](#chart-usage-styling)</span><br>
-<span style="margin-left: 30px">[initial data](#chart-usage-initial-data)</span><br>
-<span style="margin-left: 30px">[streaming data](#chart-usage-streaming-data)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;[&lt;Chart/&gt;](#chart-usage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[dimensions](#chart-usage-dimensions)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#chart-usage-styling)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[initial data](#chart-usage-initial-data)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[streaming data](#chart-usage-streaming-data)<br>
 
-<span style="margin-left: 15px">[&lt;ContinousAxis/&gt;](#continuous-axes-usage)</span><br>
-<span style="margin-left: 30px">[base properties](#continuous-axes-usage-base)</span><br>
-<span style="margin-left: 30px">[styling](#continuous-axes-usage-styling)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;[&lt;ContinousAxis/&gt;](#continuous-axes-usage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#continuous-axes-usage-base)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#continuous-axes-usage-styling)<br>
 
-<span style="margin-left: 15px">[&lt;CategoryAxis/&gt;](#category-axes-usage)</span><br>
-<span style="margin-left: 30px">[base properties](#category-axes-usage-base)</span><br>
-<span style="margin-left: 30px">[styling](#category-axes-usage-styling)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;[&lt;CategoryAxis/&gt;](#category-axes-usage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#category-axes-usage-base)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#category-axes-usage-styling)<br>
 
 
 ## [&#10514;](#content) <span id="quick-start">quick start</span>
@@ -298,7 +298,7 @@ The `Chart`s properties fall into four categories:
 > The height (in pixels) of the container that holds the chart. The actual plot will be smaller based on the margins.
 
 #### [&#10514;](#content) <span id="chart-usage-styling">&lt;Chart/&gt; styling</span>
-> **margin ([Margin](./src/app/charts/margins.ts), optional)**
+> **margin ([Margin](./src/app/charts/margins.ts), optional)**<br>
 > The margin (in pixels) around plot. For example, if the container has a (h, w) = (300, 600) and a margin of 10 pixels for the top, left, right, bottom, then the actual plot will have a (h, w) = (290, 590), leaving only 10 pixels around the plot for axis titles, ticks, and axis labels. 
 > 
 > The Margin has the following shape 
