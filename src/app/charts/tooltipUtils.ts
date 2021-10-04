@@ -9,13 +9,31 @@ import {CategoryAxis} from "./axes";
  * of the content.
  */
 export interface TooltipStyle {
-    visible: boolean;
+    /**
+     * Visibility of the tooltip when the mouse hovers over a data series or point.
+     */
+    visible: boolean
 
-    fontSize: number;
-    fontColor: string;
-    fontFamily: string;
-    fontWeight: number;
+    /**
+     * The size of the font displayed in the tooltip
+     */
+    fontSize: number
+    /**
+     * The color of the text displayed in the tooltip
+     */
+    fontColor: string
+    /**
+     * The font family for the text displayed in the tooltip
+     */
+    fontFamily: string
+    /**
+     * The font weight for the text displayed in the tooltip
+     */
+    fontWeight: number
 
+    /**
+     * The background color
+     */
     backgroundColor: string;
     backgroundOpacity: number;
 

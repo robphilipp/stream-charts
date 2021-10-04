@@ -62,8 +62,14 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[view-modifying interactions](#raster-plot-usage-view)<br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;[&lt;Tracker/&gt;](#tracker-usage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#tracker-usage-base)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#tracker-usage-styling)<br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;[&lt;Tooltip/&gt;](#tooltip-usage)<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;[&lt;ScatterPlotTooltipContent/&gt;](#tooltip-usage)<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;[&lt;RasterPlotTooltipContent/&gt;](#tooltip-usage)<br>
 
 
 ## [&#10514;](#content) <span id="quick-start">quick start</span>
@@ -573,6 +579,64 @@ View-modifying interactions are those that change the way the data is displayed.
 
 > **withCadenceOf (number, optional, default = undefinded)**<br>
 > An optional property that defaults to `undefined`. When set, uses a cadence with the specified refresh period (in milliseconds). For plots with slow data updates (> 100 ms) using a cadence of 10 to 25 ms smooths out the updates so the time scrolling doesn't appear choppy. When updates are around 25 ms or less, then setting the cadence period too small will result in poor update performance. Generally at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time to the current time. See also the related &lt;Chart/&gt's `windowingTime` property.
+
+### [&#10514;](#content) <span id="tracker-usage">&lt;Tracker/&gt;</span>
+
+The tracker, when enabled, follows the mouse when it is in the plot area, renders a vertical line from the bottom x-axis to the top of the plot, and displays the time value for either one or both the x-axes.
+
+#### [&#10514;](#content) <span id="tracker-usage-base">&lt;Tracker/&gt; base properties</span>
+
+> **visible (boolean)**<br>
+> When set to `true` the tracker is visible when the mouse is in the plot area. When set to `false` the tracker is not shown.
+
+> **labelLocation ([TrackerLabelLocation](./src/app/charts/Tracker.tsx), optional, default = TrackerLabelLocation.WithMouse)**<br>
+> Optional property specifies the location of the label. The `TrackerLabelLocation` is an enumeration with three values `Nowhere`, `WithMouse`, and `ByAxes`. By default, the label location is with the mouse (i.e. `WithMouse`). The `Nowhere` location can be used to hide the label, in cases where you would like to use your own. The `WithMouse` value has the label follow the mouse in the vertical direction along the tracker line. And the `ByAxes` displays the labels next to their respective axes, with the tracker line.
+
+> **onTrackerUpdate ((update: TrackerAxisUpdate) => void, optional, default = noop)**<br>
+> Optional callback function that accepts the update from the tracker. Use this to display the tracker and data information outside of the &lt;Chart/&gt. The `TrackerAxisUpdate` is a `Map<string, TrackerAxisInfo>`, the `TrackerAxisInfo` has the shape `{x: number, axisLocation: AxisLocation}`, and the `AxisLocation` is an same enumeration used for placing the axes on the chart (i.e. `AxisLocation.Bottom`, `AxisLocation.Top`).
+
+
+#### [&#10514;](#content) <span id="tracker-usage-styling">&lt;Tracker/&gt; styling</span>
+
+> **style ([TrackerStyle](./src/app/charts/trackerUtils.ts), optional, default = {visible: false, color: '#d2933f', lineWidth: 1})**<br>
+> Optional property defining the style for the tracker line. Has a shape of `{visible: boolean, color: string, lineWidth: number}`.
+
+> **font ([TrackerLabelFont](./src/app/charts/trackerUtils.ts), optional, default = {size: 12, color: '#d2933f', weight: 300, family: 'sans-serif'})**<br>
+> Optional property defining the font for the tracker label. Has a shape of `{size: number, color: string, family: string, weight: number}`.
+
+
+### [&#10514;](#content) <span id="tooltip-usage">&lt;Tooltip/&gt;</span>
+
+A tooltip renders information about the data over which the mouse is hovering. The &lt;Tooltip/&gt; component in `stream-charts` is the container for the tooltip content. It is responsible for rendering the area in which the tooltip contents are displayed. The tooltip content is a child of the &lt;Tooltip/&gt; component so that it can be (relatively) easily extended. Currently `stream-charts` has two tooltip contents, one for each plot type (&lt;ScatterPlotTooltipContent/&gt; and &lt;RasterPlotTooltipContent/&gt;). Each of these will be covered after we discuss the &lt;Tooltip/&gt;.
+
+The properties for the lt;Tooltip/&gt; are simple and limited. The tooltip content components have more options.
+
+> **visible (boolean)**<br>
+> When set to `true` the the tooltip is shown when the mouse hovers over a data series or point.
+
+> **style ([TooltipStyle](./src/app/charts/tooltipUtils.ts), optional, default = [defaultTooltipStyle](./src/app/charts/tooltipUtils.ts))**<br>
+> Optional property defining the style of the tooltip. The following style elements are available
+> 1. **visible**<br>Visibility of the tooltip when the mouse hovers over a data series or point
+> ---
+> 2. **fontSize**<br>The size of the font displayed in the tooltip
+> 3. **fontColor**<br>The color of the text displayed in the tooltip
+> 4. **fontFamily**<br>The font weight for the text displayed in the tooltip
+> 5. **fontWeight**<br>The font weight for the text displayed in the tooltip
+> ---
+> 6. **backgroundColor**<br>The background color of the tooltip
+> 7. **backgroundOpacity**<br>The opacity of the background (i.e. how transparent it is)
+> ---
+> 8. **borderColor**<br>The color of the border surrounding the tooltip content
+> 9. **borderWidth**<br>The width of the border surrounding the tooltip content
+> 10. **borderRadius**<br>The radius of the border surrounding the tooltip content
+> ---
+> 11. **paddingLeft**<br>The padding to the left of the tooltip content
+> 12. **paddingRight**<br>The padding to the right of the tooltip content
+> 13. **paddingTop**<br>The padding to the top of the tooltip content
+> 14. **paddingBottom**<br>The padding to the bottom of the tooltip content
+
+> **children (&lt;ScatterPlotTooltipContent/&gt; and &lt;RasterPlotTooltipContent/&gt;)**<br>
+> The tooltip content.
 
 
 ### properties
