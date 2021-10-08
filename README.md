@@ -674,15 +674,14 @@ series name
 > **yValueFormatter ((value: number) => string, optional, default = [formatValue](./src/app/charts/utils.ts)**<br>
 > Optional function that formats the x-value immediately before and after the mouse location. The default function formats the y-values as floating point with 3 values to the right of the decimal point.
 
+> **xChangeFormatter ((value1: number, value2: number) => string, optional, default = [formatTimeChange](./src/app/charts/utils.ts)**<br>
+> Optional function that formats the change in the x-value of the points immediately before and after the mouse location. The default function formats the value as a natural number. 
 
-    beforeHeader?: string
-    afterHeader?: string
-    deltaHeader?: string
-    xValueFormatter?: (value: number) => string
-    yValueFormatter?: (value: number) => string
-    xChangeFormatter?: (value1: number, value2: number) => string,
-    yChangeFormatter?: (value1: number, value2: number) => string,
-    style?: Partial<TooltipStyle>
+> **yChangeFormatter ((value1: number, value2: number) => string, optional, default = [formatValueChange](./src/app/charts/utils.ts)**<br>
+> Optional function that formats the change in the y-value of the points immediately before and after the mouse location. The default function formats the value as floating point with 3 values to the right of the decimal point.
+
+> **style ([TooltipStyle](./src/app/charts/tooltipUtils.ts), optional, default = [defaultTooltipStyle](./src/app/charts/tooltipUtils.ts))**<br>
+> Optional styles for the tooltip content. The styles are the same as those for the &lt;Tooltip/&gt;.
 
 
 ### [&#10514;](#content) <span id="raster-tooltip-usage">&lt;RasterTooltipContent/&gt;</span>
