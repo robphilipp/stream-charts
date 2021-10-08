@@ -67,9 +67,9 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 
 &nbsp;&nbsp;&nbsp;&nbsp;[&lt;Tooltip/&gt;](#tooltip-usage)<br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;[&lt;ScatterPlotTooltipContent/&gt;](#tooltip-usage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[&lt;ScatterPlotTooltipContent/&gt;](#scatterplot-tooltip-usage)<br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;[&lt;RasterPlotTooltipContent/&gt;](#tooltip-usage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[&lt;RasterPlotTooltipContent/&gt;](#rasterplot-tooltip-usage)<br>
 
 
 ## [&#10514;](#content) <span id="quick-start">quick start</span>
@@ -637,6 +637,55 @@ The properties for the lt;Tooltip/&gt; are simple and limited. The tooltip conte
 
 > **children (&lt;ScatterPlotTooltipContent/&gt; and &lt;RasterPlotTooltipContent/&gt;)**<br>
 > The tooltip content.
+
+
+### [&#10514;](#content) <span id="scatterplot-tooltip-usage">&lt;ScatterPlotTooltipContent/&gt;</span>
+
+The &lt;ScatterPlotTooltipContent/&gt; displays a table displaying the series datum that immediately preceeds the mouse location, and immediately follows the mouse location. The first row shows the x-values, and the second row shows the y-values. The table below maps the properties to the table elements they effect.
+
+---
+series name
+
+|  | beforeHeader | afterHeader | deltaHeader |
+|---|-------------|-------------|-------------|
+| xLabel | xValueFormatter | xValueFormatter | xChangeFormatter |
+| yLabel | yValueFormatter | yValueFormatter | yChangeFormatter |
+
+---
+
+> **xLabel (string)**<br>
+> Required property that gives a name to the x-values. This is the label for the x-values in the tooltip.
+
+> **yLabel (string)**<br>
+> Required property that gives a name to the y-values. This is the label for the y-values in the tooltip.
+
+> **beforeHeader (string, optional, default = 'before')**<br>
+> Optional property that gives a name to the data point that is immediately before the mouse location.
+
+> **afterHeader (string, optional, default = 'after')**<br>
+> Optional property that gives a name to the data point that is immediately after the mouse location.
+
+> **deltaHeader (string, optional, default = '∆')**<br>
+> Optional property that gives a name to the difference between the datum immediately before and after the mouse location.
+
+> **xValueFormatter ((value: number) => string, optional, default = [formatTime](./src/app/charts/utils.ts)**<br>
+> Optional function that formats the x-value immediately before and after the mouse location. The default function formats that x-values as natural numbers representing milliseconds.
+
+> **yValueFormatter ((value: number) => string, optional, default = [formatValue](./src/app/charts/utils.ts)**<br>
+> Optional function that formats the x-value immediately before and after the mouse location. The default function formats the y-values as floating point with 3 values to the right of the decimal point.
+
+
+    beforeHeader?: string
+    afterHeader?: string
+    deltaHeader?: string
+    xValueFormatter?: (value: number) => string
+    yValueFormatter?: (value: number) => string
+    xChangeFormatter?: (value1: number, value2: number) => string,
+    yChangeFormatter?: (value1: number, value2: number) => string,
+    style?: Partial<TooltipStyle>
+
+
+### [&#10514;](#content) <span id="raster-tooltip-usage">&lt;RasterTooltipContent/&gt;</span>
 
 
 ### properties
