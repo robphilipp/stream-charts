@@ -85,7 +85,7 @@ npm install stream-charts
 ### [&#10514;](#content) <span id="example-raster-chart-code">example raster chart</span>
 For the neuron raster chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx))
 
-![raster-chart](images/raster-magnifier.png?raw=true)
+![raster-chart](https://github.com/robphilipp/stream-charts/blob/master/docs/images/raster-magnifier.png?raw=true)
 
 ```typescript jsx
 import {RasterChart} from "stream-charts";
@@ -181,7 +181,7 @@ import {RasterChart} from "stream-charts";
 
 An example scatter chart  (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx))
 
-![scatter-chart-tooltip](images/scatter-tooltip.png?raw=true)
+![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/master/docs/images/scatter-tooltip.png?raw=true)
 
 ```typescript jsx
 import {ScatterChart} from "stream-charts";
@@ -314,11 +314,11 @@ As a final note, generally, the &lt;ScatterPlot/&gt; performs better than the &l
 
 ## [&#10514;](#content) <span id="chart">chart</span>
 
-The `stream-charts` module wraps [d3](http://d3js.org) elements with functional [react](http://reactjs.org) in a way that keeps the chart (d3) updates out of the react render cycle. All `stream-charts` start with the [`<Chart/>`](./src/app/charts/Chart.tsx) root element.
+The `stream-charts` module wraps [d3](http://d3js.org) elements with functional [react](http://reactjs.org) in a way that keeps the chart (d3) updates out of the react render cycle. All `stream-charts` start with the [&lt;Chart/&gt;](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/Chart.tsx) root element.
 
 ### [&#10514;](#content) <span id="chart-usage">&lt;Chart/&gt;</span>
 
-The `Chart` component creates the main SVG element (container) holding the chart, manages a reference to that container, and is the wraps the children in the chart context provider so that they have access to the [useChart](./src/app/charts/hooks/useChart.tsx) hook which holds properties, styles, callbacks, subscription needed to construct the charts and make them interactive.
+The `Chart` component creates the main SVG element (container) holding the chart, manages a reference to that container, and is the wraps the children in the chart context provider so that they have access to the [useChart](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/hooks/useChart.tsx) hook which holds properties, styles, callbacks, subscription needed to construct the charts and make them interactive.
 
 The `Chart`s properties fall into four categories:
 1. container dimensions
@@ -334,7 +334,7 @@ The `Chart`s properties fall into four categories:
 > The height (in pixels) of the container that holds the chart. The actual plot will be smaller based on the margins.
 
 #### [&#10514;](#content) <span id="chart-usage-styling">&lt;Chart/&gt; styling</span>
-> **margin ([Margin](./src/app/charts/margins.ts), optional)**<br>
+> **margin ([Margin](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/margins.ts), optional)**<br>
 > The margin (in pixels) around plot. For example, if the container has a (h, w) = (300, 600) and a margin of 10 pixels for the top, left, right, bottom, then the actual plot will have a (h, w) = (290, 590), leaving only 10 pixels around the plot for axis titles, ticks, and axis labels. 
 > 
 > The Margin has the following shape 
@@ -354,7 +354,7 @@ The `Chart`s properties fall into four categories:
 > **backgroundColor (string, optional)**<br>
 > The color of the chart background (the whole chart, not just the plot).
 
-> **svgStyle ([SvgStyle](./src/app/charts/svgStyle.ts), optional)**<br>
+> **svgStyle ([SvgStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/svgStyle.ts), optional)**<br>
 > The style attributes for the main SVG element, in case you want to change those. Generally, this is not needed.
 > 
 > The SvgStyle has the following shape 
@@ -368,7 +368,7 @@ The `Chart`s properties fall into four categories:
 >}
 >```
 
-> **seriesStyles (Map<string, [SeriesLineStyle](./src/app/charts/axes.ts)>, optional)**<br>
+> **seriesStyles (Map&lt;string, [SeriesLineStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) &gt;, optional)**<br>
 > A map holding the data series name with an associated SeriesLineStyle. Any series listed in this map will use the associated styles for that series. Any series not in the map will use the default series styles.
 > 
 > The SeriesLineStyle has the following shape
@@ -389,7 +389,7 @@ The `Chart`s properties fall into four categories:
 
 Holds the initial (static data). This data is displayed in the chart even before subscribing to the chart-data observable. The initial data can be used to generate static charts.
 
-> **initialData (Array<[Series](./src/app/charts/datumSeries.ts)>)**<br>
+> **initialData (Array<[Series](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/datumSeries.ts) >)**<br>
 > An array holding the initial data series to be plotted before subscribing to the chart-data observable.  
 >
 > The Series has the following shape
@@ -406,7 +406,7 @@ Holds the initial (static data). This data is displayed in the chart even before
 > }
 >
 >```
-> And the [Datum](./src/app/charts/datumSeries.ts) is an immutable object that has the following shape 
+> And the [Datum](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/datumSeries.ts) is an immutable object that has the following shape 
 > ```typescript
 > interface Datum {
 >    readonly time: number;
@@ -423,7 +423,7 @@ Holds the initial (static data). This data is displayed in the chart even before
 
 A set of properties, functions, and callbacks to control and observe the streaming of live data into the chart.
 
-> **seriesObservable (Observable<[ChartData](./src/app/charts/chartData.ts)>)**<br>
+> **seriesObservable (Observable<[ChartData](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/chartData.ts) >)**<br>
 > An observable of (source for) chart-data. The `shouldSubscribe` property controls whether the chart subscribes to the observable, or unsubscribes. This is the source of live data to the chart. An example of an observable is shown below.
 > ```typescript
 > function randomSpikeDataObservable(
@@ -466,7 +466,7 @@ A set of properties, functions, and callbacks to control and observe the streami
 
 The &lt;ContinuousAxis/&gt; must be a child of the &lt;Chart/&gt;. Each &lt;Chart/&gt can one or two continuous axes for the x-axes and for the y-axes. When a &lt;Chart/&gt has multiple x-axes or y-axes then you must assign series to the axes in one of the `Plot` components. Any series that are not explicitly assigned an axis will be assigned to the default x-axis or y-axis. The default x-axis is the bottom axis in the &lt;Chart/&gt, and the default y-axis is the left-hand side axis in the &lt;Chart/&gt.
 
-When creating a &lt;ContinuousAxis/&gt;, you must specify its location using the `AxisLocation` enum defined in the [axes.ts](./src/app/charts/axes.ts) file. Each axis must have a unique axis ID. By default a &lt;ContinuousAxis/&gt; will have a linear scale (d3.scaleLinear). The `scale` property can by used to set the scale to a `log` (d3.scaleLog) or `power` (d3.scalePow) scale or any other continuous numeric scale available in `d3`. The `domain` property defines the initial min and max values for the axis, and when data streams into the plot, that defines the time-window displayed for the axis (unless changed by a zoom event).
+When creating a &lt;ContinuousAxis/&gt;, you must specify its location using the `AxisLocation` enum defined in the [axes.ts](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) file. Each axis must have a unique axis ID. By default a &lt;ContinuousAxis/&gt; will have a linear scale (d3.scaleLinear). The `scale` property can by used to set the scale to a `log` (d3.scaleLog) or `power` (d3.scalePow) scale or any other continuous numeric scale available in `d3`. The `domain` property defines the initial min and max values for the axis, and when data streams into the plot, that defines the time-window displayed for the axis (unless changed by a zoom event).
 
 #### [&#10514;](#content) <span id="continuous-axes-usage-base">&lt;ContinuousAxis/&gt; base properties</span>
 
@@ -475,8 +475,8 @@ The base properties defining the axis.
 > **axisId (string)**<br>
 > The unique ID of the axis. The axis can then be referred to by this ID. For example, when assigning axes to series, the assignment is made by associating the axis ID to the series name.
 
-> **location ([AxisLocation](./src/app/charts/axes.ts))**<br>
-> The location of the axis. As defined by the `AxisLocation` in the the [axes.ts](./src/app/charts/axes.ts) file, x-axes can be placed on the `bottom` or the `top`, and y-axes can be placed on the `left` or the `right`. 
+> **location ([AxisLocation](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) )**<br>
+> The location of the axis. As defined by the `AxisLocation` in the the [axes.ts](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) file, x-axes can be placed on the `bottom` or the `top`, and y-axes can be placed on the `left` or the `right`. 
 
 > **scale (ScaleContinuousNumeric<number, number>, optional, default = d3.scaleLinear)**<br>
 > The optional scale (factory) of the continuous axis. The scale of the axis is like the axis ruler and determines how the points are placed on the screen. For example, a linear scale is like an evenly spaced ruler, and the mapping between screen location and data value are linear. As another example, the log scale has a logarithmic mapping between the screen location and the data. The scale can be a linear scale (default scale, d3.scaleLinear), a logarithmic scale (d3.scaleLog), a power scale (d3.scalePower), or any other d3 continouos numeric scale that works. Not that if a chart, for example, has two x-axes, that the x-axes are **not** required to have the same scale.
@@ -491,7 +491,7 @@ The base properties defining the axis.
 
 A set of properties to update the style of the axes.
 
-> **font (Partial<[AxesLabelFont](./src/app/charts/axes.ts)>)**<br>
+> **font (Partial<[AxesLabelFont](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) >)**<br>
 > An optional CSS properties specifying the font for the axis and tick labels.
 
 
@@ -499,7 +499,7 @@ A set of properties to update the style of the axes.
 
 The &lt;CategoryAxis/&gt; must be a child of the &lt;Chart/&gt;. Each &lt;Chart/&gt can one or two category axes for the y-axes. Unlike the [&lt;ContinousAxis/&gt;](#continuous-axes-usage), the &lt;CategoryAxis/&gt; can only be used as a y-axis because for stream charts (at this point) the x-axes represent time. In the same way as with the [&lt;ContinousAxis/&gt;](#continuous-axes-usage), when using multiple multiple y-axes you must assign the series to the axes in one of the `Plot` components. Any series that are not explicitly assigned an axis will be assigned to the default y-axis, which is the left-hand side axis in the &lt;Chart/&gt.
 
-When creating a &lt;CategoryAxis/&gt;, you must specify its location using the `AxisLocation` enum defined in the [axes.ts](./src/app/charts/axes.ts) file. Each axis must have a unique axis ID. The &lt;CategoryAxis/&gt; uses a band scale (d3.scaleLinear).
+When creating a &lt;CategoryAxis/&gt;, you must specify its location using the `AxisLocation` enum defined in the [axes.ts](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) file. Each axis must have a unique axis ID. The &lt;CategoryAxis/&gt; uses a band scale (d3.scaleLinear).
 
 #### [&#10514;](#content) <span id="category-axes-usage-base">&lt;CategoryAxis/&gt; base properties</span>
 
@@ -508,8 +508,8 @@ The base properties defining the axis.
 > **axisId (string)**<br>
 > The unique ID of the axis. The axis can then be referred to by this ID. For example, when assigning axes to series, the assignment is made by associating the axis ID to the series name.
 
-> **location ([AxisLocation](./src/app/charts/axes.ts))**<br>
-> The location of the axis. As defined by the `AxisLocation` in the the [axes.ts](./src/app/charts/axes.ts) file, x-axes can be placed on the `bottom` or the `top`, and y-axes can be placed on the `left` or the `right`.
+> **location ([AxisLocation](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) )**<br>
+> The location of the axis. As defined by the `AxisLocation` in the the [axes.ts](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) file, x-axes can be placed on the `bottom` or the `top`, and y-axes can be placed on the `left` or the `right`.
 
 > **categories (Array<string>)**<br>
 > The required `categories` property holds the names of the categories, in the order that they will be displayed on the axis. The first element in the array will be on shown at the top of the axis. The second element will be on lower, and the last element will be at the bottom of the axis.
@@ -524,7 +524,7 @@ The base properties defining the axis.
 
 A set of properties to update the style of the axes.
 
-> **font (Partial<[AxesLabelFont](./src/app/charts/axes.ts)>, optional)**<br>
+> **font (Partial<[AxesLabelFont](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) >, optional)**<br>
 > An optional CSS properties specifying the font for the axis and tick labels.
 
 
@@ -540,8 +540,8 @@ The &lt;ScatterPlot/&gt; specifically is used to plot time-series data, where th
 
 #### [&#10514;](#content) <span id="scatter-plot-usage-base">&lt;ScatterPlot/&gt; base properties</span>
 
-> **axisAssignments (Map<string, [AxesAssignment](./src/app/charts/plot.ts)>, optional, default = Map())**<br>
-> An optional property that assigns data series to (x, y)-axes. Any series not assigned to an axis will use the default axis. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot. The `Map` associates the series name with an [AxesAssignment](./src/app/charts/plot.ts), which is a simple object (`{xAxis: string, yAxis: string}`) that holds the axis ID for the x-axis and for the y-axis assigned to the series.
+> **axisAssignments (Map<string, [AxesAssignment](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/plot.ts) >, optional, default = Map())**<br>
+> An optional property that assigns data series to (x, y)-axes. Any series not assigned to an axis will use the default axis. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot. The `Map` associates the series name with an [AxesAssignment](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/plot.ts), which is a simple object (`{xAxis: string, yAxis: string}`) that holds the axis ID for the x-axis and for the y-axis assigned to the series.
 
 > **interpolation (d3.CurveFactory, optional, default = d3.curveLinear)**<br>
 > An optional property that defines how the data series line will be interpolated between individual data points. You can use any valid [d3.CurveFactory](https://github.com/d3/d3-shape#curves) for the interpolation. Changing the interpolation once the data is already display, will cause a re-render of the data with the new interpolation.
@@ -576,14 +576,14 @@ The &lt;RasterPlot/&gt; specifically is used to plot event-timing data, where th
 
 #### [&#10514;](#content) <span id="raster-plot-usage-base">&lt;RasterPlot/&gt; base properties</span>
 
-> **axisAssignments (Map<string, [AxesAssignment](./src/app/charts/plot.ts)>, optional, default = Map())**<br>
-> An optional property that assigns data series to (x, y)-axes. Any series not assigned to an axis will use the default axis. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot. The `Map` associates the series name with an [AxesAssignment](./src/app/charts/plot.ts), which is a simple object (`{xAxis: string, yAxis: string}`) that holds the axis ID for the x-axis and for the y-axis assigned to the series.
+> **axisAssignments (Map<string, [AxesAssignment](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/plot.ts) >, optional, default = Map())**<br>
+> An optional property that assigns data series to (x, y)-axes. Any series not assigned to an axis will use the default axis. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot. The `Map` associates the series name with an [AxesAssignment](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/plot.ts), which is a simple object (`{xAxis: string, yAxis: string}`) that holds the axis ID for the x-axis and for the y-axis assigned to the series.
 
 > <span id="raster-plot-drop">**dropDataAfter (number, milliseconds, opitional, default = Infinity)**</span><br>
 > Optional property that sets when to drop data (effectively a TTL). This only drops data while streaming. Don't worry, your data won't disappear after the streaming has stopped. By default, none of the data is dropped. However, when large amounts of data are being streamed and plotted over long periods of time, memory and performance may become an issue. Setting this value allows a scrolling chart to run forever without running into resource issues.
 
 > **spikeMargin (number, pixels, default = 2)**<br>
-> Optional property that adds a margin to the top and bottom of the raster (event) lines to give vertical spacing to the events in the plot. Margins on individual series can also be set through the [Chart.seriesStyles](./src/app/charts/hooks/useChart.tsx) property.
+> Optional property that adds a margin to the top and bottom of the raster (event) lines to give vertical spacing to the events in the plot. Margins on individual series can also be set through the [Chart.seriesStyles](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/hooks/useChart.tsx) property.
 
 #### [&#10514;](#content) <span id="raster-plot-usage-view">&lt;RasterPlot/&gt; view-modifying interactions</span>
 
@@ -612,7 +612,7 @@ The tracker, when enabled, follows the mouse when it is in the plot area, render
 > **visible (boolean)**<br>
 > When set to `true` the tracker is visible when the mouse is in the plot area. When set to `false` the tracker is not shown.
 
-> **labelLocation ([TrackerLabelLocation](./src/app/charts/Tracker.tsx), optional, default = TrackerLabelLocation.WithMouse)**<br>
+> **labelLocation ([TrackerLabelLocation](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/Tracker.tsx), optional, default = TrackerLabelLocation.WithMouse)**<br>
 > Optional property specifies the location of the label. The `TrackerLabelLocation` is an enumeration with three values `Nowhere`, `WithMouse`, and `ByAxes`. By default, the label location is with the mouse (i.e. `WithMouse`). The `Nowhere` location can be used to hide the label, in cases where you would like to use your own. The `WithMouse` value has the label follow the mouse in the vertical direction along the tracker line. And the `ByAxes` displays the labels next to their respective axes, with the tracker line.
 
 > **onTrackerUpdate ((update: TrackerAxisUpdate) => void, optional, default = noop)**<br>
@@ -621,10 +621,10 @@ The tracker, when enabled, follows the mouse when it is in the plot area, render
 
 #### [&#10514;](#content) <span id="tracker-usage-styling">&lt;Tracker/&gt; styling</span>
 
-> **style ([TrackerStyle](./src/app/charts/trackerUtils.ts), optional, default = {visible: false, color: '#d2933f', lineWidth: 1})**<br>
+> **style ([TrackerStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/trackerUtils.ts), optional, default = {visible: false, color: '#d2933f', lineWidth: 1})**<br>
 > Optional property defining the style for the tracker line. Has a shape of `{visible: boolean, color: string, lineWidth: number}`.
 
-> **font ([TrackerLabelFont](./src/app/charts/trackerUtils.ts), optional, default = {size: 12, color: '#d2933f', weight: 300, family: 'sans-serif'})**<br>
+> **font ([TrackerLabelFont](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/trackerUtils.ts), optional, default = {size: 12, color: '#d2933f', weight: 300, family: 'sans-serif'})**<br>
 > Optional property defining the font for the tracker label. Has a shape of `{size: number, color: string, family: string, weight: number}`.
 
 
@@ -637,7 +637,7 @@ The properties for the lt;Tooltip/&gt; are simple and limited. The tooltip conte
 > **visible (boolean)**<br>
 > When set to `true` the the tooltip is shown when the mouse hovers over a data series or point.
 
-> **style ([TooltipStyle](./src/app/charts/tooltipUtils.ts), optional, default = [defaultTooltipStyle](./src/app/charts/tooltipUtils.ts))**<br>
+> **style ([TooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/tooltipUtils.ts), optional, default = [defaultTooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/tooltipUtils.ts) )**<br>
 > Optional property defining the style of the tooltip. The following style elements are available
 > 1. **visible**<br>Visibility of the tooltip when the mouse hovers over a data series or point
 > ---
@@ -691,35 +691,33 @@ series name
 > **deltaHeader (string, optional, default = '∆')**<br>
 > Optional property that gives a name to the difference between the datum immediately before and after the mouse location.
 
-> **xValueFormatter ((value: number) => string, optional, default = [formatTime](./src/app/charts/utils.ts)**<br>
+> **xValueFormatter ((value: number) => string, optional, default =** [**formatTime**](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/utils.ts) <br>
 > Optional function that formats the x-value immediately before and after the mouse location. The default function formats that x-values as natural numbers representing milliseconds.
 
-> **yValueFormatter ((value: number) => string, optional, default = [formatValue](./src/app/charts/utils.ts)**<br>
+> **yValueFormatter ((value: number) => string, optional, default =** [**formatValue**](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/utils.ts) <br>
 > Optional function that formats the x-value immediately before and after the mouse location. The default function formats the y-values as floating point with 3 values to the right of the decimal point.
 
-> **xChangeFormatter ((value1: number, value2: number) => string, optional, default = [formatTimeChange](./src/app/charts/utils.ts)**<br>
+> **xChangeFormatter ((value1: number, value2: number) => string, optional, default =** [**formatTimeChange**](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/utils.ts) <br>
 > Optional function that formats the change in the x-value of the points immediately before and after the mouse location. The default function formats the value as a natural number. 
 
-> **yChangeFormatter ((value1: number, value2: number) => string, optional, default = [formatValueChange](./src/app/charts/utils.ts)**<br>
+> **yChangeFormatter ((value1: number, value2: number) => string, optional, default =** [**formatValueChange**](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/utils.ts) <br>
 > Optional function that formats the change in the y-value of the points immediately before and after the mouse location. The default function formats the value as floating point with 3 values to the right of the decimal point.
 
-> **style ([TooltipStyle](./src/app/charts/tooltipUtils.ts), optional, default = [defaultTooltipStyle](./src/app/charts/tooltipUtils.ts))**<br>
+> **style ([TooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/tooltipUtils.ts), optional, default = [defaultTooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/tooltipUtils.ts) )**<br>
 > Optional styles for the tooltip content. The styles are the same as those for the &lt;Tooltip/&gt;.
 
 
 ### [&#10514;](#content) <span id="rasterplot-tooltip-usage">&lt;RasterTooltipContent/&gt;</span>
 The &lt;RasterPlotTooltipContent/&gt; shows the series name, the time and value of the point over which the mouse is hovering. There are only three properties.
 
-> **xFormatter ((value: number) => string, optional, default = [formatTime](./src/app/charts/utils.ts)**<br>
+> **xFormatter ((value: number) => string, optional, default =** [**formatTime**](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/utils.ts) <br>
 > Optional function that formats the x-value immediately before and after the mouse location. The default function formats that x-values as natural numbers representing milliseconds.
 
-> **yFormatter ((value: number) => string, optional, default = [formatValue](./src/app/charts/utils.ts)**<br>
+> **yFormatter ((value: number) => string, optional, default =** [**formatValue**](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/utils.ts) <br>
 > Optional function that formats the x-value immediately before and after the mouse location. The default function formats the y-values as floating point with 3 values to the right of the decimal point.
 
-> **style ([TooltipStyle](./src/app/charts/tooltipUtils.ts), optional, default = [defaultTooltipStyle](./src/app/charts/tooltipUtils.ts))**<br>
+> **style ([TooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/tooltipUtils.ts), optional, default = [defaultTooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/tooltipUtils.ts) )**<br>
 > Optional styles for the tooltip content. The styles are the same as those for the &lt;Tooltip/&gt;.
-
-### time-series
 
 ## building
 
