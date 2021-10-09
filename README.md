@@ -85,7 +85,7 @@ npm install stream-charts
 ### [&#10514;](#content) <span id="example-raster-chart-code">example raster chart</span>
 For the neuron raster chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx))
 
-![raster-chart](https://github.com/robphilipp/stream-charts/blob/master/docs/images/raster-magnifier.png?raw=true)
+![raster-chart](https://github.com/robphilipp/stream-charts/blob/master/images/raster-magnifier.png?raw=true)
 
 ```typescript jsx
 import {RasterChart} from "stream-charts";
@@ -181,7 +181,7 @@ import {RasterChart} from "stream-charts";
 
 An example scatter chart  (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx))
 
-![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/master/docs/images/scatter-tooltip.png?raw=true)
+![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/master/images/scatter-tooltip.png?raw=true)
 
 ```typescript jsx
 import {ScatterChart} from "stream-charts";
