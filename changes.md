@@ -1,5 +1,16 @@
 # change history
 
+## version 1.0.0 (composability, multi-axes, performance, spline, axes scales, cadence)
+1. A chart's configuration in no longer passed as properties of the component, but rather a `<Chart>` is composed by adding components such as axes, tracker, tooltip, and a plot.
+2. Charts can now have two x-axes and two y-axes.
+3. Continuous numeric axes can have linear, power, or log scales.
+4. Scatter charts allow setting/updating the spline (interpolation).
+5. Cleaner updates and performance.
+6. Now allows setting cadence for plots with sporadic updates so that the time updates smoothly.
+7. Cleaner approach to resetting a chart. 
+
+[Examples](https://github.com/robphilipp/stream-charts-examples) are updated with new version.
+
 ## version 0.2.1 (raster chart height fix)
 The SVG container height was incorrectly calculated for the raster chart.
 

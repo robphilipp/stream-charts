@@ -1,0 +1,659 @@
+<!DOCTYPE html><html class="default no-js"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>stream-charts</title><meta name="description" content="Documentation for stream-charts"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script async src="assets/search.js" id="search-script"></script></head><body><header><div class="tsd-page-toolbar"><div class="container"><div class="table-wrap"><div class="table-cell" id="tsd-search" data-base="."><div class="field"><label for="tsd-search-field" class="tsd-widget search no-caption">Search</label><input type="text" id="tsd-search-field"/></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="index.html" class="title">stream-charts</a></div><div class="table-cell" id="tsd-widgets"><div id="tsd-filter"><a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a><div class="tsd-filter-group"><div class="tsd-select" id="tsd-filter-visibility"><span class="tsd-select-label">All</span><ul class="tsd-select-list"><li data-value="public">Public</li><li data-value="protected">Public/Protected</li><li data-value="private" class="selected">All</li></ul></div> <input type="checkbox" id="tsd-filter-inherited" checked/><label class="tsd-widget" for="tsd-filter-inherited">Inherited</label><input type="checkbox" id="tsd-filter-externals" checked/><label class="tsd-widget" for="tsd-filter-externals">Externals</label></div></div><a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a></div></div></div></div><div class="tsd-page-title"><div class="container"><h1> stream-charts</h1></div></div></header><div class="container container-main"><div class="row"><div class="col-8 col-content"><div class="tsd-panel tsd-typography">
+<a href="#stream-charts" id="stream-charts" style="color: inherit; text-decoration: none;">
+  <h1>stream-charts</h1>
+</a>
+<p><code>stream-charts</code> are <a href="https://reactjs.org">react</a>-based time-series charts for viewing high frequency data, streamed in real-time using <a href="https://rxjs-dev.firebaseapp.com">rxjs</a>. Generally, update periods of 25 ms aren&#39;t a problem for about a hundred or so time-series. To achieve this type of performance, the charts are implemented in <a href="https://d3js.org">d3</a> and wrapped in react functional components using hooks.</p>
+<p><a href="https://robphilipp.github.io/stream-charts/">Homepage</a></p>
+<p>Although still under development, there are two charts available:</p>
+<ol>
+<li>a neuron raster chart, and a</li>
+<li>scatter chart.</li>
+</ol>
+<p>Over time, I&#39;ll add additional chart types. In the meantime, I welcome any contributions to create new chart types (bar, gauges, etc).</p>
+<p>Stream charts:</p>
+<ol>
+<li>are composable react components</li>
+<li>are able to plot static data as well as streamed, live data</li>
+<li>are themeable using your current theme provider of choice</li>
+<li>can use up to two x-axes and up to two y-axes, which can represent different time scales</li>
+<li>are filterable in real-time using regular expressions on the series names</li>
+<li>have tooltips and trackers</li>
+<li>can drop data based on a time-to-live (ttl)</li>
+<li>allow panning and zooming</li>
+<li>can be used with a cadence</li>
+</ol>
+<p>All these capabilities are on display in the <a href="https://github.com/robphilipp/stream-charts-examples">example project</a></p>
+<p>Please see <a href="changes.md">change history</a> for a history of changes.</p>
+
+<a href="#quick-start" id="quick-start" style="color: inherit; text-decoration: none;">
+  <h2>quick start</h2>
+</a>
+<pre><code class="language-shell"><span class="hl-0">npm install stream-charts</span>
+</code></pre>
+<p>For the neuron raster chart (see <a href="https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx">example</a>)</p>
+<pre><code class="language-typescript"><span class="hl-1">import</span><span class="hl-0"> {</span><span class="hl-2">RasterChart</span><span class="hl-0">} </span><span class="hl-1">from</span><span class="hl-0"> </span><span class="hl-3">&quot;stream-charts&quot;</span><span class="hl-0">;</span><br/><span class="hl-4">// .</span><br/><span class="hl-4">// .</span><br/><span class="hl-4">// .</span><br/><span class="hl-0">&lt;</span><span class="hl-2">Chart</span><br/><span class="hl-0">    </span><span class="hl-2">width</span><span class="hl-0">={</span><span class="hl-5">useGridCellWidth</span><span class="hl-0">()}</span><br/><span class="hl-0">    </span><span class="hl-2">height</span><span class="hl-0">={</span><span class="hl-5">useGridCellHeight</span><span class="hl-0">()}</span><br/><span class="hl-0">    </span><span class="hl-2">margin</span><span class="hl-0">={{...</span><span class="hl-2">defaultMargin</span><span class="hl-0">, </span><span class="hl-2">top:</span><span class="hl-0"> </span><span class="hl-6">60</span><span class="hl-0">, </span><span class="hl-2">right:</span><span class="hl-0"> </span><span class="hl-6">60</span><span class="hl-0">}}</span><br/><span class="hl-0">    </span><span class="hl-2">color</span><span class="hl-0">={theme.</span><span class="hl-2">color</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">backgroundColor</span><span class="hl-0">={theme.</span><span class="hl-2">backgroundColor</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">seriesStyles</span><span class="hl-0">={new </span><span class="hl-5">Map</span><span class="hl-0">([</span><br/><span class="hl-0">        [</span><span class="hl-3">&#39;test1&#39;</span><span class="hl-0">, {...</span><span class="hl-2">defaultLineStyle</span><span class="hl-0">, </span><span class="hl-2">color</span><span class="hl-0">: </span><span class="hl-3">&#39;orange&#39;</span><span class="hl-0">, </span><span class="hl-2">lineWidth</span><span class="hl-0">: </span><span class="hl-6">1</span><span class="hl-0">, </span><span class="hl-2">highlightColor</span><span class="hl-0">: </span><span class="hl-3">&#39;orange&#39;</span><span class="hl-0">}],</span><br/><span class="hl-0">        [</span><span class="hl-3">&#39;test2&#39;</span><span class="hl-0">, {...</span><span class="hl-2">defaultLineStyle</span><span class="hl-0">, </span><br/><span class="hl-0">            </span><span class="hl-2">color</span><span class="hl-0">: </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">name</span><span class="hl-0"> === </span><span class="hl-3">&#39;light&#39;</span><span class="hl-0"> ? </span><span class="hl-3">&#39;blue&#39;</span><span class="hl-0"> : </span><span class="hl-3">&#39;gray&#39;</span><span class="hl-0">, </span><br/><span class="hl-0">            </span><span class="hl-2">lineWidth</span><span class="hl-0">: </span><span class="hl-6">3</span><span class="hl-0">, </span><br/><span class="hl-0">            </span><span class="hl-2">highlightColor</span><span class="hl-0">: </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">name</span><span class="hl-0"> === </span><span class="hl-3">&#39;light&#39;</span><span class="hl-0"> ? </span><span class="hl-3">&#39;blue&#39;</span><span class="hl-0"> : </span><span class="hl-3">&#39;gray&#39;</span><span class="hl-0">, </span><br/><span class="hl-0">            </span><span class="hl-2">highlightWidth</span><span class="hl-0">: </span><span class="hl-6">5</span><span class="hl-0">}</span><br/><span class="hl-0">        ],</span><br/><span class="hl-0">    ])}</span><br/><span class="hl-0">    </span><span class="hl-2">initialData</span><span class="hl-0">={initialDataRef.</span><span class="hl-2">current</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">seriesFilter</span><span class="hl-0">={</span><span class="hl-2">filter</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">seriesObservable</span><span class="hl-0">={observableRef.</span><span class="hl-2">current</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">shouldSubscribe</span><span class="hl-0">={</span><span class="hl-2">running</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">windowingTime</span><span class="hl-0">={</span><span class="hl-6">35</span><span class="hl-0">}</span><br/><span class="hl-0">&gt;</span><br/><span class="hl-0">    &lt;</span><span class="hl-2">ContinuousAxis</span><br/><span class="hl-0">        </span><span class="hl-2">axisId</span><span class="hl-0">=</span><span class="hl-3">&quot;x-axis-1&quot;</span><br/><span class="hl-0">        </span><span class="hl-2">location</span><span class="hl-0">={AxisLocation.</span><span class="hl-2">Bottom</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">domain</span><span class="hl-0">={</span><span class="hl-2">[</span><span class="hl-6">0</span><span class="hl-2">, </span><span class="hl-6">5000</span><span class="hl-2">]}</span><br/><span class="hl-2">        label=&quot;x-axis&quot;</span><br/><span class="hl-2">        </span><span class="hl-4">// font={{color: theme.color}}</span><br/><span class="hl-2">    /&gt;</span><br/><span class="hl-2">    &lt;ContinuousAxis</span><br/><span class="hl-2">        axisId=&quot;x-axis-2&quot;</span><br/><span class="hl-2">        location={AxisLocation.Top}</span><br/><span class="hl-2">        domain={[</span><span class="hl-6">0</span><span class="hl-2">, </span><span class="hl-6">10000</span><span class="hl-2">]}</span><br/><span class="hl-2">        label=&quot;x-axis&quot;</span><br/><span class="hl-2">        </span><span class="hl-4">// font={{color: theme.color}}</span><br/><span class="hl-2">    /&gt;</span><br/><span class="hl-2">    &lt;CategoryAxis</span><br/><span class="hl-2">        axisId=&quot;y-axis-1&quot;</span><br/><span class="hl-2">        location={AxisLocation.Left}</span><br/><span class="hl-2">        categories={initialDataRef.current.map(series =&gt; series.name)}</span><br/><span class="hl-2">        label=&quot;y-axis&quot;</span><br/><span class="hl-2">    /&gt;</span><br/><span class="hl-2">    &lt;CategoryAxis</span><br/><span class="hl-2">        axisId=&quot;y-axis-2&quot;</span><br/><span class="hl-2">        location={AxisLocation.Right}</span><br/><span class="hl-2">        categories={initialDataRef.current.map(series =&gt; series.name)}</span><br/><span class="hl-2">        label=&quot;y-axis&quot;</span><br/><span class="hl-2">    /&gt;</span><br/><span class="hl-2">    &lt;Tracker</span><br/><span class="hl-2">        visible={visibility.tracker}</span><br/><span class="hl-2">        labelLocation={TrackerLabelLocation.WithMouse}</span><br/><span class="hl-2">        style={{color:</span><span class="hl-0"> </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">color</span><span class="hl-0">}}</span><br/><span class="hl-0">        </span><span class="hl-2">font</span><span class="hl-0">={{</span><span class="hl-2">color:</span><span class="hl-0"> </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">color</span><span class="hl-0">}}</span><br/><span class="hl-0">        </span><span class="hl-4">// onTrackerUpdate={update =&gt; console.dir(update)}</span><br/><span class="hl-0">    /&gt;</span><br/><span class="hl-0">    &lt;</span><span class="hl-2">Tooltip</span><br/><span class="hl-0">        </span><span class="hl-2">visible</span><span class="hl-0">={visibility.</span><span class="hl-2">tooltip</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">style</span><span class="hl-0">={{</span><br/><span class="hl-0">            </span><span class="hl-2">fontColor:</span><span class="hl-0"> </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">color</span><span class="hl-0">,</span><br/><span class="hl-0">            </span><span class="hl-2">backgroundColor:</span><span class="hl-0"> </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">backgroundColor</span><span class="hl-0">,</span><br/><span class="hl-0">            </span><span class="hl-2">borderColor:</span><span class="hl-0"> </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">color</span><span class="hl-0">,</span><br/><span class="hl-0">            </span><span class="hl-2">backgroundOpacity:</span><span class="hl-0"> </span><span class="hl-6">0.9</span><span class="hl-0">,</span><br/><span class="hl-0">        }}</span><br/><span class="hl-0">    &gt;</span><br/><span class="hl-0">        &lt;</span><span class="hl-2">RasterPlotTooltipContent</span><br/><span class="hl-0">            </span><span class="hl-2">xFormatter</span><span class="hl-0">={</span><span class="hl-2">value</span><span class="hl-0"> </span><span class="hl-7">=&gt;</span><span class="hl-0"> </span><span class="hl-5">formatNumber</span><span class="hl-0">(</span><span class="hl-2">value</span><span class="hl-0">, </span><span class="hl-3">&quot; ,.0f&quot;</span><span class="hl-0">) + </span><span class="hl-3">&#39; ms&#39;</span><span class="hl-0">}</span><br/><span class="hl-0">            </span><span class="hl-2">yFormatter</span><span class="hl-0">={</span><span class="hl-2">value</span><span class="hl-0"> </span><span class="hl-7">=&gt;</span><span class="hl-0"> </span><span class="hl-5">formatNumber</span><span class="hl-0">(</span><span class="hl-2">value</span><span class="hl-0">, </span><span class="hl-3">&quot; ,.1f&quot;</span><span class="hl-0">) + </span><span class="hl-3">&#39; mV&#39;</span><span class="hl-0">}</span><br/><span class="hl-0">        /&gt;</span><br/><span class="hl-0">    &lt;/</span><span class="hl-2">Tooltip</span><span class="hl-0">&gt;</span><br/><span class="hl-0">    &lt;</span><span class="hl-2">RasterPlot</span><br/><span class="hl-0">        </span><span class="hl-2">axisAssignments</span><span class="hl-0">={new </span><span class="hl-5">Map</span><span class="hl-0">([</span><br/><span class="hl-0">            </span><span class="hl-4">// [&#39;test&#39;, assignAxes(&quot;x-axis-1&quot;, &quot;y-axis-1&quot;)],</span><br/><span class="hl-0">            [</span><span class="hl-3">&#39;test1&#39;</span><span class="hl-0">, </span><span class="hl-2">assignAxes</span><span class="hl-0">(</span><span class="hl-3">&quot;x-axis-2&quot;</span><span class="hl-0">, </span><span class="hl-3">&quot;y-axis-2&quot;</span><span class="hl-0">)],</span><br/><span class="hl-0">            </span><span class="hl-4">// [&#39;test3&#39;, assignAxes(&quot;x-axis-1&quot;, &quot;y-axis-1&quot;)],</span><br/><span class="hl-0">        ])}</span><br/><span class="hl-0">        </span><span class="hl-2">dropDataAfter</span><span class="hl-0">={</span><span class="hl-6">10000</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">panEnabled</span><span class="hl-0">={</span><span class="hl-2">true</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">zoomEnabled</span><span class="hl-0">={</span><span class="hl-2">true</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">zoomKeyModifiersRequired</span><span class="hl-0">={</span><span class="hl-2">true</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">withCadenceOf</span><span class="hl-0">={</span><span class="hl-6">30</span><span class="hl-0">}</span><br/><span class="hl-0">    /&gt;</span><br/><span class="hl-0">&lt;/</span><span class="hl-2">Chart</span><span class="hl-0">&gt;</span><br/><br/>
+</code></pre>
+<p>and for the scatter chart  (see <a href="https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx">example</a>)</p>
+<pre><code class="language-typescript"><span class="hl-1">import</span><span class="hl-0"> {</span><span class="hl-2">ScatterChart</span><span class="hl-0">} </span><span class="hl-1">from</span><span class="hl-0"> </span><span class="hl-3">&quot;stream-charts&quot;</span><span class="hl-0">;</span><br/><span class="hl-4">// .</span><br/><span class="hl-4">// .</span><br/><span class="hl-4">// .</span><br/><span class="hl-0">&lt;</span><span class="hl-2">Chart</span><br/><span class="hl-0">    </span><span class="hl-2">width</span><span class="hl-0">={</span><span class="hl-5">useGridCellWidth</span><span class="hl-0">()}</span><br/><span class="hl-0">    </span><span class="hl-2">height</span><span class="hl-0">={</span><span class="hl-5">useGridCellHeight</span><span class="hl-0">()}</span><br/><span class="hl-0">    </span><span class="hl-2">margin</span><span class="hl-0">={{...</span><span class="hl-2">defaultMargin</span><span class="hl-0">, </span><span class="hl-2">top:</span><span class="hl-0"> </span><span class="hl-6">60</span><span class="hl-0">, </span><span class="hl-2">right:</span><span class="hl-0"> </span><span class="hl-6">60</span><span class="hl-0">}}</span><br/><span class="hl-0">    </span><span class="hl-2">color</span><span class="hl-0">={theme.</span><span class="hl-2">color</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">backgroundColor</span><span class="hl-0">={theme.</span><span class="hl-2">backgroundColor</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">seriesStyles</span><span class="hl-0">={new </span><span class="hl-5">Map</span><span class="hl-0">([</span><br/><span class="hl-0">        [</span><span class="hl-3">&#39;test1&#39;</span><span class="hl-0">, {...</span><span class="hl-2">defaultLineStyle</span><span class="hl-0">, </span><span class="hl-2">color</span><span class="hl-0">: </span><span class="hl-3">&#39;orange&#39;</span><span class="hl-0">, </span><span class="hl-2">lineWidth</span><span class="hl-0">: </span><span class="hl-6">1</span><span class="hl-0">, </span><span class="hl-2">highlightColor</span><span class="hl-0">: </span><span class="hl-3">&#39;orange&#39;</span><span class="hl-0">}],</span><br/><span class="hl-0">        [</span><span class="hl-3">&#39;test2&#39;</span><span class="hl-0">, {...</span><span class="hl-2">defaultLineStyle</span><span class="hl-0">, </span><br/><span class="hl-0">            </span><span class="hl-2">color</span><span class="hl-0">: </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">name</span><span class="hl-0"> === </span><span class="hl-3">&#39;light&#39;</span><span class="hl-0"> ? </span><span class="hl-3">&#39;blue&#39;</span><span class="hl-0"> : </span><span class="hl-3">&#39;gray&#39;</span><span class="hl-0">, </span><br/><span class="hl-0">            </span><span class="hl-2">lineWidth</span><span class="hl-0">: </span><span class="hl-6">3</span><span class="hl-0">, </span><br/><span class="hl-0">            </span><span class="hl-2">highlightColor</span><span class="hl-0">: </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">name</span><span class="hl-0"> === </span><span class="hl-3">&#39;light&#39;</span><span class="hl-0"> ? </span><span class="hl-3">&#39;blue&#39;</span><span class="hl-0"> : </span><span class="hl-3">&#39;gray&#39;</span><span class="hl-0">, </span><br/><span class="hl-0">            </span><span class="hl-2">highlightWidth</span><span class="hl-0">: </span><span class="hl-6">5</span><span class="hl-0">}</span><br/><span class="hl-0">        ],</span><br/><span class="hl-0">    ])}</span><br/><span class="hl-0">    </span><span class="hl-2">initialData</span><span class="hl-0">={initialDataRef.</span><span class="hl-2">current</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">seriesFilter</span><span class="hl-0">={</span><span class="hl-2">filter</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">seriesObservable</span><span class="hl-0">={observableRef.</span><span class="hl-2">current</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">shouldSubscribe</span><span class="hl-0">={</span><span class="hl-2">running</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">windowingTime</span><span class="hl-0">={</span><span class="hl-6">25</span><span class="hl-0">}</span><br/><span class="hl-0">&gt;</span><br/><span class="hl-0">    &lt;</span><span class="hl-2">ContinuousAxis</span><br/><span class="hl-0">        </span><span class="hl-2">axisId</span><span class="hl-0">=</span><span class="hl-3">&quot;x-axis-1&quot;</span><br/><span class="hl-0">        </span><span class="hl-2">location</span><span class="hl-0">={AxisLocation.</span><span class="hl-2">Bottom</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">domain</span><span class="hl-0">={</span><span class="hl-2">[</span><span class="hl-6">10</span><span class="hl-2">, </span><span class="hl-6">5000</span><span class="hl-2">]}</span><br/><span class="hl-2">        label=&quot;x-axis&quot;</span><br/><span class="hl-2">    /&gt;</span><br/><span class="hl-2">    &lt;ContinuousAxis</span><br/><span class="hl-2">        axisId=&quot;y-axis-1&quot;</span><br/><span class="hl-2">        location={AxisLocation.Left}</span><br/><span class="hl-2">        domain={[</span><span class="hl-6">0</span><span class="hl-2">, </span><span class="hl-6">1000</span><span class="hl-2">]}</span><br/><span class="hl-2">        label=&quot;y-axis&quot;</span><br/><span class="hl-2">    /&gt;</span><br/><span class="hl-2">    &lt;ContinuousAxis</span><br/><span class="hl-2">        axisId=&quot;x-axis-2&quot;</span><br/><span class="hl-2">        location={AxisLocation.Top}</span><br/><span class="hl-2">        domain={[</span><span class="hl-6">100</span><span class="hl-2">, </span><span class="hl-6">2500</span><span class="hl-2">]}</span><br/><span class="hl-2">        label=&quot;x-axis (2)&quot;</span><br/><span class="hl-2">    /&gt;</span><br/><span class="hl-2">    &lt;ContinuousAxis</span><br/><span class="hl-2">        axisId=&quot;y-axis-2&quot;</span><br/><span class="hl-2">        location={AxisLocation.Right}</span><br/><span class="hl-2">        scale={d3.scaleLog()}</span><br/><span class="hl-2">        domain={[</span><span class="hl-6">100</span><span class="hl-2">, </span><span class="hl-6">1200</span><span class="hl-2">]}</span><br/><span class="hl-2">        label=&quot;y-axis (2)&quot;</span><br/><span class="hl-2">    /&gt;</span><br/><span class="hl-2">    &lt;Tracker</span><br/><span class="hl-2">        visible={visibility.tracker}</span><br/><span class="hl-2">        labelLocation={TrackerLabelLocation.WithMouse}</span><br/><span class="hl-2">        style={{color:</span><span class="hl-0"> </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">color</span><span class="hl-0">}}</span><br/><span class="hl-0">        </span><span class="hl-2">font</span><span class="hl-0">={{</span><span class="hl-2">color:</span><span class="hl-0"> </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">color</span><span class="hl-0">}}</span><br/><span class="hl-0">        </span><span class="hl-4">// onTrackerUpdate={update =&gt; console.dir(update)}</span><br/><span class="hl-0">    /&gt;</span><br/><span class="hl-0">    &lt;</span><span class="hl-2">Tooltip</span><br/><span class="hl-0">        </span><span class="hl-2">visible</span><span class="hl-0">={visibility.</span><span class="hl-2">tooltip</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">style</span><span class="hl-0">={{</span><br/><span class="hl-0">            </span><span class="hl-2">fontColor:</span><span class="hl-0"> </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">color</span><span class="hl-0">,</span><br/><span class="hl-0">            </span><span class="hl-2">backgroundColor:</span><span class="hl-0"> </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">backgroundColor</span><span class="hl-0">,</span><br/><span class="hl-0">            </span><span class="hl-2">borderColor:</span><span class="hl-0"> </span><span class="hl-2">theme</span><span class="hl-0">.</span><span class="hl-2">color</span><span class="hl-0">,</span><br/><span class="hl-0">            </span><span class="hl-2">backgroundOpacity:</span><span class="hl-0"> </span><span class="hl-6">0.9</span><span class="hl-0">,</span><br/><span class="hl-0">        }}</span><br/><span class="hl-0">    &gt;</span><br/><span class="hl-0">        &lt;</span><span class="hl-2">ScatterPlotTooltipContent</span><br/><span class="hl-0">            </span><span class="hl-2">xLabel</span><span class="hl-0">=</span><span class="hl-3">&quot;t (ms)&quot;</span><br/><span class="hl-0">            </span><span class="hl-2">yLabel</span><span class="hl-0">=</span><span class="hl-3">&quot;count&quot;</span><br/><span class="hl-0">            </span><span class="hl-2">yValueFormatter</span><span class="hl-0">={</span><span class="hl-2">value</span><span class="hl-0"> </span><span class="hl-7">=&gt;</span><span class="hl-0"> </span><span class="hl-5">formatNumber</span><span class="hl-0">(</span><span class="hl-2">value</span><span class="hl-0">, </span><span class="hl-3">&quot; ,.0f&quot;</span><span class="hl-0">)}</span><br/><span class="hl-0">            </span><span class="hl-2">yChangeFormatter</span><span class="hl-0">={</span><span class="hl-2">value</span><span class="hl-0"> </span><span class="hl-7">=&gt;</span><span class="hl-0"> </span><span class="hl-5">formatNumber</span><span class="hl-0">(</span><span class="hl-2">value</span><span class="hl-0">, </span><span class="hl-3">&quot; ,.0f&quot;</span><span class="hl-0">)}</span><br/><span class="hl-0">        /&gt;</span><br/><span class="hl-0">    &lt;/</span><span class="hl-2">Tooltip</span><span class="hl-0">&gt;</span><br/><span class="hl-0">    &lt;</span><span class="hl-2">ScatterPlot</span><br/><span class="hl-0">        </span><span class="hl-2">interpolation</span><span class="hl-0">={</span><span class="hl-2">interpolation</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">axisAssignments</span><span class="hl-0">={new </span><span class="hl-5">Map</span><span class="hl-0">([</span><br/><span class="hl-0">            [</span><span class="hl-3">&#39;test2&#39;</span><span class="hl-0">, </span><span class="hl-2">assignAxes</span><span class="hl-0">(</span><span class="hl-3">&quot;x-axis-2&quot;</span><span class="hl-0">, </span><span class="hl-3">&quot;y-axis-2&quot;</span><span class="hl-0">)],</span><br/><span class="hl-0">        ])}</span><br/><span class="hl-0">        </span><span class="hl-2">dropDataAfter</span><span class="hl-0">={</span><span class="hl-6">10000</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">panEnabled</span><span class="hl-0">={</span><span class="hl-2">true</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">zoomEnabled</span><span class="hl-0">={</span><span class="hl-2">true</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">zoomKeyModifiersRequired</span><span class="hl-0">={</span><span class="hl-2">true</span><span class="hl-0">}</span><br/><span class="hl-0">        </span><span class="hl-2">withCadenceOf</span><span class="hl-0">={</span><span class="hl-6">30</span><span class="hl-0">}</span><br/><span class="hl-0">    /&gt;</span><br/><span class="hl-0">&lt;/</span><span class="hl-2">Chart</span><span class="hl-0">&gt;</span>
+</code></pre>
+
+<a href="#intro" id="intro" style="color: inherit; text-decoration: none;">
+  <h2>intro</h2>
+</a>
+<p><code>stream-charts</code> are high-performance charts for displaying large amounts of data in real-time. The charts are wrapped in <a href="https://reactjs.org">react</a> and fed data using <a href="https://rxjs-dev.firebaseapp.com">rxjs</a> <code>Observable</code>s. The goal <code>stream-charts</code> is to display large amounts of time-series data at high frequencies while providing tools to understand the time-series.</p>
+<p>There are currently two chart types available: a raster chart for displaying neuron spikes as a function of time, and a scatter chart for displaying time-series of data. </p>
+<p>The chart below shows the raster chart with the bar magnifier enabled. The controls at the top of the chart are part of the example. These controls allow filtering time-series by their assigned names in real-time, displaying a tooltip when the mouse pointer is on top of a datum, displaying a tracker that show a vertical line and the current time of the mouse, and a bar magnifier, as shown in the image.</p>
+<p><img src="../images/raster-magnifier.png?raw=true" alt="raster-chart"></p>
+<p>The scatter plot shown below has 30 time-series of test data, with two time axes, in which the data are updated every 25 milliseconds. A tooltip shows the times and values that came just before and just after the mouse cursor and, as well as the time and value changes.</p>
+<p><img src="../images/scatter-tooltip.png?raw=true" alt="scatter-chart-tooltip"></p>
+
+<a href="#usage" id="usage" style="color: inherit; text-decoration: none;">
+  <h2>usage</h2>
+</a>
+<p>The <code>stream-charts</code> module wraps <a href="http://d3js.org">d3</a> elements with functional <a href="http://reactjs.org">react</a> in a way that keeps the chart (d3) updates out of the react render cycle. All <code>stream-charts</code> start with the <a href="./src/app/charts/Chart.tsx"><code>&lt;Chart/&gt;</code></a> root element.</p>
+
+<a href="#ltchartgt" id="ltchartgt" style="color: inherit; text-decoration: none;">
+  <h3><code>&lt;Chart/&gt;</code></h3>
+</a>
+<p>The <code>Chart</code> component creates the main SVG element (container) holding the chart, manages a reference to that container, and is the wraps the children in the chart context provider so that they have access to the <a href="./src/app/charts/hooks/useChart.tsx">useChart</a> hook which holds properties, styles, callbacks, subscription needed to construct the charts and make them interactive.</p>
+<p>The <code>Chart</code>s properties fall into four categories:</p>
+<ol>
+<li>container dimensions</li>
+<li>chart style</li>
+<li>initial (static data)</li>
+<li>streamed data and how to manage the stream of data</li>
+</ol>
+
+<a href="#chart-dimensions" id="chart-dimensions" style="color: inherit; text-decoration: none;">
+  <h4>Chart dimensions</h4>
+</a>
+<blockquote>
+<p><strong>width (pixels)</strong><br>
+The width (in pixels) of the container that holds the chart. The actual plot will be smaller based on the margins.</p>
+</blockquote>
+<blockquote>
+<p><strong>height (pixels)</strong><br>
+The height (in pixels) of the container that holds the chart. The actual plot will be smaller based on the margins.</p>
+</blockquote>
+
+<a href="#chart-styling" id="chart-styling" style="color: inherit; text-decoration: none;">
+  <h4>Chart styling</h4>
+</a>
+<blockquote>
+<p><strong>margin (<a href="./src/app/charts/margins.ts">Margin</a>, optional)</strong>
+The margin (in pixels) around plot. For example, if the container has a (h, w) = (300, 600) and a margin of 10 pixels for the top, left, right, bottom, then the actual plot will have a (h, w) = (290, 590), leaving only 10 pixels around the plot for axis titles, ticks, and axis labels. </p>
+<p>The Margin has the following shape </p>
+<pre><code class="language-typescript"><span class="hl-7">interface</span><span class="hl-0"> </span><span class="hl-8">Margin</span><span class="hl-0"> {</span><br/><span class="hl-0">  </span><span class="hl-2">top</span><span class="hl-0">: </span><span class="hl-8">number</span><br/><span class="hl-0">  </span><span class="hl-2">bottom</span><span class="hl-0">: </span><span class="hl-8">number</span><br/><span class="hl-0">  </span><span class="hl-2">left</span><span class="hl-0">: </span><span class="hl-8">number</span><br/><span class="hl-0">  </span><span class="hl-2">right</span><span class="hl-0">: </span><span class="hl-8">number</span><br/><span class="hl-0">}</span>
+</code></pre>
+</blockquote>
+<blockquote>
+<p><strong>color (string, optional)</strong><br>
+The color of the axis lines and text, which can be overridden specifically by the axes styles.</p>
+</blockquote>
+<blockquote>
+<p><strong>backgroundColor (string, optional)</strong><br>
+The color of the chart background (the whole chart, not just the plot).</p>
+</blockquote>
+<blockquote>
+<p><strong>svgStyle (<a href="./src/app/charts/svgStyle.ts">SvgStyle</a>, optional)</strong><br>
+The style attributes for the main SVG element, in case you want to change those. Generally, this is not needed.</p>
+<p>The SvgStyle has the following shape </p>
+<pre><code class="language-typescript"><span class="hl-7">interface</span><span class="hl-0"> </span><span class="hl-8">SvgStyle</span><span class="hl-0"> {</span><br/><span class="hl-0">  </span><span class="hl-2">height</span><span class="hl-0">?: </span><span class="hl-8">string</span><span class="hl-0"> | </span><span class="hl-8">number</span><span class="hl-0"> </span><br/><span class="hl-0">  </span><span class="hl-2">width</span><span class="hl-0">?: </span><span class="hl-8">string</span><span class="hl-0"> | </span><span class="hl-8">number</span><span class="hl-0"> </span><br/><span class="hl-0">  </span><span class="hl-2">outline</span><span class="hl-0">?: </span><span class="hl-8">string</span><br/><span class="hl-0">  </span><span class="hl-4">// any valid SVG CSS attribute</span><br/><span class="hl-0">  [</span><span class="hl-2">propName</span><span class="hl-0">: </span><span class="hl-8">string</span><span class="hl-0">]: </span><span class="hl-8">any</span><br/><span class="hl-0">}</span>
+</code></pre>
+</blockquote>
+<blockquote>
+<p><strong>seriesStyles (Map&lt;string, <a href="./src/app/charts/axes.ts">SeriesLineStyle</a>&gt;, optional)</strong><br>
+A map holding the data series name with an associated SeriesLineStyle. Any series listed in this map will use the associated styles for that series. Any series not in the map will use the default series styles.</p>
+<p>The SeriesLineStyle has the following shape</p>
+<pre><code class="language-typescript"><span class="hl-7">interface</span><span class="hl-0"> </span><span class="hl-8">SeriesLineStyle</span><span class="hl-0"> {</span><br/><span class="hl-0">   </span><span class="hl-2">color</span><span class="hl-0">: </span><span class="hl-8">string</span><br/><span class="hl-0">   </span><span class="hl-2">lineWidth</span><span class="hl-0">: </span><span class="hl-8">number</span><br/><span class="hl-0">   </span><span class="hl-4">// the color of the series when the user mouses over the series</span><br/><span class="hl-0">   </span><span class="hl-2">highlightColor</span><span class="hl-0">: </span><span class="hl-8">string</span><br/><span class="hl-0">   </span><span class="hl-4">// the line width of the series when the user mouses over the series </span><br/><span class="hl-0">   </span><span class="hl-2">highlightWidth</span><span class="hl-0">: </span><span class="hl-8">number</span><br/><span class="hl-0">   </span><span class="hl-4">// the line margin used for raster charts</span><br/><span class="hl-0">   </span><span class="hl-2">margin</span><span class="hl-0">?: </span><span class="hl-8">number</span><br/><span class="hl-0">}</span>
+</code></pre>
+</blockquote>
+
+<a href="#chart-initial-data" id="chart-initial-data" style="color: inherit; text-decoration: none;">
+  <h4>Chart initial data</h4>
+</a>
+<p>Holds the initial (static data). This data is displayed in the chart even before subscribing to the chart-data observable. The initial data can be used to generate static charts.</p>
+<blockquote>
+<p><strong>initialData (Array&lt;<a href="./src/app/charts/datumSeries.ts">Series</a>&gt;)</strong><br>
+An array holding the initial data series to be plotted before subscribing to the chart-data observable.  </p>
+<p>The Series has the following shape</p>
+<pre><code class="language-typescript"><span class="hl-7">interface</span><span class="hl-0"> </span><span class="hl-8">Series</span><span class="hl-0"> {</span><br/><span class="hl-0">   </span><span class="hl-4">// the series name</span><br/><span class="hl-0">   </span><span class="hl-7">readonly</span><span class="hl-0"> </span><span class="hl-2">name</span><span class="hl-0">: </span><span class="hl-8">string</span><span class="hl-0">;</span><br/><span class="hl-0">   </span><span class="hl-4">// the array of time-value pairs</span><br/><span class="hl-0">   </span><span class="hl-2">data</span><span class="hl-0">: </span><span class="hl-8">Array</span><span class="hl-0">&lt;</span><span class="hl-8">Datum</span><span class="hl-0">&gt;;</span><br/><span class="hl-0">   </span><span class="hl-4">// ... accessor functions</span><br/><span class="hl-0">   . </span><br/><span class="hl-0">   . </span><br/><span class="hl-0">   . </span><br/><span class="hl-0">}</span><br/>
+</code></pre>
+<p>And the <a href="./src/app/charts/datumSeries.ts">Datum</a> has the following shape </p>
+<pre><code class="language-typescript"><span class="hl-7">interface</span><span class="hl-0"> </span><span class="hl-8">Datum</span><span class="hl-0"> {</span><br/><span class="hl-0">   </span><span class="hl-7">readonly</span><span class="hl-0"> </span><span class="hl-2">time</span><span class="hl-0">: </span><span class="hl-8">number</span><span class="hl-0">;</span><br/><span class="hl-0">   </span><span class="hl-7">readonly</span><span class="hl-0"> </span><span class="hl-2">value</span><span class="hl-0">: </span><span class="hl-8">number</span><span class="hl-0">;</span><br/><span class="hl-0">}</span>
+</code></pre>
+<p>Please note that there are a number of helper functions for creating <code>Series</code> and <code>Datum</code>.</p>
+</blockquote>
+<p>todo list the factory functions</p>
+<pre><code><span class="hl-9">initialData</span><span class="hl-0">: </span><span class="hl-8">Array</span><span class="hl-0">&lt;</span><span class="hl-2">Series</span><span class="hl-0">&gt;</span><br/><span class="hl-2">seriesFilter</span><span class="hl-0">?: </span><span class="hl-8">RegExp</span>
+</code></pre>
+
+<a href="#properties" id="properties" style="color: inherit; text-decoration: none;">
+  <h3>properties</h3>
+</a>
+<p>The <a href="https://github.com/robphilipp/stream-charts-examples">examples</a> project has example code that was used to generate the charts in the images above. The <a href="https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx">StreamingRasterChart</a> provides an example of using the raster chart. The <a href="https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx">StreamingScatterChart</a> provides an example of using the scatter chart. Both of these examples provide controls for enabling the filtering, tooltip, tracker, and magnifier enhancements.</p>
+<p>Each chart accepts a number of required and optional properties. The properties are divided into</p>
+<ol>
+<li>style,</li>
+<li>data,</li>
+<li>enhancements, and</li>
+<li>state.</li>
+</ol>
+
+<a href="#styles" id="styles" style="color: inherit; text-decoration: none;">
+  <h4>styles</h4>
+</a>
+<p>Except for the plot height and width, <em>style</em> properties are optional. Style properties define how the plot will look. For example, the <em>margin</em> property defines the space between the rectangle defined by the <em>height</em> and <em>width</em> property and the plot area.</p>
+<p>All the optional <em>style</em> properties have defaults (the defaults look like the example charts above). The defaults can be overridden by specifying the properties you would like to change. For example, if you would like to change only the size of the font used for the axes labels, then you can specify the property as,</p>
+<pre><code class="language-typescript"><span class="hl-0">&lt;</span><span class="hl-2">ScatterChart</span><br/><span class="hl-0">    </span><span class="hl-4">// .</span><br/><span class="hl-0">    </span><span class="hl-4">// .</span><br/><span class="hl-0">    </span><span class="hl-4">// .</span><br/><span class="hl-0">    </span><span class="hl-2">axisLabelFont</span><span class="hl-0">={{</span><span class="hl-2">color:</span><span class="hl-0"> </span><span class="hl-3">&#39;blue&#39;</span><span class="hl-0">}}</span><br/><span class="hl-0">    </span><span class="hl-4">// .</span><br/><span class="hl-0">    </span><span class="hl-4">// .</span><br/><span class="hl-0">    </span><span class="hl-4">// .</span><br/><span class="hl-0">/&gt;</span>
+</code></pre>
+<p>In this case, the size, family, and weight of the axis labels will remain at their default values, and only the color will change from its default value to the one specified, which in this case is &quot;blue&quot;.</p>
+<p>The <em>style</em> properties common to all plots are listed in the table below.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th></th>
+<th>Type</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>width</td>
+<td>required</td>
+<td>number</td>
+<td>The width of the chart in pixels</td>
+<td>450</td>
+</tr>
+<tr>
+<td>height</td>
+<td>required</td>
+<td>number</td>
+<td>The height of the chart in pixels</td>
+<td>300</td>
+</tr>
+<tr>
+<td>margin</td>
+<td>optional</td>
+<td><a href="https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/margins.ts">Margin</a></td>
+<td>The plot margin</td>
+<td><code>{top: 10, left: 10}</code></td>
+</tr>
+<tr>
+<td>axesLabelFont</td>
+<td>optional</td>
+<td><code>{size: number, color: string, family: string, weight: number}</code></td>
+<td>The font used to display the labels for the axes and ticks</td>
+<td><code>{size: 14, color: &#39;#fff&#39;}</code></td>
+</tr>
+<tr>
+<td>backgroundColor</td>
+<td>optional</td>
+<td>string</td>
+<td>The background color of the plot. Technically, this property is carried over to the SVG element holding the entire plot</td>
+<td><code>&#39;#202020&#39;</code></td>
+</tr>
+<tr>
+<td>svgStyle</td>
+<td>optional</td>
+<td>css object</td>
+<td>An object holding the React style CSS properties (i.e. camelCased) for the SVG container holding the chart. This can be used to set properties of the background.</td>
+<td><code>{width: &#39;100%&#39;}</code></td>
+</tr>
+</tbody></table>
+
+<a href="#data" id="data" style="color: inherit; text-decoration: none;">
+  <h4>data</h4>
+</a>
+<p>The <em>data</em> properties define the data source, processing, and constraints.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th></th>
+<th>Type</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>seriesList</td>
+<td>required</td>
+<td>Array of <a href="https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/datumSeries.ts">Series</a></td>
+<td>A list of the series to plot.</td>
+<td><code>[seriesFrom(&#39;test1&#39;)]</code></td>
+</tr>
+<tr>
+<td>seriesObservable</td>
+<td>required</td>
+<td><a href="https://rxjs-dev.firebaseapp.com/api/index/class/Observable">Observable</a> of <a href="https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/chartData.ts">ChartData</a></td>
+<td>An <a href="https://rxjs-dev.firebaseapp.com">rxjs</a> observable that sources chart data.</td>
+<td>see the <a href="https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/randomData.ts">randomWeightDataObservable(...)</a> function.</td>
+</tr>
+<tr>
+<td>windowingTime</td>
+<td>optional</td>
+<td>number (ms)</td>
+<td>Controls the update frequency of the chart. Depending on the number of time-series being plotted, this number can be comfortably set at 25 ms. The default value is 100 ms</td>
+<td><code>100</code></td>
+</tr>
+<tr>
+<td>timeWindow</td>
+<td>required</td>
+<td>number (ms)</td>
+<td>The maximum time between the <code>minTime</code> and the <code>maxTime</code>.</td>
+<td><code>2000</code></td>
+</tr>
+</tbody></table>
+
+<a href="#understanding-the-time-window" id="understanding-the-time-window" style="color: inherit; text-decoration: none;">
+  <h5>Understanding the time-window</h5>
+</a>
+<p>These charts have been developed to be used with high-frequency dynamic data that my run for a considerable amount of time. For example, you may stream in data for a few hundred seconds, and have the plot show the last 10 seconds worth of data. To achieve this you use the <code>timeWindow</code> property. Because you want to see the most recent 10 seconds of data, you set the time-window property to 10,000 ms (<code>timeWindow={10000}</code>). The charts use the time-window property, and the current simulation time, to show the most recent <code>timeWindow</code> milliseconds of data (in our example, the past 10 seconds). This causes the data to &quot;slide&quot; to the left after <code>timeWindow</code> has elapsed.</p>
+
+<a href="#enhancements" id="enhancements" style="color: inherit; text-decoration: none;">
+  <h4>enhancements</h4>
+</a>
+<p>The tracker, tooltip, magnifier, and filter are enhancements to the plots for exploring the displayed data. Each of these enhancements has a set of properties for determining how they are displayed. The details of the styles are given in sections below. All enhancements are optional, and, inactive by default.</p>
+<p>The tracker, tooltip, and magnifier are activated (shown) when the mouse is in the plot area <strong>and</strong> the enhancement&#39;s <code>visible</code> property is set to true. Generally, only one enhancement is used at one time.</p>
+<p>The filter enhancement differs from the others. This isn&#39;t a visible component, rather, it controls what data is displayed in the chart. The filter allows the user to specify a regular expression that is used to filter time-series based on their name.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th></th>
+<th>Type</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>tooltip</td>
+<td>optional</td>
+<td><a href="https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/TooltipStyle.ts">TooltipStyle</a></td>
+<td>Styling for the tooltip control when it is active</td>
+<td><code>{visible: false, fontSize: 12, fontColor: &#39;#d2933f&#39;}</code></td>
+</tr>
+<tr>
+<td>magnifier</td>
+<td>optional</td>
+<td><a href="https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/ScatterChart.tsx">RadialMagnifier</a> or <a href="https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/RasterChart.tsx">BarMagnifier</a></td>
+<td>Defines the style of the radial magnifier used for the scatter chart and the bar magnifier used for the raster chart</td>
+<td><code>{visible: true}</code></td>
+</tr>
+<tr>
+<td>tracker</td>
+<td>optional</td>
+<td><a href="https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/TrackerStyle.ts">TrackerStyle</a></td>
+<td>Style of the tracker line that draws a vertical line at the time represented by the current mouse position and shows that time, when the mouse is in the plot area.</td>
+<td><code>{visible: false, timeWindow: 50}</code></td>
+</tr>
+<tr>
+<td>filter</td>
+<td>optional</td>
+<td><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp">RexExp</a></td>
+<td>A regular expression used to filter time-series based on their name. Generally, this would be specified by some control in the parent component. See for example <a href="https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx">StreamingRasterChart</a>.</td>
+<td><code>^in[0-3]+$</code></td>
+</tr>
+</tbody></table>
+
+<a href="#state" id="state" style="color: inherit; text-decoration: none;">
+  <h4>state</h4>
+</a>
+<p>The <em>state</em> properties allow you to provide callbacks when the chart state changes. There are three state changes you can plug into</p>
+<ol>
+<li>on subscription to the rxjs observable</li>
+<li>when data changes</li>
+<li>when the current time changes.</li>
+</ol>
+
+<a href="#shouldsubscribe" id="shouldsubscribe" style="color: inherit; text-decoration: none;">
+  <h5>shouldSubscribe</h5>
+</a>
+<blockquote>
+<p>boolean</p>
+</blockquote>
+<p>By default, when the charts mount, they subscribe to the specified observable. This causes the observable to start emitting chart-data. Although the chart controls the subscription to the observable, you can control the timing of that subscription through the <code>shouldSubscribe</code> property. Setting the property to <code>false</code> for the initial mount tells the chart not to subscribe when it mounts. Then, at some point in time later, when you want the chart to start consuming data, simply set the <code>shouldSubscribe</code> property to <code>true</code>. Once the chart has subscribed to the observable, changing the value of this property has no effect.</p>
+
+<a href="#onsubscription" id="onsubscription" style="color: inherit; text-decoration: none;">
+  <h5>onSubscription</h5>
+</a>
+<blockquote>
+<p>(subscription: Subscription) =&gt; void</p>
+</blockquote>
+<p>You hand the <code>stream-charts</code> an <a href="https://rxjs-dev.firebaseapp.com/api/index/class/Observable">Observable</a>. This defines how (i.e. the pipeline) the data is generated. Only upon subscription does data flow through this pipeline. The rxjs <code>Observable.subscribe(...)</code> function returns a <a href="https://rxjs-dev.firebaseapp.com/api/index/class/Subscription">Subscription</a> that can be used to stop the data.</p>
+<p>An example of an observable can be found in the <a href="./src/app/examples/randomData.ts">randomSpikeDataObservable(...)</a> function.</p>
+<p>One reason to provide an <code>onSubscription</code> callback is so that you have a handle on the subscription so that you can stop the data. For example, you may want to provide the user of your application a button to stop the data. Or, you may wish to stop the simulation after a certain period of time.</p>
+
+<a href="#onupdatedata" id="onupdatedata" style="color: inherit; text-decoration: none;">
+  <h6>onUpdateData</h6>
+</a>
+<blockquote>
+<p>(seriesName: string, t: number, y: number) =&gt; void</p>
+</blockquote>
+<p>When new data arrives from the observable, the <code>onUpdateData</code> callback provides a hook into the data. For example, you may want to stop the data if, for example, the value crosses some threshold.</p>
+<p>If you are only interested in the current time, you can use the <code>onUpdateTime</code> callback.</p>
+
+<a href="#onupdatetime" id="onupdatetime" style="color: inherit; text-decoration: none;">
+  <h5>onUpdateTime</h5>
+</a>
+<blockquote>
+<p>(time: number) =&gt; void</p>
+</blockquote>
+<p>When the time associated with the data in the stream changes, this callback provides a hook into that time. In the <a href="src/app/examples/StreamingScatterChart.tsx">StreamingScatterChart</a>, for example, this callback is used to stop the random data after 1 second (1000 ms) by cancelling the subscription.</p>
+<pre><code class="language-typescript"><span class="hl-0">&lt;</span><span class="hl-2">ScatterChart</span><br/><span class="hl-0">    </span><span class="hl-4">// .</span><br/><span class="hl-0">    </span><span class="hl-4">// .</span><br/><span class="hl-0">    </span><span class="hl-4">// .</span><br/><span class="hl-0">    </span><span class="hl-2">onSubscribe</span><span class="hl-0">={</span><span class="hl-2">subscription</span><span class="hl-0"> </span><span class="hl-7">=&gt;</span><span class="hl-0"> </span><span class="hl-2">subscriptionRef</span><span class="hl-0">.</span><span class="hl-2">current</span><span class="hl-0"> = </span><span class="hl-2">subscription</span><span class="hl-0">}</span><br/><span class="hl-0">    </span><span class="hl-2">onUpdateTime</span><span class="hl-0">={(</span><span class="hl-2">t:</span><span class="hl-0"> </span><span class="hl-2">number</span><span class="hl-0">) </span><span class="hl-7">=&gt;</span><span class="hl-0"> {</span><br/><span class="hl-0">        </span><span class="hl-1">if</span><span class="hl-0">(</span><span class="hl-2">t</span><span class="hl-0"> &gt; </span><span class="hl-6">1000</span><span class="hl-0">) </span><span class="hl-2">subscriptionRef</span><span class="hl-0">.</span><span class="hl-2">current</span><span class="hl-0">!.</span><span class="hl-5">unsubscribe</span><span class="hl-0">()</span><br/><span class="hl-0">    }}</span><br/><span class="hl-0">    </span><span class="hl-4">// .</span><br/><span class="hl-0">    </span><span class="hl-4">// .</span><br/><span class="hl-0">    </span><span class="hl-4">// .</span><br/><span class="hl-0">/&gt;</span>
+</code></pre>
+
+<a href="#axislabelfont" id="axislabelfont" style="color: inherit; text-decoration: none;">
+  <h4>axisLabelFont</h4>
+</a>
+<p>The axis-label font style is used as a <code>Partial&lt;{size: number, color: string, family: string, weight: number}&gt;</code>. This means you only need to specify the values of the style that you wish to change.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Example</th>
+<th>Default Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>size</td>
+<td>number</td>
+<td>The font size in pixels</td>
+<td><code>12</code></td>
+<td>12</td>
+</tr>
+<tr>
+<td>color</td>
+<td>string</td>
+<td>The font color expressed as a string</td>
+<td><code>&#39;rgba(25,25,25,0.3)&#39;</code></td>
+<td><code>&#39;#d2933f&#39;</code></td>
+</tr>
+<tr>
+<td>family</td>
+<td>string</td>
+<td>The font family</td>
+<td><code>&#39;sans-serif&#39;</code></td>
+<td><code>&#39;sans-serif&#39;</code></td>
+</tr>
+<tr>
+<td>weight</td>
+<td>number</td>
+<td>The weight of the font</td>
+<td><code>350</code></td>
+<td><code>300</code></td>
+</tr>
+</tbody></table>
+
+<a href="#tooltip" id="tooltip" style="color: inherit; text-decoration: none;">
+  <h4>tooltip</h4>
+</a>
+<p>The tooltip style is defined in the <a href="src/app/charts/TooltipStyle.ts">TooltipStyle</a> interface. The <code>TooltipStyle</code> is used as a <code>Partial&lt;TooltipStyle&gt;</code>. This means that you only need to specify the values of the style that you wish to change.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Example</th>
+<th>Default Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>visible</td>
+<td>boolean</td>
+<td>Whether on not the tooltip control is active and will show up on mouse-over. Generally this property will be controlled by the parent component in response to the selection of the control. See, for example, <a href="src/app/examples/StreamingScatterChart.tsx"><code>StreamingScatterChart</code></a>.</td>
+<td><code>false</code></td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td>fontSize</td>
+<td>number</td>
+<td>Size of the font in pixels</td>
+<td><code>12</code></td>
+<td><code>12</code></td>
+</tr>
+<tr>
+<td>fontColor</td>
+<td>string</td>
+<td>Color of the font represented as a string</td>
+<td><code>&#39;blue&#39;</code></td>
+<td><code>&#39;#d2933f&#39;</code></td>
+</tr>
+<tr>
+<td>fontFamily</td>
+<td>string</td>
+<td>Family of the font</td>
+<td><code>&#39;&quot;Avenir Next&quot; sans-serif&#39;</code></td>
+<td><code>&#39;sans-serif&#39;</code></td>
+</tr>
+<tr>
+<td>fontWeight</td>
+<td>number</td>
+<td>Weight of the font represents its &quot;thickness&quot;</td>
+<td><code>300</code></td>
+<td><code>250</code></td>
+</tr>
+<tr>
+<td>backgroundColor</td>
+<td>string</td>
+<td>The background color of the tooltip</td>
+<td><code>&#39;green</code>&#39;</td>
+<td><code>&#39;#202020&#39;</code></td>
+</tr>
+<tr>
+<td>backgroundOpacity</td>
+<td>number</td>
+<td>A number between 0 and 1 defining how opaque the background is. A value of 0 means that the background is completely transparent. A value of 1 means that the background is completely opaque.</td>
+<td><code>0.5</code></td>
+<td><code>0.8</code></td>
+</tr>
+<tr>
+<td>borderColor</td>
+<td>string</td>
+<td>Color of the tooltip&#39;s border.</td>
+<td><code>&#39;#f8ebc6&#39;</code></td>
+<td><code>&#39;#d2933f&#39;</code></td>
+</tr>
+<tr>
+<td>borderWidth</td>
+<td>number</td>
+<td>The width, in pixels, of the tooltip&#39;s border.</td>
+<td><code>3</code></td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td>borderRadius</td>
+<td>number</td>
+<td>The radius, in pixels, of the rectangles &quot;corners&quot;. A value of 0 is a sharp corner. A value of 5 means that the corner is replaced by a circle of radius 5 px.</td>
+<td><code>3</code></td>
+<td><code>5</code></td>
+</tr>
+<tr>
+<td>paddingTop</td>
+<td>number</td>
+<td>The number of pixels between the top of the tooltip and the content.</td>
+<td><code>8</code></td>
+<td><code>10</code></td>
+</tr>
+<tr>
+<td>paddingRight</td>
+<td>number</td>
+<td>The number of pixels between the right side of the tooltip and the content.</td>
+<td><code>8</code></td>
+<td><code>10</code></td>
+</tr>
+<tr>
+<td>paddingLeft</td>
+<td>number</td>
+<td>The number of pixels between the left side of the tooltip and the content.</td>
+<td><code>8</code></td>
+<td><code>10</code></td>
+</tr>
+<tr>
+<td>paddingBottom</td>
+<td>number</td>
+<td>The number of pixels between the bottom of the tooltip and the content.</td>
+<td><code>8</code></td>
+<td><code>10</code></td>
+</tr>
+</tbody></table>
+
+<a href="#magnifier" id="magnifier" style="color: inherit; text-decoration: none;">
+  <h4>magnifier</h4>
+</a>
+<p>Two types of magnifiers are used in <code>stream-charts</code>: a radial magnifier and a bar magnifier. The radial magnifier is used in the scatter chart, and the bar magnifier is used in the raster chart.</p>
+<p>The radial magnifier style is defined in the <a href="src/app/charts/ScatterChart.tsx">ScatterChart</a> component and is used as a <code>Partial&lt;RadialMagnifierStyle&gt;</code>, which means you only need to specify the values you wish to change.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Example</th>
+<th>Default Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>visible</td>
+<td>boolean</td>
+<td>Defines whether the magnifier is visible when the mouse is in the plot area. Generally, this would be managed by a control in the parent component.</td>
+<td><code>true</code></td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td>radius</td>
+<td>number</td>
+<td>Radius, in pixels, of the magnifier lens displayed.</td>
+<td><code>125</code></td>
+<td><code>100</code></td>
+</tr>
+<tr>
+<td>magnification</td>
+<td>number</td>
+<td>A value between 1 and 10 that defines the amount of magnification. A value of 1 mean almost no magnification. Generally, this value should be controlled by the parent component.</td>
+<td><code>4</code></td>
+<td><code>5</code></td>
+</tr>
+<tr>
+<td>color</td>
+<td>string</td>
+<td>Lens axes and tick color.</td>
+<td><code>&#39;purple&#39;</code></td>
+<td><code>&#39;#d2933f&#39;</code></td>
+</tr>
+<tr>
+<td>lineWidth</td>
+<td>number</td>
+<td>Width, in pixels, of the axes and ticks.</td>
+<td><code>1</code></td>
+<td><code>2</code></td>
+</tr>
+</tbody></table>
+<p>The bar magnifier style is defined in the <a href="src/app/charts/RasterChart.tsx">RasterChart</a> component and is used as a <code>Partial&lt;LineMagnifierStyle&gt;</code>, which means you only need to specify the values you wish to change.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Example</th>
+<th>Default Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>visible</td>
+<td>boolean</td>
+<td>Defines whether the magnifier is visible when the mouse is in the plot area. Generally, this would be managed by a control in the parent component.</td>
+<td><code>true</code></td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td>width</td>
+<td>number</td>
+<td>Width, in pixels, of the bar-magnifier lens displayed.</td>
+<td><code>50</code></td>
+<td><code>125</code></td>
+</tr>
+<tr>
+<td>magnification</td>
+<td>number</td>
+<td>A value between 1 and 10 that defines the amount of magnification. A value of 1 mean almost no magnification. Generally, this value should be controlled by the parent component.</td>
+<td><code>4</code></td>
+<td><code>5</code></td>
+</tr>
+<tr>
+<td>color</td>
+<td>string</td>
+<td>Lens axes and tick color.</td>
+<td><code>&#39;purple&#39;</code></td>
+<td><code>&#39;#d2933f&#39;</code></td>
+</tr>
+<tr>
+<td>lineWidth</td>
+<td>number</td>
+<td>Width, in pixels, of the axes and ticks.</td>
+<td><code>1</code></td>
+<td><code>2</code></td>
+</tr>
+<tr>
+<td>axisOpacity</td>
+<td>number</td>
+<td>A number between 0 and 1 that defines how opaque the magnifier&#39;s axes are. A value of 0 means that the axes are completely transparent. A value of 1 means that the axes are completely opaque.</td>
+<td><code>0.5</code></td>
+<td><code>0.35</code></td>
+</tr>
+</tbody></table>
+
+<a href="#tracker" id="tracker" style="color: inherit; text-decoration: none;">
+  <h4>tracker</h4>
+</a>
+<p>The tracker displays a vertical line in the chart area at the current mouse position, and show the time represented by that mouse position. The styles for the tracker determine how that line looks.</p>
+<p>The tracker styles are defined in the <a href="src/app/charts/TrackerStyle.ts">TrackerStyle</a> file and is used as a <code>Partial&lt;TrackerStyle&gt;</code>, which means that you only need to specify the values you would like to change.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Example</th>
+<th>Default Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>visible</td>
+<td>boolean</td>
+<td>Defines whether the tracker is visible when the mouse is in the plot area. Generally, this would be managed by a control in the parent component.</td>
+<td><code>true</code></td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td>color</td>
+<td>string</td>
+<td>Color of the tracker line.</td>
+<td><code>&#39;rgba(55,66,77,0.88)&#39;</code></td>
+<td><code>&#39;#d2933f&#39;</code></td>
+</tr>
+<tr>
+<td>lineWidth</td>
+<td>number</td>
+<td>Width, in pixels, of the vertical tracker line.</td>
+<td><code>2</code></td>
+<td><code>1</code></td>
+</tr>
+</tbody></table>
+<p>Please note that the font style of the tracker text is controlled by the axis-label font styles described above.</p>
+
+<a href="#time-series" id="time-series" style="color: inherit; text-decoration: none;">
+  <h3>time-series</h3>
+</a>
+
+<a href="#built-with" id="built-with" style="color: inherit; text-decoration: none;">
+  <h2>built with</h2>
+</a>
+<p>This project was bootstrapped with <a href="https://github.com/facebook/create-react-app">Create React App</a>.</p>
+</div></div><div class="col-4 col-menu menu-sticky-wrap menu-highlight"><nav class="tsd-navigation primary"><ul><li class="current"><a href="modules.html">Modules</a></li><li class=" tsd-kind-module"><a href="modules/CategoryAxis.html">Category<wbr/>Axis</a></li><li class=" tsd-kind-module"><a href="modules/Chart.html">Chart</a></li><li class=" tsd-kind-module"><a href="modules/ContinuousAxis.html">Continuous<wbr/>Axis</a></li><li class=" tsd-kind-module"><a href="modules/RasterPlot.html">Raster<wbr/>Plot</a></li><li class=" tsd-kind-module"><a href="modules/RasterPlotTooltipContent.html">Raster<wbr/>Plot<wbr/>Tooltip<wbr/>Content</a></li><li class=" tsd-kind-module"><a href="modules/ScatterPlot.html">Scatter<wbr/>Plot</a></li><li class=" tsd-kind-module"><a href="modules/ScatterPlotTooltipContent.html">Scatter<wbr/>Plot<wbr/>Tooltip<wbr/>Content</a></li><li class=" tsd-kind-module"><a href="modules/Tooltip.html">Tooltip</a></li><li class=" tsd-kind-module"><a href="modules/Tracker.html">Tracker</a></li><li class=" tsd-kind-module"><a href="modules/axes.html">axes</a></li><li class=" tsd-kind-module"><a href="modules/chartData.html">chart<wbr/>Data</a></li><li class=" tsd-kind-module"><a href="modules/continuousAxisRangeFor.html">continuous<wbr/>Axis<wbr/>Range<wbr/>For</a></li><li class=" tsd-kind-module"><a href="modules/d3types.html">d3types</a></li><li class=" tsd-kind-module"><a href="modules/datumSeries.html">datum<wbr/>Series</a></li><li class=" tsd-kind-module"><a href="modules/margins.html">margins</a></li><li class=" tsd-kind-module"><a href="modules/plot.html">plot</a></li><li class=" tsd-kind-module"><a href="modules/regexFilter.html">regex<wbr/>Filter</a></li><li class=" tsd-kind-module"><a href="modules/subscriptions.html">subscriptions</a></li><li class=" tsd-kind-module"><a href="modules/svgStyle.html">svg<wbr/>Style</a></li><li class=" tsd-kind-module"><a href="modules/tooltipUtils.html">tooltip<wbr/>Utils</a></li><li class=" tsd-kind-module"><a href="modules/trackerUtils.html">tracker<wbr/>Utils</a></li><li class=" tsd-kind-module"><a href="modules/utils.html">utils</a></li></ul></nav></div></div></div><footer class="with-border-bottom"><div class="container"><h2>Legend</h2><div class="tsd-legend-group"><ul class="tsd-legend"><li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li><li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li><li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li><li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li></ul><ul class="tsd-legend"><li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li><li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li></ul><ul class="tsd-legend"><li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li></ul></div><h2>Settings</h2><p>Theme <select id="theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></p></div></footer><div class="container tsd-generator"><p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></div><div class="overlay"></div><script src="assets/main.js"></script></body></html>
