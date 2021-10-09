@@ -87,6 +87,7 @@ For the neuron raster chart (see [example](https://github.com/robphilipp/stream-
 
 ![raster-chart](https://github.com/robphilipp/stream-charts/blob/master/images/raster-magnifier.png?raw=true)
 
+
 ```typescript jsx
 import {RasterChart} from "stream-charts";
 // .
@@ -173,8 +174,6 @@ import {RasterChart} from "stream-charts";
         withCadenceOf={30}
     />
 </Chart>
-
-
 ```
 
 ### [&#10514;](#content) <span id="example-scatter-chart-code">example scatter chart</span>
@@ -182,6 +181,7 @@ import {RasterChart} from "stream-charts";
 An example scatter chart  (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx))
 
 ![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/master/images/scatter-tooltip.png?raw=true)
+
 
 ```typescript jsx
 import {ScatterChart} from "stream-charts";
