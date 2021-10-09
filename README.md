@@ -37,14 +37,16 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 
 **[intro](#intro)**<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[terminology](#terminology)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[data ttl, time-windows, performance](#data-ttl)<br>
 
-**[usage](#usage)**<br>
+**[chart](#chart)**<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[&lt;Chart/&gt;](#chart-usage)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[dimensions](#chart-usage-dimensions)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#chart-usage-styling)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[initial data](#chart-usage-initial-data)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[streaming data](#chart-usage-streaming-data)<br>
 
+**[axes](#axes)**<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[&lt;ContinousAxis/&gt;](#continuous-axes-usage)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#continuous-axes-usage-base)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#continuous-axes-usage-styling)<br>
@@ -53,6 +55,7 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#category-axes-usage-base)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#category-axes-usage-styling)<br>
 
+**[plots](#plots)**<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[&lt;ScatterPlot/&gt;](#scatter-plot-usage)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#scatter-plot-usage-base)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[view-modifying interactions](#scatter-plot-usage-view)<br>
@@ -61,6 +64,7 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#raster-plot-usage-base)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[view-modifying interactions](#raster-plot-usage-view)<br>
 
+**[utilities](#utilities)**<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[&lt;Tracker/&gt;](#tracker-usage)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#tracker-usage-base)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#tracker-usage-styling)<br>
@@ -277,24 +281,38 @@ import {ScatterChart} from "stream-charts";
 
 ### [&#10514;](#content) <span id="terminology">terminology</span>
 
-A `chart` holds the `plot`, the `axes`, `tracker`, and `tooltip`. A `chart` is generic, and holds a specific type of `plot`, for example, a raster plot or a scatter plot. The `plot` holds the data, and provides pan and zoom. The `axes` provide the scale of the data. For example, the scale could be a continuous numeric logarithmic scale, or a category scale. The `axes` are also generic. Though, a `plot` can restrict what `axes` are allowed. For example, a raster plot requires that the y-axes are category axes. `trackers` are generic. `tooltips` are also generic, though they have a child that is specific to a plot so that it knows how to interpret and present the data.
+A &lt;Chart/&gt; holds a `plot`, the `axes`, and optionally, a &lt;Tracker/&gt;, and a &lt;Tooltip/&gt;. A &lt;Chart/&gt; is generic, and holds a specific type of `plot`, for example, a &lt;RasterPlot/&gt; or a &lt;ScatterPlot/&gt;. The `plot` holds the data, and optionally provides pan and zoom. The `axes` provide the scale of the data. For example, the scale could be a continuous numeric logarithmic scale, or a category scale. The `axes` are also generic. Though, a `plot` can restrict the type of `axes` allowed. For example, a &lt;RasterPlot/&gt; requires that the y-axes are category axes. &lt;Trackers/&gt; are generic. &lt;Tooltipes/&gt; are also generic, though the tooltip content is a child, specific to a plot type, that it knows how to interpret and present the data.
 
-> **&lt;Chart/&gt;** [&#8628;](#chart-usage)<br>
+> **&lt;Chart/&gt;** [&#8628;](#chart)<br>
 > Generic container which holds the `Axes`, `Plot`, `Tracker`, `Tooltip`.
 
-> **Axes** [&#8628;](#)<br>
-> Defines the scale of the data. `stream-charts` current has two axis types: `ContinuousAxis` and `CategoryAxis`. The `ContinuousAxis` can be used as an x-axis or y-axis. However, the `CategoryAxis` can only be used as a y-axes because these are all time-series charts and the x-axis currently only represents time (this will change in the future with additional plot types). 
+> **Axes** [&#8628;](#axes)<br>
+> Defines the scale of the data. `stream-charts` current has two axis types: [&lt;ContinousAxis/&gt;](#continuous-axes-usage) and [&lt;CategoryAxis/&gt;](#category-axes-usage). The &lt;ContinousAxis can be used as an x-axis or y-axis. However, the &lt;CategoryAxis/&gt; can only be used as a y-axes because these are all time-series charts and the x-axis currently only represents time (this will change in the future with additional plot types). 
 
-> **Plot** [&#8628;](#)<br>
-> The plot is a container for the data that uses the `axes` for scale, domain, and range information. Plots provide panning and zooming of the x-axis (time), interacting with the `axes` to update the time-range. The plot is the visual representation of the data.
+> **Plot** [&#8628;](#plots)<br>
+> The plot is a container for the data that uses the `axes` for scale, domain, and range information. Plots provide panning and zooming of the x-axis (time), interacting with the `axes` to update the time-range. The plot is the visual representation of the data. Currently, two type of plots are available: [&lt;RasterPlot/&gt;](#raster-plot-usage), and [&lt;ScatterPlot/&gt;](#scatter-plot-usage).
 
-> **&lt;Tracker/&gt;** [&#8628;](#)<br>
+> **&lt;Tracker/&gt;** [&#8628;](#tracker-usage)<br>
 > The tracker displays the current plot time of the mouse. When multiple x-axes are used in the chart, then the tracker displays both times (i.e. from the upper and lower x-axis).
 
-> **&lt;Tooltip/&gt;** [&#8628;](#)<br>
-> The tooltip is a generic component for rendering information about the data when the user mouses over a series or datum. The `<Tooltip/>` expects a child component that understands the data and renders the information show in the tooltip. For example, when using a `<RasterPlot/>`, the `<RasterPlotTooltipContent/>` renders the data for the raster plot. The tooltip content can be extended.
+> **&lt;Tooltip/&gt;** [&#8628;](#tooltip-usage)<br>
+> The tooltip is a generic component for rendering information about the data when the user mouses over a series or datum. The `<Tooltip/>` expects a child component that understands the data and renders the information show in the tooltip. For example, when using a [&lt;RasterPlot/&gt;](#raster-plot-usage), the [&lt;RasterPlotTooltipContent/&gt;](#rasterplot-tooltip-usage) renders the data for the raster plot tooltip. And when using a [&lt;ScatterPlot/&gt;](#scatter-plot-usage), the [&lt;ScatterPlotTooltipContent/&gt;](#scatterplot-tooltip-usage) renders the data for the scatter plot tooltip. The tooltip content can be extended.
 
-## [&#10514;](#content) <span id="usage">usage</span>
+### [&#10514;](#content) <span id="data-ttl">data ttl, time-windows, performance</span>
+
+The `stream-charts` have been designed to work with fairly large amounts of high frequency data. When the data time exceeds the larges time on the x-axes, the chart begins to scroll, shifting the time-window to keep up with the present data time. The data that *falls off* the chart is held in memory and can be viewed by changing the time-window with "zoom" or panning to earlier times.
+
+For long-running charts, the amount of data may get large. Because of this, each `stream-charts` plot provides a data time-to-live (TTL) setting called `dropDataAfter` which is the number of milliseconds, in chart time, after which the data is dropped. The TTL applies to data that *falls off* the chart. The TTL does not refer to real time. The data will not dissappear fro the plot of the `dropDataAfter` milliseconds (see [dropDataAfter](#raster-plot-drop) for raster plots, and [dropDataAfter](#scatter-plot-drop) for scatter plots).
+
+As the amount of data and the update frequency increase, you have three levers to make your plots run more smoothly when the start to stutter. Each set of streaming data is unique and may require tuning when the default settings aren't giving the desired results.
+
+1. **Drop data with the data TTL.** By dropping data, `d3` has less data to manage and will run faster. Without TTD, the data the falls off the time-window as the plot scroll is still kept in memory, and is still processed by `d3`, but it is clipped, and so not shown. Dropping data will reduce the processing load as data is streamed in. To later view that dropped data, you can store the data from your observable with a separate observer, and when the streaming is complete, load that data once into the plot.
+2. **Decrease the windowing-time.** The windowing-time, not to be confused with the time-window described below, determines how long (in milliseconds) the incoming data is buffered before the plot is updated. Longer windowing times give better performance, though, at the cost of more choppy scrolling.
+3. **Decrease the time-window.** The time-window is defined by the (min, max) time values of your axes. Smaller time-windows mean less data, but also it will stream by faster.
+
+As a final note, generally, the &lt;ScatterPlot/&gt; performs better than the &lt;RasterPlot/&gt;.
+
+## [&#10514;](#content) <span id="chart">chart</span>
 
 The `stream-charts` module wraps [d3](http://d3js.org) elements with functional [react](http://reactjs.org) in a way that keeps the chart (d3) updates out of the react render cycle. All `stream-charts` start with the [`<Chart/>`](./src/app/charts/Chart.tsx) root element.
 
@@ -442,6 +460,7 @@ A set of properties, functions, and callbacks to control and observe the streami
 > **onUpdateTime (callback function, (times: Map<string, [start: number, end: number]>) => void, optional, default = noop)**<br>
 > Optional callback this is called whenever the time-ranges change. Use this to track the current time of the plot.
 
+## [&#10514;](#content) <span id="axes">axes</span>
 
 ### [&#10514;](#content) <span id="continuous-axes-usage">&lt;ContinuousAxis/&gt;</span>
 
@@ -509,6 +528,8 @@ A set of properties to update the style of the axes.
 > An optional CSS properties specifying the font for the axis and tick labels.
 
 
+## [&#10514;](#content) <span id="plots">plots</span>
+
 ### [&#10514;](#content) <span id="scatter-plot-usage">&lt;ScatterPlot/&gt;</span>
 
 In `stream-charts`, the `plot` is the data visualization component. To work, a plot must be a child of the &lt;Chart/&gt; component so that it is plugged into the `stream-charts` ecosystem. The plot determines how to render the data. But it relies on the axes to determine scaling information so that it can map data to screen locations. And therefore, a plot must have sibling axes ([&lt;ContinousAxis/&gt;](#continuous-axes-usage), [&lt;CategoryAxis/&gt;](#category-axes-usage)) components for the x-axis and the y-axis. Because the plot is responsible for data visualization, it is also where the data series are assigned to axes. The assignment of axes to series is optional, and any series not explicitly assigned to an axis will be assigned to the default axes. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot. 
@@ -525,7 +546,7 @@ The &lt;ScatterPlot/&gt; specifically is used to plot time-series data, where th
 > **interpolation (d3.CurveFactory, optional, default = d3.curveLinear)**<br>
 > An optional property that defines how the data series line will be interpolated between individual data points. You can use any valid [d3.CurveFactory](https://github.com/d3/d3-shape#curves) for the interpolation. Changing the interpolation once the data is already display, will cause a re-render of the data with the new interpolation.
 
-> **dropDataAfter (number, milliseconds, opitional, default = Infinity)**<br>
+> <span id="scatter-plot-drop">**dropDataAfter (number, milliseconds, opitional, default = Infinity)**</span><br>
 > Optional property that sets when to drop data (effectively a TTL). This only drops data while streaming. Don't worry, your data won't disappear after the streaming has stopped. By default, none of the data is dropped. However, when large amounts of data are being streamed and plotted over long periods of time, memory and performance may become an issue. Setting this value allows a scrolling chart to run forever without running into resource issues.
 
 #### [&#10514;](#content) <span id="scatter-plot-usage-view">&lt;ScatterPlot/&gt; view-modifying interactions</span>
@@ -558,7 +579,7 @@ The &lt;RasterPlot/&gt; specifically is used to plot event-timing data, where th
 > **axisAssignments (Map<string, [AxesAssignment](./src/app/charts/plot.ts)>, optional, default = Map())**<br>
 > An optional property that assigns data series to (x, y)-axes. Any series not assigned to an axis will use the default axis. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot. The `Map` associates the series name with an [AxesAssignment](./src/app/charts/plot.ts), which is a simple object (`{xAxis: string, yAxis: string}`) that holds the axis ID for the x-axis and for the y-axis assigned to the series.
 
-> **dropDataAfter (number, milliseconds, opitional, default = Infinity)**<br>
+> <span id="raster-plot-drop">**dropDataAfter (number, milliseconds, opitional, default = Infinity)**</span><br>
 > Optional property that sets when to drop data (effectively a TTL). This only drops data while streaming. Don't worry, your data won't disappear after the streaming has stopped. By default, none of the data is dropped. However, when large amounts of data are being streamed and plotted over long periods of time, memory and performance may become an issue. Setting this value allows a scrolling chart to run forever without running into resource issues.
 
 > **spikeMargin (number, pixels, default = 2)**<br>
@@ -579,6 +600,8 @@ View-modifying interactions are those that change the way the data is displayed.
 
 > **withCadenceOf (number, optional, default = undefinded)**<br>
 > An optional property that defaults to `undefined`. When set, uses a cadence with the specified refresh period (in milliseconds). For plots with slow data updates (> 100 ms) using a cadence of 10 to 25 ms smooths out the updates so the time scrolling doesn't appear choppy. When updates are around 25 ms or less, then setting the cadence period too small will result in poor update performance. Generally at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time to the current time. See also the related &lt;Chart/&gt's `windowingTime` property.
+
+## [&#10514;](#content) <span id="utilities">utilities</span>
 
 ### [&#10514;](#content) <span id="tracker-usage">&lt;Tracker/&gt;</span>
 
@@ -641,7 +664,7 @@ The properties for the lt;Tooltip/&gt; are simple and limited. The tooltip conte
 
 ### [&#10514;](#content) <span id="scatterplot-tooltip-usage">&lt;ScatterPlotTooltipContent/&gt;</span>
 
-The &lt;ScatterPlotTooltipContent/&gt; displays a table displaying the series datum that immediately preceeds the mouse location, and immediately follows the mouse location. The first row shows the x-values, and the second row shows the y-values. The table below maps the properties to the table elements they effect.
+The &lt;ScatterPlotTooltipContent/&gt; renders a table displaying the series datum that immediately precedes the mouse location, and immediately follows the mouse location. The first row shows the x-values, and the second row shows the y-values. The table below maps the properties to the table elements they effect.
 
 ---
 series name
@@ -684,204 +707,17 @@ series name
 > Optional styles for the tooltip content. The styles are the same as those for the &lt;Tooltip/&gt;.
 
 
-### [&#10514;](#content) <span id="raster-tooltip-usage">&lt;RasterTooltipContent/&gt;</span>
+### [&#10514;](#content) <span id="rasterplot-tooltip-usage">&lt;RasterTooltipContent/&gt;</span>
+The &lt;RasterPlotTooltipContent/&gt; shows the series name, the time and value of the point over which the mouse is hovering. There are only three properties.
 
+> **xFormatter ((value: number) => string, optional, default = [formatTime](./src/app/charts/utils.ts)**<br>
+> Optional function that formats the x-value immediately before and after the mouse location. The default function formats that x-values as natural numbers representing milliseconds.
 
-### properties
+> **yFormatter ((value: number) => string, optional, default = [formatValue](./src/app/charts/utils.ts)**<br>
+> Optional function that formats the x-value immediately before and after the mouse location. The default function formats the y-values as floating point with 3 values to the right of the decimal point.
 
-The [examples](https://github.com/robphilipp/stream-charts-examples) project has example code that was used to generate the charts in the images above. The [StreamingRasterChart](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx) provides an example of using the raster chart. The [StreamingScatterChart](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx) provides an example of using the scatter chart. Both of these examples provide controls for enabling the filtering, tooltip, tracker, and magnifier enhancements.
-
-Each chart accepts a number of required and optional properties. The properties are divided into
-
-1. style,
-2. data,
-3. enhancements, and
-4. state.
-
-#### styles
-
-Except for the plot height and width, *style* properties are optional. Style properties define how the plot will look. For example, the *margin* property defines the space between the rectangle defined by the *height* and *width* property and the plot area.
-
-All the optional *style* properties have defaults (the defaults look like the example charts above). The defaults can be overridden by specifying the properties you would like to change. For example, if you would like to change only the size of the font used for the axes labels, then you can specify the property as,
-
-```typescript jsx
-<ScatterChart
-    // .
-    // .
-    // .
-    axisLabelFont={{color: 'blue'}}
-    // .
-    // .
-    // .
-/>
-```
-
-In this case, the size, family, and weight of the axis labels will remain at their default values, and only the color will change from its default value to the one specified, which in this case is "blue".
-
-The *style* properties common to all plots are listed in the table below.
-
-| Name |  | Type | Description | Example |
-| ---- | --- | -------- | ----------- | ------- |
-| width | required | number | The width of the chart in pixels | 450 |
-| height | required | number | The height of the chart in pixels | 300 |
-| margin | optional | [Margin](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/margins.ts) | The plot margin | `{top: 10, left: 10}` |
-| axesLabelFont | optional | `{size: number, color: string, family: string, weight: number}` | The font used to display the labels for the axes and ticks | `{size: 14, color: '#fff'}` |
-| backgroundColor | optional | string | The background color of the plot. Technically, this property is carried over to the SVG element holding the entire plot | `'#202020'` |
-| svgStyle | optional | css object | An object holding the React style CSS properties (i.e. camelCased) for the SVG container holding the chart. This can be used to set properties of the background. | `{width: '100%'}` |
-
-#### data
-
-The *data* properties define the data source, processing, and constraints.
-
-| Name |     | Type | Description | Example |
-| ---- | --- | ---- | ----------- | ------- |
-| seriesList | required | Array of [Series](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/datumSeries.ts) | A list of the series to plot. | `[seriesFrom('test1')]` |
-| seriesObservable | required | [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable) of [ChartData](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/chartData.ts) | An [rxjs](https://rxjs-dev.firebaseapp.com) observable that sources chart data. | see the [randomWeightDataObservable(...)](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/randomData.ts) function. |
-| windowingTime | optional | number (ms) | Controls the update frequency of the chart. Depending on the number of time-series being plotted, this number can be comfortably set at 25 ms. The default value is 100 ms | `100` |
-| timeWindow | required | number (ms) | The maximum time between the `minTime` and the `maxTime`. | `2000` |
-
-##### Understanding the time-window
-
-These charts have been developed to be used with high-frequency dynamic data that my run for a considerable amount of time. For example, you may stream in data for a few hundred seconds, and have the plot show the last 10 seconds worth of data. To achieve this you use the `timeWindow` property. Because you want to see the most recent 10 seconds of data, you set the time-window property to 10,000 ms (`timeWindow={10000}`). The charts use the time-window property, and the current simulation time, to show the most recent `timeWindow` milliseconds of data (in our example, the past 10 seconds). This causes the data to "slide" to the left after `timeWindow` has elapsed.
-
-#### enhancements
-
-The tracker, tooltip, magnifier, and filter are enhancements to the plots for exploring the displayed data. Each of these enhancements has a set of properties for determining how they are displayed. The details of the styles are given in sections below. All enhancements are optional, and, inactive by default.
-
-The tracker, tooltip, and magnifier are activated (shown) when the mouse is in the plot area **and** the enhancement's `visible` property is set to true. Generally, only one enhancement is used at one time.
-
-The filter enhancement differs from the others. This isn't a visible component, rather, it controls what data is displayed in the chart. The filter allows the user to specify a regular expression that is used to filter time-series based on their name.
-
-| Name |  | Type | Description | Example |
-| ---- | --- | -------- | ----------- | ------- |
-| tooltip | optional | [TooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/TooltipStyle.ts) | Styling for the tooltip control when it is active | `{visible: false, fontSize: 12, fontColor: '#d2933f'}`|
-| magnifier | optional | [RadialMagnifier](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/ScatterChart.tsx) or [BarMagnifier](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/RasterChart.tsx) | Defines the style of the radial magnifier used for the scatter chart and the bar magnifier used for the raster chart | `{visible: true}` |
-| tracker | optional | [TrackerStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/TrackerStyle.ts) | Style of the tracker line that draws a vertical line at the time represented by the current mouse position and shows that time, when the mouse is in the plot area. | `{visible: false, timeWindow: 50}` |
-| filter | optional | [RexExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) | A regular expression used to filter time-series based on their name. Generally, this would be specified by some control in the parent component. See for example [StreamingRasterChart](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx). | `^in[0-3]+$` | undefined |
-
-#### state
-
-The *state* properties allow you to provide callbacks when the chart state changes. There are three state changes you can plug into
-
-1. on subscription to the rxjs observable
-2. when data changes
-3. when the current time changes.
-
-##### shouldSubscribe
-
-> boolean
-
-By default, when the charts mount, they subscribe to the specified observable. This causes the observable to start emitting chart-data. Although the chart controls the subscription to the observable, you can control the timing of that subscription through the `shouldSubscribe` property. Setting the property to `false` for the initial mount tells the chart not to subscribe when it mounts. Then, at some point in time later, when you want the chart to start consuming data, simply set the `shouldSubscribe` property to `true`. Once the chart has subscribed to the observable, changing the value of this property has no effect.
-
-##### onSubscription
-
-> (subscription: Subscription) => void
-
-You hand the `stream-charts` an [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable). This defines how (i.e. the pipeline) the data is generated. Only upon subscription does data flow through this pipeline. The rxjs `Observable.subscribe(...)` function returns a [Subscription](https://rxjs-dev.firebaseapp.com/api/index/class/Subscription) that can be used to stop the data.
-
-An example of an observable can be found in the [randomSpikeDataObservable(...)](./src/app/examples/randomData.ts) function.
-
-One reason to provide an `onSubscription` callback is so that you have a handle on the subscription so that you can stop the data. For example, you may want to provide the user of your application a button to stop the data. Or, you may wish to stop the simulation after a certain period of time.
-
-###### onUpdateData
-
-> (seriesName: string, t: number, y: number) => void
-
-When new data arrives from the observable, the `onUpdateData` callback provides a hook into the data. For example, you may want to stop the data if, for example, the value crosses some threshold.
-
-If you are only interested in the current time, you can use the `onUpdateTime` callback.
-
-##### onUpdateTime
-
-> (time: number) => void
-
-When the time associated with the data in the stream changes, this callback provides a hook into that time. In the [StreamingScatterChart](src/app/examples/StreamingScatterChart.tsx), for example, this callback is used to stop the random data after 1 second (1000 ms) by cancelling the subscription.
-
-```typescript jsx
-<ScatterChart
-    // .
-    // .
-    // .
-    onSubscribe={subscription => subscriptionRef.current = subscription}
-    onUpdateTime={(t: number) => {
-        if(t > 1000) subscriptionRef.current!.unsubscribe()
-    }}
-    // .
-    // .
-    // .
-/>
-```
-
-#### axisLabelFont
-
-The axis-label font style is used as a `Partial<{size: number, color: string, family: string, weight: number}>`. This means you only need to specify the values of the style that you wish to change.
-
-| Name | Type | Description | Example | Default Value |
-| ---- | ---- | ----------- | ------- | ------- |
-| size | number | The font size in pixels | `12` | 12 |
-| color | string | The font color expressed as a string | `'rgba(25,25,25,0.3)'` | `'#d2933f'` |
-| family | string | The font family | `'sans-serif'` | `'sans-serif'` |
-| weight | number | The weight of the font | `350` | `300` |
-
-#### tooltip
-
-The tooltip style is defined in the [TooltipStyle](src/app/charts/TooltipStyle.ts) interface. The `TooltipStyle` is used as a `Partial<TooltipStyle>`. This means that you only need to specify the values of the style that you wish to change.
-
-| Name | Type | Description | Example | Default Value |
-| ---- | ---- | ----------- | ------- | ------- |
-| visible | boolean | Whether on not the tooltip control is active and will show up on mouse-over. Generally this property will be controlled by the parent component in response to the selection of the control. See, for example, [`StreamingScatterChart`](src/app/examples/StreamingScatterChart.tsx). | `false` | `false` |
-| fontSize | number | Size of the font in pixels | `12` | `12` |
-| fontColor | string | Color of the font represented as a string | `'blue'` | `'#d2933f'` |
-| fontFamily | string | Family of the font | `'"Avenir Next" sans-serif'` | `'sans-serif'` |
-| fontWeight | number | Weight of the font represents its "thickness" | `300` | `250` |
-| backgroundColor | string | The background color of the tooltip | `'green`' | `'#202020'` |
-| backgroundOpacity | number | A number between 0 and 1 defining how opaque the background is. A value of 0 means that the background is completely transparent. A value of 1 means that the background is completely opaque. | `0.5` | `0.8` |
-| borderColor | string | Color of the tooltip's border. | `'#f8ebc6'` | `'#d2933f'` |
-| borderWidth | number | The width, in pixels, of the tooltip's border. | `3` | `1` |
-| borderRadius | number | The radius, in pixels, of the rectangles "corners". A value of 0 is a sharp corner. A value of 5 means that the corner is replaced by a circle of radius 5 px. | `3` | `5` |
-| paddingTop | number | The number of pixels between the top of the tooltip and the content. | `8` | `10` |
-| paddingRight | number | The number of pixels between the right side of the tooltip and the content. | `8` | `10` |
-| paddingLeft | number | The number of pixels between the left side of the tooltip and the content. | `8` | `10` |
-| paddingBottom | number | The number of pixels between the bottom of the tooltip and the content. | `8` | `10` |
-
-#### magnifier
-
-Two types of magnifiers are used in `stream-charts`: a radial magnifier and a bar magnifier. The radial magnifier is used in the scatter chart, and the bar magnifier is used in the raster chart.
-
-The radial magnifier style is defined in the [ScatterChart](src/app/charts/ScatterChart.tsx) component and is used as a `Partial<RadialMagnifierStyle>`, which means you only need to specify the values you wish to change.
-
-| Name | Type | Description | Example | Default Value |
-| ---- | ---- | ----------- | ------- | ------- |
-| visible | boolean | Defines whether the magnifier is visible when the mouse is in the plot area. Generally, this would be managed by a control in the parent component. | `true` | `false` |
-| radius | number | Radius, in pixels, of the magnifier lens displayed. | `125` | `100` |
-| magnification | number | A value between 1 and 10 that defines the amount of magnification. A value of 1 mean almost no magnification. Generally, this value should be controlled by the parent component. | `4` | `5` |
-| color | string | Lens axes and tick color. | `'purple'` | `'#d2933f'` |
-| lineWidth | number | Width, in pixels, of the axes and ticks. | `1` | `2` |
-
-The bar magnifier style is defined in the [RasterChart](src/app/charts/RasterChart.tsx) component and is used as a `Partial<LineMagnifierStyle>`, which means you only need to specify the values you wish to change.
-
-| Name | Type | Description | Example | Default Value |
-| ---- | ---- | ----------- | ------- | ------- |
-| visible | boolean | Defines whether the magnifier is visible when the mouse is in the plot area. Generally, this would be managed by a control in the parent component. | `true` | `false` |
-| width | number | Width, in pixels, of the bar-magnifier lens displayed. | `50` | `125` |
-| magnification | number | A value between 1 and 10 that defines the amount of magnification. A value of 1 mean almost no magnification. Generally, this value should be controlled by the parent component. | `4` | `5` |
-| color | string | Lens axes and tick color. | `'purple'` | `'#d2933f'` |
-| lineWidth | number | Width, in pixels, of the axes and ticks. | `1` | `2` |
-| axisOpacity | number | A number between 0 and 1 that defines how opaque the magnifier's axes are. A value of 0 means that the axes are completely transparent. A value of 1 means that the axes are completely opaque. | `0.5` | `0.35` |
-
-#### tracker
-
-The tracker displays a vertical line in the chart area at the current mouse position, and show the time represented by that mouse position. The styles for the tracker determine how that line looks.
-
-The tracker styles are defined in the [TrackerStyle](src/app/charts/TrackerStyle.ts) file and is used as a `Partial<TrackerStyle>`, which means that you only need to specify the values you would like to change.
-
-| Name | Type | Description | Example | Default Value |
-| ---- | ---- | ----------- | ------- | ------- |
-| visible | boolean | Defines whether the tracker is visible when the mouse is in the plot area. Generally, this would be managed by a control in the parent component. | `true` | `false` |
-| color | string | Color of the tracker line. | `'rgba(55,66,77,0.88)'` | `'#d2933f'` |
-| lineWidth | number | Width, in pixels, of the vertical tracker line. | `2` | `1` |
-
-Please note that the font style of the tracker text is controlled by the axis-label font styles described above.
+> **style ([TooltipStyle](./src/app/charts/tooltipUtils.ts), optional, default = [defaultTooltipStyle](./src/app/charts/tooltipUtils.ts))**<br>
+> Optional styles for the tooltip content. The styles are the same as those for the &lt;Tooltip/&gt;.
 
 ### time-series
 
