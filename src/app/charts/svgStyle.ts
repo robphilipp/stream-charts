@@ -1,6 +1,6 @@
 export interface SvgStyle {
-    // height: string;
-    width?: string;
+    height?: string | number;
+    width?: string | number;
     outline?: string;
 
     [propName: string]: any;
@@ -8,8 +8,8 @@ export interface SvgStyle {
 
 export const initialSvgStyle: SvgStyle = {
     width: '100%',
-    display: "inline-block",
-    position: "floating",
+    // display: "inline-block",
+    // position: "floating",
     top: 0,
     left: 0
 };

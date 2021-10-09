@@ -8,13 +8,17 @@ export interface Datum {
     readonly value: number;
 }
 
+export function datumOf(time: number, value: number): Datum {
+    return {time, value}
+}
+
 /**
  * A spike series holding an array of spike (time, value) datum, the name and supplemental information
  * needed by the `RasterChart`
  */
 export interface Series {
     readonly name: string;
-    data: Datum[];
+    data: Array<Datum>;
     readonly last: () => Option<Datum>;
     readonly length: () => number;
     readonly isEmpty: () => boolean;
@@ -22,9 +26,11 @@ export interface Series {
 
 /**
  * Creates a series from the name and the optional array of `Datum`.
- * @param {string} name The name of the series (i.e. neuron)
- * @param {Array<Datum>} data The array of (time, value) pairs, where the value is the spike value (in mV)
- * @return {Series} A `Series` for object that can be used by the `RasterChart`
+ * @param name The name of the series (i.e. neuron)
+ * @param data The array of (time, value) pairs, where the value is the spike value (in mV)
+ * @return A `Series` for object that can be used by the `RasterChart`
+ * @see seriesFromTuples
+ * @see emptySeries
  */
 export function seriesFrom(name: string, data: Array<Datum> = []): Series {
     return {
@@ -37,13 +43,34 @@ export function seriesFrom(name: string, data: Array<Datum> = []): Series {
 }
 
 /**
- * Returns an empty series with the specified name
- * @param {string} name The name of the series
- * @return {Series} The empty series
+ * Creates a series from the name and the optional array of (x, y) pairs (tuples)
+ * @param name The name of the series
+ * @param data The optional array of (x, y) pairs (tuples)
+ * @return A `Series` for object that can be used by the `RasterChart`
+ * @see seriesFrom
+ * @see emptySeries
  */
-export function emptySeries(name: string): Series {
-    return seriesFrom(name);
-}
+export const seriesFromTuples = (name: string, data: Array<[number, number]> = []): Series =>
+    seriesFrom(name, data.map(([t, y]) => datumOf(t, y)))
+
+/**
+ * Returns an empty series with the specified name
+ * @param name The name of the series
+ * @return The empty series
+ * @see seriesFrom
+ * @see seriesFromTuples
+ */
+export const emptySeries = (name: string): Series => seriesFrom(name);
+
+/**
+ * Creates an array of empty series, one for each specified name
+ * @param names The names for each of the empty series
+ * @return An array of empty series with the specified names
+ * @see emptySeries
+ * @see seriesFrom
+ * @see seriesFromTuples
+ */
+export const emptySeriesFor = (names: Array<string>): Array<Series> => names.map(name => seriesFrom(name))
 
 export interface PixelDatum extends Datum {
     x: number;
