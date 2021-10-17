@@ -245,7 +245,7 @@ function addTooltipContent(
     // set the header text location
     // const spikeHeight = plotDimensions.height / liveDataRef.current.size
     const xCoord = tooltipX(x, tooltipWidth, plotDimensions, tooltipStyle, margin)
-    const yCoord = categoryTooltipY(seriesName, textHeight, axis, tooltipStyle, margin, axis.categorySize)
+    const yCoord = categoryTooltipY(seriesName, textHeight, axis, tooltipStyle, margin, axis.categorySize, plotDimensions)
     const xTooltip = xCoord + tooltipStyle.paddingLeft
     const yTooltip = yCoord + tooltipStyle.paddingTop
     header

@@ -83,7 +83,7 @@ export function removeTooltip() {
 }
 
 /**
- * Calculates the x-coordinate of the lower left-hand side of the tooltip rectangle (obviously without
+ * Calculates the x-coordinate of the upper left-hand side of the tooltip rectangle (obviously without
  * "rounded corners"). Adjusts the x-coordinate so that tooltip is visible on the edges of the plot.
  * @param x The current x-coordinate of the mouse
  * @param textWidth The width of the tooltip text
@@ -93,16 +93,16 @@ export function removeTooltip() {
  * @return The x-coordinate of the lower left-hand side of the tooltip rectangle
  */
 export function tooltipX(x: number, textWidth: number, plotDimensions: Dimensions, tooltipStyle: TooltipStyle, margin: Margin): number {
-    if (x + textWidth + tooltipStyle.paddingLeft + 10 > plotDimensions.width + margin.left) {
+    if (x > plotDimensions.width + margin.left - (textWidth + tooltipStyle.paddingLeft + tooltipStyle.paddingRight)) {
         return x - textWidth - margin.right + tooltipStyle.paddingRight + tooltipStyle.paddingLeft
     }
     return x + tooltipStyle.paddingLeft
 }
 
 /**
- * Calculates the y-coordinate of the lower-left-hand corner of the tooltip rectangle. Adjusts the y-coordinate
+ * Calculates the y-coordinate of the upper-left-hand corner of the tooltip rectangle. Adjusts the y-coordinate
  * so that the tooltip is visible on the upper edge of the plot
- * @param y The y-coordinate of the series
+ * @param y The y-coordinate of the mouse
  * @param textHeight The height of the header and neuron ID text
  * @param plotDimensions The dimensions of the plot
  * @param tooltipStyle The tooltip style information
@@ -110,21 +110,22 @@ export function tooltipX(x: number, textWidth: number, plotDimensions: Dimension
  * @return The y-coordinate of the lower-left-hand corner of the tooltip rectangle
  */
 export function tooltipY(y: number, textHeight: number, plotDimensions: Dimensions, tooltipStyle: TooltipStyle, margin: Margin): number {
-    return Math.min(
-        y + margin.top - textHeight,
-        plotDimensions.height - margin.top + tooltipStyle.paddingTop + tooltipStyle.paddingBottom
-    )
+    if (y > plotDimensions.height + margin.top - (textHeight + tooltipStyle.paddingTop + tooltipStyle.paddingBottom)) {
+        return plotDimensions.height + margin.top - (textHeight + tooltipStyle.paddingTop + tooltipStyle.paddingBottom)
+    }
+    return y + tooltipStyle.paddingTop
 }
 
 /**
- * Calculates the y-coordinate of the lower-left-hand corner of the tooltip rectangle. Adjusts the y-coordinate
- * so that the tooltip is visible on the upper edge of the plot
+ * Calculates the y-coordinate for the upper-left-hand the tooltip rectangle. Adjusts the y-coordinate so
+ * that the tooltip is visible on the upper and lower edges of the plot
  * @param seriesName The name of the series
  * @param textHeight The height of the header and neuron ID text
  * @param axis The category axis for determining the y-value of the tooltip
  * @param tooltipStyle The tooltip style
  * @param margin The plot margin
  * @param categoryHeight The height (in pixels) of the category
+ * @param plotDimensions The dimensions of the plot
  * @return The y-coordinate of the lower-left-hand corner of the tooltip rectangle
  */
 export function categoryTooltipY(
@@ -133,10 +134,18 @@ export function categoryTooltipY(
     axis: CategoryAxis,
     tooltipStyle: TooltipStyle,
     margin: Margin,
-    categoryHeight: number
+    categoryHeight: number,
+    plotDimensions: Dimensions
 ): number {
-    const y = (axis.scale(seriesName) || 0) + margin.top - tooltipStyle.paddingBottom
-    return y > 0 ? y : y + tooltipStyle.paddingBottom + textHeight + tooltipStyle.paddingTop + categoryHeight
+    const y = axis.scale(seriesName) || 0
+    const halfHeight = (tooltipStyle.paddingBottom + textHeight + tooltipStyle.paddingTop) / 2
+    if (y < halfHeight) {
+        return margin.top
+    }
+    if (y > plotDimensions.height + margin.top - halfHeight) {
+        return plotDimensions.height + margin.top - textHeight
+    }
+    return y + margin.top - halfHeight + categoryHeight / 2
 }
 
 

@@ -1,5 +1,8 @@
 # change history
 
+## version 1.0.1 (tooltip clipping issue)
+Fixed issue where the tooltip was getting clipped at the top of the plot under certain circumstances.
+
 ## version 1.0.0 (composability, multi-axes, performance, spline, axes scales, cadence)
 1. A chart's configuration in no longer passed as properties of the component, but rather a `<Chart>` is composed by adding components such as axes, tracker, tooltip, and a plot.
 2. Charts can now have two x-axes and two y-axes.
