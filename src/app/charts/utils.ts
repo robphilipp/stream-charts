@@ -1,13 +1,14 @@
-import {Dimensions, Margin} from "./margins"
+import {Dimensions, Margin} from "./styling/margins"
 import * as d3 from "d3";
 import {Selection, ZoomTransform} from "d3";
-import {calculateZoomFor, ContinuousNumericAxis} from "./axes";
-import {ContinuousAxisRange} from "./continuousAxisRangeFor";
+import {calculateZoomFor, ContinuousNumericAxis} from "./axes/axes";
+import {ContinuousAxisRange} from "./axes/continuousAxisRangeFor";
 
 /**
  * No operation function for use when a default function is needed
  */
 export const noop = () => {
+    /* empty on purpose */
 }
 
 /**
@@ -28,8 +29,33 @@ export const mouseInPlotAreaFor =
  * @return The width in pixels, or 0 if SVG text element has not children
  */
 export const textWidthOf =
-    (elem: Selection<SVGTextElement, any, HTMLElement, any>) =>
+    (elem: Selection<SVGTextElement, any, any, any>): number =>
         elem.node()?.getBBox()?.width || 0
+
+export function textWidthFor(textElem: SVGTextElement): number {
+    return textElem.getBBox().width || 0
+}
+/**
+ * Calculates the height of an SVG text element, based on its bounding box
+ * @param elem The SVG text element
+ * @return The height in pixels, or 0 if SVG text element has not children
+ */
+export const textHeightOf =
+    (elem: Selection<SVGTextElement, any, any, any>): number =>
+        elem.node()?.getBBox()?.height || 0
+
+/**
+ * Calculates the width and height of the text element
+ * @param elem The SVG text element
+ * @return The width and height of the bounding box
+ */
+export function textDimensions(elem: Selection<SVGTextElement, any, any, any>): ({width: number, height: number}) {
+    const boundingBox = elem.node()?.getBBox()
+    return {
+        width: boundingBox?.width || 0,
+        height: boundingBox?.height || 0
+    }
+}
 
 /**
  * The object returned by the zoom
@@ -44,7 +70,6 @@ export interface Zoom {
  * at the location of the mouse when the scroll wheel or gesture was applied.
  * @param transform The d3 zoom transformation information
  * @param x The x-position of the mouse when the scroll wheel or gesture is used
- * @param plotDimensions The current dimensions of the plot
  * @param containerWidth The container width
  * @param margin The plot margins
  * @param xAxis The linear x-axis
@@ -54,14 +79,13 @@ export interface Zoom {
 export function handleZoom(
     transform: ZoomTransform,
     x: number,
-    plotDimensions: Dimensions,
     containerWidth: number,
     margin: Margin,
     xAxis: ContinuousNumericAxis,
     timeRange: ContinuousAxisRange,
 ): Zoom | undefined {
     if (x > 0 && x < containerWidth - margin.right) {
-        const {range, zoomFactor} = calculateZoomFor(transform, x, plotDimensions, xAxis, timeRange)
+        const {range, zoomFactor} = calculateZoomFor(transform, x, xAxis, timeRange)
         return {zoomFactor, timeRange: range}
     }
 }
@@ -70,8 +94,8 @@ export function formatNumber(value: number, format: string): string {
     return isNaN(value) ? '---' : d3.format(format)(value)
 }
 
-export function formatTime(value: number): string {
-    return formatNumber(value, " ,.0f")
+export function formatTime(value: number, units: string = ""): string {
+    return `${formatNumber(value, " ,.0f")}${!isNaN(value) && units ? ` ${units}` : ""}`
 }
 
 export function formatValue(value: number): string {
