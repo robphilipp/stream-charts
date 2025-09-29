@@ -46,6 +46,7 @@
     "data-frame-ts": "^1.0.3",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.4",
+    "jest-util": "^30.2.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "result-fn": "^0.2.1",
