@@ -1,15 +1,15 @@
 export {Chart} from './app/charts/Chart'
 
 export {
-    AxisElementSelection,
-    SvgSelection,
-    GSelection,
-    LineSelection,
-    TextSelection,
-    RadialMagnifierSelection,
-    BarMagnifierSelection,
-    MagnifierTextSelection,
-    TrackerSelection
+    type AxisElementSelection,
+    type SvgSelection,
+    type GSelection,
+    type LineSelection,
+    type TextSelection,
+    type RadialMagnifierSelection,
+    type BarMagnifierSelection,
+    type MagnifierTextSelection,
+    type TrackerSelection
 } from './app/charts/d3types'
 
 export {
@@ -18,7 +18,7 @@ export {
     textWidthOf, textHeightOf,
     textWidthFor,
     textDimensions,
-    Zoom,
+    type Zoom,
     handleZoom,
     formatNumber, formatTime, formatValue, formatChange, formatTimeChange, formatValueChange,
     minMaxOf, minMaxYFor
@@ -29,15 +29,15 @@ export {
 //
 
 export {
-    AxisTickStyle, defaultAxisTickStyle,
-    AxesFont, defaultAxesFont,
-    SeriesStyle,
-    SeriesLineStyle, defaultLineStyle,
-    BaseAxis, ContinuousNumericAxis, CategoryAxis,
+    type AxisTickStyle, defaultAxisTickStyle,
+    type AxesFont, defaultAxesFont,
+    type SeriesStyle,
+    type SeriesLineStyle, defaultLineStyle,
+    type BaseAxis, type ContinuousNumericAxis, type CategoryAxis,
     AxisLocation,
     addCategoryAxis,
     labelIdFor,
-    ZoomResult,
+    type ZoomResult,
     calculateZoomFor, calculateConstrainedZoomFor,
     axisZoomHandler, axesZoomHandler,
     calculatePanFor, panHandler, panHandler2D,
@@ -51,7 +51,7 @@ export {
 } from './app/charts/axes/ContinuousAxis'
 
 export {
-    ContinuousAxisRange, continuousAxisRangeFor
+    type ContinuousAxisRange, continuousAxisRangeFor
 } from './app/charts/axes/continuousAxisRangeFor'
 
 export {
@@ -71,7 +71,7 @@ export {
 //
 
 export {
-    AxesState, createAxesState,
+    type AxesState, createAxesState,
     addAxisTo,
     copyAxesState
 } from './app/charts/hooks/AxesState'
@@ -79,46 +79,46 @@ export {
 export * from './app/charts/hooks/useAxes'
 export {
     useAxes,
-    UseAxesValues, defaultAxesValues
+    type UseAxesValues, defaultAxesValues
 } from './app/charts/hooks/useAxes'
 
 export * from './app/charts/hooks/useChart'
 export {
     useChart,
-    NoTooltipMetadata,
-    UseChartValues, defaultUseChartValues
+    type NoTooltipMetadata,
+    type UseChartValues, defaultUseChartValues
 } from './app/charts/hooks/useChart'
 
 export * from './app/charts/hooks/useDataObservable'
 export {
     useDataObservable,
-    UseObservableValues, defaultObservableValues
+    type UseObservableValues, defaultObservableValues
 } from './app/charts/hooks/useDataObservable'
 
 export * from './app/charts/hooks/useInitialData'
 export {
     useInitialData,
-    UseInitialDataValues, defaultInitialDataValues,
+    type UseInitialDataValues, defaultInitialDataValues,
 } from './app/charts/hooks/useInitialData'
 
 export * from './app/charts/hooks/useMouse'
 export {
     useMouse,
-    UseMouseValues, defaultMouseValues,
+    type UseMouseValues, defaultMouseValues,
 } from './app/charts/hooks/useMouse'
 
 export {} from './app/charts/hooks/usePlotDimensions'
 export {
     usePlotDimensions,
-    UsePlotDimensionsValues, defaultPlotDimensions,
+    type UsePlotDimensionsValues, defaultPlotDimensions,
     defaultMargin
 } from './app/charts/hooks/usePlotDimensions'
 
 export {} from './app/charts/hooks/useTooltip'
 export {
     useTooltip,
-    UseTooltipValues, defaultTooltipValues,
-    TooltipData
+    type UseTooltipValues, defaultTooltipValues,
+    type TooltipData
 } from './app/charts/hooks/useTooltip'
 
 //
@@ -127,22 +127,22 @@ export {
 //
 
 export {
-    ChartData, defaultChartData,
+    type ChartData, defaultChartData,
     copyChartData
 } from './app/charts/observables/ChartData'
 
 export {
-    IterateChartData,
+    type IterateChartData,
     copyIterateDataFrom,
     iteratesObservable
 } from './app/charts/observables/iterates'
 
 export {
     ordinalsObservable,
-    OrdinalChartData,
-    OrdinalStats, defaultOrdinalStats,
-    OrdinalValueStats, defaultOrdinalValueStats,
-    OrdinalDatumExtremum,
+    type OrdinalChartData,
+    type OrdinalStats, defaultOrdinalStats,
+    type OrdinalValueStats, defaultOrdinalValueStats,
+    type OrdinalDatumExtremum,
     initialMinValueDatum, initialMaxValueDatum,
     initialMinTimeDatum, initialMaxTimeDatum,
     valueStatusDatumOfDefault,
@@ -156,10 +156,10 @@ export {
 //
 
 export {
-    Series,
+    type Series,
     createPlotContainer,
     setClipPath,
-    AxesAssignment,
+    type AxesAssignment,
     assignAxes
 } from './app/charts/plots/plot'
 
@@ -184,36 +184,36 @@ export {
 // series
 //
 export {
-    BaseSeries,
+    type BaseSeries,
     seriesFrom,
     emptySeries,
     emptySeriesFor
 } from './app/charts/series/baseSeries'
 
 export {
-    IterateDatum, emptyIterateDatum, iterateDatumOf, nonEmptyIterateDatum,
+    type IterateDatum, emptyIterateDatum, iterateDatumOf, nonEmptyIterateDatum,
     type IterateSeries,
     iterateSeriesFromTuples,
 } from './app/charts/series/iterateSeries'
 
 export {
-    OrdinalDatum, emptyOrdinalDatum, copyOrdinalDatum, ordinalDatumOf, nonEmptyOrdinalDatum,
+    type OrdinalDatum, emptyOrdinalDatum, copyOrdinalDatum, ordinalDatumOf, nonEmptyOrdinalDatum,
     type OrdinalSeries,
     ordinateSeriesFromTuples,
     initialOrdinalChartData,
 } from './app/charts/series/ordinalSeries'
 
 export {
-    Datum,
+    type Datum,
     datumOf,
     emptyDatum,
     type TimeSeries,
     timeSeriesFromTuples,
-    PixelDatum
+    type PixelDatum
 } from './app/charts/series/timeSeries'
 
 export {
-    TimeSeriesChartData,
+    type TimeSeriesChartData,
     emptyTimeSeriesChartData,
     initialTimeSeriesChartData,
 } from './app/charts/series/timeSeriesChartData'
@@ -223,26 +223,26 @@ export {
 //
 
 export {
-    BarSeriesStyle, BarStyle, LineStyle,
+    type BarSeriesStyle, type BarStyle, type LineStyle,
     defaultBarSeriesStyle,
     defaultMinMaxBarStyle, defaultWindowedMinMaxBarStyle, defaultWindowedMeanValueLineStyle,
     defaultValueLineStyle, defaultMeanValueLineStyle
 } from './app/charts/styling/barPlotStyle'
 
 export {
-    Margin,
+    type Margin,
     noMargins,
-    Dimensions,
+    type Dimensions,
     plotDimensionsFrom, containerDimensionsFrom
 } from './app/charts/styling/margins'
 
 export {
-    SvgStyle, initialSvgStyle,
+    type SvgStyle, initialSvgStyle,
     grabWidth, grabHeight,
-    SvgStrokeStyle,
+    type SvgStrokeStyle,
     STROKE_COLOR, STROKE_WIDTH, STROKE_OPACITY,
     updateSvgStrokeColor, updateSvgStrokeWidth, updateSvgStrokeOpacity, applyStrokeStylesTo,
-    SvgFillStyle,
+    type SvgFillStyle,
     updateSvgFillColor, updateSvgFillOpacity, applyFillStylesTo
 
 } from './app/charts/styling/svgStyle'
@@ -255,7 +255,7 @@ export {
     TimeWindowBehavior,
     subscriptionTimeSeriesFor, subscriptionTimeSeriesWithCadenceFor,
     subscriptionIteratesFor,
-    WindowedOrdinalStats, defaultWindowedOrdinalStats,
+    type WindowedOrdinalStats, defaultWindowedOrdinalStats,
     subscriptionOrdinalXFor
 } from './app/charts/subscriptions/subscriptions'
 
@@ -284,8 +284,8 @@ export {
 } from './app/charts/tooltips/Tooltip'
 
 export {
-    TooltipStyle, defaultTooltipStyle,
-    TooltipDimensions,
+    type TooltipStyle, defaultTooltipStyle,
+    type TooltipDimensions,
     removeTooltip,
     tooltipX, tooltipY,
     categoryTooltipY,
@@ -298,15 +298,15 @@ export {
 //
 
 export {
-    TrackerAxisInfo,
-    TrackerAxisUpdate,
+    type TrackerAxisInfo,
+    type TrackerAxisUpdate,
     TrackerLabelLocation,
     Tracker,
 } from './app/charts/trackers/Tracker'
 
 export {
-    TrackerLabelFont, defaultTrackerLabelFont,
-    TrackerStyle, defaultTrackerStyle,
+    type TrackerLabelFont, defaultTrackerLabelFont,
+    type TrackerStyle, defaultTrackerStyle,
     trackerControlInstance,
     removeTrackerControl,
 } from './app/charts/trackers/trackerUtils'
