@@ -1,8 +1,32 @@
+export {Chart} from './app/charts/Chart'
+
+export {
+    AxisElementSelection,
+    SvgSelection,
+    GSelection,
+    LineSelection,
+    TextSelection,
+    RadialMagnifierSelection,
+    BarMagnifierSelection,
+    MagnifierTextSelection,
+    TrackerSelection
+} from './app/charts/d3types'
+
+export {
+    noop,
+    mouseInPlotAreaFor,
+    textWidthOf, textHeightOf,
+    textWidthFor,
+    textDimensions,
+    Zoom,
+    handleZoom,
+    formatNumber, formatTime, formatValue, formatChange, formatTimeChange, formatValueChange,
+    minMaxOf, minMaxYFor
+} from './app/charts/utils'
+
 //
 // axes
 //
-
-import {from} from "rxjs";
 
 export {
     AxisTickStyle, defaultAxisTickStyle,
@@ -252,58 +276,37 @@ export {
 } from './app/charts/tooltips/RasterPlotTooltipContent'
 
 export {
-
-} from './app/charts/tooltips'
+    ScatterPlotTooltipContent
+} from './app/charts/tooltips/ScatterPlotTooltipContent'
 
 export {
+    Tooltip
+} from './app/charts/tooltips/Tooltip'
 
-} from './app/charts/tooltips'
+export {
+    TooltipStyle, defaultTooltipStyle,
+    TooltipDimensions,
+    removeTooltip,
+    tooltipX, tooltipY,
+    categoryTooltipY,
+    boundingPoints,
+    findPointAndNeighbors
+} from './app/charts/tooltips/tooltipUtils'
 
-// export {
-//     seriesFrom,
-//     emptySeries,
-//     BaseSeries,
-//     emptySeriesFor,
-// } from './app/charts/series/baseSeries'
-// export {
-//     TimeSeries,
-//     datumOf, Datum, emptyDatum
-// } from './app/charts/series/timeSeries'
-// export {emptyChartData, ChartData, initialChartData} from './app/charts/chartData'
-// export {regexFilter} from './app/charts/regexFilter'
 //
-// export {Chart} from './app/charts/Chart'
-// export {RasterPlot} from "./app/charts/RasterPlot";
-// export {ScatterPlot} from "./app/charts/ScatterPlot";
+// trackers
 //
-// export {defaultMargin, useChart} from "./app/charts/hooks/useChart";
-//
-// export {
-//     AxisLocation,
-//     defaultLineStyle,
-//     Axes,
-//     SeriesLineStyle,
-//     ZoomResult,
-//     AxesLabelFont
-// } from "./app/charts/axes";
-// export {ContinuousAxis, addContinuousNumericXAxis, addContinuousNumericYAxis} from "./app/charts/ContinuousAxis";
-// export {CategoryAxis} from "./app/charts/CategoryAxis";
-// export {assignAxes, createPlotContainer, setClipPath, AxesAssignment, Range, TimeSeries} from "./app/charts/plot";
-//
-// export {Tracker, TrackerLabelLocation, TrackerAxisUpdate, TrackerAxisInfo} from "./app/charts/Tracker";
-//
-// export {Tooltip} from "./app/charts/Tooltip";
-// export {RasterPlotTooltipContent} from "./app/charts/RasterPlotTooltipContent";
-// export {ScatterPlotTooltipContent} from "./app/charts/ScatterPlotTooltipContent";
-//
-// export {
-//     formatNumber,
-//     formatTime,
-//     formatValue,
-//     formatChange,
-//     noop,
-//     formatValueChange,
-//     formatTimeChange,
-//     minMaxOf,
-//     minMaxYFor
-// } from "./app/charts/utils";
+
+export {
+    TrackerAxisInfo,
+    TrackerAxisUpdate,
+    TrackerLabelLocation,
+    Tracker,
+} from './app/charts/trackers/Tracker'
+
+export {
+    TrackerLabelFont, defaultTrackerLabelFont,
+    TrackerStyle, defaultTrackerStyle,
+    trackerControlInstance,
+    removeTrackerControl,
+} from './app/charts/trackers/trackerUtils'
