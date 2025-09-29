@@ -169,14 +169,14 @@ export {
 export {
     IterateDatum, emptyIterateDatum, iterateDatumOf, nonEmptyIterateDatum,
     type IterateSeries,
-    seriesFromTuples as iterateSeriesFromTuples,
+    iterateSeriesFromTuples,
 } from './app/charts/series/iterateSeries'
 
 export {
     OrdinalDatum, emptyOrdinalDatum, copyOrdinalDatum, ordinalDatumOf, nonEmptyOrdinalDatum,
     type OrdinalSeries,
-    seriesFromTuples,
-    initialChartData as ordinalSeriesFromTuples,
+    ordinateSeriesFromTuples,
+    initialOrdinalChartData,
 } from './app/charts/series/ordinalSeries'
 
 export {
@@ -184,15 +184,80 @@ export {
     datumOf,
     emptyDatum,
     type TimeSeries,
-    seriesFromTuples as timeSeriesFromTuples,
+    timeSeriesFromTuples,
     PixelDatum
 } from './app/charts/series/timeSeries'
 
 export {
     TimeSeriesChartData,
     emptyTimeSeriesChartData,
-    initialChartData,
+    initialTimeSeriesChartData,
 } from './app/charts/series/timeSeriesChartData'
+
+//
+// styling
+//
+
+export {
+    BarSeriesStyle, BarStyle, LineStyle,
+    defaultBarSeriesStyle,
+    defaultMinMaxBarStyle, defaultWindowedMinMaxBarStyle, defaultWindowedMeanValueLineStyle,
+    defaultValueLineStyle, defaultMeanValueLineStyle
+} from './app/charts/styling/barPlotStyle'
+
+export {
+    Margin,
+    noMargins,
+    Dimensions,
+    plotDimensionsFrom, containerDimensionsFrom
+} from './app/charts/styling/margins'
+
+export {
+    SvgStyle, initialSvgStyle,
+    grabWidth, grabHeight,
+    SvgStrokeStyle,
+    STROKE_COLOR, STROKE_WIDTH, STROKE_OPACITY,
+    updateSvgStrokeColor, updateSvgStrokeWidth, updateSvgStrokeOpacity, applyStrokeStylesTo,
+    SvgFillStyle,
+    updateSvgFillColor, updateSvgFillOpacity, applyFillStylesTo
+
+} from './app/charts/styling/svgStyle'
+
+//
+// subscriptions
+//
+
+export {
+    TimeWindowBehavior,
+    subscriptionTimeSeriesFor, subscriptionTimeSeriesWithCadenceFor,
+    subscriptionIteratesFor,
+    WindowedOrdinalStats, defaultWindowedOrdinalStats,
+    subscriptionOrdinalXFor
+} from './app/charts/subscriptions/subscriptions'
+
+//
+// tooltips
+//
+
+export {
+    BarPlotTooltipContent
+} from './app/charts/tooltips/BarPlotTooltipContent'
+
+export {
+    PoincarePlotTooltipContent
+} from './app/charts/tooltips/PoincarePlotTooltipContent'
+
+export {
+    RasterPlotTooltipContent
+} from './app/charts/tooltips/RasterPlotTooltipContent'
+
+export {
+
+} from './app/charts/tooltips'
+
+export {
+
+} from './app/charts/tooltips'
 
 // export {
 //     seriesFrom,

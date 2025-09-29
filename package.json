@@ -35,6 +35,8 @@
     "rxjs": "^7.8.2",
     "jest": "^30.0.5",
     "result-fn": "^0.2.1",
+    "data-frame-ts": "^1.0.3",
+    "svg-table": "^0.1.2",
     "@types/d3": "^7.4.3",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.5.2",
@@ -45,11 +47,6 @@
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
-    "@types/d3": "^7.4.3",
-    "@types/jest": "^30.0.0",
-    "@types/node": "^24.2.1",
-    "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7",
     "typescript": "^4.9.5"
   },
   "files": [
