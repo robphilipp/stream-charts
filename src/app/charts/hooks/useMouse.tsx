@@ -31,8 +31,8 @@ export type UseMouseValues<D, TM> = {
      * @param handlerId The ID of the handler
      * @return The mouse-over-series handler for the ID, or `undefined` if not found
      */
-    mouseOverHandlerFor: (handlerId: string) =>
-        ((seriesName: string, time: number, tooltipData: TooltipData<D, TM>, mouseCoords: [x: number, y: number]) => void) | undefined
+    mouseOverHandlerFor: (handlerId: string, providerId?: string) =>
+        ((seriesName: string, time: number, tooltipData: TooltipData<D, TM>, mouseCoords: [x: number, y: number], providerId?: string) => void) | undefined
     /**
      * Adds a mouse-leave-series handler with the specified ID and handler function
      * @param handlerId The handler ID
@@ -50,7 +50,7 @@ export type UseMouseValues<D, TM> = {
      * @param handlerId The ID of the handler
      * @return The mouse-leave-series handler for the ID, or `undefined` if not found
      */
-    mouseLeaveHandlerFor: (handlerId: string) => ((seriesName: string) => void) | undefined
+    mouseLeaveHandlerFor: (handlerId: string, providerId?: string) => ((seriesName: string, providerId?: string) => void) | undefined
 }
 
 export const defaultMouseValues = (): UseMouseValues<any, any> => ({
@@ -71,8 +71,8 @@ type Props = {
 export default function MouseProvider<D, TM>(props: Props): JSX.Element {
     const {children} = props
 
-    const mouseOverHandlersRef = useRef<Map<string, (seriesName: string, time: number, tooltipData: TooltipData<D, TM>, mouseCoords: [x: number, y: number]) => void>>(new Map())
-    const mouseLeaveHandlersRef = useRef<Map<string, (seriesName: string) => void>>(new Map())
+    const mouseOverHandlersRef = useRef<Map<string, (seriesName: string, time: number, tooltipData: TooltipData<D, TM>, mouseCoords: [x: number, y: number], providerId?: string) => void>>(new Map())
+    const mouseLeaveHandlersRef = useRef<Map<string, (seriesName: string, providerId?: string) => void>>(new Map())
 
     return <MouseContext.Provider
         value={{
@@ -81,14 +81,30 @@ export default function MouseProvider<D, TM>(props: Props): JSX.Element {
                 return handlerId
             },
             unregisterMouseOverHandler: handlerId => mouseOverHandlersRef.current.delete(handlerId),
-            mouseOverHandlerFor: handlerId => mouseOverHandlersRef.current.get(handlerId),
+            mouseOverHandlerFor: (handlerId, providerId) => {
+                const handlerHoc = mouseOverHandlersRef.current.get(handlerId)
+                if (handlerHoc !== undefined) {
+                    return (seriesName: string, time: number, tooltipData: TooltipData<D, TM>, mouseCoords: [x: number, y: number])=> {
+                        handlerHoc(seriesName, time, tooltipData, mouseCoords, providerId)
+                    }
+                }
+                return undefined
+            },
 
             registerMouseLeaveHandler: (handlerId, handler) => {
                 mouseLeaveHandlersRef.current.set(handlerId, handler)
                 return handlerId
             },
             unregisterMouseLeaveHandler: handlerId => mouseLeaveHandlersRef.current.delete(handlerId),
-            mouseLeaveHandlerFor: handlerId => mouseLeaveHandlersRef.current.get(handlerId),
+            mouseLeaveHandlerFor: (handlerId, providerId) => {
+                const handlerHoc = mouseLeaveHandlersRef.current.get(handlerId)
+                if (handlerHoc !== undefined) {
+                    return (seriesName: string)=> {
+                        handlerHoc(seriesName, providerId)
+                    }
+                }
+                return undefined
+            },
         }}
     >
         {children}

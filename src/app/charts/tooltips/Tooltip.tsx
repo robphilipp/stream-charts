@@ -4,6 +4,7 @@ import * as d3 from "d3";
 import {useChart} from "../hooks/useChart";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import {SeriesStyle} from "../axes/axes";
+import {TooltipData} from "../hooks/useTooltip";
 
 export interface Props {
     visible: boolean
@@ -89,7 +90,14 @@ export function Tooltip<D, S extends SeriesStyle, TM>(props: Props): JSX.Element
                     // example, a mouse-over a time-series in the plot).
                     registerMouseOverHandler(
                         handlerId,
-                        ((seriesName, time, tooltipData, mouseCoords) => {
+                        (
+                            (
+                                seriesName: string,
+                                time: number,
+                                tooltipData: TooltipData<D, TM>,
+                                mouseCoords: [x: number, y: number],
+                                providerId?: string
+                            ) => {
                                 // create the rounded rectangle for the tooltip's background
                                 const rect = d3.select<SVGSVGElement | null, any>(container)
                                     .append<SVGRectElement>('rect')
@@ -102,7 +110,12 @@ export function Tooltip<D, S extends SeriesStyle, TM>(props: Props): JSX.Element
                                     .attr('stroke-width', tooltipStyle.borderWidth)
 
                                 // call the callback to add the content
-                                const {x, y, contentWidth, contentHeight} = contentProvider(seriesName, time, tooltipData, mouseCoords)
+                                const {
+                                    x,
+                                    y,
+                                    contentWidth,
+                                    contentHeight
+                                } = contentProvider(seriesName, time, tooltipData, mouseCoords, providerId)
 
                                 // set the position, width, and height of the tooltip rect based on the text height and width and the padding
                                 rect.attr('x', () => x)

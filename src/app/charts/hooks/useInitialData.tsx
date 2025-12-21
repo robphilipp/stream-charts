@@ -6,7 +6,7 @@ import {ChartData} from "../observables/ChartData";
 /**
  * The values exposed through the {@link useInitialData} react hook
  */
-export type UseInitialDataValues<CD extends ChartData, D> = {
+type UseInitialDataValues<CD extends ChartData, D> = {
     /**
      * An array of series representing the initial data for the chart (i.e. static data
      * before streaming starts) where D is a datum, whose type must be the same as that
@@ -22,7 +22,7 @@ export type UseInitialDataValues<CD extends ChartData, D> = {
     asChartData?: (seriesList: Array<BaseSeries<D>>) => CD
 }
 
-export const defaultInitialDataValues: UseInitialDataValues<any, any> = {
+const defaultInitialDataValues: UseInitialDataValues<any, any> = {
     initialData: new Array<BaseSeries<any>>()
 }
 

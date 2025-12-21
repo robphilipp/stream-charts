@@ -106,7 +106,7 @@ export function defaultWindowedMeanValueLineStyle(color: string = "#008aad"): Li
             width: 1
         },
         highlight: {
-            color,
+            color: 'red',
             opacity: 1,
             width: 3
         }

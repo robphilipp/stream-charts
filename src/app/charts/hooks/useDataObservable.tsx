@@ -18,7 +18,7 @@ const noop = () => {
 /**
  * The values exposed through the {@link useDataObservable} react hook
  */
-export interface UseObservableValues<CD extends ChartData, D> {
+interface UseObservableValues<CD extends ChartData, D> {
     /**
      * An observable source for chart data
      */
@@ -60,7 +60,7 @@ export interface UseObservableValues<CD extends ChartData, D> {
     onUpdateChartTime?: (time: number) => void
 }
 
-export const defaultObservableValues: UseObservableValues<any, any> = {
+const defaultObservableValues: UseObservableValues<any, any> = {
     windowingTime: NaN,
     shouldSubscribe: false,
 

@@ -17,7 +17,7 @@ export type NoTooltipMetadata = {}
  * @template S The type of the series style
  * @template TM The type of the tooltip's metadata (data about the series data)
  */
-export interface UseChartValues<D, S extends SeriesStyle, TM> {
+interface UseChartValues<D, S extends SeriesStyle, TM> {
     /**
      * Unique ID for the chart
      */
@@ -67,7 +67,7 @@ export interface UseChartValues<D, S extends SeriesStyle, TM> {
     tooltip: UseTooltipValues<D, TM>
 }
 
-export const defaultUseChartValues: UseChartValues<any, any, any> = {
+const defaultUseChartValues: UseChartValues<any, any, any> = {
     chartId: NaN,
     container: null,
     mainG: null,
