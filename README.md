@@ -106,55 +106,92 @@ import {RasterChart} from "stream-charts";
 // .
 // .
 <Chart
+    chartId={chartId.current}
     width={useGridCellWidth()}
     height={useGridCellHeight()}
-    margin={{...defaultMargin, top: 60, right: 60}}
+    margin={{...defaultMargin, top: 40, right: 75, left: 70, bottom: 40}}
+    // svgStyle={{'background-color': 'pink'}}
     color={theme.color}
     backgroundColor={theme.backgroundColor}
     seriesStyles={new Map([
-        ['test1', {...defaultLineStyle, color: 'orange', lineWidth: 1, highlightColor: 'orange'}],
-        ['test2', {...defaultLineStyle, 
-            color: theme.name === 'light' ? 'blue' : 'gray', 
-            lineWidth: 3, 
-            highlightColor: theme.name === 'light' ? 'blue' : 'gray', 
-            highlightWidth: 5}
-        ],
+        ['neuron1', {
+            ...defaultLineStyle(),
+            color: 'orange',
+            lineWidth: 2,
+            highlightColor: 'orange'
+        }],
+        ['neuron2', {
+            ...defaultLineStyle(),
+            color: 'orange',
+            lineWidth: 2,
+            highlightColor: 'orange'
+        }],
+        ['neuron3', {
+            ...defaultLineStyle(),
+            color: 'orange',
+            lineWidth: 2,
+            highlightColor: 'orange'
+        }],
+        ['neuron4', {
+            ...defaultLineStyle(),
+            color: 'orange',
+            lineWidth: 2,
+            highlightColor: 'orange'
+        }],
+        ['neuron5', {
+            ...defaultLineStyle(),
+            color: 'orange',
+            lineWidth: 2,
+            highlightColor: 'orange'
+        }],
+        ['neuron6', {
+            ...defaultLineStyle(),
+            color: theme.name === 'light' ? 'blue' : 'gray',
+            lineWidth: 3,
+            highlightColor: theme.name === 'light' ? 'blue' : 'gray',
+            highlightWidth: 5
+        }],
+        // ['test3', {...defaultLineStyle, color: 'dodgerblue', lineWidth: 1, highlightColor: 'dodgerblue', highlightWidth: 3}],
     ])}
     initialData={initialDataRef.current}
     seriesFilter={filter}
     seriesObservable={observableRef.current}
     shouldSubscribe={running}
-    windowingTime={35}
+    onUpdateAxesBounds={handleChartTimeUpdate}
+    windowingTime={25}
+    // onSubscribe={subscription => console.log("subscribed raster")}
 >
     <ContinuousAxis
         axisId="x-axis-1"
         location={AxisLocation.Bottom}
         domain={[0, 5000]}
-        label="x-axis"
+        label="t (ms)"
         // font={{color: theme.color}}
     />
     <ContinuousAxis
         axisId="x-axis-2"
         location={AxisLocation.Top}
-        domain={[0, 10000]}
-        label="x-axis"
+        domain={[0, 5000]}
+        label="t (ms)"
         // font={{color: theme.color}}
     />
     <OrdinalAxis
         axisId="y-axis-1"
         location={AxisLocation.Left}
         categories={initialDataRef.current.map(series => series.name)}
-        label="y-axis"
+        label="neuron"
+        axisTickStyle={{rotation: 25}}
     />
     <OrdinalAxis
         axisId="y-axis-2"
         location={AxisLocation.Right}
         categories={initialDataRef.current.map(series => series.name)}
-        label="y-axis"
+        label="neuron"
     />
     <Tracker
         visible={visibility.tracker}
-        labelLocation={TrackerLabelLocation.WithMouse}
+        labelLocation={TrackerLabelLocation.ByAxis}
+        labelFormatter={x => `${d3.format(",.0f")(x)} ms`}
         style={{color: theme.color}}
         font={{color: theme.color}}
         // onTrackerUpdate={update => console.dir(update)}
@@ -176,14 +213,20 @@ import {RasterChart} from "stream-charts";
     <RasterPlot
         axisAssignments={new Map([
             // ['test', assignAxes("x-axis-1", "y-axis-1")],
-            ['test1', assignAxes("x-axis-2", "y-axis-2")],
+            ['neuron1', assignAxes("x-axis-2", "y-axis-2")],
+            ['neuron2', assignAxes("x-axis-2", "y-axis-2")],
+            ['neuron3', assignAxes("x-axis-2", "y-axis-2")],
+            ['neuron4', assignAxes("x-axis-2", "y-axis-2")],
+            ['neuron5', assignAxes("x-axis-2", "y-axis-2")],
+            ['neuron6', assignAxes("x-axis-2", "y-axis-2")],
             // ['test3', assignAxes("x-axis-1", "y-axis-1")],
         ])}
-        dropDataAfter={10000}
+        spikeMargin={1}
+        dropDataAfter={5000}
         panEnabled={true}
         zoomEnabled={true}
         zoomKeyModifiersRequired={true}
-        withCadenceOf={30}
+        withCadenceOf={50}
     />
 </Chart>
 ```
@@ -201,30 +244,46 @@ import {ScatterChart} from "stream-charts";
 // .
 // .
 <Chart
+    chartId={chartId.current}
     width={useGridCellWidth()}
     height={useGridCellHeight()}
-    margin={{...defaultMargin, top: 60, right: 60}}
+    margin={{...defaultMargin, top: 40, bottom: 40, right: 60}}
+    // svgStyle={{'background-color': 'pink'}}
     color={theme.color}
     backgroundColor={theme.backgroundColor}
     seriesStyles={new Map([
-        ['test1', {...defaultLineStyle, color: 'orange', lineWidth: 1, highlightColor: 'orange'}],
-        ['test2', {...defaultLineStyle, 
-            color: theme.name === 'light' ? 'blue' : 'gray', 
-            lineWidth: 3, 
-            highlightColor: theme.name === 'light' ? 'blue' : 'gray', 
-            highlightWidth: 5}
-        ],
+        ['test1', {
+            ...defaultLineStyle(),
+            color: 'orange',
+            lineWidth: 1,
+            highlightColor: 'orange'
+        }],
+        ['test2', {
+            ...defaultLineStyle(),
+            color: theme.name === 'light' ? 'blue' : 'gray',
+            lineWidth: 3,
+            highlightColor: theme.name === 'light' ? 'blue' : 'gray',
+            highlightWidth: 5
+        }],
+        ['test3', {
+            ...defaultLineStyle(),
+            color: theme.name === 'light' ? 'dodgerblue' : 'gray',
+            lineWidth: 3,
+            highlightColor: theme.name === 'light' ? 'dodgerblue' : 'gray',
+            highlightWidth: 5
+        }],
     ])}
     initialData={initialDataRef.current}
     seriesFilter={filter}
     seriesObservable={observableRef.current}
     shouldSubscribe={running}
+    onUpdateAxesBounds={handleChartTimeUpdate}
     windowingTime={25}
 >
     <ContinuousAxis
         axisId="x-axis-1"
         location={AxisLocation.Bottom}
-        domain={[10, 5000]}
+        domain={[10, 10000]}
         label="x-axis"
     />
     <ContinuousAxis
@@ -236,7 +295,7 @@ import {ScatterChart} from "stream-charts";
     <ContinuousAxis
         axisId="x-axis-2"
         location={AxisLocation.Top}
-        domain={[100, 2500]}
+        domain={[100, 5000]}
         label="x-axis (2)"
     />
     <ContinuousAxis
@@ -248,7 +307,8 @@ import {ScatterChart} from "stream-charts";
     />
     <Tracker
         visible={visibility.tracker}
-        labelLocation={TrackerLabelLocation.WithMouse}
+        labelLocation={TrackerLabelLocation.ByAxis}
+        labelFormatter={x => `${d3.format(",.0f")(x)} ms`}
         style={{color: theme.color}}
         font={{color: theme.color}}
         // onTrackerUpdate={update => console.dir(update)}
@@ -266,21 +326,25 @@ import {ScatterChart} from "stream-charts";
             xLabel="t (ms)"
             yLabel="count"
             yValueFormatter={value => formatNumber(value, " ,.0f")}
-            yChangeFormatter={value => formatNumber(value, " ,.0f")}
+            yChangeFormatter={(y1, y2) => formatNumber(y2 - y1, " ,.0f")}
         />
     </Tooltip>
     <ScatterPlot
         interpolation={interpolation}
         axisAssignments={new Map([
+            // ['test1', assignAxes("x-axis-1", "y-axis-1")],
             ['test2', assignAxes("x-axis-2", "y-axis-2")],
+            ['test3', assignAxes("x-axis-2", "y-axis-1")],
         ])}
-        dropDataAfter={10000}
+        dropDataAfter={20000}
         panEnabled={true}
         zoomEnabled={true}
         zoomKeyModifiersRequired={true}
-        withCadenceOf={30}
+        // withCadenceOf={30}
+        // timeWindowBehavior={TimeWindowBehavior.SQUEEZE}
     />
 </Chart>
+
 ```
 
 ### [&#10514;](#content) <span id="example-bar-chart-code">example bar chart</span>
@@ -290,32 +354,116 @@ Example bar chart showing windowed statistics.
 ![bar-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/bar-chart-with-tooltip.png?raw=true)
 
 ```typescript jsx
-<Chart
-    width={width}
-    height={height}
-    initialData={initialData}
-    seriesObservable={observable}
+
+<Chart<OrdinalChartData, OrdinalDatum, BarSeriesStyle, WindowedOrdinalStats>
+    chartId={chartId.current}
+    width={useGridCellWidth()}
+    height={useGridCellHeight()}
+    margin={{...defaultMargin, top: 60, bottom: 80, right: 75, left: 70}}
+    // svgStyle={{'background-color': 'pink'}}
+    color={theme.color}
+    backgroundColor={theme.backgroundColor}
+    seriesStyles={new Map<string, BarSeriesStyle>([
+        ['neuron1', {
+            ...defaultBarSeriesStyle('orange'),
+            lineWidth: 2,
+            minMaxBar: {
+                ...defaultBarSeriesStyle('orange').minMaxBar,
+                stroke: {
+                    ...defaultBarSeriesStyle('orange').minMaxBar.stroke,
+                    width: 0
+                }
+            }
+        } as BarSeriesStyle],
+        ['neuron14', {
+            ...defaultBarSeriesStyle(theme.name === 'light' ? 'blue' : 'gray'),
+            lineWidth: 3,
+            highlightWidth: 5,
+            minMaxBar: {
+                ...defaultBarSeriesStyle(theme.name === 'light' ? 'blue' : 'gray').minMaxBar,
+                widthFraction: 1
+            }
+
+        } as BarSeriesStyle],
+        ['neuron31', {
+            ...defaultBarSeriesStyle('green'),
+            lineWidth: 2,
+        } as BarSeriesStyle],
+    ])}
+    initialData={initialDataRef.current}
+    seriesObservable={observableRef.current}
+    seriesFilter={filter}
+    shouldSubscribe={running}
+    onUpdateChartTime={handleChartTimeUpdate}
+    onUpdateAxesBounds={handleChartRangeUpdate}
+    windowingTime={25}
 >
-    <ContinuousAxis
-        axisId="x-axis"
+    <OrdinalAxis
+        axisId="x-axis-1"
         location={AxisLocation.Bottom}
-        domain={[0, 5000]}
-        label="Time (ms)"
+        categories={initialDataRef.current.map(series => series.name)}
+        label="neuron"
+        axisTickStyle={{rotation: 90}}
     />
     <OrdinalAxis
-        axisId="y-axis"
+        axisId="x-axis-2"
+        location={AxisLocation.Top}
+        categories={initialDataRef.current.map(series => series.name)}
+        label="neuron"
+        axisTickStyle={{rotation: 40}}
+    />
+    <ContinuousAxis
+        axisId="y-axis-1"
         location={AxisLocation.Left}
-        categories={['series1', 'series2']}
-        label="Series"
+        domain={[-1.1, 1.1]}
+        label="ρ (mV)"
     />
-    <BarPlot
-        showMinMaxBars={true}
-        showMeanValueLines={true}
-        showValueLines={true}
+    <ContinuousAxis
+        axisId="y-axis-2"
+        location={AxisLocation.Right}
+        domain={[-1.1, 1.1]}
+        label="ρ (mV)"
     />
-    <Tooltip visible={true}>
-        <BarPlotTooltipContent ordinalUnits="ms" />
+    <Tracker
+        visible={visibility.tracker}
+        trackerAxis={AxisLocation.Left}
+        labelLocation={TrackerLabelLocation.ByAxis}
+        labelFormatter={x => `${d3.format(".2f")(x)} mV`}
+        style={{color: theme.color}}
+        font={{color: theme.color}}
+        // onTrackerUpdate={update => console.dir(update)}
+    />
+    <Tooltip
+        visible={visibility.tooltip}
+        style={{
+            fontColor: theme.color,
+            backgroundColor: theme.backgroundColor,
+            borderColor: theme.color,
+            backgroundOpacity: 0.9,
+        }}
+    >
+        <BarPlotTooltipContent ordinalUnits="mV"/>
     </Tooltip>
+    <BarPlot
+        barMargin={1}
+        dropDataAfter={5000}
+        panEnabled={true}
+        zoomEnabled={true}
+        zoomKeyModifiersRequired={true}
+        // withCadenceOf={50}
+
+        // to have the upper axis zoom when the series zoom, we must have at
+        // least one series assigned to this axis.
+        axisAssignments={new Map([
+            ['neuron1', assignAxes("x-axis-2", "y-axis-2")],
+        ])}
+
+        showMinMaxBars={showMinMax}
+        showValueLines={showValue}
+        showMeanValueLines={showMean}
+        showWindowedMinMaxBars={showWinMinMax}
+        showWindowedMeanValueLines={showWinMean}
+    />
 </Chart>
 ```
 
@@ -327,29 +475,121 @@ Example Poincare (iterates) chart.
 
 ```typescript jsx
 <Chart
-    width={width}
-    height={height}
-    initialData={initialData}
-    seriesObservable={observable}
+    chartId={chartId.current}
+    width={useGridCellWidth()}
+    height={useGridCellHeight()}
+    margin={{...defaultMargin, top: 40, bottom: 30, right: 60}}
+    // svgStyle={{'background-color': 'pink'}}
+    color={theme.color}
+    backgroundColor={theme.backgroundColor}
+    seriesStyles={new Map([
+        ['test1', {
+            ...defaultLineStyle(),
+            color: 'orange',
+            lineWidth: 1,
+            highlightColor: 'orange'
+        }],
+        ['test2', {
+            ...defaultLineStyle(),
+            color: theme.name === 'light' ? 'blue' : 'gray',
+            lineWidth: 1,
+            highlightColor: theme.name === 'light' ? 'blue' : 'gray',
+            highlightWidth: 5
+        }],
+        ['test3', {
+            ...defaultLineStyle(),
+            color: theme.name === 'light' ? 'red' : 'gray',
+            lineWidth: 1,
+            highlightColor: theme.name === 'light' ? 'dodgerblue' : 'gray',
+            highlightWidth: 5
+        }],
+    ])}
+    initialData={initialDataRef.current}
+    // seriesFilter={filter}
+    seriesObservable={observableRef.current}
+    shouldSubscribe={running}
+    onUpdateChartTime={handleChartTimeUpdate}
+    windowingTime={25}
 >
     <ContinuousAxis
-        axisId="x-axis"
+        axisId="x-axis-1"
         location={AxisLocation.Bottom}
-        domain={[0, 1000]}
-        label="n-1"
+        domain={axesRange}
+        label="f[n](x)"
+        updateAxisBasedOnDomainValues={false}
     />
     <ContinuousAxis
-        axisId="y-axis"
+        axisId="y-axis-1"
         location={AxisLocation.Left}
-        domain={[0, 1000]}
-        label="n"
+        domain={axesRange}
+        label={`f[n+${lagN}](x)`}
+        updateAxisBasedOnDomainValues={false}
     />
-    <PoincarePlot
-        showPoints={true}
+    <ContinuousAxis
+        axisId="x-axis-2"
+        location={AxisLocation.Top}
+        domain={axesRange}
+        label="f[n](x)"
+        updateAxisBasedOnDomainValues={false}
     />
-    <Tooltip visible={true}>
-        <PoincarePlotTooltipContent xLabel="n-1" yLabel="n" />
+    <ContinuousAxis
+        axisId="y-axis-2"
+        location={AxisLocation.Right}
+        domain={axesRange}
+        label={`f[n+${lagN}](x)`}
+        updateAxisBasedOnDomainValues={false}
+    />
+    <Tracker
+        key="tracker-x-axis"
+        visible={visibility.tracker}
+        // labelLocation={TrackerLabelLocation.Nowhere}
+        labelLocation={TrackerLabelLocation.ByAxis}
+        trackerAxis={AxisLocation.Bottom}
+        labelFormatter={x => `${d3.format(",.3f")(x)}`}
+        style={{color: theme.color}}
+        font={{color: theme.color}}
+        // onTrackerUpdate={update => console.dir("bottom", update)}
+    />
+    <Tracker
+        key="tracker-y-axis"
+        visible={visibility.tracker}
+        // labelLocation={TrackerLabelLocation.Nowhere}
+        labelLocation={TrackerLabelLocation.ByAxis}
+        trackerAxis={AxisLocation.Left}
+        labelFormatter={x => `${d3.format(",.3f")(x)}`}
+        style={{color: theme.color}}
+        font={{color: theme.color}}
+        // onTrackerUpdate={update => console.dir("left", update)}
+    />
+    <Tooltip
+        visible={visibility.tooltip}
+        style={{
+            fontColor: theme.color,
+            backgroundColor: theme.backgroundColor,
+            borderColor: theme.color,
+            backgroundOpacity: 0.9,
+        }}
+    >
+        <PoincarePlotTooltipContent
+            xLabel="t (ms)"
+            yLabel="f(x)"
+            yValueFormatter={value => formatNumber(value, " ,.4f")}
+            style={{
+                ...defaultTooltipStyle,
+                fontColor: 'black',
+                // fontColor: theme.color,
+                fontWeight: 650
+            }}
+        />
     </Tooltip>
+    <PoincarePlot
+        interpolation={interpolation}
+        dropDataAfter={dropAfterMs}
+        panEnabled={true}
+        zoomEnabled={true}
+        zoomKeyModifiersRequired={true}
+        // withCadenceOf={30}
+    />
 </Chart>
 ```
 
