@@ -97,7 +97,7 @@ npm install stream-charts
 ### [&#10514;](#content) <span id="example-raster-chart-code">example raster chart</span>
 For the neuron raster chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx))
 
-![raster-chart](https://github.com/robphilipp/stream-charts/blob/master/images/raster-magnifier.png?raw=true)
+![raster-chart](https://github.com/robphilipp/stream-charts/blob/develop/images/raster-chart-tooltip.png?raw=true)
 
 
 ```typescript jsx
@@ -192,7 +192,7 @@ import {RasterChart} from "stream-charts";
 
 An example scatter chart  (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx))
 
-![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/master/images/scatter-tooltip.png?raw=true)
+![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/scatter-chart-with-tooltip.png?raw=true)
 
 
 ```typescript jsx
@@ -287,6 +287,8 @@ import {ScatterChart} from "stream-charts";
 
 Example bar chart showing windowed statistics.
 
+![bar-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/bar-chart-with-tooltip.png?raw=true)
+
 ```typescript jsx
 <Chart
     width={width}
@@ -320,6 +322,8 @@ Example bar chart showing windowed statistics.
 ### [&#10514;](#content) <span id="example-poincare-chart-code">example poincare chart</span>
 
 Example Poincare (iterates) chart.
+
+![poincare-chart-with-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/poincare-chart-with-tooltip.png?raw=true)
 
 ```typescript jsx
 <Chart
