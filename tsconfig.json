@@ -4,7 +4,7 @@
     "outDir": "dist",
     "sourceMap": true,
     "module": "esnext",
-    "target": "es5",
+    "target": "es2015",
     "lib": ["dom", "dom.iterable", "esnext"],
     "jsx": "react-jsx",
     "moduleResolution": "node",

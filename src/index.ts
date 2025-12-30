@@ -15,13 +15,10 @@ export {
 export {
     noop,
     mouseInPlotAreaFor,
-    textWidthOf, textHeightOf,
-    textWidthFor,
+    textWidthOf,
     textDimensions,
-    type Zoom,
-    handleZoom,
     formatNumber, formatTime, formatValue, formatChange, formatTimeChange, formatValueChange,
-    minMaxOf, minMaxYFor
+    minMaxOf
 } from './app/charts/utils'
 
 //
@@ -33,26 +30,27 @@ export {
     type AxesFont, defaultAxesFont,
     type SeriesStyle,
     type SeriesLineStyle, defaultLineStyle,
-    type BaseAxis, type ContinuousNumericAxis, type CategoryAxis,
+    type BaseAxis, type ContinuousNumericAxis, type OrdinalStringAxis,
     AxisLocation,
-    addCategoryAxis,
+    addOrdinalStringAxis,
     labelIdFor,
     type ZoomResult,
-    calculateZoomFor, calculateConstrainedZoomFor,
-    axisZoomHandler, axesZoomHandler,
+    calculateOrdinalConstrainedZoomFor, calculateConstrainedZoomFor,
+    ordinalAxisZoomHandler, axesZoomHandler,
     calculatePanFor, panHandler, panHandler2D,
     axesForSeriesGen,
     continuousAxisRanges, continuousAxisIntervals, continuousRange
 } from './app/charts/axes/axes'
 
+export {AxisInterval} from './app/charts/axes/AxisInterval'
+
 export {
     ContinuousAxis,
-    addContinuousNumericXAxis, addContinuousNumericYAxis
 } from './app/charts/axes/ContinuousAxis'
 
 export {
-    type ContinuousAxisRange, continuousAxisRangeFor
-} from './app/charts/axes/continuousAxisRangeFor'
+    type ContinuousAxisRange,
+} from './app/charts/axes/ContinuousAxisRange'
 
 export {
     OrdinalAxis
@@ -71,10 +69,8 @@ export {
 //
 
 export {
-    type AxesState, createAxesState,
-    addAxisTo,
-    copyAxesState
-} from './app/charts/hooks/AxesState'
+    type AxesState,
+} from './app/charts/axes/AxesState'
 
 export * from './app/charts/hooks/useAxes'
 export {
@@ -86,19 +82,16 @@ export * from './app/charts/hooks/useChart'
 export {
     useChart,
     type NoTooltipMetadata,
-    type UseChartValues, defaultUseChartValues
 } from './app/charts/hooks/useChart'
 
 export * from './app/charts/hooks/useDataObservable'
 export {
     useDataObservable,
-    type UseObservableValues, defaultObservableValues
 } from './app/charts/hooks/useDataObservable'
 
 export * from './app/charts/hooks/useInitialData'
 export {
     useInitialData,
-    type UseInitialDataValues, defaultInitialDataValues,
 } from './app/charts/hooks/useInitialData'
 
 export * from './app/charts/hooks/useMouse'
@@ -158,8 +151,8 @@ export {
 export {
     type Series,
     createPlotContainer,
-    setClipPath,
     type AxesAssignment,
+    setClipPathG,
     assignAxes
 } from './app/charts/plots/plot'
 
@@ -255,7 +248,7 @@ export {
     TimeWindowBehavior,
     subscriptionTimeSeriesFor, subscriptionTimeSeriesWithCadenceFor,
     subscriptionIteratesFor,
-    type WindowedOrdinalStats, defaultWindowedOrdinalStats,
+    type WindowedOrdinalStats,
     subscriptionOrdinalXFor
 } from './app/charts/subscriptions/subscriptions'
 

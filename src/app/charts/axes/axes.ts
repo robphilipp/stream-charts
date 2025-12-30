@@ -1069,7 +1069,7 @@ function panAxes(
     constrainToOriginalRange: boolean = true
 ): void {
     axesForSeries.forEach(axisId => {
-        axesState.axisFor(axisId).ifPresent(axis => {
+        axesState.axisFor(axisId).ifPresent((axis) => {
             const currentRange = ranges.get(axisId)
             if (currentRange) {
                 // calculate the change in the axis-range based on the pixel change from the drag event
