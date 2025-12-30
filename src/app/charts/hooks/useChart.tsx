@@ -1,10 +1,11 @@
 import {createContext, JSX, useContext} from "react";
 import {GSelection} from "../d3types";
-import {SeriesLineStyle, SeriesStyle} from "../axes/axes";
+import {BaseAxis, SeriesLineStyle, SeriesStyle} from "../axes/axes";
 import {defaultAxesValues, useAxes, UseAxesValues} from "./useAxes";
 import {defaultMouseValues, useMouse, UseMouseValues} from "./useMouse";
 import {defaultTooltipValues, useTooltip, UseTooltipValues} from "./useTooltip";
 import {SvgStyle} from "../styling/svgStyle";
+import {BaseAxisRange} from "../axes/BaseAxisRange";
 
 export type NoTooltipMetadata = {}
 
@@ -17,7 +18,7 @@ export type NoTooltipMetadata = {}
  * @template S The type of the series style
  * @template TM The type of the tooltip's metadata (data about the series data)
  */
-interface UseChartValues<D, S extends SeriesStyle, TM> {
+interface UseChartValues<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A extends BaseAxis> {
     /**
      * Unique ID for the chart
      */
@@ -50,7 +51,7 @@ interface UseChartValues<D, S extends SeriesStyle, TM> {
     /*
      | AXES
      */
-    axes: UseAxesValues
+    axes: UseAxesValues<AR, A>
 
     /*
      | DATA PROCESSING
@@ -67,7 +68,7 @@ interface UseChartValues<D, S extends SeriesStyle, TM> {
     tooltip: UseTooltipValues<D, TM>
 }
 
-const defaultUseChartValues: UseChartValues<any, any, any> = {
+const defaultUseChartValues: UseChartValues<any, any, any, any, any> = {
     chartId: NaN,
     container: null,
     mainG: null,
@@ -87,7 +88,7 @@ const defaultUseChartValues: UseChartValues<any, any, any> = {
     tooltip: defaultTooltipValues()
 }
 
-const ChartContext = createContext<UseChartValues<any, any, any>>(defaultUseChartValues)
+const ChartContext = createContext<UseChartValues<any, any, any, any, any>>(defaultUseChartValues)
 
 interface Props {
     chartId: number
@@ -148,8 +149,8 @@ export default function ChartProvider(props: Props): JSX.Element {
  * React hook that sets up the React context for the chart values.
  * @return The {@link UseChartValues} held in the React context.
  */
-export function useChart<D, S extends SeriesStyle, TM>(): UseChartValues<D, S, TM> {
-    const context = useContext<UseChartValues<D, S, TM>>(ChartContext)
+export function useChart<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A extends BaseAxis>(): UseChartValues<D, S, TM, AR, A> {
+    const context = useContext<UseChartValues<D, S, TM, AR, A>>(ChartContext)
     const {chartId} = context
     if (isNaN(chartId)) {
         throw new Error("useChart can only be used when the parent is a <ChartProvider/>")

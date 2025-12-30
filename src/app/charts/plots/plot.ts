@@ -1,6 +1,6 @@
-import {Dimensions, Margin} from "../styling/margins";
+import {Dimensions} from "../styling/margins";
 import * as d3 from "d3";
-import {GSelection, SvgSelection} from "../d3types";
+import {GSelection} from "../d3types";
 
 export type Series<D> = Array<D>
 
@@ -29,33 +29,35 @@ export function createPlotContainer(
 /**
  * Adds a clip area for the chart to the specified SVG element. The clip-area is given
  * an `id` of `clip-series-<chart_id>`, which because the chart ID should be unique, makes
- * this unique as well
- * @param chartId The ID of the chart to which the clip area is to be added
- * @param svg The SVG element to which the clip area is to be added
- * @param plotDimensions The dimensions of the plot
- * @param margin The margins around the plot
- * @return The ID of the clip-path
+ * this unique as well.
+ * @param chartId The ID of the chart to which the clip area is to be added.
+ * @param plotGroup The SVG group element to which the clip area is to be added.
+ * @param plotDimensions The dimensions of the plot.
+ * @return The ID of the clip-path.
  */
-export function setClipPath(chartId: number, svg: SvgSelection, plotDimensions: Dimensions, margin: Margin): string {
+export function setClipPathG(chartId: number, plotGroup: GSelection, plotDimensions: Dimensions): string {
     const clipPathId = `chart-clip-path-${chartId}`
 
     // remove the old clipping region and add a new one with the updated plot dimensions
-    svg.select('defs').remove();
-    svg
+    plotGroup.select(`#${clipPathId}-defs`).remove();
+    plotGroup
         .append('defs')
+            .attr('id', `${clipPathId}-defs`)
         .append("clipPath")
-        .attr("id", clipPathId)
+            .attr("id", clipPathId)
         .append("rect")
-        .attr("width", Math.max(0, plotDimensions.width))
-        .attr("height", Math.max(margin.bottom, plotDimensions.height - margin.bottom))
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", Math.max(0, plotDimensions.width))
+            .attr("height", Math.max(0, plotDimensions.height))
 
     return clipPathId
 }
 
 /**
- * Represents the assignment of an x-axis and y-axis to a series. This is used
- * by the plots (see, for example, {@link ScatterPlot} and {@link RasterPlot})
- * to manage the assignment of axes to series
+ * Represents the assignment of an x-axis and y-axis to a series. Plots (see, for example,
+ * {@link ScatterPlot} and {@link RasterPlot}) use this interface to manage the assignment
+ * of axes to series
  */
 export interface AxesAssignment {
     xAxis: string

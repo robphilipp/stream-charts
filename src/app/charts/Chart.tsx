@@ -16,6 +16,7 @@ import DataObservableProvider from './hooks/useDataObservable';
 import {BaseSeries} from "./series/baseSeries";
 import InitialDataProvider from "./hooks/useInitialData";
 import {ChartData} from "./observables/ChartData";
+import {AxisInterval} from "./axes/AxisInterval";
 
 const defaultBackground = '#202020';
 
@@ -105,7 +106,7 @@ interface Props<CD, D, S extends SeriesStyle> {
      * each axis in the plot. The ranges argument is a map(axis_id -> (start, end)).
      * Where start and end refer to the range for the axis.
      */
-    onUpdateAxesBounds?: (ranges: Map<string, [start: number, end: number]>) => void
+    onUpdateAxesBounds?: (ranges: Map<string, AxisInterval>) => void
     /**
      * Callback for updating the current chart time. This is generally used by plots
      * where the axes do not represent time, but rather some fix values, and the data
@@ -290,7 +291,7 @@ export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM>(props:
         <>
             <svg ref={containerRef}/>
             <PlotDimensionsProvider containerDimensions={{width, height}} margin={margin}>
-                <AxesProvider onUpdateAxesBounds={onUpdateAxesBounds}>
+                <AxesProvider onUpdateAxesInterval={onUpdateAxesBounds}>
                     <MouseProvider<D, TM>>
                         <TooltipProvider<D, TM>>
                             <InitialDataProvider<CD, D>

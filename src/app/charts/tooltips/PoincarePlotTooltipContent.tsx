@@ -20,11 +20,12 @@ import {useEffect, useMemo} from "react";
 import {NoTooltipMetadata, useChart} from "../hooks/useChart";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import {emptyIterateDatum, IterateDatum} from "../series/iterateSeries";
-import {SeriesLineStyle} from "../axes/axes";
+import {ContinuousNumericAxis, SeriesLineStyle} from "../axes/axes";
 import {TooltipData} from "../hooks/useTooltip";
 import {DataFrame} from "data-frame-ts";
 import {Dimensions} from "../styling/margins";
 import {Background, Border, BorderElement, Dimension} from "svg-table/stylings";
+import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 
 /**
  # Want to write your own tooltip-content component?
@@ -131,7 +132,7 @@ export function PoincarePlotTooltipContent(props: Props): null {
         chartId,
         container,
         tooltip
-    } = useChart<IterateDatum, SeriesLineStyle, NoTooltipMetadata>()
+    } = useChart<IterateDatum, SeriesLineStyle, NoTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
 
     const {registerTooltipContentProvider} = tooltip
 

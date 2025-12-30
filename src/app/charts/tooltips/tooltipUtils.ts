@@ -2,7 +2,7 @@ import {Series} from "../plots/plot";
 import * as d3 from "d3";
 import {Datum} from "../series/timeSeries";
 import {Dimensions, Margin} from "../styling/margins";
-import {CategoryAxis} from "../axes/axes";
+import {OrdinalStringAxis} from "../axes/axes";
 
 /**
  * Properties for rendering the tooltip. This is the style for the container
@@ -135,7 +135,7 @@ export function tooltipY(y: number, textHeight: number, plotDimensions: Dimensio
 export function categoryTooltipY(
     seriesName: string,
     textHeight: number,
-    axis: CategoryAxis,
+    axis: OrdinalStringAxis,
     tooltipStyle: TooltipStyle,
     margin: Margin,
     categoryHeight: number,

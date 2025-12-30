@@ -1,9 +1,8 @@
 import React, {useCallback, useEffect, useMemo, useRef} from 'react'
 import {NoTooltipMetadata, useChart} from "../hooks/useChart";
-import {ContinuousAxisRange, continuousAxisRangeFor} from "../axes/continuousAxisRangeFor";
 import * as d3 from "d3";
 import {CurveFactory, ZoomTransform} from "d3";
-import {setClipPath} from "./plot";
+import {setClipPathG} from "./plot";
 import {Datum} from "../series/timeSeries";
 import {
     axesZoomHandler,
@@ -25,6 +24,7 @@ import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import {useInitialData} from "../hooks/useInitialData";
 import {TooltipData, useTooltip} from "../hooks/useTooltip";
 import {TimeSeriesChartData} from "../series/timeSeriesChartData";
+import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 
 type IteratePoint = { n: number, n_1: number, time: number, index: number }
 type IteratePointSeries = Array<IteratePoint>
@@ -33,7 +33,7 @@ function generateAxisRangeMap(axes: Map<string, BaseAxis>): Map<string, Continuo
     return new Map(
         Array.from(axes.entries()).map(([id, axis]) => {
             const [start, end] = (axis as ContinuousNumericAxis).scale.domain()
-            return [id, continuousAxisRangeFor(start, end)]
+            return [id, ContinuousAxisRange.from(start, end)]
         })
     )
 }
@@ -127,16 +127,16 @@ export function PoincarePlot(props: Props): null {
         seriesFilter,
 
         mouse
-    } = useChart<IterateDatum, SeriesLineStyle, NoTooltipMetadata>()
+    } = useChart<IterateDatum, SeriesLineStyle, NoTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
 
     const {
         xAxesState,
         yAxesState,
-        setAxisBoundsFor,
-        updateAxesBounds = noop,
-        axisBoundsFor,
-        addAxesBoundsUpdateHandler,
-        removeAxesBoundsUpdateHandler,
+        setAxisIntervalFor,
+        updateAxisRanges = noop,
+        axisRangeFor,
+        addAxesRangesUpdateHandler,
+        removeAxesRangesUpdateHandler,
     } = axes
 
     const {
@@ -277,11 +277,11 @@ export function PoincarePlot(props: Props): null {
     // changes, and not when the addAxesBoundsUpdateHandler or removeAxesBoundsUpdateHandler
     // which they do, and that breaks the updates...someone, please teach me react
     //
-    // the update handler is needed so that when the axes bounds are changed (say to accommodate a
+    // the update handler is needed so that when the axis bounds are changed (say to accommodate a
     // different iterate function's domain/range), then the handler needs to update the x and y
     // axes range refs
-    const addAxesBoundsUpdateHandlerRef = useRef(addAxesBoundsUpdateHandler)
-    const removeAxesBoundsUpdateHandlerRef = useRef(removeAxesBoundsUpdateHandler)
+    const addAxesBoundsUpdateHandlerRef = useRef(addAxesRangesUpdateHandler)
+    const removeAxesBoundsUpdateHandlerRef = useRef(removeAxesRangesUpdateHandler)
     useEffect(
         () => {
             addAxesBoundsUpdateHandlerRef.current(`handler-${chartId}`, updatedBoundsHandler)
@@ -312,10 +312,10 @@ export function PoincarePlot(props: Props): null {
         ) => panHandler2D(
             xAxesForSeries, yAxesForSeries,
             margin,
-            setAxisBoundsFor,
+            setAxisIntervalFor,
             xAxesState, yAxesState
         )(x, y, plotDimensions, series, xRanges, yRanges),
-        [xAxesForSeries, yAxesForSeries, margin, setAxisBoundsFor, xAxesState, yAxesState]
+        [xAxesForSeries, yAxesForSeries, margin, setAxisIntervalFor, xAxesState, yAxesState]
     )
 
     /**
@@ -338,9 +338,9 @@ export function PoincarePlot(props: Props): null {
             xRanges: Map<string, ContinuousAxisRange>,
             yRanges: Map<string, ContinuousAxisRange>
         ) => axesZoomHandler(
-            xAxesForSeries, yAxesForSeries, margin, setAxisBoundsFor, xAxesState, yAxesState, [zoomMinScaleFactor, zoomMaxScaleFactor]
+            xAxesForSeries, yAxesForSeries, margin, setAxisIntervalFor, xAxesState, yAxesState, [zoomMinScaleFactor, zoomMaxScaleFactor]
         )(transform, [x, y], plotDimensions, xRanges, yRanges),
-        [xAxesForSeries, yAxesForSeries, margin, setAxisBoundsFor, xAxesState, yAxesState, zoomMinScaleFactor, zoomMaxScaleFactor]
+        [xAxesForSeries, yAxesForSeries, margin, setAxisIntervalFor, xAxesState, yAxesState, zoomMinScaleFactor, zoomMaxScaleFactor]
     )
 
     const updatePlot = useCallback(
@@ -437,22 +437,28 @@ export function PoincarePlot(props: Props): null {
                 }
 
                 // define the clip-path so that the series lines don't go beyond the plot area
-                const clipPathId = setClipPath(chartId, svg, plotDimensions, margin)
+                const clipPathId = setClipPathG(chartId, mainGElem, plotDimensions)
 
                 // ---
                 // todo only want to do this once, on the first plot, and then leave it,
                 //     unless the axes are updated, also needs to be removed/added when the
                 //     plot size changes
-                const xAxis = xAxesState.defaultAxis() as ContinuousNumericAxis
-                const yAxis = yAxesState.defaultAxis() as ContinuousNumericAxis
+                const xAxis = xAxesState.defaultAxis().getOrThrow(() => new Error('No default axis found')) as ContinuousNumericAxis
+                const yAxis = yAxesState.defaultAxis().getOrThrow(() => new Error('No default axis found')) as ContinuousNumericAxis
 
                 const lineGenerator = d3.line<[x: number, y: number]>()
                     .x(d => xAxis.scale(d[0] || 0))
                     .y(d => yAxis.scale(d[1] || 0))
                 // ---
 
-                const [xStart, xEnd] = xAxisRangesRef.current.get(xAxesState.axisDefaultId())?.original || [0, 0]
-                const [yStart, yEnd] = yAxisRangesRef.current.get(yAxesState.axisDefaultId())?.original || [0, 0]
+                const [xStart, xEnd] = xAxesState.axisDefaultId()
+                    .map(id => xAxisRangesRef.current.get(id)?.original.asTuple() || [0, 0])
+                    .getOrElse([0, 0])
+                const [yStart, yEnd] = yAxesState.axisDefaultId()
+                    .map(id => yAxisRangesRef.current.get(id)?.original.asTuple() || [0, 0])
+                    .getOrElse([0, 0])
+                // const [xStart, xEnd] = xAxisRangesRef.current.get(xAxesState.axisDefaultId())?.original.asTuple() || [0, 0]
+                // const [yStart, yEnd] = yAxisRangesRef.current.get(yAxesState.axisDefaultId())?.original.asTuple() || [0, 0]
 
                 mainGElem
                     .selectAll(`#fn-equals-fn1-${chartId}-poincare`)
@@ -478,7 +484,10 @@ export function PoincarePlot(props: Props): null {
                 boundedSeries.forEach((data, name) => {
                     // grab the x and y axes assigned to the series, and if either or both
                     // axes aren't found, then give up and return
-                    const [xAxisLinear, yAxisLinear] = axesFor(xAxesState.axisFor, yAxesState.axisFor)
+                    const [xAxisLinear, yAxisLinear] = axesFor(
+                        axisId => xAxesState.axisFor(axisId).getOrUndefined(),
+                        axisId => yAxesState.axisFor(axisId).getOrUndefined(),
+                    )
                     if (xAxisLinear === undefined || yAxisLinear === undefined) return
 
                     // grab the style for the series
@@ -490,62 +499,6 @@ export function PoincarePlot(props: Props): null {
                     // only show the data for which the filter matches
                     const plotData = (name.match(seriesFilter)) ? data : []
 
-                    // // when specified, show a circle for the actual data point
-                    // if (showPoints) {
-                    //     mainGElem
-                    //         .selectAll(`.${name}-${chartId}-poincare-points`)
-                    //         .data(plotData, () => `${name}`)
-                    //         .join(
-                    //             enter => enter
-                    //                 .append("circle")
-                    //                 .attr("class", `${name}-${chartId}-poincare-points`)
-                    //                 .attr("id", (_, index) => `${name}-${chartId}-poincare-point-${index}`)
-                    //                 .attr("fill", seriesLineStyle.color)
-                    //                 .attr("stroke", "none")
-                    //                 .attr("cx", (d: IteratePoint) => xAxisLinear.scale(d.n) || 0)
-                    //                 .attr("cy", (d: IteratePoint) => yAxisLinear.scale(d.n_1) || 0)
-                    //                 .attr("r", 2)
-                    //                 .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                    //                 .attr("clip-path", `url(#${clipPathId})`)
-                    //             ,
-                    //             update => update
-                    //                 .attr("cx", (d: IteratePoint) => xAxisLinear.scale(d.n) || 0)
-                    //                 .attr("cy", (d: IteratePoint) => yAxisLinear.scale(d.n_1) || 0)
-                    //             ,
-                    //             exit => exit.remove()
-                    //         )
-                    //         .on("mouseenter",
-                    //             (event: React.MouseEvent<SVGCircleElement>, datum: IteratePoint) => {
-                    //                 if (allowTooltip.current && tooltipVisible) {
-                    //                     return handleMouseEnterPoint(
-                    //                         chartId,
-                    //                         name,
-                    //                         container,
-                    //                         event,
-                    //                         datum,
-                    //                         plotData,
-                    //                         xAxisLinear,
-                    //                         yAxisLinear,
-                    //                         margin,
-                    //                         seriesLineStyle,
-                    //                         backgroundColor,
-                    //                         allowTooltip.current,
-                    //                         mouseOverHandlerFor(`tooltip-${chartId}`)
-                    //                     )
-                    //                 }
-                    //                 return <></>
-                    //             }
-                    //         )
-                    //         .on("mouseleave", () => {
-                    //             handleMouseLeavePoint(
-                    //                 chartId,
-                    //                 name,
-                    //                 seriesLineStyle.color,
-                    //                 mouseLeaveHandlerFor(`tooltip-${chartId}`)
-                    //             )
-                    //         })
-                    // }
-                    //
                     const pathGenerator = d3.line<IteratePoint>()
                         .x(d => xAxis.scale(d.n || 0))
                         .y(d => yAxis.scale(d.n_1 || 0))
@@ -656,12 +609,12 @@ export function PoincarePlot(props: Props): null {
         },
         [updatePlot]
     )
-    const onUpdateAxesBoundsRef = useRef(updateAxesBounds)
+    const onUpdateAxesBoundsRef = useRef(updateAxisRanges)
     useEffect(
         () => {
-            onUpdateAxesBoundsRef.current = updateAxesBounds
+            onUpdateAxesBoundsRef.current = updateAxisRanges
         },
-        [updateAxesBounds]
+        [updateAxisRanges]
     )
 
     // memoized function for subscribing to the chart-data observable
@@ -699,7 +652,7 @@ export function PoincarePlot(props: Props): null {
                 updatePlot(mainG)
             }
         },
-        [axisBoundsFor, container, mainG, updatePlot]
+        [axisRangeFor, container, mainG, updatePlot]
     )
 
     // subscribe/unsubscribe to the observable chart data. when the `shouldSubscribe`

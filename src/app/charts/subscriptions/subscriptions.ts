@@ -1,20 +1,17 @@
 import {bufferTime, map, mergeAll, mergeWith} from "rxjs/operators";
-import {continuousAxisRanges, ContinuousNumericAxis} from "../axes/axes";
+import {continuousAxisRanges, ContinuousNumericAxis, ordinalAxisRanges, OrdinalStringAxis} from "../axes/axes";
 import {Datum, TimeSeries} from "../series/timeSeries";
-import {ContinuousAxisRange, continuousAxisRangeFor} from "../axes/continuousAxisRangeFor";
 import {interval, Observable, Subscription} from "rxjs";
 import {TimeSeriesChartData} from "../series/timeSeriesChartData";
 import {AxesAssignment} from "../plots/plot";
-import {AxesState} from "../hooks/AxesState";
+import {AxesState} from "../axes/AxesState";
 import {BaseSeries, emptySeries} from "../series/baseSeries";
 import {IterateChartData} from "../observables/iterates";
 import {IterateDatum, IterateSeries} from "../series/iterateSeries";
 import {
     copyOrdinalDatumExtremum,
-    copyOrdinalStats,
     copyOrdinalValueStats,
     copyValueStatsForSeries,
-    defaultOrdinalStats,
     defaultOrdinalValueStats,
     initialMaxValueDatum,
     initialMinValueDatum,
@@ -24,12 +21,16 @@ import {
 } from "../observables/ordinals";
 import {ChartData} from "../observables/ChartData";
 import {OrdinalDatum} from "../series/ordinalSeries";
-import {MutableRefObject} from "react";
+import {RefObject} from "react";
+import {AxisInterval} from "../axes/AxisInterval";
+import {Optional} from "result-fn";
+import {OrdinalAxisRange} from "../axes/OrdinalAxisRange";
+import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 
 export enum TimeWindowBehavior { SCROLL, SQUEEZE }
 
 /**
- * Creates a subscription to the series observable with the data stream. The common code is
+ * Creates a subscription to the series observable with the data stream. This is common code
  * shared by the plots.
  * @param seriesObservable The series observable holding the stream of chart data
  * @param onSubscribe Callback for when the observable is subscribed to
@@ -51,7 +52,7 @@ export function subscriptionTimeSeriesFor(
     onSubscribe: (subscription: Subscription) => void,
     windowingTime: number,
     axisAssignments: Map<string, AxesAssignment>,
-    xAxesState: AxesState,
+    xAxesState: AxesState<ContinuousNumericAxis>,
     onUpdateData: ((seriesName: string, data: Array<Datum>) => void) | undefined,
     dropDataAfter: number,
     updateTimingAndPlot: (ranges: Map<string, ContinuousAxisRange>) => void,
@@ -89,7 +90,7 @@ export function subscriptionTimeSeriesFor(
                     // calculate the current time for the series' assigned x-axis (which may end up
                     // just being the default) based on the max time for the series, and the overall
                     // max time
-                    const axisId = axisAssignments.get(name)?.xAxis || xAxesState.axisDefaultId();
+                    const axisId = axisAssignments.get(name)?.xAxis || xAxesState.axisDefaultId().getOrElse("");
                     const currentAxisTime = axesSeries.get(axisId)
                         ?.reduce(
                             (tMax, seriesName) => Math.max(data.maxTimes.get(seriesName) || data.maxTime, tMax),
@@ -107,9 +108,12 @@ export function subscriptionTimeSeriesFor(
                         // axis, update the time windows, and call the setCurrentTime
                         // callback to update the current time for the caller
                         const range = timesWindows.get(axisId)
-                        if (range !== undefined && range.end < currentAxisTime) {
-                            const timeWindow = range.end - range.start
-                            const timeRange = continuousAxisRangeFor(
+                        const [startTime, endTime] = Optional.ofNullable(range?.current)
+                            .map(interval => interval.asTuple())
+                            .getOrElse([0, 0])
+                        if (range !== undefined && endTime < currentAxisTime) {
+                            const timeWindow = endTime - startTime
+                            const timeRange = ContinuousAxisRange.from(
                                 // 0,
                                 timeWindowBehavior === TimeWindowBehavior.SQUEEZE && initialTimes.get(axisId) !== undefined ?
                                     initialTimes.get(axisId)! :
@@ -117,7 +121,7 @@ export function subscriptionTimeSeriesFor(
                                 Math.max(currentAxisTime, timeWindow)
                             )
                             timesWindows.set(axisId, timeRange)
-                            setCurrentTime(axisId, timeRange.end) // callback
+                            setCurrentTime(axisId, endTime) // callback
                         }
                     }
                 })
@@ -157,7 +161,7 @@ export function subscriptionTimeSeriesWithCadenceFor(
     onSubscribe: (subscription: Subscription) => void,
     windowingTime: number,
     axisAssignments: Map<string, AxesAssignment>,
-    xAxesState: AxesState,
+    xAxesState: AxesState<ContinuousNumericAxis>,
     onUpdateData: ((seriesName: string, data: Array<Datum>) => void) | undefined,
     dropDataAfter: number,
     updateTimingAndPlot: (ranges: Map<string, ContinuousAxisRange>) => void,
@@ -167,8 +171,7 @@ export function subscriptionTimeSeriesWithCadenceFor(
 ): Subscription {
     const maxTime = Array.from(seriesMap.entries())
         .reduce(
-            (tMax, [, series]) => Math.max(tMax, series.last().map(datum => datum.time).getOrDefault(tMax)),
-            // (tMax, [, series]) => Math.max(tMax, series.last().map(datum => datum.time).getOrElse(tMax)),
+            (tMax, [, series]) => Math.max(tMax, series.last().map(datum => datum.time).getOrElse(tMax)),
             -Infinity
         )
     const cadence = interval(cadencePeriod)
@@ -196,10 +199,12 @@ export function subscriptionTimeSeriesWithCadenceFor(
                 xAxesState.axisIds().forEach(axisId => {
                     const range = timesWindows.get(axisId)
                     if (range !== undefined && data.currentTime !== undefined) {
-                        const timeWindow = (range.end - range.start)
-                        const timeRange = continuousAxisRangeFor(
-                            Math.max(0, Math.max(range.end, data.currentTime + maxTime) - timeWindow),
-                            Math.max(Math.max(range.end, data.currentTime + maxTime), timeWindow)
+                        const [startTime, endTime] = range.current.asTuple()
+                        const timeWindow = endTime - startTime
+                        // const timeWindow = measureOf(range.current)
+                        const timeRange = ContinuousAxisRange.from(
+                            Math.max(0, Math.max(endTime, data.currentTime + maxTime) - timeWindow),
+                            Math.max(Math.max(endTime, data.currentTime + maxTime), timeWindow)
                         )
                         timesWindows.set(axisId, timeRange)
                         setCurrentTime(axisId, data.currentTime + maxTime)
@@ -228,7 +233,7 @@ export function subscriptionTimeSeriesWithCadenceFor(
                 series.data.push(...newData);
 
                 // drop data when specified
-                const axisId = axisAssignments.get(name)?.xAxis || xAxesState.axisDefaultId()
+                const axisId = axisAssignments.get(name)?.xAxis || xAxesState.axisDefaultId().getOrElse("")
                 const currentAxisTime = axesSeries.get(axisId)
                     ?.reduce(
                         (tMax, seriesName) => Math.max(data.maxTimes.get(seriesName) || data.maxTime, tMax),
@@ -272,8 +277,8 @@ export function subscriptionIteratesFor(
     seriesObservable: Observable<IterateChartData>,
     onSubscribe: (subscription: Subscription) => void,
     windowingTime: number,
-    xAxesState: AxesState,
-    yAxesState: AxesState,
+    xAxesState: AxesState<ContinuousNumericAxis>,
+    yAxesState: AxesState<ContinuousNumericAxis>,
     onUpdateData: ((seriesName: string, data: Array<IterateDatum>) => void) | undefined,
     dropDataAfter: number,
     updateRangesAndPlot: () => void,
@@ -284,12 +289,12 @@ export function subscriptionIteratesFor(
     const xAxesRanges = new Map<string, ContinuousAxisRange>(Array.from(xAxesState.axes.entries())
         .map(([id, axis]) => {
             const [start, end] = (axis as ContinuousNumericAxis).scale.domain()
-            return [id, continuousAxisRangeFor(start, end)]
+            return [id, ContinuousAxisRange.from(start, end)]
         }))
     const yAxesRanges = new Map<string, ContinuousAxisRange>(Array.from(yAxesState.axes.entries())
         .map(([id, axis]) => {
             const [start, end] = (axis as ContinuousNumericAxis).scale.domain()
-            return [id, continuousAxisRangeFor(start, end)]
+            return [id, ContinuousAxisRange.from(start, end)]
         }))
 
     /**
@@ -301,7 +306,7 @@ export function subscriptionIteratesFor(
     function updateRange(originals: Map<string, ContinuousAxisRange>, axes: Map<string, ContinuousNumericAxis>): void {
         axes.forEach((axis, id) => {
             const [start, end] = axis.scale.domain()
-            const original: ContinuousAxisRange = originals.get(id) || continuousAxisRangeFor(start, end)
+            const original: ContinuousAxisRange = originals.get(id) || ContinuousAxisRange.from(start, end)
             originals.set(id, original.update(start, end))
         })
     }
@@ -347,8 +352,8 @@ export function subscriptionIteratesFor(
                 })
 
                 // update the data
-                const xRange = xAxesRanges.get(xAxesState.axisDefaultId())
-                const yRange = yAxesRanges.get(yAxesState.axisDefaultId())
+                const xRange = xAxesRanges.get(xAxesState.axisDefaultId().getOrElse(""))
+                const yRange = yAxesRanges.get(yAxesState.axisDefaultId().getOrElse(""))
                 if (xRange !== undefined && yRange !== undefined) {
                     updateRangesAndPlot()
                 }
@@ -361,34 +366,11 @@ export function subscriptionIteratesFor(
     return subscription
 }
 
-
-// interface WindowedOrdinalValueStats {
-//     count: number
-//     sum: number
-//     mean: number
-//     sumSquared: number
-// }
-
 export interface WindowedOrdinalStats extends OrdinalStats {
     /**
      * A map associating each series to stats about that series (e.g. map(series_name -> stats))
      */
     windowedValueStatsForSeries: Map<string, OrdinalValueStats>
-}
-
-export function defaultWindowedOrdinalStats(): WindowedOrdinalStats {
-    return {
-        ...defaultOrdinalStats(),
-        windowedValueStatsForSeries: new Map<string, OrdinalValueStats>(),
-    }
-}
-
-function copyWindowedOrdinalStats(data: WindowedOrdinalStats): WindowedOrdinalStats {
-    return {
-        ...copyOrdinalStats(data),
-        windowedValueStatsForSeries: new Map<string, OrdinalValueStats>(
-            Array.from(data.windowedValueStatsForSeries.entries()))
-    }
 }
 
 /**
@@ -406,6 +388,7 @@ function copyWindowedOrdinalStats(data: WindowedOrdinalStats): WindowedOrdinalSt
  * @param seriesMap The series-name and the associated series
  * @param ordinalStatsRef The statistics about the data in the chart and about each series
  * @param setCurrentTime Callback to update the current time based on the streamed data
+ * @param originalRange The original range of the axes
  * @return A subscription to the observable (for cancelling and the likes)
  */
 export function subscriptionOrdinalXFor(
@@ -413,13 +396,14 @@ export function subscriptionOrdinalXFor(
     onSubscribe: (subscription: Subscription) => void,
     windowingTime: number,
     axisAssignments: Map<string, AxesAssignment>,
-    yAxesState: AxesState,
+    yAxesState: AxesState<OrdinalStringAxis>,
     onUpdateData: ((seriesName: string, data: Array<OrdinalDatum>) => void) | undefined,
     dropDataAfter: number,
-    updateTimingAndPlot: (ranges: Map<string, ContinuousAxisRange>) => void,
+    updateTimingAndPlot: (ranges: Map<string, OrdinalAxisRange>) => void,
     seriesMap: Map<string, BaseSeries<OrdinalDatum>>,
-    ordinalStatsRef: MutableRefObject<WindowedOrdinalStats>,
+    ordinalStatsRef: RefObject<WindowedOrdinalStats>,
     setCurrentTime: (currentTime: number) => void,
+    originalRange: AxisInterval,
 ): Subscription {
 
     /**
@@ -446,14 +430,12 @@ export function subscriptionOrdinalXFor(
      * function updates the windowed stats by for the dropped data
      * @param droppedData An array of datum that was dropped from the time window
      * @param windowedStats The current windowed ordinal value stats
-     * @param lifetimeStats The lifetime ordinal value stats
      * @param series An array of series holding all the current data in the time-window
      * @return The windowed ordinal value stats updated for the dropped data
      */
     function updateWindowedValueStatsForDroppedData(
         droppedData: Array<OrdinalDatum>,
         windowedStats: OrdinalValueStats,
-        lifetimeStats: OrdinalValueStats,
         series: BaseSeries<OrdinalDatum>
     ): OrdinalValueStats {
         const updatedStats = copyOrdinalValueStats(windowedStats)
@@ -476,7 +458,10 @@ export function subscriptionOrdinalXFor(
         .subscribe(dataList => {
             dataList.forEach((data: OrdinalChartData) => {
                 // grab the axis ranges for the y-axes
-                const yAxisRanges = continuousAxisRanges(yAxesState.axes as Map<string, ContinuousNumericAxis>);
+                const yAxisRanges = ordinalAxisRanges(
+                    yAxesState.axes as Map<string, OrdinalStringAxis>,
+                    originalRange
+                );
 
                 //
                 // calculate the max times for each x-axis, which is the max time over all the
@@ -518,7 +503,7 @@ export function subscriptionOrdinalXFor(
                     // calculate the current value for the series' assigned y-axis (which may end up
                     // just being the default) based on the max time for the series, and the overall
                     // max time
-                    const axisId = axisAssignments.get(name)?.yAxis || yAxesState.axisDefaultId();
+                    const axisId = axisAssignments.get(name)?.yAxis || yAxesState.axisDefaultId().getOrElse("");
                     const currentTime = axesSeries.get(axisId)
                         ?.reduce(
                             (tMax, _) => Math.max(data.stats.maxDatum.time.time, tMax),
@@ -537,10 +522,10 @@ export function subscriptionOrdinalXFor(
                         }
 
                         // calculate the windowed stats based on the dropped data
-                        if (droppedData.length > 0 && lifetimeValueStats !== undefined) {
+                        if (droppedData.length > 0) {
                             ordinalStatsRef.current.windowedValueStatsForSeries.set(
                                 name,
-                                updateWindowedValueStatsForDroppedData(droppedData, windowedValueStats, lifetimeValueStats, series)
+                                updateWindowedValueStatsForDroppedData(droppedData, windowedValueStats, series)
                             )
                         }
 
@@ -591,10 +576,10 @@ export function subscriptionOrdinalXFor(
 function associatedSeriesForXAxes(
     data: TimeSeriesChartData,
     axisAssignments: Map<string, AxesAssignment>,
-    xAxesState: AxesState
+    xAxesState: AxesState<ContinuousNumericAxis>
 ): Map<string, Array<string>> {
     return associatedSeriesFor(
-        assignment => assignment?.xAxis || xAxesState.axisDefaultId(),
+        assignment => assignment?.xAxis || xAxesState.axisDefaultId().getOrElse(""),
         data,
         axisAssignments
     )
@@ -611,10 +596,10 @@ function associatedSeriesForXAxes(
 function associatedSeriesForYAxes(
     data: ChartData,
     axisAssignments: Map<string, AxesAssignment>,
-    yAxesState: AxesState
+    yAxesState: AxesState<OrdinalStringAxis>
 ): Map<string, Array<string>> {
     return associatedSeriesFor(
-        assignment => assignment?.yAxis || yAxesState.axisDefaultId(),
+        assignment => assignment?.yAxis || yAxesState.axisDefaultId().getOrElse(""),
         data,
         axisAssignments
     )

@@ -1,4 +1,4 @@
-import {plotDimensionsFrom, Margin} from "./margins";
+import {plotDimensionsFrom, Margin, containerDimensionsFrom} from "./margins";
 
 describe('adjusted dimension should correct for margins', () => {
     const margins: Margin = {top: 11, bottom: 12, left: 13, right: 14};
@@ -13,4 +13,10 @@ describe('adjusted dimension should correct for margins', () => {
     test('adjusted height should have the top and bottom margins removed', () => {
         expect(dimensions.height).toBe(height - margins.top - margins.bottom);
     });
+
+    test('should be able to get back the container dimensions after calculate the plot dimensions', () => {
+        const {width: containerWidth, height: containerHeight} = containerDimensionsFrom(plotDimensionsFrom(width, height, margins), margins);
+        expect(containerWidth).toBe(width);
+        expect(containerHeight).toBe(height);
+    })
 })

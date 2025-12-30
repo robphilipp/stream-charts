@@ -1,13 +1,23 @@
-import {AxesAssignment, setClipPath} from "./plot";
+import {AxesAssignment, setClipPathG} from "./plot";
 import * as d3 from "d3";
+import {ZoomTransform} from "d3";
 import {noop} from "../utils";
 import {useChart} from "../hooks/useChart";
-import React, {useCallback, useEffect, useRef} from "react";
+import React, {useCallback, useEffect, useMemo, useRef} from "react";
 import {Datum, TimeSeries} from "../series/timeSeries";
 import {GSelection, SvgSelection} from "../d3types";
-import {BaseAxis, CategoryAxis, ContinuousNumericAxis} from "../axes/axes";
+import {
+    axesForSeriesGen,
+    BaseAxis,
+    ContinuousNumericAxis,
+    ordinalAxisIntervals,
+    ordinalAxisRanges,
+    ordinalAxisZoomHandler,
+    ordinalPanHandler,
+    OrdinalStringAxis
+} from "../axes/axes";
 import {Subscription} from "rxjs";
-import {Margin} from "../styling/margins";
+import {Dimensions, Margin} from "../styling/margins";
 import {subscriptionOrdinalXFor, WindowedOrdinalStats} from "../subscriptions/subscriptions";
 import {useDataObservable} from "../hooks/useDataObservable";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
@@ -26,6 +36,9 @@ import {
 } from "../styling/svgStyle";
 import {BarSeriesStyle, BarStyle, defaultBarSeriesStyle, LineStyle} from "../styling/barPlotStyle";
 import {TooltipData} from "../hooks/useTooltip";
+import {OrdinalAxisRange} from "../axes/OrdinalAxisRange";
+import {AxisInterval} from "../axes/AxisInterval";
+import {Optional} from "result-fn";
 
 // typescript doesn't support enums with computed string values, even though they are all constants...
 export type BarChartElementId = {
@@ -77,19 +90,19 @@ interface Props {
      * infinity (i.e. no data is dropped)
      */
     dropDataAfter?: number
-    // /**
-    //  * Enables panning (default is false)
-    //  */
-    // panEnabled?: boolean
-    // /**
-    //  * Enables zooming (default is false)
-    //  */
-    // zoomEnabled?: boolean
-    // /**
-    //  * When true, requires that the shift or control key be pressed while scrolling
-    //  * in order to activate the zoom
-    //  */
-    // zoomKeyModifiersRequired?: boolean
+    /**
+     * Enables panning (default is false)
+     */
+    panEnabled?: boolean
+    /**
+     * Enables zooming (default is false)
+     */
+    zoomEnabled?: boolean
+    /**
+     * When true, requires that the shift or control key be pressed while scrolling
+     * in order to activate the zoom
+     */
+    zoomKeyModifiersRequired?: boolean
     /**
      * The (optional, default = 2 pixels) top and bottom margin (in pixels) for the spike lines in the plot.
      * Margins on individual series can also be set through the {@link Chart.seriesStyles} property.
@@ -136,19 +149,18 @@ export function BarPlot(props: Props): null {
         container,
         mainG,
         axes,
-        color,
         seriesStyles,
         seriesFilter,
         mouse
-    } = useChart<OrdinalDatum, BarSeriesStyle, WindowedOrdinalStats>()
+    } = useChart<OrdinalDatum, BarSeriesStyle, WindowedOrdinalStats, OrdinalAxisRange, OrdinalStringAxis>()
 
     const {
         xAxesState,
         yAxesState,
         setAxisAssignments,
-        // setAxisBoundsFor,
-        // updateAxesBounds = noop,
-        // onUpdateAxesBounds,
+        setAxisIntervalFor,
+        setOriginalAxisIntervalFor,
+        axesRanges
     } = axes
 
     const {mouseOverHandlerFor, mouseLeaveHandlerFor} = mouse
@@ -170,9 +182,9 @@ export function BarPlot(props: Props): null {
     const {
         axisAssignments = new Map<string, AxesAssignment>(),
         dropDataAfter = Infinity,
-        // panEnabled = false,
-        // zoomEnabled = false,
-        // zoomKeyModifiersRequired = true,
+        panEnabled = false,
+        zoomEnabled = false,
+        zoomKeyModifiersRequired = true,
         showMinMaxBars = true,
         showWindowedMinMaxBars = true,
         showValueLines = true,
@@ -206,7 +218,6 @@ export function BarPlot(props: Props): null {
 
     // map(axis_id -> current_time) -- maps the axis ID to the current time for that axis
     const currentTimeRef = useRef<number>(0)
-
     const subscriptionRef = useRef<Subscription>(undefined)
 
     const isSubscriptionClosed = () => subscriptionRef.current === undefined || subscriptionRef.current.closed
@@ -216,7 +227,6 @@ export function BarPlot(props: Props): null {
     useEffect(
         () => {
             currentTimeRef.current = 0
-            // currentTimeRef.current = new Map(Array.from(xAxesState.axes.keys()).map(id => [id, 0]))
         },
         [xAxesState]
     )
@@ -229,34 +239,24 @@ export function BarPlot(props: Props): null {
         [axisAssignments, setAxisAssignments]
     )
 
-    // // calculates the distinct series IDs that cover all the series in the plot
-    // const axesForSeries = useMemo(
-    //     () => axesForSeriesGen<Datum>(initialData, axisAssignments, xAxesState),
-    //     [initialData, axisAssignments, xAxesState]
-    // )
+    // calculates the distinct series IDs that cover all the series in the plot
+    const axesForSeries = useMemo(
+        () => axesForSeriesGen<OrdinalDatum, OrdinalStringAxis>(initialData, axisAssignments, xAxesState),
+        [initialData, axisAssignments, xAxesState]
+    )
 
     // updates the timing using the onUpdateTime and updatePlot references. This and the references
     // defined above allow the axes' times to be updated properly by avoid stale reference to these
     // functions.
     const updateTimingAndPlot = useCallback(
-        // (ranges: Map<string, ContinuousAxisRange>): void => {
-        (): void => {
+        (ranges: Map<string, OrdinalAxisRange>): void => {
             if (mainG !== null) {
-                // onUpdateTimeRef.current(ranges)
-                updatePlotRef.current(mainG)
+                updatePlotRef.current(ranges, mainG)
                 onUpdateChartTime(currentTimeRef.current)
-                // updatePlotRef.current(ranges, mainG)
-                // if (onUpdateAxesBounds) {
-                //     setTimeout(() => {
-                //         const times = new Map<string, [number, number]>()
-                //         ranges.forEach((range, name) => times.set(name, [range.start, range.end]))
-                //         onUpdateAxesBounds(times)
-                //     }, 0)
-                // }
+                updatePlotRef.current(ranges, mainG)
             }
         },
         [mainG, onUpdateChartTime]
-        // [mainG, onUpdateAxesBounds]
     )
 
     // todo find better way
@@ -268,8 +268,6 @@ export function BarPlot(props: Props): null {
             seriesRef.current = new Map(initialData.map(series => [series.name, series]))
             currentTimeRef.current = 0
             statsRef.current = initialOrdinalStats(dataRef.current)
-            // currentTimeRef.current = new Map(Array.from(xAxesState.axes.keys()).map(id => [id, 0]))
-            updateTimingAndPlot()
         },
         // ** not happy about this **
         // only want this effect to run when the initial data is changed, which mean all the
@@ -278,96 +276,99 @@ export function BarPlot(props: Props): null {
         [initialData]
     )
 
-    // /**
-    //  * Adjusts the time-range and updates the plot when the plot is dragged to the left or right
-    //  * @param deltaX The amount that the plot is dragged
-    //  * @param plotDimensions The dimensions of the plot
-    //  * @param series An array of series names
-    //  * @param ranges A map holding the axis ID and its associated time range
-    //  */
-    // const onPan = useCallback(
-    //     (x: number,
-    //      plotDimensions: Dimensions,
-    //      series: Array<string>,
-    //      ranges: Map<string, ContinuousAxisRange>
-    //     ) => panHandler(axesForSeries, margin, setAxisBoundsFor, xAxesState)(x, plotDimensions, series, ranges),
-    //     [axesForSeries, margin, setAxisBoundsFor, xAxesState]
-    // )
-    //
-    // /**
-    //  * Called when the user uses the scroll wheel (or scroll gesture) to zoom in or out. Zooms in/out
-    //  * at the location of the mouse when the scroll wheel or gesture was applied.
-    //  * @param transform The d3 zoom transformation information
-    //  * @param x The x-position of the mouse when the scroll wheel or gesture is used
-    //  * @param plotDimensions The dimensions of the plot
-    //  * @param series An array of series names
-    //  * @param ranges A map holding the axis ID and its associated time-range
-    //  */
-    // const onZoom = useCallback(
-    //     (
-    //         transform: ZoomTransform,
-    //         x: number,
-    //         plotDimensions: Dimensions,
-    //         ranges: Map<string, ContinuousAxisRange>,
-    //     ) => axisZoomHandler(axesForSeries, margin, setAxisBoundsFor, xAxesState)(transform, x, plotDimensions, ranges),
-    //     [axesForSeries, margin, setAxisBoundsFor, xAxesState]
-    // )
+    /**
+     * Adjusts the time-range and updates the plot when the plot is dragged to the left or right
+     * @param deltaX The amount that the plot is dragged
+     * @param plotDimensions The dimensions of the plot
+     * @param series An array of series names
+     * @param ranges A map holding the axis ID and its associated time range
+     */
+    const onPan = useCallback(
+        (x: number,
+         plotDimensions: Dimensions,
+         series: Array<string>,
+         ranges: Map<string, OrdinalAxisRange>
+        ) => ordinalPanHandler(axesForSeries, margin, setAxisIntervalFor, xAxesState)(x, plotDimensions, series, ranges),
+        [axesForSeries, margin, setAxisIntervalFor, xAxesState]
+    )
 
     /**
-     * @param timeRanges
+     * Called when the user uses the scroll wheel (or scroll gesture) to zoom in or out. Zooms in/out
+     * at the location of the mouse when the scroll wheel or gesture was applied.
+     * @param transform The d3 zoom transformation information
+     * @param x The x-position of the mouse when the scroll wheel or gesture is used
+     * @param plotDimensions The dimensions of the plot
+     * @param series An array of series names
+     * @param ranges A map holding the axis ID and its associated time-range
+     */
+    const onZoom = useCallback(
+        (
+            transform: ZoomTransform,
+            x: number,
+            plotDimensions: Dimensions,
+            ranges: Map<string, OrdinalAxisRange>,
+        ) => ordinalAxisZoomHandler(axesForSeries, margin, setAxisIntervalFor, setOriginalAxisIntervalFor, xAxesState)(transform, x, plotDimensions, ranges),
+        [axesForSeries, margin, setAxisIntervalFor, setOriginalAxisIntervalFor, xAxesState]
+    )
+
+    /**
+     * @param ordinalRanges
      * @param mainGElem
      */
     const updatePlot = useCallback(
-        // (timeRanges: Map<string, ContinuousAxisRange>, mainGElem: GSelection) => {
-        (mainGElem: GSelection) => {
+        (ordinalRanges: Map<string, OrdinalAxisRange>, mainGElem: GSelection) => {
             if (container) {
                 // select the svg element bind the data to them
                 const svg: SvgSelection = d3.select<SVGSVGElement, any>(container)
 
-                // // set up panning
-                // if (panEnabled) {
-                //     const drag = d3.drag<SVGSVGElement, Datum>()
-                //         .on("start", () => {
-                //             d3.select(container).style("cursor", "move")
-                //             allowTooltipRef.current = false
-                //         })
-                //         .on("drag", (event: any) => {
-                //             const names = dataRef.current.map(series => series.name)
-                //             onPan(event.dx, plotDimensions, names, timeRanges)
-                //             // need to update the plot with the new time-ranges
-                //             updatePlotRef.current(timeRanges, mainGElem)
-                //         })
-                //         .on("end", () => {
-                //             d3.select(container).style("cursor", "auto")
-                //             allowTooltipRef.current = isSubscriptionClosed()
-                //         })
-                //
-                //     svg.call(drag)
-                // }
-                //
-                // // set up for zooming
-                // if (zoomEnabled) {
-                //     const zoom = d3.zoom<SVGSVGElement, Datum>()
-                //         .filter((event: any) => !zoomKeyModifiersRequired || event.shiftKey || event.ctrlKey)
-                //         .scaleExtent([0, 10])
-                //         .translateExtent([[margin.left, margin.top], [plotDimensions.width, plotDimensions.height]])
-                //         .on("zoom", (event: any) => {
-                //                 onZoom(
-                //                     event.transform,
-                //                     event.sourceEvent.offsetX - margin.left,
-                //                     plotDimensions,
-                //                     timeRanges,
-                //                 )
-                //                 updatePlotRef.current(timeRanges, mainGElem)
-                //             }
-                //         )
-                //
-                //     svg.call(zoom)
-                // }
+                // set up panning
+                if (panEnabled) {
+                    const drag = d3.drag<SVGSVGElement, Datum>()
+                        .on("start", () => {
+                            d3.select(container).style("cursor", "move")
+                            allowTooltipRef.current = false
+                        })
+                        .on("drag", (event: any) => {
+                            const names = dataRef.current.map(series => series.name)
+                            onPan(event.dx, plotDimensions, names, ordinalRanges)
+                            // need to update the plot with the new time-ranges
+                            updatePlotRef.current(ordinalRanges, mainGElem)
+                        })
+                        .on("end", () => {
+                            d3.select(container).style("cursor", "auto")
+                            allowTooltipRef.current = isSubscriptionClosed()
+                        })
+
+                    svg.call(drag)
+                }
+
+                // set up for zooming
+                if (zoomEnabled) {
+                    const zoom = d3.zoom<SVGSVGElement, Datum>()
+                        .filter((event: any) => !zoomKeyModifiersRequired || event.shiftKey || event.ctrlKey)
+                        .scaleExtent([1, 10])
+                        .translateExtent([[margin.left, margin.top], [plotDimensions.width, plotDimensions.height]])
+                        .on("zoom", (event: any) => {
+                                onZoom(
+                                    event.transform,
+                                    event.sourceEvent.offsetX - margin.left,
+                                    plotDimensions,
+                                    ordinalRanges,
+                                )
+                                updatePlotRef.current(ordinalRanges, mainGElem)
+                            }
+                        )
+                    svg.call(zoom)
+                }
 
                 // enter, update, delete the bar data
                 dataRef.current.forEach(series => {
-                    const [xAxis, yAxis] = axesFor(series.name, axisAssignments, xAxesState.axisFor, yAxesState.axisFor)
+                    const [xAxis, yAxis] = axesFor(
+                        series.name,
+                        axisAssignments,
+                        axisId => xAxesState.axisFor(axisId).getOrUndefined(),
+                        axisId => yAxesState.axisFor(axisId).getOrUndefined()
+                    )
 
                     // grab the series styles, or the defaults if none exist
                     const {
@@ -389,7 +390,7 @@ export function BarPlot(props: Props): null {
                     const {
                         lower,
                         upper
-                    } = xAxisCategoryBoundsFn(xAxis.categorySize, valueLineStyle.regular.width, categoryMargin)
+                    } = xAxisCategoryBoundsFn(xAxis.scale.bandwidth(), valueLineStyle.regular.width, categoryMargin)
 
                     // grab the value (index) associated with the series name (this is a category axis)
                     const x = xAxis.scale(series.name) || 0
@@ -474,7 +475,7 @@ export function BarPlot(props: Props): null {
                                 update => barFor(
                                     update,
                                     windowedBar,
-                                    barStyleFor(showWindowedMinMaxBars, windowedBarStyle)                                ),
+                                    barStyleFor(showWindowedMinMaxBars, windowedBarStyle)),
                                 exit => exit.remove()
                             )
                             .on(
@@ -673,29 +674,34 @@ export function BarPlot(props: Props): null {
         },
         [
             container,
-            axisAssignments, xAxesState.axisFor, yAxesState.axisFor,
+            panEnabled, zoomEnabled,
+            onPan, onZoom,
+            plotDimensions, margin, zoomKeyModifiersRequired,
+            axisAssignments, xAxesState, yAxesState,
             barMargin, seriesStyles, barSeriesStyle,
             seriesFilter,
             chartId,
-            margin,
+            showValueLines,
+            showMinMaxBars,
             mouseOverHandlerFor, mouseLeaveHandlerFor,
-            showMinMaxBars, showValueLines, showMeanValueLines, showWindowedMinMaxBars, showWindowedMeanValueLines,
+            showMeanValueLines,
+            showWindowedMeanValueLines,
+            showWindowedMinMaxBars
         ]
     )
 
     // need to keep the function references for use by the subscription, which forms a closure
     // on them. without the references, the closures become stale, and resizing during streaming
     // doesn't work properly
-    const updatePlotRef = useRef<(g: GSelection) => void>(noop)
+    const updatePlotRef = useRef<(ordinalRange: Map<string, OrdinalAxisRange>, g: GSelection) => void>(noop)
     useEffect(
         () => {
-            if (mainG !== null && container !== null) {
+            if (mainG != null && container != null) {
                 // when the update plot function doesn't yet exist, then create the container holding the plot
-                const svg = d3.select<SVGSVGElement, any>(container)
-                const clipPathId = setClipPath(chartId, svg, plotDimensions, margin)
+                const clipPathId = setClipPathG(chartId, mainG, plotDimensions)
                 if (updatePlotRef.current === noop) {
                     mainG
-                        .selectAll<SVGGElement, TimeSeries>('g')
+                        .selectAll<SVGGElement, BaseSeries<OrdinalDatum>>('g')
                         .attr("clip-path", `url(#${clipPathId})`)
                         .data<BaseSeries<OrdinalDatum>>(dataRef.current)
                         .enter()
@@ -732,23 +738,51 @@ export function BarPlot(props: Props): null {
                 // updates this map directly (for performance)
                 seriesRef.current,
                 statsRef,
-                (currentTime: number) => currentTimeRef.current = currentTime
+                (currentTime: number) => currentTimeRef.current = currentTime,
+                AxisInterval.from(0, plotDimensions.width)
             )
         },
         [
             axisAssignments, dropDataAfter, mainG,
             onSubscribe, onUpdateData,
             seriesObservable, updateTimingAndPlot, windowingTime, yAxesState,
+            plotDimensions.width
         ]
     )
 
     useEffect(
         () => {
             if (container && mainG) {
-                updatePlot(mainG)
+                const ordinalAxesRanges = axesRanges()
+                // so this gets a bit complicated. the ordinal-ranges need to be updated whenever the ordinal-ranges
+                // change. for example, when the window is resized, and then we need to update the
+                // ordinal-range. however, we want to keep the ordinal-ranges to reflect their original scale so that
+                // we can zoom properly (so the updates can't fuck with the scale).
+                if (ordinalAxesRanges.size === 0) {
+                    // when no time-ranges have yet been created, then create them and hold on to a mutable
+                    // reference to them
+                    updatePlot(ordinalAxisRanges(xAxesState.axes, AxisInterval.from(0, plotDimensions.width)), mainG)
+                } else {
+                    // when the ordinal-ranges already exist, then we want to update the ordinal-ranges for each
+                    // existing ordinal-range in a way that maintains the original scale.
+                    const intervals = ordinalAxisIntervals(xAxesState.axes)
+                    // todo instead of updating the underlying map, this should use setter methods to make the updates
+                    ordinalAxesRanges
+                        .forEach((range: OrdinalAxisRange, id: string, rangesMap: Map<string, OrdinalAxisRange>) => {
+                            Optional
+                                .ofNullable(intervals.get(id))
+                                .map(intervalInfo => intervalInfo.interval.asTuple())
+                                .ifPresent(([start, end]) => {
+                                    // update the reference map with the new (start, end) portion of the range,
+                                    // while keeping the original scale intact
+                                    rangesMap.set(id, range.update(start, end) as OrdinalAxisRange)
+                                })
+                        })
+                    updatePlot(ordinalAxesRanges, mainG)
+                }
             }
         },
-        [chartId, color, container, mainG, plotDimensions, updatePlot, xAxesState]
+        [axesRanges, container, mainG, plotDimensions.width, updatePlot, xAxesState.axes]
     )
 
     // subscribe/unsubscribe to the observable chart data. when the `shouldSubscribe`
@@ -923,10 +957,10 @@ function axesFor(
     axisAssignments: Map<string, AxesAssignment>,
     xAxisFor: (id: string) => BaseAxis | undefined,
     yAxisFor: (id: string) => BaseAxis | undefined,
-): [xAxis: CategoryAxis, yAxis: ContinuousNumericAxis] {
+): [xAxis: OrdinalStringAxis, yAxis: ContinuousNumericAxis] {
     const axes = axisAssignments.get(seriesName)
     const xAxis = xAxisFor(axes?.xAxis || "")
-    const xAxisCategory = xAxis as CategoryAxis
+    const xAxisCategory = xAxis as OrdinalStringAxis
     if (xAxis && !xAxisCategory) {
         throw Error("Bar plot requires that x-axis be of type CategoryAxis")
     }
@@ -937,25 +971,6 @@ function axesFor(
     }
     return [xAxisCategory, yAxisContinuous]
 }
-
-// /**
-//  * Calculates the upper and lower coordinate for the category
-//  * @param categorySize The size of the category (i.e. plot_height / num_series)
-//  * @param lineWidth The width of the series line
-//  * @param margin The margin applied to the top and bottom of the spike line (vertical spacing)
-//  * @return An object with two functions, that when handed a y-coordinate, return the location
-//  * for the start (yUpper) or end (yLower) of the spikes line.
-//  */
-// function yAxisCategoryBoundsFn(categorySize: number, lineWidth: number, margin: number): CategoryBounds {
-//     if (categorySize <= margin) return {
-//         upper: value => value,
-//         lower: value => value + lineWidth
-//     }
-//     return {
-//         upper: value => value + margin,
-//         lower: value => value + categorySize - margin
-//     }
-// }
 
 /**
  * Calculates the upper and lower coordinate for the category
@@ -988,6 +1003,7 @@ function xAxisCategoryBoundsFn(categorySize: number, lineWidth: number, margin: 
  * @param defaultBarSeriesStyle The default bar series style that is used if no style is found for the series
  * @param allowTooltip When set to `false` won't show tooltip, even if it is visible (used by pan)
  * @param mouseOverHandlerFor The handler for the mouse over (registered by the <Tooltip/>)
+ * @param tooltipProvider The ID of the tooltip provider
  */
 function handleMouseOverBar(
     container: SVGSVGElement,
@@ -1012,26 +1028,6 @@ function handleMouseOverBar(
     const value = yAxis.scale.invert(y - margin.top)
 
     const {name: categoryName, data: selectedData} = selectedSeries
-    // const {valueLine, windowedMeanValueLine} = barStyles.get(categoryName) || defaultBarSeriesStyle
-    //
-    // // // Use d3 to select element, change color and size
-    // // d3.select<SVGPathElement, Datum>(event.currentTarget)
-    // //     .style(STROKE_COLOR, valueLine.highlight.color)
-    // //     .style(STROKE_WIDTH, valueLine.highlight.width)
-    // //     .style(STROKE_OPACITY, valueLine.highlight.opacity)
-    // if (tooltipProvider === CURRENT_VALUE_TOOLTIP_PROVIDER) {
-    //     // Use d3 to select element, change color and size
-    //     d3.select<SVGPathElement, Datum>(event.currentTarget)
-    //         .style(STROKE_COLOR, valueLine.highlight.color)
-    //         .style(STROKE_WIDTH, valueLine.highlight.width)
-    //         .style(STROKE_OPACITY, valueLine.highlight.opacity)
-    // } else if (tooltipProvider === WINDOWED_MEAN_VALUE_TOOLTIP_PROVIDER) {
-    //     // Use d3 to select element, change color and size
-    //     d3.select<SVGPathElement, Datum>(event.currentTarget)
-    //         .style(STROKE_COLOR, windowedMeanValueLine.highlight.color)
-    //         .style(STROKE_WIDTH, windowedMeanValueLine.highlight.width)
-    //         .style(STROKE_OPACITY, windowedMeanValueLine.highlight.opacity)
-    // }
 
     const barSeriesStyle = barStyles.get(categoryName) || defaultBarSeriesStyle
     const lineStyle = lineStyleFor(tooltipProvider, barSeriesStyle)

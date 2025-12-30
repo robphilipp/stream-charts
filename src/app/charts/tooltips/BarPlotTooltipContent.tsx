@@ -4,16 +4,17 @@ import * as d3 from "d3";
 import {formatNumber, formatTime, formatValue} from "../utils";
 import {useEffect, useMemo} from "react";
 import {useChart} from "../hooks/useChart";
-import {SeriesLineStyle} from "../axes/axes";
+import {ContinuousNumericAxis, SeriesLineStyle} from "../axes/axes";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import {emptyOrdinalDatum, OrdinalDatum} from "../series/ordinalSeries";
 import {TooltipData} from "../hooks/useTooltip";
 import {WindowedOrdinalStats} from "../subscriptions/subscriptions";
 import {DataFrame} from "data-frame-ts";
 import {createTable, Padding, TableData, TableFont, TableFormatter, TableStyler} from "svg-table";
-import {defaultOrdinalValueStats, OrdinalValueStats} from "../observables/ordinals";
+import {defaultOrdinalValueStats} from "../observables/ordinals";
 import {Dimension} from "svg-table/stylings";
 import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "../plots/BarPlot";
+import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 
 /**
  # Want to write your own tooltip-content component?
@@ -110,7 +111,7 @@ export function BarPlotTooltipContent(props: Props): null {
         container,
         tooltip,
         axes
-    } = useChart<OrdinalDatum, SeriesLineStyle, WindowedOrdinalStats>()
+    } = useChart<OrdinalDatum, SeriesLineStyle, WindowedOrdinalStats, ContinuousAxisRange, ContinuousNumericAxis>()
 
     const {registerTooltipContentProvider} = tooltip
     const {yAxesState, axisAssignmentsFor} = axes

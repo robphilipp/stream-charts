@@ -13,13 +13,13 @@ export function noMargins(): Margin {
 }
 
 export interface Dimensions {
-    width: number
-    height: number
+    readonly width: number
+    readonly height: number
 }
 
 /**
  * Given the dimensions of the plot (width, height) based on the container's width and height,
- * and the plots margins. Calculates the dimensions of the actual plot by subtracting the margins.
+ * and the plot's margins. Calculates the dimensions of the actual plot by subtracting the margins.
  * @param containerWidth The overall width of the container (plot and margins)
  * @param containerHeight The overall height of the container (plot and margins)
  * @param plotMargins The margins around the plot (top, bottom, left, right)
@@ -27,11 +27,12 @@ export interface Dimensions {
  * from the overall dimensions
  * @see containerDimensionsFrom
  */
-export const plotDimensionsFrom =
-    (containerWidth: number, containerHeight: number, plotMargins: Margin): Dimensions => ({
+export function plotDimensionsFrom(containerWidth: number, containerHeight: number, plotMargins: Margin): Dimensions {
+    return {
         width: containerWidth - plotMargins.left - plotMargins.right,
         height: containerHeight - plotMargins.top - plotMargins.bottom
-    })
+    }
+}
 
 /**
  * Calculates the container's dimensions from the plot dimensions and the plot margin. The container
@@ -41,8 +42,17 @@ export const plotDimensionsFrom =
  * @return The container dimensions.
  * @see plotDimensionsFrom
  */
-export const containerDimensionsFrom = (plotDimensions: Dimensions, plotMargin: Margin): Dimensions => ({
-    width: plotDimensions.width + plotMargin.left + plotMargin.right,
-    height: plotDimensions.height + plotMargin.top + plotMargin.bottom
-})
+export function containerDimensionsFrom(plotDimensions: Dimensions, plotMargin: Margin): Dimensions {
+    return {
+        width: plotDimensions.width + plotMargin.left + plotMargin.right,
+        height: plotDimensions.height + plotMargin.top + plotMargin.bottom
+    }
+}
 
+export function dimensionsEqual(dimension1: Dimensions, dimension2: Dimensions) {
+    return dimension1.height === dimension2.height && dimension1.width === dimension2.width
+}
+
+export function dimensionsNotEqual(dimension1: Dimensions, dimension2: Dimensions) {
+    return !dimensionsEqual(dimension1, dimension2)
+}

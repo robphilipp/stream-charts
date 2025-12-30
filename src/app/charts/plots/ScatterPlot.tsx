@@ -1,20 +1,19 @@
 import React, {useCallback, useEffect, useMemo, useRef} from 'react'
 import {NoTooltipMetadata, useChart} from "../hooks/useChart";
-import {ContinuousAxisRange, continuousAxisRangeFor} from "../axes/continuousAxisRangeFor";
 import * as d3 from "d3";
 import {ZoomTransform} from "d3";
-import {AxesAssignment, setClipPath, Series} from "./plot";
+import {AxesAssignment, Series, setClipPathG} from "./plot";
 import {Datum, TimeSeries} from "../series/timeSeries";
 import {
     axesForSeriesGen,
     BaseAxis,
+    continuousAxisIntervals,
+    continuousAxisRanges,
+    continuousAxisZoomHandler,
     ContinuousNumericAxis,
     defaultLineStyle,
     panHandler,
-    SeriesLineStyle,
-    continuousAxisIntervals,
-    continuousAxisRanges,
-    axisZoomHandler
+    SeriesLineStyle
 } from "../axes/axes";
 import {GSelection} from "../d3types";
 import {Observable, Subscription} from "rxjs";
@@ -30,6 +29,9 @@ import {TimeSeriesChartData} from "../series/timeSeriesChartData";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import {useInitialData} from "../hooks/useInitialData";
 import {TooltipData} from "../hooks/useTooltip";
+import {AxisInterval} from "../axes/AxisInterval";
+import {Optional} from "result-fn";
+import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 
 interface Props {
     /**
@@ -105,7 +107,7 @@ export function ScatterPlot(props: Props): null {
         seriesFilter,
 
         mouse
-    } = useChart<Datum, SeriesLineStyle, NoTooltipMetadata>()
+    } = useChart<Datum, SeriesLineStyle, NoTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
 
     const {
         initialData
@@ -114,10 +116,10 @@ export function ScatterPlot(props: Props): null {
     const {
         xAxesState,
         yAxesState,
-        setAxisBoundsFor,
-        updateAxesBounds = noop,
-        onUpdateAxesBounds,
-        originalAxisBounds
+        setAxisIntervalFor,
+        updateAxisRanges = noop,
+        onUpdateAxesInterval,
+        axesRanges,
     } = axes
 
     const {mouseOverHandlerFor, mouseLeaveHandlerFor} = mouse
@@ -145,11 +147,13 @@ export function ScatterPlot(props: Props): null {
     } = props
 
     const initialTimes = useMemo(
-        () => new Map<string, number>(
-            Array.from(originalAxisBounds().entries())
-                .map(([axisId, [start,]]) => ([axisId, start]))
-        ),
-        [originalAxisBounds]
+        () => {
+            return new Map<string, number>(
+                Array.from<[string, ContinuousAxisRange]>(axesRanges().entries())
+                    .map(([axisId, range]) => ([axisId, range.original.start]))
+            )
+        },
+        [axesRanges]
     )
 
     // why do "dataRef" and "seriesRef" both hold on to the same underlying data? for performance.
@@ -180,14 +184,14 @@ export function ScatterPlot(props: Props): null {
 
     useEffect(
         () => {
-            currentTimeRef.current = new Map(Array.from(xAxesState.axes.keys()).map(id => [id, 0]))
+            currentTimeRef.current = new Map(Array.from<string>(xAxesState.axes.keys()).map(id => [id, 0]))
         },
         [xAxesState]
     )
 
     // calculates the distinct series IDs that cover all the series in the plot
     const axesForSeries = useMemo(
-        (): Array<string> => axesForSeriesGen<Datum>(initialData, axisAssignments, xAxesState),
+        (): Array<string> => axesForSeriesGen<Datum, ContinuousNumericAxis>(initialData, axisAssignments, xAxesState),
         [initialData, axisAssignments, xAxesState]
     )
 
@@ -198,16 +202,16 @@ export function ScatterPlot(props: Props): null {
             if (mainG !== null) {
                 onUpdateTimeRef.current(ranges)
                 updatePlotRef.current(ranges, mainG)
-                if (onUpdateAxesBounds) {
+                if (onUpdateAxesInterval) {
                     setTimeout(() => {
-                        const times = new Map<string, [number, number]>()
-                        ranges.forEach((range, name) => times.set(name, [range.start, range.end]))
-                        onUpdateAxesBounds(times)
+                        const times = new Map<string, AxisInterval>()
+                        ranges.forEach((range, name) => times.set(name, range.current))
+                        onUpdateAxesInterval(times)
                     }, 0)
                 }
             }
         },
-        [mainG, onUpdateAxesBounds]
+        [mainG, onUpdateAxesInterval]
     )
 
     // todo find better way
@@ -217,12 +221,12 @@ export function ScatterPlot(props: Props): null {
         () => {
             dataRef.current = initialData.slice()
             seriesRef.current = new Map(initialData.map(series => [series.name, series as TimeSeries]))
-            currentTimeRef.current = new Map(Array.from(xAxesState.axes.keys()).map(id => [id, 0]))
+            currentTimeRef.current = new Map(Array.from<string>(xAxesState.axes.keys()).map(id => [id, 0]))
             updateTimingAndPlot(new Map(Array.from(continuousAxisRanges(xAxesState.axes as Map<string, ContinuousNumericAxis>).entries())
                     .map(([id, range]) => {
                         // grab the current range, then calculate the minimum time from the initial data, and
                         // set that as the start, and then add the range to it for the end time
-                        const [start, end] = range.original
+                        const [start, end] = range.original.asTuple()
                         const minTime = initialData
                             .filter(srs => axisAssignments.get(srs.name)?.xAxis === id)
                             .reduce(
@@ -233,7 +237,7 @@ export function ScatterPlot(props: Props): null {
                                 Infinity
                             )
                         const startTime = minTime === Infinity ? 0 : minTime
-                        return [id, continuousAxisRangeFor(startTime, startTime + end - start)]
+                        return [id, ContinuousAxisRange.from(startTime, startTime + end - start)]
                     })
                 )
             )
@@ -249,16 +253,14 @@ export function ScatterPlot(props: Props): null {
      * Adjusts the time-range and updates the plot when the plot is dragged to the left or right
      * @param deltaX The amount that the plot is dragged
      * @param plotDimensions The dimensions of the plot
-     * @param series An array of series names
      * @param ranges A map holding the axis ID and its associated time range
      */
     const onPan = useCallback(
         (x: number,
          plotDimensions: Dimensions,
-         series: Array<string>,
          ranges: Map<string, ContinuousAxisRange>,
-        ) => panHandler(axesForSeries, margin, setAxisBoundsFor, xAxesState)(x, plotDimensions, series, ranges),
-        [axesForSeries, margin, setAxisBoundsFor, xAxesState]
+        ) => panHandler(axesForSeries, margin, setAxisIntervalFor, xAxesState)(x, plotDimensions, ranges),
+        [axesForSeries, margin, setAxisIntervalFor, xAxesState]
     )
 
     /**
@@ -276,9 +278,8 @@ export function ScatterPlot(props: Props): null {
             x: number,
             plotDimensions: Dimensions,
             ranges: Map<string, ContinuousAxisRange>,
-        ) => axisZoomHandler(axesForSeries, margin, setAxisBoundsFor, xAxesState)
-        (transform, x, plotDimensions, ranges),
-        [axesForSeries, margin, setAxisBoundsFor, xAxesState]
+        ) => continuousAxisZoomHandler(axesForSeries, margin, setAxisIntervalFor, xAxesState)(transform, x, plotDimensions, ranges),
+        [axesForSeries, margin, setAxisIntervalFor, xAxesState]
     )
 
     const updatePlot = useCallback(
@@ -318,7 +319,7 @@ export function ScatterPlot(props: Props): null {
                             onPan(
                                 event.dx,
                                 plotDimensions,
-                                Array.from(boundedSeries.keys()),
+                                // Array.from(boundedSeries.keys()),
                                 timeRanges,
                             )
                             updatePlotRef.current(timeRanges, mainGElem)
@@ -355,12 +356,17 @@ export function ScatterPlot(props: Props): null {
                 }
 
                 // define the clip-path so that the series lines don't go beyond the plot area
-                const clipPathId = setClipPath(chartId, svg, plotDimensions, margin)
+                const clipPathId = setClipPathG(chartId, mainGElem, plotDimensions)
 
                 boundedSeries.forEach((data, name) => {
                     // grab the x and y axes assigned to the series, and if either or both
                     // axes aren't found, then give up and return
-                    const [xAxisLinear, yAxisLinear] = axesFor(name, axisAssignments, xAxesState.axisFor, yAxesState.axisFor)
+                    const [xAxisLinear, yAxisLinear] = axesFor(
+                        name,
+                        axisAssignments,
+                        axisId => xAxesState.axisFor(axisId).getOrUndefined(),
+                        axisId => yAxesState.axisFor(axisId).getOrUndefined()
+                    )
                     if (xAxisLinear === undefined || yAxisLinear === undefined) return
 
                     // grab the style for the series
@@ -426,8 +432,9 @@ export function ScatterPlot(props: Props): null {
         },
         [
             container, panEnabled, zoomEnabled, chartId, plotDimensions, margin, onPan,
-            zoomKeyModifiersRequired, onZoom, axisAssignments, xAxesState.axisFor,
-            yAxesState.axisFor, seriesStyles, seriesFilter, interpolation,
+            zoomKeyModifiersRequired, onZoom, axisAssignments,
+            xAxesState, yAxesState,
+            seriesStyles, seriesFilter, interpolation,
             mouseOverHandlerFor, mouseLeaveHandlerFor
         ]
     )
@@ -435,19 +442,19 @@ export function ScatterPlot(props: Props): null {
     // need to keep the function references for use by the subscription, which forms a closure
     // on them. without the references, the closures become stale, and resizing during streaming
     // doesn't work properly
-    const updatePlotRef = useRef(updatePlot)
+    const updatePlotRef = useRef<(ordinalRange: Map<string, ContinuousAxisRange>, g: GSelection) => void>(noop)
     useEffect(
         () => {
             updatePlotRef.current = updatePlot
         },
         [updatePlot]
     )
-    const onUpdateTimeRef = useRef(updateAxesBounds)
+    const onUpdateTimeRef = useRef(updateAxisRanges)
     useEffect(
         () => {
-            onUpdateTimeRef.current = updateAxesBounds
+            onUpdateTimeRef.current = updateAxisRanges
         },
-        [updateAxesBounds]
+        [updateAxisRanges]
     )
 
     // memoized function for subscribing to the chart-data observable
@@ -512,10 +519,13 @@ export function ScatterPlot(props: Props): null {
                 } else {
                     // when the time-ranges already exist, then we want to update the time-ranges for each
                     // existing time-range in a way that maintains the original scale.
-                    const intervals = continuousAxisIntervals(xAxesState.axes as Map<string, ContinuousNumericAxis>)
+                    const intervals = continuousAxisIntervals(xAxesState.axes)
                     timeRangesRef.current
                         .forEach((range, id, rangesMap) => {
-                            const [start, end] = intervals.get(id) || [NaN, NaN]
+                            const [start, end] = Optional.ofNullable(intervals.get(id))
+                                .map(interval => interval.asTuple())
+                                .getOrThrow(() => new Error(`Unable to retrieve interval for axis; axis_id: ${id}`))
+                                // .getOrElse([NaN, NaN])
                             if (!isNaN(start) && !isNaN(end)) {
                                 // update the reference map with the new (start, end) portion of the range,
                                 // while keeping the original scale intact
