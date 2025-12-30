@@ -22,18 +22,22 @@ When using lower update frequencies, such as < 250 ms, and data updates are spar
 
 
 ### project status
-Although still under development, there are two charts available:
+The following plots are currently available:
 
-1. a neuron raster chart, and a
-2. scatter chart.
+1. **Scatter Plot**: for plotting time-series data.
+2. **Raster Plot**: for plotting event-timing data.
+3. **Bar Plot**: for plotting windowed stats (min, max, mean).
+4. **Poincare Plot**: for plotting iterates (n vs n-1).
 
-Over time, I'll add additional chart types. In the meantime, I welcome any contributions to create new chart types (bar, gauges, etc).
+Over time, I'll add additional chart types. In the meantime, I welcome any contributions to create new chart types (gauges, etc).
 
 ## [&#10514;](#top) <span id="content">content</span>
 
 **[quick start](#quick-start)**
 - [example raster chart code](#example-raster-chart-code)
 - [example scatter chart code](#example-scatter-chart-code)
+- [example bar chart code](#example-bar-chart-code)
+- [example poincare chart code](#example-poincare-chart-code)
 
 **[intro](#intro)**
 - [terminology](#terminology)
@@ -44,10 +48,10 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
   - [dimensions](#chart-usage-dimensions)
   - [styling](#chart-usage-styling)
   - [initial data](#chart-usage-initial-data)
-  -[streaming data](#chart-usage-streaming-data)
+  - [streaming data](#chart-usage-streaming-data)
 
 **[axes](#axes)**
-- [&lt;ContinousAxis/&gt;](#continuous-axes-usage)
+- [&lt;ContinuousAxis/&gt;](#continuous-axes-usage)
   - [base properties](#continuous-axes-usage-base)
   - [styling](#continuous-axes-usage-styling)
 
@@ -57,12 +61,20 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 
 **[plots](#plots)**
 - [&lt;ScatterPlot/&gt;](#scatter-plot-usage)
-  - [base properties](#scatter-plot-usage-base)<br>
-  - [view-modifying interactions](#scatter-plot-usage-view)<br>
+  - [base properties](#scatter-plot-usage-base)
+  - [view-modifying interactions](#scatter-plot-usage-view)
 
-  - [&lt;RasterPlot/&gt;](#raster-plot-usage)<br>
-  -[base properties](#raster-plot-usage-base)<br>
-  - [view-modifying interactions](#raster-plot-usage-view)<br>
+- [&lt;RasterPlot/&gt;](#raster-plot-usage)
+  - [base properties](#raster-plot-usage-base)
+  - [view-modifying interactions](#raster-plot-usage-view)
+
+- [&lt;BarPlot/&gt;](#bar-plot-usage)
+  - [base properties](#bar-plot-usage-base)
+  - [view-modifying interactions](#bar-plot-usage-view)
+
+- [&lt;PoincarePlot/&gt;](#poincare-plot-usage)
+  - [base properties](#poincare-plot-usage-base)
+  - [view-modifying interactions](#poincare-plot-usage-view)
 
 **[utilities](#utilities)**
 - [&lt;Tracker/&gt;](#tracker-usage)
@@ -71,6 +83,9 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 - [&lt;Tooltip/&gt;](#tooltip-usage)
 - [&lt;ScatterPlotTooltipContent/&gt;](#scatterplot-tooltip-usage)
 - [&lt;RasterPlotTooltipContent/&gt;](#rasterplot-tooltip-usage)
+- [&lt;BarPlotTooltipContent/&gt;](#barplot-tooltip-usage)
+- [&lt;PoincarePlotTooltipContent/&gt;](#poincareplot-tooltip-usage)
+- [hooks](#hooks)
 
 
 ## [&#10514;](#content) <span id="quick-start">quick start</span>
@@ -125,13 +140,13 @@ import {RasterChart} from "stream-charts";
         label="x-axis"
         // font={{color: theme.color}}
     />
-    <CategoryAxis
+    <OrdinalAxis
         axisId="y-axis-1"
         location={AxisLocation.Left}
         categories={initialDataRef.current.map(series => series.name)}
         label="y-axis"
     />
-    <CategoryAxis
+    <OrdinalAxis
         axisId="y-axis-2"
         location={AxisLocation.Right}
         categories={initialDataRef.current.map(series => series.name)}
@@ -268,26 +283,90 @@ import {ScatterChart} from "stream-charts";
 </Chart>
 ```
 
+### [&#10514;](#content) <span id="example-bar-chart-code">example bar chart</span>
+
+Example bar chart showing windowed statistics.
+
+```typescript jsx
+<Chart
+    width={width}
+    height={height}
+    initialData={initialData}
+    seriesObservable={observable}
+>
+    <ContinuousAxis
+        axisId="x-axis"
+        location={AxisLocation.Bottom}
+        domain={[0, 5000]}
+        label="Time (ms)"
+    />
+    <OrdinalAxis
+        axisId="y-axis"
+        location={AxisLocation.Left}
+        categories={['series1', 'series2']}
+        label="Series"
+    />
+    <BarPlot
+        showMinMaxBars={true}
+        showMeanValueLines={true}
+        showValueLines={true}
+    />
+    <Tooltip visible={true}>
+        <BarPlotTooltipContent ordinalUnits="ms" />
+    </Tooltip>
+</Chart>
+```
+
+### [&#10514;](#content) <span id="example-poincare-chart-code">example poincare chart</span>
+
+Example Poincare (iterates) chart.
+
+```typescript jsx
+<Chart
+    width={width}
+    height={height}
+    initialData={initialData}
+    seriesObservable={observable}
+>
+    <ContinuousAxis
+        axisId="x-axis"
+        location={AxisLocation.Bottom}
+        domain={[0, 1000]}
+        label="n-1"
+    />
+    <ContinuousAxis
+        axisId="y-axis"
+        location={AxisLocation.Left}
+        domain={[0, 1000]}
+        label="n"
+    />
+    <PoincarePlot
+        showPoints={true}
+    />
+    <Tooltip visible={true}>
+        <PoincarePlotTooltipContent xLabel="n-1" yLabel="n" />
+    </Tooltip>
+</Chart>
+```
+
 ## [&#10514;](#content) <span id="intro">intro</span>
 
-`stream-charts` aim to provide high-performance charts for displaying large amounts of data in real-time. The examples (above) show a scatter plot and raster plot whose data was updated about every 25 ms. These plots show 30 time-series of data each. 
+`stream-charts` aim to provide high-performance charts for displaying large amounts of data in real-time. The examples (above) show various plot types whose data can be updated about every 25 ms.
 
-> There are obviously limits to the amount of data, and the performance of the plots. For example, the raster chart plots thousands of lines in the chart. When displaying more data in the raster plot, update performance will suffer. Therefore, you must tune your plots somewhat when you are working in the limits of their performance. 
->
-> The scatter chart can handle a larger number of series at 25 ms update frequency.
+> There are obviously limits to the amount of data, and the performance of the plots. For example, the raster chart plots thousands of lines in the chart. When displaying more data in the raster plot, update performance will suffer. Therefore, you must tune your plots somewhat when you are working in the limits of their performance.
 
 ### [&#10514;](#content) <span id="terminology">terminology</span>
 
-A &lt;Chart/&gt; holds a `plot`, the `axes`, and optionally, a &lt;Tracker/&gt;, and a &lt;Tooltip/&gt;. A &lt;Chart/&gt; is generic, and holds a specific type of `plot`, for example, a &lt;RasterPlot/&gt; or a &lt;ScatterPlot/&gt;. The `plot` holds the data, and optionally provides pan and zoom. The `axes` provide the scale of the data. For example, the scale could be a continuous numeric logarithmic scale, or a ordinal scale. The `axes` are also generic. Though, a `plot` can restrict the type of `axes` allowed. For example, a &lt;RasterPlot/&gt; requires that the y-axes are ordinal axes. &lt;Trackers/&gt; are generic. &lt;Tooltips/&gt; are also generic, though the tooltip content is a child, specific to a plot type, that it knows how to interpret and present the data.
+A &lt;Chart/&gt; holds a `plot`, the `axes`, and optionally, a &lt;Tracker/&gt;, and a &lt;Tooltip/&gt;. A &lt;Chart/&gt; is generic, and holds a specific type of `plot`, for example, a &lt;RasterPlot/&gt;, &lt;ScatterPlot/&gt;, &lt;BarPlot/&gt;, or &lt;PoincarePlot/&gt;. The `plot` holds the data, and optionally provides pan and zoom. The `axes` provide the scale of the data. For example, the scale could be a continuous numeric logarithmic scale, or an ordinal scale. The `axes` are also generic. Though, a `plot` can restrict the type of `axes` allowed. For example, a &lt;RasterPlot/&gt; requires that the y-axes are ordinal axes. &lt;Trackers/&gt; are generic. &lt;Tooltips/&gt; are also generic, though the tooltip content is a child, specific to a plot type, that it knows how to interpret and present the data.
 
 > **&lt;Chart/&gt;** [&#8628;](#chart)<br>
 > Generic container which holds the `Axes`, `Plot`, `Tracker`, `Tooltip`.
 
 > **Axes** [&#8628;](#axes)<br>
-> Defines the scale of the data. `stream-charts` current has two axis types: [&lt;ContinousAxis/&gt;](#continuous-axes-usage) and [&lt;OrdinalAxis/&gt;](#ordinal-axes-usage). The &lt;ContinousAxis can be used as an x-axis or y-axis. However, the &lt;CategoryAxis/&gt; can only be used as a y-axes because these are all time-series charts and the x-axis currently only represents time (this will change in the future with additional plot types). 
+> Defines the scale of the data. `stream-charts` current has two axis types: [&lt;ContinuousAxis/&gt;](#continuous-axes-usage) and [&lt;OrdinalAxis/&gt;](#ordinal-axes-usage). The &lt;ContinuousAxis/&gt; can be used as an x-axis or y-axis. However, the &lt;OrdinalAxis/&gt; can only be used as a y-axes because these are all time-series charts and the x-axis currently only represents time.
 
 > **Plot** [&#8628;](#plots)<br>
-> The plot is a container for the data that uses the `axes` for scale, domain, and range information. Plots provide panning and zooming of the x-axis (time), interacting with the `axes` to update the time-range. The plot is the visual representation of the data. Currently, two type of plots are available: [&lt;RasterPlot/&gt;](#raster-plot-usage), and [&lt;ScatterPlot/&gt;](#scatter-plot-usage).
+> The plot is a container for the data that uses the `axes` for scale, domain, and range information. Plots provide panning and zooming of the x-axis (time), interacting with the `axes` to update the time-range. The plot is the visual representation of the data. Currently, four types of plots are available: [&lt;RasterPlot/&gt;](#raster-plot-usage), [&lt;ScatterPlot/&gt;](#scatter-plot-usage), [&lt;BarPlot/&gt;](#bar-plot-usage), and [&lt;PoincarePlot/&gt;](#poincare-plot-usage).
 
 > **&lt;Tracker/&gt;** [&#8628;](#tracker-usage)<br>
 > The tracker displays the current plot time of the mouse. When multiple x-axes are used in the chart, then the tracker displays both times (i.e. from the upper and lower x-axis).
@@ -492,13 +571,13 @@ A set of properties to update the style of the axes.
 > An optional CSS properties specifying the font for the axis and tick labels.
 
 
-### [&#10514;](#content) <span id="ordinal-axes-usage">&lt;CategoryAxis/&gt;</span>
+### [&#10514;](#content) <span id="ordinal-axes-usage">&lt;OrdinalAxis/&gt;</span>
 
-The &lt;CategoryAxis/&gt; must be a child of the &lt;Chart/&gt;. Each &lt;Chart/&gt can one or two ordinal axes for the y-axes. Unlike the [&lt;ContinousAxis/&gt;](#continuous-axes-usage), the &lt;CategoryAxis/&gt; can only be used as a y-axis because for stream charts (at this point) the x-axes represent time. In the same way as with the [&lt;ContinousAxis/&gt;](#continuous-axes-usage), when using multiple multiple y-axes you must assign the series to the axes in one of the `Plot` components. Any series that are not explicitly assigned an axis will be assigned to the default y-axis, which is the left-hand side axis in the &lt;Chart/&gt.
+The &lt;OrdinalAxis/&gt; must be a child of the &lt;Chart/&gt;. Each &lt;Chart/&gt; can have one or two ordinal axes for the y-axes. Unlike the [&lt;ContinuousAxis/&gt;](#continuous-axes-usage), the &lt;OrdinalAxis/&gt; can only be used as a y-axis because for stream charts (at this point) the x-axes represent time. In the same way as with the [&lt;ContinuousAxis/&gt;](#continuous-axes-usage), when using multiple multiple y-axes you must assign the series to the axes in one of the `Plot` components. Any series that are not explicitly assigned an axis will be assigned to the default y-axis, which is the left-hand side axis in the &lt;Chart/&gt;.
 
-When creating a &lt;CategoryAxis/&gt;, you must specify its location using the `AxisLocation` enum defined in the [axes.ts](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) file. Each axis must have a unique axis ID. The &lt;CategoryAxis/&gt; uses a band scale (d3.scaleLinear).
+When creating an &lt;OrdinalAxis/&gt;, you must specify its location using the `AxisLocation` enum defined in the [axes.ts](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) file. Each axis must have a unique axis ID. The &lt;OrdinalAxis/&gt; uses a band scale (d3.scaleBand).
 
-#### [&#10514;](#content) <span id="ordinal-axes-usage-base">&lt;CategoryAxis/&gt; base properties</span>
+#### [&#10514;](#content) <span id="ordinal-axes-usage-base">&lt;OrdinalAxis/&gt; base properties</span>
 
 The base properties defining the axis.
 
@@ -509,15 +588,15 @@ The base properties defining the axis.
 > The location of the axis. As defined by the `AxisLocation` in the the [axes.ts](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) file, x-axes can be placed on the `bottom` or the `top`, and y-axes can be placed on the `left` or the `right`.
 
 > **categories (Array<string>)**<br>
-> The required `categories` property holds the names of the categories, in the order that they will be displayed on the axis. The first element in the array will be on shown at the top of the axis. The second element will be on lower, and the last element will be at the bottom of the axis.
+> The required `categories` property holds the names of the categories, in the order that they will be displayed on the axis. The first element in the array will be shown at the top of the axis. The second element will be lower, and the last element will be at the bottom of the axis.
 
 > **domain ([min: number, max: number])**<br>
-> The domain of the axis (in d3 terminology) is effectively the minimum value of the displayed axis and the maximum value of the displayed axis when the initial data is displayed. The domain defines the time-window of the displayed data. For example, if the `domain` for an x-axis is specified as `[1000, 6000]`, then the axis starts at `1000` and ends at `6000`, and the time-window is `5000`. Once data starts to stream past the axis end, the plot starts to scroll, maintaining the calculated time-window (in out example, 5000). Of course, a zooming event will change the domain, and also the time-window.
+> The domain of the axis (in d3 terminology) is effectively the minimum value of the displayed axis and the maximum value of the displayed axis when the initial data is displayed. The domain defines the time-window of the displayed data. For example, if the `domain` for an x-axis is specified as `[1000, 6000]`, then the axis starts at `1000` and ends at `6000`, and the time-window is `5000`. Once data starts to stream past the axis end, the plot starts to scroll, maintaining the calculated time-window (in our example, 5000). Of course, a zooming event will change the domain, and also the time-window.
 
 > **label (string)**<br>
 > The axis label.
 
-#### [&#10514;](#content) <span id="ordinal-axes-usage-styling">&lt;CategoryAxis/&gt; styling</span>
+#### [&#10514;](#content) <span id="ordinal-axes-usage-styling">&lt;OrdinalAxis/&gt; styling</span>
 
 A set of properties to update the style of the axes.
 
@@ -569,7 +648,7 @@ In `stream-charts`, the `plot` is the data visualization component. To work, a p
 
 The plot determines what view-modifying user interactions are available. Specifically, panning the data to the left and right in time, and zooming in time.
 
-The &lt;RasterPlot/&gt; specifically is used to plot event-timing data, where the x-values are time, and the y-values are a category to which the event belongs. The x-axis is required to be a [&lt;ContinousAxis/&gt;](#continuous-axes-usage), and the y-axis is required to the a [&lt;OrdinalAxis/&gt;](#ordinal-axes-usage). 
+The &lt;RasterPlot/&gt; specifically is used to plot event-timing data, where the x-values are time, and the y-values are a category to which the event belongs. The x-axis is required to be a [&lt;ContinuousAxis/&gt;](#continuous-axes-usage), and the y-axis is required to be an [&lt;OrdinalAxis/&gt;](#ordinal-axes-usage).
 
 #### [&#10514;](#content) <span id="raster-plot-usage-base">&lt;RasterPlot/&gt; base properties</span>
 
@@ -597,6 +676,55 @@ View-modifying interactions are those that change the way the data is displayed.
 
 > **withCadenceOf (number, optional, default = undefinded)**<br>
 > An optional property that defaults to `undefined`. When set, uses a cadence with the specified refresh period (in milliseconds). For plots with slow data updates (> 100 ms) using a cadence of 10 to 25 ms smooths out the updates so the time scrolling doesn't appear choppy. When updates are around 25 ms or less, then setting the cadence period too small will result in poor update performance. Generally at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time to the current time. See also the related &lt;Chart/&gt's `windowingTime` property.
+
+### [&#10514;](#content) <span id="bar-plot-usage">&lt;BarPlot/&gt;</span>
+
+The &lt;BarPlot/&gt; is used to plot windowed statistics for a data series. It can display the current value, the mean value, and the min/max range for the windowed data.
+
+#### [&#10514;](#content) <span id="bar-plot-usage-base">&lt;BarPlot/&gt; base properties</span>
+
+> **axisAssignments (Map<string, [AxesAssignment](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/plot.ts) >, optional, default = Map())**<br>
+> An optional property that assigns data series to (x, y)-axes. Any series not assigned to an axis will use the default axis. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot.
+
+> **showMinMaxBars (boolean, optional, default = false)**<br>
+> When `true`, displays bars representing the minimum and maximum values in the data.
+
+> **showWindowedMinMaxBars (boolean, optional, default = false)**<br>
+> When `true`, displays bars representing the windowed minimum and maximum values.
+
+> **showValueLines (boolean, optional, default = false)**<br>
+> When `true`, displays lines representing the current values of the data series.
+
+> **showMeanValueLines (boolean, optional, default = false)**<br>
+> When `true`, displays lines representing the mean values of the data series.
+
+> **showWindowedMeanValueLines (boolean, optional, default = false)**<br>
+> When `true`, displays lines representing the windowed mean values.
+
+> **barMargin (number, pixels, optional, default = 2)**<br>
+> Optional property that adds a margin to the top and bottom of the bars.
+
+#### [&#10514;](#content) <span id="bar-plot-usage-view">&lt;BarPlot/&gt; view-modifying interactions</span>
+
+> **panEnabled**, **zoomEnabled**, **zoomKeyModifiersRequired**, **withCadenceOf**<br>
+> These properties behave the same as in [&lt;ScatterPlot/&gt;](#scatter-plot-usage-view).
+
+### [&#10514;](#content) <span id="poincare-plot-usage">&lt;PoincarePlot/&gt;</span>
+
+The &lt;PoincarePlot/&gt; (also known as an iterates plot) is used to plot the current value of a series against its previous value (n vs n-1). This is useful for identifying patterns or oscillations in the data.
+
+#### [&#10514;](#content) <span id="poincare-plot-usage-base">&lt;PoincarePlot/&gt; base properties</span>
+
+> **interpolation (d3.CurveFactory, optional, default = undefined)**<br>
+> An optional property that defines how the line between iterates will be interpolated. Use `NoCurveFactory` to disable the line.
+
+> **showPoints (boolean, optional, default = false)**<br>
+> When `true`, displays individual data points on the plot.
+
+#### [&#10514;](#content) <span id="poincare-plot-usage-view">&lt;PoincarePlot/&gt; view-modifying interactions</span>
+
+> **panEnabled**, **zoomEnabled**, **zoomKeyModifiersRequired**, **withCadenceOf**<br>
+> These properties behave the same as in [&lt;ScatterPlot/&gt;](#scatter-plot-usage-view).
 
 ## [&#10514;](#content) <span id="utilities">utilities</span>
 
@@ -716,18 +844,45 @@ The &lt;RasterPlotTooltipContent/&gt; shows the series name, the time and value 
 > **style ([TooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/tooltipUtils.ts), optional, default = [defaultTooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/tooltipUtils.ts) )**<br>
 > Optional styles for the tooltip content. The styles are the same as those for the &lt;Tooltip/&gt;.
 
-## building
+### [&#10514;](#content) <span id="barplot-tooltip-usage">&lt;BarPlotTooltipContent/&gt;</span>
 
-Building
-```shell
-npm install
-npm run build
-```
+The &lt;BarPlotTooltipContent/&gt; displays the series name and current statistics in a table format.
 
-Packaging
-```shell
-npm pack
-```
+> **ordinalUnits (string, optional)**<br>
+> Optional units to display alongside the values.
+
+> **style ([TooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/tooltipUtils.ts), optional)**<br>
+> Optional styles for the tooltip content.
+
+### [&#10514;](#content) <span id="poincareplot-tooltip-usage">&lt;PoincarePlotTooltipContent/&gt;</span>
+
+The &lt;PoincarePlotTooltipContent/&gt; displays the series name and the current, previous, and next iterates in a table format.
+
+> **xLabel (string)**<br>
+> Required label for the x-axis values.
+
+> **yLabel (string)**<br>
+> Required label for the y-axis values.
+
+> **nMinusLagHeader**, **nHeader**, **nPlusLagHeader** (string, optional)<br>
+> Optional headers for the previous, current, and next iterates.
+
+> **xValueFormatter**, **yValueFormatter**, **xChangeFormatter**, **yChangeFormatter** (optional)<br>
+> Optional formatters for values and their changes.
+
+> **style ([TooltipStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/tooltipUtils.ts), optional)**<br>
+> Optional styles for the tooltip content.
+
+## [&#10514;](#content) <span id="hooks">hooks</span>
+
+For advanced usage, `stream-charts` provides several hooks to interact with the chart's internal state.
+
+- **useChart()**: Access the chart's context, including dimensions, scales, and registration functions for tooltips and trackers.
+- **useAxes()**: Access the state of the x and y axes.
+- **usePlotDimensions()**: Access the dimensions of the plot area and margins.
+- **useDataObservable()**: Access the data stream observable.
+
+## [&#10514;](#content) <span id="building">building</span>
 
 Testing
 ```shell
