@@ -31,49 +31,46 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 
 ## [&#10514;](#top) <span id="content">content</span>
 
-**[quick start](#quick-start)**<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[example raster chart code](#example-raster-chart-code)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[example scatter chart code](#example-scatter-chart-code)
+**[quick start](#quick-start)**
+- [example raster chart code](#example-raster-chart-code)
+- [example scatter chart code](#example-scatter-chart-code)
 
-**[intro](#intro)**<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[terminology](#terminology)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[data ttl, time-windows, performance](#data-ttl)<br>
+**[intro](#intro)**
+- [terminology](#terminology)
+- [data ttl, time-windows, performance](#data-ttl)
 
-**[chart](#chart)**<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[&lt;Chart/&gt;](#chart-usage)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[dimensions](#chart-usage-dimensions)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#chart-usage-styling)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[initial data](#chart-usage-initial-data)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[streaming data](#chart-usage-streaming-data)<br>
+**[chart](#chart)**
+- [&lt;Chart/&gt;](#chart-usage)
+  - [dimensions](#chart-usage-dimensions)
+  - [styling](#chart-usage-styling)
+  - [initial data](#chart-usage-initial-data)
+  -[streaming data](#chart-usage-streaming-data)
 
-**[axes](#axes)**<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[&lt;ContinousAxis/&gt;](#continuous-axes-usage)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#continuous-axes-usage-base)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#continuous-axes-usage-styling)<br>
+**[axes](#axes)**
+- [&lt;ContinousAxis/&gt;](#continuous-axes-usage)
+  - [base properties](#continuous-axes-usage-base)
+  - [styling](#continuous-axes-usage-styling)
 
-&nbsp;&nbsp;&nbsp;&nbsp;[&lt;CategoryAxis/&gt;](#category-axes-usage)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#category-axes-usage-base)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#category-axes-usage-styling)<br>
+- [&lt;OrdinalAxis/&gt;](#ordinal-axes-usage)
+  - [base properties](#ordinal-axes-usage-base)
+  - [styling](#ordinal-axes-usage-styling)
 
-**[plots](#plots)**<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[&lt;ScatterPlot/&gt;](#scatter-plot-usage)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#scatter-plot-usage-base)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[view-modifying interactions](#scatter-plot-usage-view)<br>
+**[plots](#plots)**
+- [&lt;ScatterPlot/&gt;](#scatter-plot-usage)
+  - [base properties](#scatter-plot-usage-base)<br>
+  - [view-modifying interactions](#scatter-plot-usage-view)<br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;[&lt;RasterPlot/&gt;](#raster-plot-usage)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#raster-plot-usage-base)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[view-modifying interactions](#raster-plot-usage-view)<br>
+  - [&lt;RasterPlot/&gt;](#raster-plot-usage)<br>
+  -[base properties](#raster-plot-usage-base)<br>
+  - [view-modifying interactions](#raster-plot-usage-view)<br>
 
-**[utilities](#utilities)**<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[&lt;Tracker/&gt;](#tracker-usage)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[base properties](#tracker-usage-base)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[styling](#tracker-usage-styling)<br>
-
-&nbsp;&nbsp;&nbsp;&nbsp;[&lt;Tooltip/&gt;](#tooltip-usage)<br>
-
-&nbsp;&nbsp;&nbsp;&nbsp;[&lt;ScatterPlotTooltipContent/&gt;](#scatterplot-tooltip-usage)<br>
-
-&nbsp;&nbsp;&nbsp;&nbsp;[&lt;RasterPlotTooltipContent/&gt;](#rasterplot-tooltip-usage)<br>
+**[utilities](#utilities)**
+- [&lt;Tracker/&gt;](#tracker-usage)
+  - [base properties](#tracker-usage-base)
+  - [styling](#tracker-usage-styling)
+- [&lt;Tooltip/&gt;](#tooltip-usage)
+- [&lt;ScatterPlotTooltipContent/&gt;](#scatterplot-tooltip-usage)
+- [&lt;RasterPlotTooltipContent/&gt;](#rasterplot-tooltip-usage)
 
 
 ## [&#10514;](#content) <span id="quick-start">quick start</span>
@@ -281,13 +278,13 @@ import {ScatterChart} from "stream-charts";
 
 ### [&#10514;](#content) <span id="terminology">terminology</span>
 
-A &lt;Chart/&gt; holds a `plot`, the `axes`, and optionally, a &lt;Tracker/&gt;, and a &lt;Tooltip/&gt;. A &lt;Chart/&gt; is generic, and holds a specific type of `plot`, for example, a &lt;RasterPlot/&gt; or a &lt;ScatterPlot/&gt;. The `plot` holds the data, and optionally provides pan and zoom. The `axes` provide the scale of the data. For example, the scale could be a continuous numeric logarithmic scale, or a category scale. The `axes` are also generic. Though, a `plot` can restrict the type of `axes` allowed. For example, a &lt;RasterPlot/&gt; requires that the y-axes are category axes. &lt;Trackers/&gt; are generic. &lt;Tooltipes/&gt; are also generic, though the tooltip content is a child, specific to a plot type, that it knows how to interpret and present the data.
+A &lt;Chart/&gt; holds a `plot`, the `axes`, and optionally, a &lt;Tracker/&gt;, and a &lt;Tooltip/&gt;. A &lt;Chart/&gt; is generic, and holds a specific type of `plot`, for example, a &lt;RasterPlot/&gt; or a &lt;ScatterPlot/&gt;. The `plot` holds the data, and optionally provides pan and zoom. The `axes` provide the scale of the data. For example, the scale could be a continuous numeric logarithmic scale, or a ordinal scale. The `axes` are also generic. Though, a `plot` can restrict the type of `axes` allowed. For example, a &lt;RasterPlot/&gt; requires that the y-axes are ordinal axes. &lt;Trackers/&gt; are generic. &lt;Tooltips/&gt; are also generic, though the tooltip content is a child, specific to a plot type, that it knows how to interpret and present the data.
 
 > **&lt;Chart/&gt;** [&#8628;](#chart)<br>
 > Generic container which holds the `Axes`, `Plot`, `Tracker`, `Tooltip`.
 
 > **Axes** [&#8628;](#axes)<br>
-> Defines the scale of the data. `stream-charts` current has two axis types: [&lt;ContinousAxis/&gt;](#continuous-axes-usage) and [&lt;CategoryAxis/&gt;](#category-axes-usage). The &lt;ContinousAxis can be used as an x-axis or y-axis. However, the &lt;CategoryAxis/&gt; can only be used as a y-axes because these are all time-series charts and the x-axis currently only represents time (this will change in the future with additional plot types). 
+> Defines the scale of the data. `stream-charts` current has two axis types: [&lt;ContinousAxis/&gt;](#continuous-axes-usage) and [&lt;OrdinalAxis/&gt;](#ordinal-axes-usage). The &lt;ContinousAxis can be used as an x-axis or y-axis. However, the &lt;CategoryAxis/&gt; can only be used as a y-axes because these are all time-series charts and the x-axis currently only represents time (this will change in the future with additional plot types). 
 
 > **Plot** [&#8628;](#plots)<br>
 > The plot is a container for the data that uses the `axes` for scale, domain, and range information. Plots provide panning and zooming of the x-axis (time), interacting with the `axes` to update the time-range. The plot is the visual representation of the data. Currently, two type of plots are available: [&lt;RasterPlot/&gt;](#raster-plot-usage), and [&lt;ScatterPlot/&gt;](#scatter-plot-usage).
@@ -495,13 +492,13 @@ A set of properties to update the style of the axes.
 > An optional CSS properties specifying the font for the axis and tick labels.
 
 
-### [&#10514;](#content) <span id="category-axes-usage">&lt;CategoryAxis/&gt;</span>
+### [&#10514;](#content) <span id="ordinal-axes-usage">&lt;CategoryAxis/&gt;</span>
 
-The &lt;CategoryAxis/&gt; must be a child of the &lt;Chart/&gt;. Each &lt;Chart/&gt can one or two category axes for the y-axes. Unlike the [&lt;ContinousAxis/&gt;](#continuous-axes-usage), the &lt;CategoryAxis/&gt; can only be used as a y-axis because for stream charts (at this point) the x-axes represent time. In the same way as with the [&lt;ContinousAxis/&gt;](#continuous-axes-usage), when using multiple multiple y-axes you must assign the series to the axes in one of the `Plot` components. Any series that are not explicitly assigned an axis will be assigned to the default y-axis, which is the left-hand side axis in the &lt;Chart/&gt.
+The &lt;CategoryAxis/&gt; must be a child of the &lt;Chart/&gt;. Each &lt;Chart/&gt can one or two ordinal axes for the y-axes. Unlike the [&lt;ContinousAxis/&gt;](#continuous-axes-usage), the &lt;CategoryAxis/&gt; can only be used as a y-axis because for stream charts (at this point) the x-axes represent time. In the same way as with the [&lt;ContinousAxis/&gt;](#continuous-axes-usage), when using multiple multiple y-axes you must assign the series to the axes in one of the `Plot` components. Any series that are not explicitly assigned an axis will be assigned to the default y-axis, which is the left-hand side axis in the &lt;Chart/&gt.
 
 When creating a &lt;CategoryAxis/&gt;, you must specify its location using the `AxisLocation` enum defined in the [axes.ts](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/axes.ts) file. Each axis must have a unique axis ID. The &lt;CategoryAxis/&gt; uses a band scale (d3.scaleLinear).
 
-#### [&#10514;](#content) <span id="category-axes-usage-base">&lt;CategoryAxis/&gt; base properties</span>
+#### [&#10514;](#content) <span id="ordinal-axes-usage-base">&lt;CategoryAxis/&gt; base properties</span>
 
 The base properties defining the axis.
 
@@ -520,7 +517,7 @@ The base properties defining the axis.
 > **label (string)**<br>
 > The axis label.
 
-#### [&#10514;](#content) <span id="category-axes-usage-styling">&lt;CategoryAxis/&gt; styling</span>
+#### [&#10514;](#content) <span id="ordinal-axes-usage-styling">&lt;CategoryAxis/&gt; styling</span>
 
 A set of properties to update the style of the axes.
 
@@ -532,7 +529,7 @@ A set of properties to update the style of the axes.
 
 ### [&#10514;](#content) <span id="scatter-plot-usage">&lt;ScatterPlot/&gt;</span>
 
-In `stream-charts`, the `plot` is the data visualization component. To work, a plot must be a child of the &lt;Chart/&gt; component so that it is plugged into the `stream-charts` ecosystem. The plot determines how to render the data. But it relies on the axes to determine scaling information so that it can map data to screen locations. And therefore, a plot must have sibling axes ([&lt;ContinousAxis/&gt;](#continuous-axes-usage), [&lt;CategoryAxis/&gt;](#category-axes-usage)) components for the x-axis and the y-axis. Because the plot is responsible for data visualization, it is also where the data series are assigned to axes. The assignment of axes to series is optional, and any series not explicitly assigned to an axis will be assigned to the default axes. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot. 
+In `stream-charts`, the `plot` is the data visualization component. To work, a plot must be a child of the &lt;Chart/&gt; component so that it is plugged into the `stream-charts` ecosystem. The plot determines how to render the data. But it relies on the axes to determine scaling information so that it can map data to screen locations. And therefore, a plot must have sibling axes ([&lt;ContinousAxis/&gt;](#continuous-axes-usage), [&lt;OrdinalAxis/&gt;](#ordinal-axes-usage)) components for the x-axis and the y-axis. Because the plot is responsible for data visualization, it is also where the data series are assigned to axes. The assignment of axes to series is optional, and any series not explicitly assigned to an axis will be assigned to the default axes. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot. 
 
 The plot determines what view-modifying user interactions are available. Specifically, panning the data to the left and right in time, and zooming in time.
 
@@ -568,11 +565,11 @@ View-modifying interactions are those that change the way the data is displayed.
 
 ### [&#10514;](#content) <span id="raster-plot-usage">&lt;RasterPlot/&gt;</span>
 
-In `stream-charts`, the `plot` is the data visualization component. To work, a plot must be a child of the &lt;Chart/&gt; component so that it is plugged into the `stream-charts` ecosystem. The plot determines how to render the data. But it relies on the axes to determine scaling information so that it can map data to screen locations. And therefore, a plot must have sibling axes ([&lt;ContinousAxis/&gt;](#continuous-axes-usage), [&lt;CategoryAxis/&gt;](#category-axes-usage)) components for the x-axis and the y-axis. Because the plot is responsible for data visualization, it is also where the data series are assigned to axes. The assignment of axes to series is optional, and any series not explicitly assigned to an axis will be assigned to the default axes. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot.
+In `stream-charts`, the `plot` is the data visualization component. To work, a plot must be a child of the &lt;Chart/&gt; component so that it is plugged into the `stream-charts` ecosystem. The plot determines how to render the data. But it relies on the axes to determine scaling information so that it can map data to screen locations. And therefore, a plot must have sibling axes ([&lt;ContinousAxis/&gt;](#continuous-axes-usage), [&lt;OrdinalAxis/&gt;](#ordinal-axes-usage)) components for the x-axis and the y-axis. Because the plot is responsible for data visualization, it is also where the data series are assigned to axes. The assignment of axes to series is optional, and any series not explicitly assigned to an axis will be assigned to the default axes. The default x-axis is the bottom axis, and the default y-axis is the axis on the left-hand side of the plot.
 
 The plot determines what view-modifying user interactions are available. Specifically, panning the data to the left and right in time, and zooming in time.
 
-The &lt;RasterPlot/&gt; specifically is used to plot event-timing data, where the x-values are time, and the y-values are a category to which the event belongs. The x-axis is required to be a [&lt;ContinousAxis/&gt;](#continuous-axes-usage), and the y-axis is required to the a [&lt;CategoryAxis/&gt;](#category-axes-usage). 
+The &lt;RasterPlot/&gt; specifically is used to plot event-timing data, where the x-values are time, and the y-values are a category to which the event belongs. The x-axis is required to be a [&lt;ContinousAxis/&gt;](#continuous-axes-usage), and the y-axis is required to the a [&lt;OrdinalAxis/&gt;](#ordinal-axes-usage). 
 
 #### [&#10514;](#content) <span id="raster-plot-usage-base">&lt;RasterPlot/&gt; base properties</span>
 
