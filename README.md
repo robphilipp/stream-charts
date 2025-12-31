@@ -101,10 +101,6 @@ For the neuron raster chart (see [example](https://github.com/robphilipp/stream-
 
 
 ```typescript jsx
-import {RasterChart} from "stream-charts";
-// .
-// .
-// .
 <Chart
     chartId={chartId.current}
     width={useGridCellWidth()}
@@ -239,10 +235,6 @@ An example scatter chart  (see [example](https://github.com/robphilipp/stream-ch
 
 
 ```typescript jsx
-import {ScatterChart} from "stream-charts";
-// .
-// .
-// .
 <Chart
     chartId={chartId.current}
     width={useGridCellWidth()}
@@ -349,7 +341,7 @@ import {ScatterChart} from "stream-charts";
 
 ### [&#10514;](#content) <span id="example-bar-chart-code">example bar chart</span>
 
-Example bar chart showing windowed statistics.
+Example bar chart showing windowed statistics (see [example](https://github.com/robphilipp/stream-charts-examples/blob/develop/src/app/examples/StreamingBarChart.tsx)).
 
 ![bar-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/bar-chart-with-tooltip.png?raw=true)
 
@@ -469,7 +461,7 @@ Example bar chart showing windowed statistics.
 
 ### [&#10514;](#content) <span id="example-poincare-chart-code">example poincare chart</span>
 
-Example Poincare (iterates) chart.
+Example Poincare (iterates) chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/develop/src/app/examples/StreamingPoincareChart.tsx)).
 
 ![poincare-chart-with-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/poincare-chart-with-tooltip.png?raw=true)
 
