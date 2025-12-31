@@ -1,6 +1,6 @@
 {
   "name": "stream-charts",
-  "version": "1.0.3-SNAPSHOT",
+  "version": "1.0.5-SNAPSHOT",
   "description": "Charts for steaming data",
   "author": "Rob Philipp",
   "homepage": "https://robphilipp.github.io/stream-charts/",
@@ -11,7 +11,8 @@
   "scripts": {
     "test": "jest src/app/charts/**/*.test.ts*",
     "build": "tsc",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "gen-docs": "npx typedoc src/app/charts/*"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -59,6 +60,7 @@
     "README.md",
     "changes.md",
     "dist/src/app/**",
-    "dist/src/index.*"
+    "dist/src/index.*",
+    "src/app/charts/**"
   ]
 }
