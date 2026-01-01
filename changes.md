@@ -1,5 +1,9 @@
 # change history
 
+## version 1.1.1 (code-sandbox example)
+
+Added link to code-sandbox example.
+
 ## version 1.1.0 (bar chart, Poincare chart, refactoring)
 1. Added bar chart
 2. Added Poincare chart
