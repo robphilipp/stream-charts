@@ -14,6 +14,8 @@ The following plot types are currently available:
 3. **Bar Plot**: for plotting time-series as bars that show the current value and its minimum, maximum, and mean values for all times and time-windows.
 4. **Poincare Plot**: for plotting function iterates (`f[n](t)` vs `f[n-m](t)`).
 
+> Try it on codesandbox [stream-charts](https://codesandbox.io/p/sandbox/n7c8jm)
+
 `Charts` are composable using react components. So you can add different axis types, multiple axes, trackers, tooltips, and plots. `stream-charts` provides the following react components from which to build your own charts:
 1. The [Chart](#chart-usage) serves as the container, holding the other components as children, and providing the data to the plot.
 2. The [ContinuousAxis](#continuous-axes-usage) and [OrdinalAxis](#ordinal-axes-usage) components define the x- and y-axes, and provide the scales for the axes. Charts are required to have at least one x-axis and one y-axis.
