@@ -9,7 +9,7 @@
     "jsx": "react-jsx",
     "moduleResolution": "node",
 
-    "allowJs": true,
+    "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,

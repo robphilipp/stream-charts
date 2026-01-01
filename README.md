@@ -4,24 +4,50 @@
 [Change History](changes.md) •
 [Example Project](https://github.com/robphilipp/stream-charts-examples)
 
-`stream-charts` are [react](https://reactjs.org)-based time-series charts for viewing high frequency data, streamed in real-time using [rxjs](https://rxjs-dev.firebaseapp.com). Generally, update periods of 25 ms aren't a problem for about a hundred or so time-series. To achieve this type of performance, the charts are implemented using [d3](https://d3js.org) SVG elements, wrapped in react functional components, and keep chart updates outside the react render cycle.
+## [&#10514;](#top) <span id="intro">intro</span>
+`stream-charts` is a [react](https://reactjs.org)-based library for building real-time time-series charts for viewing high frequency data. Ingesting and plotting new data for about 100 time-series every 25 ms isn't generally a problem. 
 
-### quick overview
+The following plot types are currently available:
 
-With `stream-charts` you can display initial (or static) data as well as live data from an `Observable`.
+1. **Scatter Plot**: for plotting time-series data.
+2. **Raster Plot**: for plotting event-timing data.
+3. **Bar Plot**: for plotting time-series as bars that show the current value and its minimum, maximum, and mean values for all times and time-windows.
+4. **Poincare Plot**: for plotting function iterates (`f[n](t)` vs `f[n-m](t)`).
 
-`Charts` are composable using react components. So you can add different axis types, multiple axes, trackers, tooltips, and plots.
+`Charts` are composable using react components. So you can add different axis types, multiple axes, trackers, tooltips, and plots. `stream-charts` provides the following react components from which to build your own charts:
+1. The [Chart](#chart-usage) serves as the container, holding the other components as children, and providing the data to the plot.
+2. The [ContinuousAxis](#continuous-axes-usage) and [OrdinalAxis](#ordinal-axes-usage) components define the x- and y-axes, and provide the scales for the axes. Charts are required to have at least one x-axis and one y-axis.
+3. The optional [Tracker](#tracker-usage) component shows the value associated with the current mouse location of the axes to which it is assigned.
+4. The optional [Tooltip](#tooltip-usage) component shows the `TooltipContent` for the datum under the mouse cursor. Each plot type has a default tooltip content component ([ScatterPlotTooltipContent](#scatterplot-tooltip-usage), [RasterPlotTooltipContent](#rasterplot-tooltip-usage), [BarPlotTooltipContent](#barplot-tooltip-usage), [PoincarePlotTooltipContent](#poincareplot-tooltip-usage)).
+5. The `Plot` component displays the data. Currently, there are four plot components: [ScatterPlot](#scatter-plot-usage), [RasterPlot](#raster-plot-usage), [BarPlot](#bar-plot-usage), and [PoincarePlot](#poincare-plot-usage).
+
+### [&#10514;](#content) <span id="axes">capabilities</span>
+Charts can have multiple x-axes and y-axes, and these axes can have different scales. Time series can be assigned to an axis or use the default one. Currently, there are continuous and ordinal (category) axes. Continuous axes are available with all the scales supported by [d3](https://d3js.org) (for example, linear scales, logarithmic scales, and power scales).
+
+Each plot type comes with a default tooltip and tooltip content. However, you can customize the tooltip and tooltip content to suit your needs.
+
+The charts are designed to be responsive to changes in size, for example, to support window resizing.
+
+With `stream-charts` you can display initial (static) data as well as live data from an [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable).
 
 All aspects of the `Charts` style are exposed allowing you to use your favorite frameworks theme provider, or none at all.
 
-`Charts` provide zooming and panning can be enabled or disabled. And zooming is set to use a modifier key by default so that it doesn't interfere with normal scrolling.
+`Charts` provide zooming and panning that can be enabled or disabled. And zooming is set to use a modifier key by default so that it doesn't interfere with normal scrolling.
+
+### [&#10514;](#top) <span id="content">rendering performance</span>
+Charts can easily ingest and plot new data for about 100 time-series every 25 ms. 
 
 When using lower update frequencies, such as < 250 ms, and data updates are sparse, you can set an update cadence so that the plot's time smoothly scrolls, rather than updating only when new data arrives.
 
 `Charts` can have a data TTL (time-to-live) to drop older data to allow long-running streams of data. With the data-update callback you can capture that data and store it in local storage, memory, or a location of your choice.
 
+To achieve this type of performance, the charts:
+1. accept an [rxjs](https://rxjs-dev.firebaseapp.com) [Observable](https://rxjs-dev.firebaseapp.com/api/index/class/Observable) as the source of the time-series data, and
+2. are implemented using [d3](https://d3js.org) SVG elements wrapped in [react](https://reactjs.org) functional components, and
+3. keep chart updates outside [react](https://reactjs.org)'s render cycle.
 
-### project status
+
+### [&#10514;](#top) <span id="content">project status</span>
 The following plots are currently available:
 
 1. **Scatter Plot**: for plotting time-series data.
@@ -81,8 +107,8 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
   - [base properties](#tracker-usage-base)
   - [styling](#tracker-usage-styling)
 - [&lt;Tooltip/&gt;](#tooltip-usage)
-- [&lt;ScatterPlotTooltipContent/&gt;](#scatterplot-tooltip-usage)
 - [&lt;RasterPlotTooltipContent/&gt;](#rasterplot-tooltip-usage)
+- [&lt;ScatterPlotTooltipContent/&gt;](#scatterplot-tooltip-usage)
 - [&lt;BarPlotTooltipContent/&gt;](#barplot-tooltip-usage)
 - [&lt;PoincarePlotTooltipContent/&gt;](#poincareplot-tooltip-usage)
 - [hooks](#hooks)
@@ -95,7 +121,7 @@ npm install stream-charts
 ```
 
 ### [&#10514;](#content) <span id="example-raster-chart-code">example raster chart</span>
-For the neuron raster chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx))
+An example raster chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx))
 
 ![raster-chart](https://github.com/robphilipp/stream-charts/blob/develop/images/raster-chart-tooltip.png?raw=true)
 
@@ -708,16 +734,15 @@ The Series has the following shape
 ```typescript
 interface Series {
    // the series name
-   readonly name: string;
+   readonly name: string
    // the array of time-value pairs
-   data: Array<Datum>;
+   data: Array<Datum>
    // ... accessor functions
-   . 
-   . 
-   . 
+   // . 
+   // . 
+   // . 
 }
->
->```
+```
 And the [Datum](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/datumSeries.ts) is an immutable object that has the following shape 
 ```typescript
 interface Datum {
@@ -1069,7 +1094,7 @@ Optional styles for the tooltip content. The styles are the same as those for th
 
 
 ### [&#10514;](#content) <span id="rasterplot-tooltip-usage">&lt;RasterTooltipContent/&gt;</span>
-The &lt;RasterPlotTooltipContent/&gt; shows the series name, the time and value of the point over which the mouse is hovering. There are only three properties.
+The &lt;RasterPlotTooltipContent/&gt; shows the series name, the time, and value of the point over which the mouse is hovering. There are only three properties.
 
 **xFormatter ((value: number) => string, optional, default =** [**formatTime**](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/utils.ts) <br>
 Optional function that formats the x-value immediately before and after the mouse location. The default function formats that x-values as natural numbers representing milliseconds.
