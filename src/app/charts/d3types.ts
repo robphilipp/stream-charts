@@ -1,6 +1,6 @@
 // the axis-element type return when calling the ".call(axis)" function
 import {Selection} from "d3";
-import {Datum} from "./datumSeries";
+import {Datum} from "./series/timeSeries";
 
 export type AxisElementSelection = Selection<SVGGElement, unknown, null, undefined>
 export type SvgSelection = Selection<SVGSVGElement, any, null, undefined>

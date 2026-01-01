@@ -1,5 +1,12 @@
 # change history
 
+## version 1.1.0 (bar chart, Poincare chart, refactoring)
+1. Added bar chart
+2. Added Poincare chart
+3. Refactored code for better readability and maintainability
+4. Added tests
+5. Fixed an incorrect calculation of the plot size from the svg container size
+
 ## version 1.0.1 (tooltip clipping issue)
 Fixed issue where the tooltip was getting clipped at the top of the plot under certain circumstances.
 

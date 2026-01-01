@@ -1,13 +1,12 @@
-import {Dimensions, Margin} from "./margins"
+import {Dimensions, Margin} from "./styling/margins"
 import * as d3 from "d3";
-import {Selection, ZoomTransform} from "d3";
-import {calculateZoomFor, ContinuousNumericAxis} from "./axes";
-import {ContinuousAxisRange} from "./continuousAxisRangeFor";
+import {Selection} from "d3";
 
 /**
  * No operation function for use when a default function is needed
  */
 export const noop = () => {
+    /* empty on purpose */
 }
 
 /**
@@ -18,51 +17,47 @@ export const noop = () => {
  * @param dimensions The the overall dimensions (plot dimensions plus margin)
  * @return `true` if the mouse is in the plot area; `false` if the mouse is not in the plot area
  */
-export const mouseInPlotAreaFor =
-    (x: number, y: number, margin: Margin, dimensions: Dimensions): boolean =>
-        x > margin.left && x < dimensions.width - margin.right && y > margin.top && y < dimensions.height - margin.bottom
+export function mouseInPlotAreaFor(x: number, y: number, margin: Margin, dimensions: Dimensions): boolean {
+    return x > margin.left &&
+        x < dimensions.width - margin.right &&
+        y > margin.top &&
+        y < dimensions.height - margin.bottom
+}
 
 /**
  * Calculates the width of an SVG text element, based on its bounding box
  * @param elem The SVG text element
  * @return The width in pixels, or 0 if SVG text element has not children
  */
-export const textWidthOf =
-    (elem: Selection<SVGTextElement, any, HTMLElement, any>) =>
-        elem.node()?.getBBox()?.width || 0
-
-/**
- * The object returned by the zoom
- */
-export interface Zoom {
-    zoomFactor: number,
-    timeRange: ContinuousAxisRange,
+export function textWidthOf(elem: Selection<SVGTextElement, any, any, any>): number {
+    return elem.node()?.getBBox()?.width || 0
 }
 
 /**
- * Called when the user uses the scroll wheel (or scroll gesture) to zoom in or out. Zooms in/out
- * at the location of the mouse when the scroll wheel or gesture was applied.
- * @param transform The d3 zoom transformation information
- * @param x The x-position of the mouse when the scroll wheel or gesture is used
- * @param plotDimensions The current dimensions of the plot
- * @param containerWidth The container width
- * @param margin The plot margins
- * @param xAxis The linear x-axis
- * @param timeRange The time-range of the current x-axis
- * @return The zoom factor and updated time-range
+ * Type for representing the dimensions and location of the bounding box for an
+ * SVG text element.
  */
-export function handleZoom(
-    transform: ZoomTransform,
-    x: number,
-    plotDimensions: Dimensions,
-    containerWidth: number,
-    margin: Margin,
-    xAxis: ContinuousNumericAxis,
-    timeRange: ContinuousAxisRange,
-): Zoom | undefined {
-    if (x > 0 && x < containerWidth - margin.right) {
-        const {range, zoomFactor} = calculateZoomFor(transform, x, plotDimensions, xAxis, timeRange)
-        return {zoomFactor, timeRange: range}
+export type BoundingBox = { x: number, y: number, width: number, height: number }
+
+/**
+ * @return An empty bounding box with x, y, width, height set to 0.
+ */
+export function emptyBoundingBox(): BoundingBox {
+    return {x: 0, y: 0, width: 0, height: 0}
+}
+
+/**
+ * Calculates the width and height of the text element
+ * @param elem The SVG text element
+ * @return The width and height of the bounding box
+ */
+export function textDimensions(elem: Selection<SVGTextElement, any, any, any>): BoundingBox {
+    const boundingBox = elem.node()?.getBBox()
+    return {
+        width: boundingBox?.width || 0,
+        height: boundingBox?.height || 0,
+        x: boundingBox?.x || 0,
+        y: boundingBox?.y || 0
     }
 }
 
@@ -70,8 +65,8 @@ export function formatNumber(value: number, format: string): string {
     return isNaN(value) ? '---' : d3.format(format)(value)
 }
 
-export function formatTime(value: number): string {
-    return formatNumber(value, " ,.0f")
+export function formatTime(value: number, units: string = ""): string {
+    return `${formatNumber(value, " ,.0f")}${!isNaN(value) && units ? ` ${units}` : ""}`
 }
 
 export function formatValue(value: number): string {
@@ -112,12 +107,3 @@ export const minMaxOf = <T>(accessor: (v: T) => number) =>
         Math.min(d3.min(data, series => d3.min(series, datum => accessor(datum))) || 0, currentMinMax[0]),
         Math.max(d3.max(data, series => d3.max(series, datum => accessor(datum))) || 1, currentMinMax[1])
     ]
-
-/**
- * Sets up the min-max function to extract the y-value of the time-series.
- *
- * Defines a function that accepts an array of time-series (matrixish) and returns the min and max
- * y-value for all the values in all the series.
- * @see minMaxOf
- */
-export const minMaxYFor = minMaxOf((datum: [number, number]): number => datum[1])
