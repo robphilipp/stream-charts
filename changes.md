@@ -1,5 +1,9 @@
 # change history
 
+## version 1.1.2 (continuous x-axes labels not updating on theme change)
+
+Fixed an issue where the labels on the continuous x-axes were not updating when the theme changed.
+
 ## version 1.1.1 (code-sandbox example)
 
 Added link to code-sandbox example.
