@@ -653,13 +653,13 @@ export function addContinuousNumericXAxis(
     svg
         .append<SVGTextElement>('text')
             .attr('id', labelIdFor(chartId, location))
-            .style('text-anchor', 'middle')
+            .attr('text-anchor', 'middle')
             // when the axis is at the top, want the label to hang from the top (y=0) of the plot
-            .style('dominant-baseline', location === AxisLocation.Top ? "hanging" : "baseline")
-            .style('font-size', axesLabelFont.size)
-            .style('fill', axesLabelFont.color)
-            .style('font-family', axesLabelFont.family)
-            .style('font-weight', axesLabelFont.weight)
+            .attr('dominant-baseline', location === AxisLocation.Top ? "hanging" : "baseline")
+            .attr('font-size', axesLabelFont.size)
+            .attr('fill', axesLabelFont.color)
+            .attr('font-family', axesLabelFont.family)
+            .attr('font-weight', axesLabelFont.weight)
             .attr('transform', `translate(${margin.left + plotDimensions.width / 2}, ${continuousLabelYTranslation(location, plotDimensions, margin)})`)
         .text(axisLabel)
 
