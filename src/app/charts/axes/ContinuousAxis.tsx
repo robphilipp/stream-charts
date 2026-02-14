@@ -16,6 +16,7 @@ import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import {Datum} from "../series/timeSeries";
 import {AxisInterval} from "./AxisInterval";
 import {ContinuousAxisRange} from "./ContinuousAxisRange";
+import {SvgSelection} from "../d3types";
 
 interface Props {
     // the unique ID of the axis
@@ -131,10 +132,10 @@ export function ContinuousAxis(props: Props): null {
                             // add the x-axis to the chart context
                             const [start, end] = AxisInterval.as(domain).asTuple()
                             addXAxis(axisRef.current, axisId, ContinuousAxisRange.from(start, end))
-                            // addXAxis(axisRef.current, axisId, AxisInterval.as(domain))
 
                             // add an update handler
-                            rangeUpdateHandlerIdRef.current = `x-axis-${chartId}-${location.valueOf()}`
+                            rangeUpdateHandlerIdRef.current = labelIdFor(chartId, location)
+                            // rangeUpdateHandlerIdRef.current = `x-axis-${chartId}-${location.valueOf()}`
                             addAxesRangesUpdateHandler(rangeUpdateHandlerIdRef.current, handleRangeUpdates)
 
                             break
@@ -149,10 +150,10 @@ export function ContinuousAxis(props: Props): null {
                             // add the y-axis to the chart context
                             const [start, end] = AxisInterval.as(domain).asTuple()
                             addYAxis(axisRef.current, axisId, ContinuousAxisRange.from(start, end))
-                            // addYAxis(axisRef.current, axisId, AxisInterval.as(domain))
 
                             // add an update handler
-                            rangeUpdateHandlerIdRef.current = `y-axis-${chartId}-${location.valueOf()}`
+                            rangeUpdateHandlerIdRef.current = labelIdFor(chartId, location)
+                            // rangeUpdateHandlerIdRef.current = `y-axis-${chartId}-${location.valueOf()}`
                             addAxesRangesUpdateHandler(rangeUpdateHandlerIdRef.current, handleRangeUpdates)
                         }
                     }
@@ -160,10 +161,8 @@ export function ContinuousAxis(props: Props): null {
                     const axisRange = axisRangeFor(axisId)
                     const domain = axisRange
                         .map(range => range.current)
+                        .ifPresent(domain => axisRef.current!.update(domain, plotDimensions, margin))
                         .getOrElse(AxisInterval.empty())
-                    if (domain.isNotEmpty()) {
-                        axisRef.current.update(domain, plotDimensions, margin)
-                    }
 
                     if (
                         (updateAxisBasedOnDomainValues && (domainRef.current.start !== domain.start || domainRef.current.end !== domain.end)) ||
@@ -171,10 +170,11 @@ export function ContinuousAxis(props: Props): null {
                     ) {
                         domainRef.current = domain
                         axisRange.ifPresent(range => setAxisRangeFor(axisId, range.updateOriginal(domain.start, domain.end)))
-
                     }
 
-                    svg.select(`#${labelIdFor(chartId, location)}`).attr('fill', color)
+                    svg
+                        .select(`#${labelIdFor(chartId, location)}`)
+                        .attr('fill', color)
                 }
             }
         },
