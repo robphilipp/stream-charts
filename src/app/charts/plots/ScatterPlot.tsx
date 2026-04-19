@@ -105,8 +105,8 @@ export function ScatterPlot(props: Props): null {
         color,
         seriesStyles,
         seriesFilter,
-
-        mouse
+        mouse,
+        hoveredSeriesRef,
     } = useChart<Datum, SeriesLineStyle, NoTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
 
     const {
@@ -370,10 +370,7 @@ export function ScatterPlot(props: Props): null {
                     if (xAxisLinear === undefined || yAxisLinear === undefined) return
 
                     // grab the style for the series
-                    const {color, lineWidth} = seriesStyles.get(name) || {
-                        ...defaultLineStyle(),
-                        highlightColor: defaultLineStyle().color
-                    }
+                    const {color, lineWidth, highlightColor, highlightWidth} = seriesStyles.get(name) || defaultLineStyle()
 
                     // only show the data for which the filter matches
                     const plotData = (name.match(seriesFilter)) ? data : []
@@ -387,6 +384,7 @@ export function ScatterPlot(props: Props): null {
                                 .append("path")
                                 .attr("class", 'time-series-lines')
                                 .attr("id", `${name}-${chartId}-scatter`)
+                                .attr("data-series-name", name)
                                 .attr(
                                     "d",
                                     d3.line<Datum>()
@@ -395,8 +393,8 @@ export function ScatterPlot(props: Props): null {
                                         .curve(interpolation)
                                 )
                                 .attr("fill", "none")
-                                .attr("stroke", color)
-                                .attr("stroke-width", lineWidth)
+                                .attr("stroke", hoveredSeriesRef.current === name ? highlightColor : color)
+                                .attr("stroke-width", hoveredSeriesRef.current === name ? highlightWidth : lineWidth)
                                 .attr('transform', `translate(${margin.left}, ${margin.top})`)
                                 .attr("clip-path", `url(#${clipPathId})`)
                                 .on(
@@ -435,7 +433,8 @@ export function ScatterPlot(props: Props): null {
             zoomKeyModifiersRequired, onZoom, axisAssignments,
             xAxesState, yAxesState,
             seriesStyles, seriesFilter, interpolation,
-            mouseOverHandlerFor, mouseLeaveHandlerFor
+            mouseOverHandlerFor, mouseLeaveHandlerFor,
+            hoveredSeriesRef
         ]
     )
 

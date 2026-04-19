@@ -434,7 +434,7 @@ export function BarPlot(props: Props): null {
                                     margin,
                                     seriesStyles,
                                     barSeriesStyle,
-                                    allowTooltipRef.current,
+                                    allowTooltipRef.current && showMinMaxBars,
                                     mouseOverHandlerFor(`tooltip-${chartId}`, BAR_CHART_TOOLTIP_PROVIDER_IDS.minMax),
                                     BAR_CHART_TOOLTIP_PROVIDER_IDS.minMax
                                 )
@@ -490,7 +490,7 @@ export function BarPlot(props: Props): null {
                                         margin,
                                         seriesStyles,
                                         barSeriesStyle,
-                                        allowTooltipRef.current,
+                                        allowTooltipRef.current && showWindowedMinMaxBars,
                                         mouseOverHandlerFor(`tooltip-${chartId}`, BAR_CHART_TOOLTIP_PROVIDER_IDS.windowedMinMax),
                                         BAR_CHART_TOOLTIP_PROVIDER_IDS.windowedMinMax
                                     )
@@ -545,7 +545,7 @@ export function BarPlot(props: Props): null {
                                         margin,
                                         seriesStyles,
                                         barSeriesStyle,
-                                        allowTooltipRef.current,
+                                        allowTooltipRef.current && showMeanValueLines,
                                         mouseOverHandlerFor(`tooltip-${chartId}`, BAR_CHART_TOOLTIP_PROVIDER_IDS.meanValue),
                                         BAR_CHART_TOOLTIP_PROVIDER_IDS.meanValue
                                     )
@@ -598,7 +598,7 @@ export function BarPlot(props: Props): null {
                                         margin,
                                         seriesStyles,
                                         barSeriesStyle,
-                                        allowTooltipRef.current,
+                                        allowTooltipRef.current && showWindowedMeanValueLines,
                                         mouseOverHandlerFor(`tooltip-${chartId}`, BAR_CHART_TOOLTIP_PROVIDER_IDS.windowedMeanValue),
                                         BAR_CHART_TOOLTIP_PROVIDER_IDS.windowedMeanValue
                                     )
@@ -653,7 +653,7 @@ export function BarPlot(props: Props): null {
                                     margin,
                                     seriesStyles,
                                     barSeriesStyle,
-                                    allowTooltipRef.current,
+                                    allowTooltipRef.current && showValueLines,
                                     mouseOverHandlerFor(`tooltip-${chartId}`, BAR_CHART_TOOLTIP_PROVIDER_IDS.currentValue),
                                     BAR_CHART_TOOLTIP_PROVIDER_IDS.currentValue
                                 )

@@ -253,6 +253,7 @@ export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM>(props:
     // the container that holds the d3 svg element
     const mainGRef = useRef<GSelection | null>(null)
     const containerRef = useRef<SVGSVGElement>(null)
+    const hoveredSeriesRef = useRef<string | null>(null)
 
     // creates the main <g> element for the chart if it doesn't already exist, otherwise
     // updates the svg element with the updated dimensions or style properties
@@ -317,6 +318,7 @@ export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM>(props:
                                         svgStyle={svgStyle}
                                         seriesStyles={seriesStyles}
                                         seriesFilter={seriesFilter}
+                                        hoveredSeriesRef={hoveredSeriesRef}
                                     >
                                         {
                                             // the chart elements are the children

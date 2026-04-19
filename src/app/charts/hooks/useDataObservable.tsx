@@ -12,9 +12,6 @@ const noop = () => {
     /* empty on purpose */
 }
 
-// type SeriesObservable = Observable<TimeSeriesChartData> | Observable<IterateChartData>
-// type Data = Array<Datum> | Array<IterateDatum>
-
 /**
  * The values exposed through the {@link useDataObservable} react hook
  */
