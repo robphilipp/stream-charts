@@ -56,6 +56,10 @@ export {
     OrdinalAxis
 } from './app/charts/axes/OrdinalAxis'
 
+export {
+    EmptyAxis,
+} from './app/charts/axes/EmptyAxis'
+
 //
 // filters
 //
@@ -303,3 +307,15 @@ export {
     trackerControlInstance,
     removeTrackerControl,
 } from './app/charts/trackers/trackerUtils'
+
+
+//
+// legend
+//
+
+export {
+    Legend,
+    defaultLegendStyle,
+    LegendLocation,
+    type LegendStyle
+} from './app/charts/legends/Legend'

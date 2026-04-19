@@ -2,7 +2,7 @@ import {addEmptyXAxis, addEmptyYAxis, AxisLocation, ContinuousNumericAxis,} from
 import {useChart} from "../hooks/useChart";
 import {useEffect, useRef} from "react";
 import * as d3 from "d3";
-import {Dimensions, Margin} from "../styling/margins";
+import {Margin} from "../styling/margins";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import {Datum} from "../series/timeSeries";
 import {AxisInterval} from "./AxisInterval";
