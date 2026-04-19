@@ -11,6 +11,8 @@ const noop = () => {
 
 /**
  * Base interface for tooltip data that is passed through to the tooltip content provider
+ * @template D The type of the data object for the series
+ * @template M The type of the metadata object for the series
  */
 export interface TooltipData<D, M> {
     series: Series<D>
@@ -29,8 +31,6 @@ export interface TooltipData<D, M> {
  */
 type TooltipContentProvider<D, M> =
     (seriesName: string, time: number, tooltipData: TooltipData<D, M>, mouseCoords: [x: number, y: number], providerId?: string) => TooltipDimensions
-// type TooltipContentProvider<D, M> =
-//     (seriesName: string, time: number, tooltipData: TooltipData<D, M>, mouseCoords: [x: number, y: number]) => TooltipDimensions
 
 /**
  * The functions and values exposed through the {@link useTooltip} react hook

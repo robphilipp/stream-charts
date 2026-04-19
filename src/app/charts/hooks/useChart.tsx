@@ -1,4 +1,4 @@
-import {createContext, JSX, useContext} from "react";
+import {createContext, JSX, MutableRefObject, useContext} from "react";
 import {GSelection} from "../d3types";
 import {BaseAxis, SeriesLineStyle, SeriesStyle} from "../axes/axes";
 import {defaultAxesValues, useAxes, UseAxesValues} from "./useAxes";
@@ -66,6 +66,11 @@ interface UseChartValues<D, S extends SeriesStyle, TM, AR extends BaseAxisRange,
      */
     mouse: UseMouseValues<D, TM>
     tooltip: UseTooltipValues<D, TM>
+    /**
+     * Ref tracking the currently-hovered series name (null when nothing is hovered).
+     * Updated by the Legend; read by plots so new path elements use the correct stroke.
+     */
+    hoveredSeriesRef: MutableRefObject<string | null>
 }
 
 const defaultUseChartValues: UseChartValues<any, any, any, any, any> = {
@@ -85,7 +90,8 @@ const defaultUseChartValues: UseChartValues<any, any, any, any, any> = {
 
     // internal chart-interaction event handlers
     mouse: defaultMouseValues(),
-    tooltip: defaultTooltipValues()
+    tooltip: defaultTooltipValues(),
+    hoveredSeriesRef: { current: null },
 }
 
 const ChartContext = createContext<UseChartValues<any, any, any, any, any>>(defaultUseChartValues)
@@ -99,6 +105,7 @@ interface Props {
     svgStyle: Partial<SvgStyle>
     seriesStyles?: Map<string, SeriesLineStyle>
     seriesFilter?: RegExp
+    hoveredSeriesRef: MutableRefObject<string | null>
 
     children: JSX.Element | Array<JSX.Element>
 }
@@ -119,6 +126,7 @@ export default function ChartProvider(props: Props): JSX.Element {
         seriesFilter = defaultUseChartValues.seriesFilter,
         svgStyle,
         seriesStyles = new Map<string, SeriesLineStyle>(),
+        hoveredSeriesRef,
     } = props
 
     const axes = useAxes()
@@ -139,6 +147,7 @@ export default function ChartProvider(props: Props): JSX.Element {
             axes,
             mouse,
             tooltip,
+            hoveredSeriesRef,
         }}
     >
         {props.children}

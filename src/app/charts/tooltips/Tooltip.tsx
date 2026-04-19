@@ -109,6 +109,7 @@ export function Tooltip<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, 
                                     .attr('fill-opacity', tooltipStyle.backgroundOpacity)
                                     .attr('stroke', tooltipStyle.borderColor)
                                     .attr('stroke-width', tooltipStyle.borderWidth)
+                                    .attr('stroke-opacity', tooltipStyle.borderOpacity)
 
                                 // call the callback to add the content
                                 const {

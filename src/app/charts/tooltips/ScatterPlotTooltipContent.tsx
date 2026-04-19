@@ -243,6 +243,7 @@ function addTooltipContent(
         .attr('font-family', 'sans-serif')
         .attr('font-size', tooltipStyle.fontSize)
         .attr('font-weight', tooltipStyle.fontWeight)
+        .attr('fill-opacity', tooltipStyle.borderOpacity)
         .text(() => seriesName)
 
 
@@ -256,6 +257,7 @@ function addTooltipContent(
         .attr('font-family', 'sans-serif')
         .attr('font-size', tooltipStyle.fontSize + 2)
         .attr('font-weight', tooltipStyle.fontWeight + 150)
+        .attr('fill-opacity', tooltipStyle.borderOpacity)
 
 
     const headerRow = table.append('g').attr('font-weight', tooltipStyle.fontWeight + 550)

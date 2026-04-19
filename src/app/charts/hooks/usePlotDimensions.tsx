@@ -97,7 +97,6 @@ export default function PlotDimensionsProvider(props: Props): JSX.Element {
             plotDimensions: dimensions,
             margin,
             updateDimensions,
-            // updateDimensions: dimensions => setDimensions(dimensions),
             registerPlotDimensionChangeHandler,
             unregisterPlotDimensionChangeHandler
         }}
