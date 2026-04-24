@@ -12,7 +12,7 @@
     "test": "jest src/app/charts/**/*.test.ts*",
     "build": "tsc",
     "prepare": "npm run build",
-    "gen-docs": "npx typedoc src/app/charts/*"
+    "gen-docs": "npx typedoc src/app/charts/ --out docs/ --entryPoints src/app/charts/ --entryPointStrategy expand"
   },
   "eslintConfig": {
     "extends": "react-app"

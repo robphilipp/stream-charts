@@ -1,5 +1,9 @@
 # change history
 
+## version 1.2.0 (legend)
+
+Added a legend that can be external to the chart or internal (under the SVG element). When mousing over a legend item, the corresponding series is highlighted. And when mousing over a series, the corresponding legend item is highlighted. 
+
 ## version 1.1.2 (continuous x-axes labels not updating on theme change)
 
 Fixed an issue where the labels on the continuous x-axes were not updating when the theme changed.

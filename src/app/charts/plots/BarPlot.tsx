@@ -130,16 +130,16 @@ interface Props {
  * <BarPlot
  *     barMargin={1}
  *     dropDataAfter={5000}
- *     // panEnabled={true}
- *     // zoomEnabled={true}
- *     // zoomKeyModifiersRequired={true}
- *     // withCadenceOf={50}
+ *     panEnabled={true}
+ *     zoomEnabled={true}
+ *     zoomKeyModifiersRequired={true}
+ *     withCadenceOf={50}
  *
- *     showMinMaxBars={showMinMax}
- *     showValueLines={showValue}
- *     showMeanValueLines={showMean}
- *     showWindowedMinMaxBars={showWinMinMax}
- *     showWindowedMeanValueLines={showWinMean}
+ *     showMinMaxBars={true}
+ *     showValueLines={true}
+ *     showMeanValueLines={true}
+ *     showWindowedMinMaxBars={true}
+ *     showWindowedMeanValueLines={true}
  * />
  * ```
  */
