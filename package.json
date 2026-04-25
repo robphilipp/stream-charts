@@ -1,21 +1,32 @@
 {
   "name": "stream-charts",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Charts for steaming data",
   "author": "Rob Philipp",
   "homepage": "https://robphilipp.github.io/stream-charts/",
   "license": "MIT",
   "repository": "github:robphilipp/stream-charts",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "jest src/app/charts/**/*.test.ts*",
     "build": "tsc",
     "prepare": "npm run build",
-    "gen-docs": "npx typedoc src/app/charts/*"
+    "gen-docs": "npx typedoc src/app/charts/ --out docs/ --entryPoints src/index.ts --entryPointStrategy expand"
   },
   "eslintConfig": {
     "extends": "react-app"
+  },
+  "typedocOptions": {
+    "externalSymbolLinkMappings": {
+      "result-fn": {
+        "Optional": "https://github.com/robphilipp/result-fn/blob/master/docs/Optional.md"
+      },
+      "typescript": {
+        "Set": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set",
+        "Map": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    }
   },
   "browserslist": {
     "production": [
@@ -46,21 +57,22 @@
     "d3": "^7.9.0",
     "data-frame-ts": "^1.0.3",
     "jest": "^30.2.0",
-    "ts-jest": "^29.4.4",
     "jest-util": "^30.2.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "result-fn": "^0.5.0",
     "rxjs": "^7.8.2",
     "svg-table": "^0.1.2",
+    "ts-jest": "^29.4.4",
     "typescript": "^5.9.2"
   },
   "files": [
     "package.json",
     "README.md",
     "changes.md",
-    "dist/src/app/**",
-    "dist/src/index.*",
-    "src/app/charts/**"
+    "dist/app",
+    "dist/index.*",
+    "src/app/charts/**",
+    "src/index.ts"
   ]
 }

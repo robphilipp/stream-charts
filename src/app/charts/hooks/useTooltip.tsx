@@ -11,6 +11,8 @@ const noop = () => {
 
 /**
  * Base interface for tooltip data that is passed through to the tooltip content provider
+ * @template D The type of the data object for the series
+ * @template M The type of the metadata object for the series
  */
 export interface TooltipData<D, M> {
     series: Series<D>
@@ -27,10 +29,8 @@ export interface TooltipData<D, M> {
  * @param mouseCoords The mouse coordinates over which the mouse is hovering
  * @param providerId An optional ID of the tooltip content provider.
  */
-type TooltipContentProvider<D, M> =
+export type TooltipContentProvider<D, M> =
     (seriesName: string, time: number, tooltipData: TooltipData<D, M>, mouseCoords: [x: number, y: number], providerId?: string) => TooltipDimensions
-// type TooltipContentProvider<D, M> =
-//     (seriesName: string, time: number, tooltipData: TooltipData<D, M>, mouseCoords: [x: number, y: number]) => TooltipDimensions
 
 /**
  * The functions and values exposed through the {@link useTooltip} react hook
@@ -66,7 +66,7 @@ export const defaultTooltipValues = (): UseTooltipValues<any, any> => ({
 
 const TooltipContext = createContext<UseTooltipValues<any, any>>(defaultTooltipValues())
 
-type Props = {
+export type Props = {
     children: JSX.Element | Array<JSX.Element>
 }
 
@@ -77,7 +77,6 @@ type Props = {
  * the context or types of objects being moused over. When a tooltip content provider is registered
  * without a provider ID, then the default provider ID is used.
  * @param props The properties holding the children
- * @constructor
  * @return A JSX element containing the children
  */
 export default function TooltipProvider<D, M>(props: Props): JSX.Element {

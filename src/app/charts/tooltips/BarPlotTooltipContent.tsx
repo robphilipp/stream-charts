@@ -85,7 +85,7 @@ import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
  * xFormatter, yFormatter
  * ```
  */
-interface Props {
+export interface Props {
     ordinalUnits?: string
     style?: Partial<TooltipStyle>
 }
@@ -103,7 +103,6 @@ interface Props {
  * content to the SVG element.
  * @param props The properties describing the tooltip content
  * @return null
- * @constructor
  */
 export function BarPlotTooltipContent(props: Props): null {
     const {

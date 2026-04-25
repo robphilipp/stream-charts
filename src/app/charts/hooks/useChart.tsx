@@ -1,4 +1,4 @@
-import {createContext, JSX, useContext} from "react";
+import {createContext, JSX, MutableRefObject, useContext} from "react";
 import {GSelection} from "../d3types";
 import {BaseAxis, SeriesLineStyle, SeriesStyle} from "../axes/axes";
 import {defaultAxesValues, useAxes, UseAxesValues} from "./useAxes";
@@ -18,7 +18,7 @@ export type NoTooltipMetadata = {}
  * @template S The type of the series style
  * @template TM The type of the tooltip's metadata (data about the series data)
  */
-interface UseChartValues<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A extends BaseAxis> {
+export interface UseChartValues<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A extends BaseAxis> {
     /**
      * Unique ID for the chart
      */
@@ -66,6 +66,11 @@ interface UseChartValues<D, S extends SeriesStyle, TM, AR extends BaseAxisRange,
      */
     mouse: UseMouseValues<D, TM>
     tooltip: UseTooltipValues<D, TM>
+    /**
+     * Ref tracking the currently-hovered series name (null when nothing is hovered).
+     * Updated by the Legend; read by plots so new path elements use the correct stroke.
+     */
+    hoveredSeriesRef: MutableRefObject<string | null>
 }
 
 const defaultUseChartValues: UseChartValues<any, any, any, any, any> = {
@@ -85,12 +90,13 @@ const defaultUseChartValues: UseChartValues<any, any, any, any, any> = {
 
     // internal chart-interaction event handlers
     mouse: defaultMouseValues(),
-    tooltip: defaultTooltipValues()
+    tooltip: defaultTooltipValues(),
+    hoveredSeriesRef: { current: null },
 }
 
 const ChartContext = createContext<UseChartValues<any, any, any, any, any>>(defaultUseChartValues)
 
-interface Props {
+export interface Props {
     chartId: number
     container: SVGSVGElement | null
     mainG: GSelection | null
@@ -99,6 +105,7 @@ interface Props {
     svgStyle: Partial<SvgStyle>
     seriesStyles?: Map<string, SeriesLineStyle>
     seriesFilter?: RegExp
+    hoveredSeriesRef: MutableRefObject<string | null>
 
     children: JSX.Element | Array<JSX.Element>
 }
@@ -107,7 +114,6 @@ interface Props {
  * The React context provider for the {@link UseChartValues}
  * @param props The properties
  * @return The children wrapped in this provider
- * @constructor
  */
 export default function ChartProvider(props: Props): JSX.Element {
     const {
@@ -119,6 +125,7 @@ export default function ChartProvider(props: Props): JSX.Element {
         seriesFilter = defaultUseChartValues.seriesFilter,
         svgStyle,
         seriesStyles = new Map<string, SeriesLineStyle>(),
+        hoveredSeriesRef,
     } = props
 
     const axes = useAxes()
@@ -139,6 +146,7 @@ export default function ChartProvider(props: Props): JSX.Element {
             axes,
             mouse,
             tooltip,
+            hoveredSeriesRef,
         }}
     >
         {props.children}

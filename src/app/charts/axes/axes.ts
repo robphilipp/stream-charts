@@ -617,6 +617,122 @@ function ordinalLabelYTranslation(
  */
 
 /**
+ * Adds a new empty x-axis to the SVG element at the specified location. An empty axis
+ * is just a line where the axis would be, without any ticks or labels.
+ * @param axisId The ID of the axis
+ * @param svg The SVG selection to which to add the axis
+ * @param plotDimensions The dimensions of the plot
+ * @param location The location of the axis
+ * @param scaleGenerator The higher-order function that returns the axis d3 "scale" function
+ * @param domain The axis range (start, end)
+ * @param margin The plot margins for the border of main SVG group
+ * @param setAxisRangeFor A callback used to set the axis range
+ * @return A {@link ContinuousNumericAxis} based on the arguments to this function
+ */
+export function addEmptyXAxis(
+    axisId: string,
+    svg: SvgSelection,
+    plotDimensions: Dimensions,
+    location: AxisLocation.Bottom | AxisLocation.Top,
+    scaleGenerator: ScaleContinuousNumeric<number, number>,
+    margin: Margin,
+    setAxisRangeFor: (axisId: string, timeRange: AxisInterval) => void,
+    domain: [minValue: number, maxValue: number] = [0, 1],
+): ContinuousNumericAxis {
+    const scale = scaleGenerator.domain(domain).range([0, plotDimensions.width])
+
+    const selection = svg
+        .append<SVGGElement>('g')
+        .attr('transform', `translate(${margin.left}, ${yTranslation(location, plotDimensions, margin)})`)
+
+    const line = selection.append('line')
+        .attr('x1', 0)
+        .attr('y1', 0)
+        .attr('x2', plotDimensions.width)
+        .attr('y2', 0)
+        .attr('stroke', 'currentColor')
+
+    const axis: ContinuousNumericAxis = {
+        axisId,
+        location,
+        selection,
+        scale,
+        generator: d3.axisBottom(scale).tickValues([]).tickSize(0),
+        update: noop
+    }
+    return {
+        ...axis,
+        update: (domain: AxisInterval, plotDimensions: Dimensions, margin: Margin) => {
+            axis.scale.domain(domain.asTuple()).range([0, plotDimensions.width])
+            axis.selection
+                .attr('transform', `translate(${margin.left}, ${yTranslation(location, plotDimensions, margin)})`)
+
+            line.attr('x2', plotDimensions.width)
+
+            setAxisRangeFor(axisId, domain)
+        }
+    }
+}
+
+/**
+ * Adds a new empty y-axis to the SVG element at the specified location. An empty axis
+ * is just a line where the axis would be, without any ticks or labels.
+ * @param axisId The ID of the axis
+ * @param svg The SVG selection to which to add the axis
+ * @param plotDimensions The dimensions of the plot
+ * @param location The location of the axis
+ * @param scaleGenerator The higher-order function that returns the axis d3 "scale" function
+ * @param domain The axis range (start, end)
+ * @param margin The plot margins for the border of main SVG group
+ * @param setAxisRangeFor A callback used to set the axis range
+ * @return A {@link ContinuousNumericAxis} based on the arguments to this function
+ */
+export function addEmptyYAxis(
+    axisId: string,
+    svg: SvgSelection,
+    plotDimensions: Dimensions,
+    location: AxisLocation.Left | AxisLocation.Right,
+    scaleGenerator: ScaleContinuousNumeric<number, number>,
+    margin: Margin,
+    setAxisRangeFor: (axisId: string, timeRange: AxisInterval) => void,
+    domain: [minValue: number, maxValue: number] = [0, 1],
+): ContinuousNumericAxis {
+    const scale = scaleGenerator.domain(domain).range([plotDimensions.height, 0])
+
+    const selection = svg
+        .append<SVGGElement>('g')
+        .attr('transform', `translate(${xTranslation(location, plotDimensions, margin)}, ${margin.top})`)
+
+    const line = selection.append('line')
+        .attr('x1', 0)
+        .attr('y1', 0)
+        .attr('x2', 0)
+        .attr('y2', plotDimensions.height)
+        .attr('stroke', 'currentColor')
+
+    const axis: ContinuousNumericAxis = {
+        axisId,
+        location,
+        selection,
+        scale,
+        generator: d3.axisLeft(scale).tickValues([]).tickSize(0),
+        update: noop
+    }
+    return {
+        ...axis,
+        update: (domain: AxisInterval, plotDimensions: Dimensions, margin: Margin) => {
+            axis.scale.domain(domain.asTuple()).range([plotDimensions.height, 0])
+            axis.selection
+                .attr('transform', `translate(${xTranslation(location, plotDimensions, margin)}, ${margin.top})`)
+
+            line.attr('y2', plotDimensions.height)
+
+            setAxisRangeFor(axisId, domain)
+        }
+    }
+}
+
+/**
  * Adds a new x-axis to the SVG element at the specified location
  * @param chartId The ID of the chart
  * @param axisId The ID of the axis

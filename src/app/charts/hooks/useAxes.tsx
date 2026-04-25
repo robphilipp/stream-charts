@@ -28,7 +28,7 @@ export type UseAxesValues<AR extends BaseAxisRange, A extends BaseAxis> = {
      * Adds an x-axis to the axes and updates the internal state
      * @param axis The axis to add
      * @param id The ID of the axis to add
-     * @param domain The initial axis range (start, end)
+     * @param range The initial axis range (start, end)
      */
     addXAxis: (axis: A, id: string, range?: AR) => void
     /**
@@ -39,7 +39,7 @@ export type UseAxesValues<AR extends BaseAxisRange, A extends BaseAxis> = {
      * Adds a y-axis to the axes and updates the internal state
      * @param axis The axis to add
      * @param id The ID of the axis to add
-     * @param domain The initial axis range (start, end)
+     * @param range The initial axis range (start, end)
      */
     addYAxis: (axis: A, id: string, range?: AR) => void
     /**
@@ -153,7 +153,7 @@ export const defaultAxesValues = (): UseAxesValues<any, any> => ({
 // the context for axes
 const AxesContext = createContext<UseAxesValues<any, any>>(defaultAxesValues())
 
-type Props = {
+export type Props = {
     /**y
      * Callback when axes bounds change.
      * @param ranges The ranges (start, end) for each axis in the plot
@@ -167,7 +167,6 @@ type Props = {
  * The React context provider for the {@link UseAxesValues}
  * @param props The properties
  * @return The children wrapped in this provider
- * @constructor
  */
 export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxis>(props: Props): JSX.Element {
     const {onUpdateAxesInterval, children} = props

@@ -108,6 +108,9 @@ Over time, I'll add additional chart types. In the meantime, I welcome any contr
 - [&lt;Tracker/&gt;](#tracker-usage)
   - [base properties](#tracker-usage-base)
   - [styling](#tracker-usage-styling)
+- [&lt;Legend/&gt;](#legend-usage)
+  - [base properties](#legend-usage-base)
+  - [styling](#legend-usage-styling)
 - [&lt;Tooltip/&gt;](#tooltip-usage)
 - [&lt;RasterPlotTooltipContent/&gt;](#rasterplot-tooltip-usage)
 - [&lt;ScatterPlotTooltipContent/&gt;](#scatterplot-tooltip-usage)
@@ -1015,6 +1018,69 @@ Optional property defining the style for the tracker line. Has a shape of `{visi
 **font ([TrackerLabelFont](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/trackerUtils.ts), optional, default = {size: 12, color: '#d2933f', weight: 300, family: 'sans-serif'})**<br>
 Optional property defining the font for the tracker label. Has a shape of `{size: number, color: string, family: string, weight: number}`.
 
+
+### [&#10514;](#content) <span id="legend-usage">&lt;Legend/&gt;</span>
+
+The `<Legend/>` component displays a legend for the chart, mapping series names to their respective colors. It can be placed inside the `<Chart/>` component and can be rendered either within the chart's SVG area or into an external HTML container.
+
+#### [&#10514;](#content) <span id="legend-usage-base">&lt;Legend/&gt; base properties</span>
+
+**visible (boolean)**<br>
+When set to `true`, the legend is visible.
+
+**location ([LegendLocation](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/legends/Legend.tsx), optional, default = LegendLocation.TOP_RIGHT)**<br>
+Specifies where to anchor the legend within the plot area. Ignored when `container` is provided. Available locations are `TOP_LEFT`, `TOP_RIGHT`, `BOTTOM_LEFT`, and `BOTTOM_RIGHT`.
+
+**offset ({ x: number; y: number }, optional, default = { x: 10, y: 10 })**<br>
+Optional offset in pixels from the chosen corner, applied after the margin. Ignored when `container` is provided.
+
+**container (React.RefObject<HTMLElement | null>, optional)**<br>
+When provided, the legend renders as an HTML element portal into this external container instead of inside the chart SVG. Position the container however you like — the legend fills it.
+
+#### [&#10514;](#content) <span id="legend-usage-styling">&lt;Legend/&gt; styling</span>
+
+**style ([LegendStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/legends/Legend.tsx), optional, default = [defaultLegendStyle](https://github.com/robphilipp/stream-charts/blob/master/src/app/charts/legends/Legend.tsx))**<br>
+Optional property defining the style for the legend. The following style elements are available:
+
+1. **fontSize** (number): Font size for the legend labels.
+2. **fontFamily** (string): Font family for the legend labels.
+3. **fontColor** (string): Font color for the legend labels.
+4. **backgroundColor** (string): Background fill color for the legend box.
+5. **backgroundOpacity** (number): Background opacity for the legend box.
+6. **borderColor** (string): Border/stroke color for the legend box.
+7. **borderWidth** (number): Border width for the legend box.
+8. **borderOpacity** (number): Border opacity for the legend box.
+9. **borderRadius** (number): Corner radius of the legend box.
+10. **padding** (number): Padding inside the legend box (in pixels).
+11. **rowGap** (number): Vertical space between legend entries.
+12. **swatchWidth** (number): Width of the color swatch next to each label.
+13. **swatchHeight** (number): Height of the color swatch next to each label.
+14. **swatchLabelGap** (number): Gap between the swatch and the label text.
+15. **maxHeight** (number, optional): Maximum height of the legend before it starts scrolling.
+16. **transitionDuration** (number): Duration of the visibility transition in milliseconds.
+
+#### [&#10514;](#content) <span id="legend-usage-examples">&lt;Legend/&gt; examples</span>
+
+**Basic internal legend**
+```tsx
+<Chart ...>
+    ...
+    <Legend visible={true} location={LegendLocation.TOP_RIGHT} />
+</Chart>
+```
+
+**External container legend**
+```tsx
+const legendContainer = useRef<HTMLDivElement>(null);
+...
+<>
+    <div ref={legendContainer} style={{ width: 200 }} />
+    <Chart ...>
+        ...
+        <Legend visible={true} container={legendContainer} />
+    </Chart>
+</>
+```
 
 ### [&#10514;](#content) <span id="tooltip-usage">&lt;Tooltip/&gt;</span>
 

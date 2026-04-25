@@ -98,7 +98,7 @@ interface TooltipOptions {
  * yLabel   yValueFormatter   yValueFormatter    yChangeFormatter
  * ```
  */
-interface Props {
+export interface Props {
     // label for the x-values (x-value row header)
     xLabel: string
     yLabel: string
@@ -130,7 +130,6 @@ interface Props {
  * content to the SVG element.
  * @param props The properties describing the tooltip content
  * @return null
- * @constructor
  */
 export function ScatterPlotTooltipContent(props: Props): null {
     const {
@@ -243,6 +242,7 @@ function addTooltipContent(
         .attr('font-family', 'sans-serif')
         .attr('font-size', tooltipStyle.fontSize)
         .attr('font-weight', tooltipStyle.fontWeight)
+        .attr('fill-opacity', tooltipStyle.borderOpacity)
         .text(() => seriesName)
 
 
@@ -256,6 +256,7 @@ function addTooltipContent(
         .attr('font-family', 'sans-serif')
         .attr('font-size', tooltipStyle.fontSize + 2)
         .attr('font-weight', tooltipStyle.fontWeight + 150)
+        .attr('fill-opacity', tooltipStyle.borderOpacity)
 
 
     const headerRow = table.append('g').attr('font-weight', tooltipStyle.fontWeight + 550)

@@ -3,7 +3,6 @@ import {concat, from, Observable, Subscription} from "rxjs";
 import {ChartData} from "../observables/ChartData";
 import {useInitialData} from "./useInitialData";
 import {BaseSeries} from "../series/baseSeries";
-// import {noop} from "../utils";
 
 /**
  * No operation function for use when a default function is needed
@@ -12,13 +11,10 @@ const noop = () => {
     /* empty on purpose */
 }
 
-// type SeriesObservable = Observable<TimeSeriesChartData> | Observable<IterateChartData>
-// type Data = Array<Datum> | Array<IterateDatum>
-
 /**
  * The values exposed through the {@link useDataObservable} react hook
  */
-interface UseObservableValues<CD extends ChartData, D> {
+export interface UseObservableValues<CD extends ChartData, D> {
     /**
      * An observable source for chart data
      */
@@ -70,7 +66,7 @@ const defaultObservableValues: UseObservableValues<any, any> = {
 
 const DataObservableContext = createContext<UseObservableValues<any, any>>(defaultObservableValues)
 
-interface Props<CD extends ChartData, D> {
+export interface Props<CD extends ChartData, D> {
     // live data
     seriesObservable?: Observable<CD>
     windowingTime?: number
@@ -100,7 +96,6 @@ interface Props<CD extends ChartData, D> {
  * The react context provider for the {@link UseObservableValues}
  * @param props The properties
  * @return The children wrapped in this provider
- * @constructor
  */
 export default function DataObservableProvider<CD extends ChartData, D>(props: Props<CD, D>): JSX.Element {
 

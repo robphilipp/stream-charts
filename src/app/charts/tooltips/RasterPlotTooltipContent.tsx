@@ -90,7 +90,7 @@ interface TooltipOptions {
  * xFormatter, yFormatter
  * ```
  */
-interface Props {
+export interface Props {
     xFormatter?: (value: number) => string
     yFormatter?: (value: number) => string
     style?: Partial<TooltipStyle>
@@ -109,7 +109,6 @@ interface Props {
  * content to the SVG element.
  * @param props The properties describing the tooltip content
  * @return null
- * @constructor
  */
 export function RasterPlotTooltipContent(props: Props): null {
     const {

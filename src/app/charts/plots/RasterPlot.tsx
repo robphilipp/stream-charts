@@ -30,7 +30,7 @@ import {AxisInterval} from "../axes/AxisInterval";
 import {Optional} from "result-fn";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 
-interface Props {
+export interface Props {
     /**
      * Holds the mapping between a series and the axis it uses (is assigned). The
      * map's key holds the series name, and the value is an {@link AxesAssignment}
@@ -78,7 +78,6 @@ interface Props {
  * chart ecosystem (axes, tracker, tooltip).
  *
  * @param props The properties associated with the raster plot
- * @constructor
  * @example
  <RasterPlot
      axisAssignments={new Map([
@@ -101,7 +100,8 @@ export function RasterPlot(props: Props): null {
         color,
         seriesStyles,
         seriesFilter,
-        mouse
+        mouse,
+        hoveredSeriesRef,
     } = useChart<Datum, SeriesLineStyle, NoTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
 
     const {
@@ -354,10 +354,20 @@ export function RasterPlot(props: Props): null {
                     )
 
                     // grab the series styles, or the defaults if none exist
-                    const {color, lineWidth, margin: spikeLineMargin = spikeMargin} = seriesStyles.get(series.name) || {
+                    const {
+                        color,
+                        lineWidth,
+                        highlightColor,
+                        highlightWidth,
+                        margin: spikeLineMargin = spikeMargin
+                    } = seriesStyles.get(series.name) || {
                         ...defaultLineStyle(),
                         highlightColor: defaultLineStyle().color
                     }
+
+                    const isHovered = hoveredSeriesRef.current === series.name
+                    const strokeColor = isHovered ? highlightColor : color
+                    const strokeWidth = isHovered ? (highlightWidth || lineWidth) : lineWidth
 
                     // only show the data for which the regex filter matches
                     const plotData = (series.name.match(seriesFilter)) ? series.data : []
@@ -381,8 +391,9 @@ export function RasterPlot(props: Props): null {
                         .attr('x2', datum => datum.x)
                         .attr('y1', _ => yUpper(y))
                         .attr('y2', _ => yLower(y))
-                        .attr('stroke', color)
-                        .attr('stroke-width', lineWidth)
+                        .attr('stroke', strokeColor)
+                        .attr('stroke-width', strokeWidth)
+                        .attr('data-series-name', series.name)
                         .attr('class', 'spikes-lines')
                         .on(
                             "mouseover",
@@ -417,7 +428,8 @@ export function RasterPlot(props: Props): null {
                         .attr('x2', datum => datum.x)
                         .attr('y1', _ => yUpper(y))
                         .attr('y2', _ => yLower(y))
-                        .attr('stroke', color)
+                        .attr('stroke', strokeColor)
+                        .attr('stroke-width', strokeWidth)
 
                     // exit old elements
                     seriesContainer.exit().remove()
@@ -432,7 +444,8 @@ export function RasterPlot(props: Props): null {
             seriesFilter, seriesStyles,
             xAxesState, yAxesState,
             zoomEnabled, zoomKeyModifiersRequired,
-            spikeMargin
+            spikeMargin,
+            hoveredSeriesRef
         ]
     )
 

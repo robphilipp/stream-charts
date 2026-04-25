@@ -18,7 +18,7 @@ import {OrdinalAxisRange} from "./OrdinalAxisRange";
 import {Datum} from "../series/timeSeries";
 import {AxisInterval} from "./AxisInterval";
 
-interface Props {
+export interface Props {
     // the unique ID of the axis
     axisId: string
     // the location of the axis. for y-axes, this mut be either left or right,
@@ -59,7 +59,6 @@ interface Props {
  * be the name of the series used to represent each category.
  * @param props The properties for the component
  * @return null
- * @constructor
  */
 export function OrdinalAxis(props: Props): null {
     const {
@@ -77,6 +76,7 @@ export function OrdinalAxis(props: Props): null {
         setAxisIntervalFor,
         axisRangeFor,
         addAxesRangesUpdateHandler,
+        removeAxesRangesUpdateHandler,
         setOriginalAxisIntervalFor,
     } = axes
 
@@ -136,7 +136,7 @@ export function OrdinalAxis(props: Props): null {
                             addXAxis(xAxis, axisId, OrdinalAxisRange.from(start, end))
 
                             // add an update handler
-                            rangeUpdateHandlerIdRef.current = `x-axis-${chartId}-${location.valueOf()}`
+                            rangeUpdateHandlerIdRef.current = `x-axis-${chartId}-${axisId}-${location.valueOf()}`
                             addAxesRangesUpdateHandler(rangeUpdateHandlerIdRef.current, handleRangeUpdates)
                             break
                         }
@@ -152,7 +152,7 @@ export function OrdinalAxis(props: Props): null {
                             const [start, end] = AxisInterval.as(yAxis.scale.range()).asTuple()
                             addYAxis(yAxis, axisId, OrdinalAxisRange.from(start, end))
                             // add an update handler
-                            rangeUpdateHandlerIdRef.current = `y-axis-${chartId}-${location.valueOf()}`
+                            rangeUpdateHandlerIdRef.current = `y-axis-${chartId}-${axisId}-${location.valueOf()}`
                             addAxesRangesUpdateHandler(rangeUpdateHandlerIdRef.current, handleRangeUpdates)
                         }
                     }
@@ -217,6 +217,17 @@ export function OrdinalAxis(props: Props): null {
             plotDimensions, registerPlotDimensionChangeHandler, unregisterPlotDimensionChangeHandler,
         ]
     );
+
+    useEffect(
+        () => {
+            return () => {
+                if (rangeUpdateHandlerIdRef.current) {
+                    removeAxesRangesUpdateHandler(rangeUpdateHandlerIdRef.current)
+                }
+            }
+        },
+        [removeAxesRangesUpdateHandler]
+    )
 
     return null
 }
