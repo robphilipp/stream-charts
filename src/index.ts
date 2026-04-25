@@ -53,8 +53,12 @@ export {
 } from './app/charts/axes/ContinuousAxisRange'
 
 export {
-    OrdinalAxis
+    OrdinalAxis,
 } from './app/charts/axes/OrdinalAxis'
+
+export {
+    type OrdinalAxisRange,
+} from './app/charts/axes/OrdinalAxisRange'
 
 export {
     EmptyAxis,
@@ -76,46 +80,43 @@ export {
     type AxesState,
 } from './app/charts/axes/AxesState'
 
-export * from './app/charts/hooks/useAxes'
 export {
     useAxes,
-    type UseAxesValues, defaultAxesValues
+    type UseAxesValues, defaultAxesValues,
 } from './app/charts/hooks/useAxes'
 
-export * from './app/charts/hooks/useChart'
 export {
     useChart,
     type NoTooltipMetadata,
+    type UseChartValues,
 } from './app/charts/hooks/useChart'
 
-export * from './app/charts/hooks/useDataObservable'
 export {
     useDataObservable,
+    type UseObservableValues,
 } from './app/charts/hooks/useDataObservable'
 
-export * from './app/charts/hooks/useInitialData'
 export {
     useInitialData,
+    type UseInitialDataValues,
 } from './app/charts/hooks/useInitialData'
 
-export * from './app/charts/hooks/useMouse'
 export {
     useMouse,
     type UseMouseValues, defaultMouseValues,
 } from './app/charts/hooks/useMouse'
 
-export {} from './app/charts/hooks/usePlotDimensions'
 export {
     usePlotDimensions,
     type UsePlotDimensionsValues, defaultPlotDimensions,
-    defaultMargin
+    defaultMargin,
 } from './app/charts/hooks/usePlotDimensions'
 
-export {} from './app/charts/hooks/useTooltip'
 export {
     useTooltip,
     type UseTooltipValues, defaultTooltipValues,
-    type TooltipData
+    type TooltipData,
+    type TooltipContentProvider,
 } from './app/charts/hooks/useTooltip'
 
 //
@@ -161,20 +162,20 @@ export {
 } from './app/charts/plots/plot'
 
 export {
-    BarPlot
+    BarPlot,
 } from './app/charts/plots/BarPlot'
 
 export {
     NoCurveFactory,
-    PoincarePlot
+    PoincarePlot,
 } from './app/charts/plots/PoincarePlot'
 
 export {
-    RasterPlot
+    RasterPlot,
 } from './app/charts/plots/RasterPlot'
 
 export {
-    ScatterPlot
+    ScatterPlot,
 } from './app/charts/plots/ScatterPlot'
 
 //
@@ -201,6 +202,12 @@ export {
 } from './app/charts/series/ordinalSeries'
 
 export {
+    type TimeSeriesChartData,
+    emptyTimeSeriesChartData,
+    initialTimeSeriesChartData,
+} from './app/charts/series/timeSeriesChartData'
+
+export {
     type Datum,
     datumOf,
     emptyDatum,
@@ -208,12 +215,6 @@ export {
     timeSeriesFromTuples,
     type PixelDatum
 } from './app/charts/series/timeSeries'
-
-export {
-    type TimeSeriesChartData,
-    emptyTimeSeriesChartData,
-    initialTimeSeriesChartData,
-} from './app/charts/series/timeSeriesChartData'
 
 //
 // styling
@@ -261,23 +262,23 @@ export {
 //
 
 export {
-    BarPlotTooltipContent
+    BarPlotTooltipContent,
 } from './app/charts/tooltips/BarPlotTooltipContent'
 
 export {
-    PoincarePlotTooltipContent
+    PoincarePlotTooltipContent,
 } from './app/charts/tooltips/PoincarePlotTooltipContent'
 
 export {
-    RasterPlotTooltipContent
+    RasterPlotTooltipContent,
 } from './app/charts/tooltips/RasterPlotTooltipContent'
 
 export {
-    ScatterPlotTooltipContent
+    ScatterPlotTooltipContent,
 } from './app/charts/tooltips/ScatterPlotTooltipContent'
 
 export {
-    Tooltip
+    Tooltip,
 } from './app/charts/tooltips/Tooltip'
 
 export {

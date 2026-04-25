@@ -69,7 +69,7 @@ export const defaultMouseValues = (): UseMouseValues<any, any> => ({
 
 const MouseContext = createContext<UseMouseValues<any, any>>(defaultMouseValues())
 
-type Props = {
+export type Props = {
     children: JSX.Element | Array<JSX.Element>
 }
 

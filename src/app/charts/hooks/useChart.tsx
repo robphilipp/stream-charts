@@ -18,7 +18,7 @@ export type NoTooltipMetadata = {}
  * @template S The type of the series style
  * @template TM The type of the tooltip's metadata (data about the series data)
  */
-interface UseChartValues<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A extends BaseAxis> {
+export interface UseChartValues<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A extends BaseAxis> {
     /**
      * Unique ID for the chart
      */
@@ -96,7 +96,7 @@ const defaultUseChartValues: UseChartValues<any, any, any, any, any> = {
 
 const ChartContext = createContext<UseChartValues<any, any, any, any, any>>(defaultUseChartValues)
 
-interface Props {
+export interface Props {
     chartId: number
     container: SVGSVGElement | null
     mainG: GSelection | null
@@ -114,7 +114,6 @@ interface Props {
  * The React context provider for the {@link UseChartValues}
  * @param props The properties
  * @return The children wrapped in this provider
- * @constructor
  */
 export default function ChartProvider(props: Props): JSX.Element {
     const {

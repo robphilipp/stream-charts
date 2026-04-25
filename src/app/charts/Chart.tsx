@@ -21,11 +21,34 @@ import {AxisInterval} from "./axes/AxisInterval";
 const defaultBackground = '#202020';
 
 /**
+ * @param chartId A unique identifier for the chart. This is used to identify the chart in the DOM.
+ * @param width The width of the chart container
+ * @param height The height of the chart container
+ * @param margin The margin between the edges of the chart container and the axes
+ * @param color The base/default color of the chart lines. This can be overridden by the {@link Props.svgStyle} property.
+ * @param backgroundColor The base/default background color. This can be overridden by the {@link Props.svgStyle} property.
+ * @param svgStyle Overrides for the SVG style
+ * @param seriesStyles Map holding the series name to the series style associated with that series.
+ * @param initialData Initial (static) data to plot before subscribing to the {@link ChartData} observable.
+ * @param asChartData Optional conversion function that converts an array of base-series with datum type D to a
+ * descendent of a {@link ChartData} object
+ * @param seriesFilter Regular expression that filters which series to display on the plot. Can be update while streaming
+ * @param seriesObservable {@link ChartData} RxJS `Observable` that feeds the chart data to display (i.e. the data stream).
+ * @param windowingTime The time-window (in milliseconds) to buffer the incoming data before updating the chart. This is
+ * a lever to reduce the lag between real-time and chart-time when a large amount of data is being
+ * sourced by the observable. Smaller time-windows result in smoother scrolling, but more updates, and
+ * possibly a larger lag.
+ * @param shouldSubscribe When switching to `true` from `false`, subscribes to the {@link seriesObservable}. When switching
+ * to `false` from `true`, unsubscribes from the {@link seriesObservable}.
+ * @param onSubscribe Callback when the chart subscribes to the {@link ChartData} observable
+ * @param onUpdateAxesBounds Callback when the time range changes. This is generally used by plots where the
+ * x-axis starts to scroll as the data streams in past the end of the current time
+ * @param onUpdateChartTime Callback for updating the current chart time. This is generally used by plots
  * @template CD refers to the chart-data that is used by the Observable that has the stream of data.
  * @template D refers to the datum in the data-series
  * @template S refers to the type for the series style
  */
-interface Props<CD, D, S extends SeriesStyle> {
+export interface Props<CD, D, S extends SeriesStyle> {
     chartId: number
     /**
      * The width of the chart container
@@ -60,7 +83,7 @@ interface Props<CD, D, S extends SeriesStyle> {
      | INITIAL DATA
      */
     /**
-     * Initial (static) data to plot before subscribing to the {@link TimeSeriesChartData} observable.
+     * Initial (static) data to plot before subscribing to the {@link ChartData} observable.
      */
     initialData: Array<BaseSeries<D>>
     /**
@@ -78,7 +101,7 @@ interface Props<CD, D, S extends SeriesStyle> {
      | DATA STREAM
      */
     /**
-     * {@link TimeSeriesChartData} RxJS `Observable` that feeds the chart data to display (i.e. the data stream).
+     * {@link ChartData} RxJS `Observable` that feeds the chart data to display (i.e. the data stream).
      */
     seriesObservable?: Observable<CD>
     /**
@@ -94,7 +117,7 @@ interface Props<CD, D, S extends SeriesStyle> {
      */
     shouldSubscribe?: boolean
     /**
-     * Callback when the chart subscribes to the {@link TimeSeriesChartData} observable
+     * Callback when the chart subscribes to the {@link ChartData} observable
      * @param subscription The RxJS subscription
      */
     onSubscribe?: (subscription: Subscription) => void
@@ -137,7 +160,6 @@ interface Props<CD, D, S extends SeriesStyle> {
  * @template S The type of the series style
  * @template TM The type of the tooltip metadata (the data about the series). If not specified,
  * defaults to an empty object
- * @constructor
  * @example
  *
 

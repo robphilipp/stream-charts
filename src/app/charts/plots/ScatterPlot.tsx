@@ -33,7 +33,7 @@ import {AxisInterval} from "../axes/AxisInterval";
 import {Optional} from "result-fn";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 
-interface Props {
+export interface Props {
     /**
      * Holds the mapping between a series and the axis it uses (is assigned). The
      * map's key holds the series name, and the value is an {@link AxesAssignment}
@@ -83,7 +83,6 @@ interface Props {
  * chart ecosystem (axes, tracker, tooltip).
  *
  * @param props The properties associated with the scatter plot
- * @constructor
  * @example
  <ScatterPlot
  interpolation={interpolation}

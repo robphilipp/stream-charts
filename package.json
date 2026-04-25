@@ -1,6 +1,6 @@
 {
   "name": "stream-charts",
-  "version": "1.1.4-snapshot",
+  "version": "1.1.5-snapshot",
   "description": "Charts for steaming data",
   "author": "Rob Philipp",
   "homepage": "https://robphilipp.github.io/stream-charts/",
@@ -12,10 +12,21 @@
     "test": "jest src/app/charts/**/*.test.ts*",
     "build": "tsc",
     "prepare": "npm run build",
-    "gen-docs": "npx typedoc src/app/charts/ --out docs/ --entryPoints src/app/charts/ --entryPointStrategy expand"
+    "gen-docs": "npx typedoc src/app/charts/ --out docs/ --entryPoints src/index.ts --entryPointStrategy expand"
   },
   "eslintConfig": {
     "extends": "react-app"
+  },
+  "typedocOptions": {
+    "externalSymbolLinkMappings": {
+      "result-fn": {
+        "Optional": "https://github.com/robphilipp/result-fn/blob/master/docs/Optional.md"
+      },
+      "typescript": {
+        "Set": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set",
+        "Map": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+      }
+    }
   },
   "browserslist": {
     "production": [

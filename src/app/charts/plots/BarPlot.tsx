@@ -73,7 +73,7 @@ export const BAR_CHART_TOOLTIP_PROVIDER_IDS: BarChartElementId = {
     windowedMinMax: TOOLTIP_PROVIDER_ID + '-windowed-mean'
 }
 
-interface Props {
+export interface Props {
     /**
      * Holds the mapping between a series and the axis it uses (is assigned). The
      * map's key holds the series name, and the value is an {@link AxesAssignment}
@@ -124,7 +124,6 @@ interface Props {
  * <a href="https://github.com/robphilipp/stream-charts-examples">`StreamingBarChart` example</a>
  *
  * @param props The properties associated with the bar plot
- * @constructor
  * @example
  * ```typescript
  * <BarPlot

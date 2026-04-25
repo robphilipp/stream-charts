@@ -53,13 +53,13 @@ export class AxesState<A extends BaseAxis> {
 
     /**
      * Adds an axis to the current axis state and returns a new axis state. This is an internal state
-     * management function. This should generally not be used. Instead, use the {@link UseChartValues.addXAxis}
-     * and {@link UseChartValues.addYAxis} functions to add axes.
+     * management function. This should generally not be used. Instead, use the {@link UseAxesValues.addXAxis}
+     * and {@link UseAxesValues.addYAxis} functions to add axes.
      * @param axis The axis to add
      * @param id The ID of the axis to add
      * @return An updated axes state that has the new axis
-     * @see UseChartValues.addXAxis
-     * @see UseChartValues.addYAxis
+     * @see UseAxesValues.addXAxis
+     * @see UseAxesValues.addYAxis
      */
     addAxis(axis: A, id: string): AxesState<A> {
         const updatedAxes = this.axes.set(id, axis)

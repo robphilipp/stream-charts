@@ -69,7 +69,7 @@ export const defaultLegendStyle: LegendStyle = {
     transitionDuration: 350,
 }
 
-interface Props {
+export interface Props {
     /** Whether the legend is visible */
     visible: boolean
     /**

@@ -18,7 +18,7 @@ import {OrdinalAxisRange} from "./OrdinalAxisRange";
 import {Datum} from "../series/timeSeries";
 import {AxisInterval} from "./AxisInterval";
 
-interface Props {
+export interface Props {
     // the unique ID of the axis
     axisId: string
     // the location of the axis. for y-axes, this mut be either left or right,
@@ -59,7 +59,6 @@ interface Props {
  * be the name of the series used to represent each category.
  * @param props The properties for the component
  * @return null
- * @constructor
  */
 export function OrdinalAxis(props: Props): null {
     const {

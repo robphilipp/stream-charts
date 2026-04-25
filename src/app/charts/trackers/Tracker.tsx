@@ -27,7 +27,7 @@ export enum TrackerLabelLocation {
     ByAxis,
 }
 
-interface Props {
+export interface Props {
     visible: boolean
     trackerAxis?: AxisLocation
     labelLocation?: TrackerLabelLocation
@@ -42,7 +42,6 @@ interface Props {
  * handles single axes and dual axes.
  * @param props The tracker control properties
  * @return null component
- * @constructor
  */
 export function Tracker(props: Props): null {
     const {

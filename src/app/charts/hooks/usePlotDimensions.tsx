@@ -40,7 +40,7 @@ export const defaultPlotDimensions = (): UsePlotDimensionsValues => ({
 
 const PlotDimensionsContext = createContext<UsePlotDimensionsValues>(defaultPlotDimensions())
 
-type Props = {
+export type Props = {
     containerDimensions: Dimensions
     margin: Margin
     children: JSX.Element | Array<JSX.Element>

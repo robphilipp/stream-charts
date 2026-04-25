@@ -42,7 +42,7 @@ function generateAxisRangeMap(axes: Map<string, BaseAxis>): Map<string, Continuo
 // that no line will be drawn between the iterates (kinda gross)
 export const NoCurveFactory: CurveFactory = undefined as unknown as CurveFactory;
 
-interface Props {
+export interface Props {
     /**
      * The line interpolation curve factory. See the d3 documentation for curves at
      * {@link https://github.com/d3/d3-shape#curves} for information on available interpolations
@@ -101,7 +101,6 @@ interface Props {
  * chart ecosystem (axes, tracker, tooltip).
  *
  * @param props The properties associated with the scatter plot
- * @constructor
  * @example
  * ```typescript
  *  <ScatterPlot

@@ -17,7 +17,7 @@ import {Datum} from "../series/timeSeries";
 import {AxisInterval} from "./AxisInterval";
 import {ContinuousAxisRange} from "./ContinuousAxisRange";
 
-interface Props {
+export interface Props {
     // the unique ID of the axis
     axisId: string
     // the location of the axis. for x-axes, this must be either top or bottom. for
@@ -56,7 +56,6 @@ interface Props {
  * React won't render it because we are updating the SVG element and don't want React
  * involved, except to call this function if the props change.
  * @param props The properties for the axis
- * @constructor
  */
 export function ContinuousAxis(props: Props): null {
     const {
