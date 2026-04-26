@@ -1,5 +1,9 @@
 # change history
 
+## version 1.2.1 (doc update)
+
+Added videos of the charts to the documentation.
+
 ## version 1.2.0 (legend)
 
 Added a legend that can be external to the chart or internal (under the SVG element). When mousing over a legend item, the corresponding series is highlighted. And when mousing over a series, the corresponding legend item is highlighted. 
