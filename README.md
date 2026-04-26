@@ -374,7 +374,7 @@ An example scatter chart  (see [example](https://github.com/robphilipp/stream-ch
 
 Example bar chart showing windowed statistics (see [example](https://github.com/robphilipp/stream-charts-examples/blob/develop/src/app/examples/StreamingBarChart.tsx)).
 
-![bar-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/bar-chart-with-tooltip.png?raw=true)
+![bar-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/bar-chart-video.gif)
 
 ```typescript jsx
 
