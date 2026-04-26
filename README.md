@@ -128,7 +128,7 @@ npm install stream-charts
 ### [&#10514;](#content) <span id="example-raster-chart-code">example raster chart</span>
 An example raster chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx))
 
-![raster-chart](https://github.com/robphilipp/stream-charts/blob/develop/images/raster-chart-tooltip.png?raw=true)
+![raster-chart](https://github.com/robphilipp/stream-charts/blob/develop/images/raster-chart-video.gif)
 
 
 ```typescript jsx
@@ -262,7 +262,7 @@ An example raster chart (see [example](https://github.com/robphilipp/stream-char
 
 An example scatter chart  (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx))
 
-![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/scatter-chart-with-tooltip.png?raw=true)
+![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/scatter-chart-video.gif)
 
 
 ```typescript jsx
@@ -374,7 +374,7 @@ An example scatter chart  (see [example](https://github.com/robphilipp/stream-ch
 
 Example bar chart showing windowed statistics (see [example](https://github.com/robphilipp/stream-charts-examples/blob/develop/src/app/examples/StreamingBarChart.tsx)).
 
-![bar-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/bar-chart-with-tooltip.png?raw=true)
+![bar-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/bar-chart-video.gif)
 
 ```typescript jsx
 
@@ -494,7 +494,7 @@ Example bar chart showing windowed statistics (see [example](https://github.com/
 
 Example Poincare (iterates) chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/develop/src/app/examples/StreamingPoincareChart.tsx)).
 
-![poincare-chart-with-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/poincare-chart-with-tooltip.png?raw=true)
+![poincare-chart-with-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/poincare-video.gif)
 
 ```typescript jsx
 <Chart
