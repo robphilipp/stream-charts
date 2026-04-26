@@ -262,7 +262,8 @@ An example raster chart (see [example](https://github.com/robphilipp/stream-char
 
 An example scatter chart  (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx))
 
-![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/scatter-chart-with-tooltip.png?raw=true)
+[//]: # (![scatter-chart-tooltip]&#40;https://github.com/robphilipp/stream-charts/blob/develop/images/scatter-chart-with-tooltip.png?raw=true&#41;)
+![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/scatter-chart-video.gif)
 
 
 ```typescript jsx
