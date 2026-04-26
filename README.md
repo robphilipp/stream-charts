@@ -494,7 +494,7 @@ Example bar chart showing windowed statistics (see [example](https://github.com/
 
 Example Poincare (iterates) chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/develop/src/app/examples/StreamingPoincareChart.tsx)).
 
-![poincare-chart-with-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/poincare-chart-with-tooltip.png?raw=true)
+![poincare-chart-with-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/poincare-video.gif)
 
 ```typescript jsx
 <Chart
