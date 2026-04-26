@@ -128,7 +128,7 @@ npm install stream-charts
 ### [&#10514;](#content) <span id="example-raster-chart-code">example raster chart</span>
 An example raster chart (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx))
 
-![raster-chart](https://github.com/robphilipp/stream-charts/blob/develop/images/raster-chart-tooltip.png?raw=true)
+![raster-chart](https://github.com/robphilipp/stream-charts/blob/develop/images/raster-chart-video.gif)
 
 
 ```typescript jsx
@@ -262,7 +262,6 @@ An example raster chart (see [example](https://github.com/robphilipp/stream-char
 
 An example scatter chart  (see [example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx))
 
-[//]: # (![scatter-chart-tooltip]&#40;https://github.com/robphilipp/stream-charts/blob/develop/images/scatter-chart-with-tooltip.png?raw=true&#41;)
 ![scatter-chart-tooltip](https://github.com/robphilipp/stream-charts/blob/develop/images/scatter-chart-video.gif)
 
 
