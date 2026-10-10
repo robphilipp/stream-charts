@@ -1,16 +1,5 @@
-import {lightTheme, type Theme} from "../../ui/Themes.ts";
-import {
-    type AnchorHTMLAttributes,
-    type ClassAttributes,
-    type CSSProperties,
-    type HTMLAttributes,
-    type ImgHTMLAttributes,
-    type JSX,
-    useLayoutEffect,
-    useRef,
-    useState,
-    type VideoHTMLAttributes
-} from "react";
+import type {Theme} from "../../ui/Themes.ts";
+import {type ComponentProps, type CSSProperties, type JSX, useLayoutEffect, useMemo, useRef, useState} from "react";
 import {getRouteApi, useElementScrollRestoration, useNavigate} from "@tanstack/react-router";
 import {Button} from "../../ui/Button.tsx"
 import intro_page from "./intro.md?raw"
@@ -27,7 +16,7 @@ import legends_page from "./legends.md?raw";
 import tooltips_and_trackers_page from "./tooltips-and-trackers.md?raw";
 import where_the_code_lives_page from "./where-the-code-lives.md?raw";
 import how_the_data_flows_page from "./how-the-data-flows.md?raw";
-import ReactMarkdown, {type ExtraProps} from "react-markdown";
+import ReactMarkdown, {type Components, type ExtraProps} from "react-markdown";
 import rehypeRaw from 'rehype-raw';
 import {buttonStyle, interpolateColor} from "../../ui/utils.ts";
 import {useGridCell} from "react-resizable-grid-layout";
@@ -77,6 +66,9 @@ const TABLE_OF_CONTENTS: Array<string> = pages.map((page, pageNum) => `${pageNum
 // the ID of the table of contents (which the button that opens and closes it controls)
 const TABLE_OF_CONTENTS_ID = "intro-table-of-contents"
 
+// the font size of the pages' text
+const INTRO_FONT_SIZE = 15
+
 function style(theme: Theme, height: number): CSSProperties {
     return {
         backgroundColor: theme.backgroundColor,
@@ -91,7 +83,7 @@ function style(theme: Theme, height: number): CSSProperties {
         scrollbarWidth: "thin",
         // scrollbarColor: `${theme.color} ${theme.backgroundColor}`,
         scrollbarColor: `${interpolateColor(theme.color as string, theme.backgroundColor as string, 0.5)} ${theme.backgroundColor}`,
-        fontSize: 15,
+        fontSize: INTRO_FONT_SIZE,
         fontWeight: 400,
     }
 }
@@ -131,33 +123,29 @@ export default function Intro() {
     // whether the table of contents (which expands below the navigation bar's buttons) is open
     const [tableOfContentsOpen, setTableOfContentsOpen] = useState<boolean>(false)
 
+    // the page, parsed from its markdown. Only re-parsed when the page changes: the markdown's
+    // components follow theme changes by themselves (see `MARKDOWN_COMPONENTS`), so nothing else
+    // that re-renders the intro (e.g. opening the table of contents) needs to re-parse it.
+    const pageContent = useMemo(
+        () => (
+            <ReactMarkdown
+                components={MARKDOWN_COMPONENTS}
+                rehypePlugins={REHYPE_PLUGINS}
+                remarkPlugins={REMARK_PLUGINS}
+            >
+                {pages[pageNum]}
+            </ReactMarkdown>
+        ),
+        [pageNum]
+    )
+
     function updatePageNum(nextPage: number): void {
         navigate({to: "/intro", search: {page: Math.min(Math.max(0, nextPage), numPages - 1)}})
     }
 
     return (
         <div ref={scrollRef} data-scroll-restoration-id={SCROLL_RESTORATION_ID} style={cssStyle}>
-            <ReactMarkdown
-                components={{
-                    a: anchor => CustomLink(anchor, {
-                        color: theme.color,
-                        // fontWeight: adjustFontWeight(cssStyle.fontWeight, 25)
-                    }),
-                    figure: figure => CustomFigure(figure, {paddingLeft: 0, marginLeft: 0, width: "100%"}),
-                    figcaption: figureCaption => CustomFigureCaption(figureCaption, {
-                        color: theme.color,
-                        fontSize: adjustFontSize(cssStyle.fontSize, -2)
-                    }),
-                    img: image => CustomImage(image, {maxWidth: "100%", height: "auto", borderRadius: 10}, theme),
-                    video: video => CustomVideo(video, {width: "100%"}),
-                }}
-                rehypePlugins={[
-                    rehypeRaw,
-                ]}
-                remarkPlugins={[remarkGfm]}
-            >
-                {pages[pageNum]}
-            </ReactMarkdown>
+            {pageContent}
 
             <FloatingBar
                 style={{...theme}}
@@ -323,104 +311,125 @@ function TableOfContents(props: TableOfContentsProps): JSX.Element {
     )
 }
 
-// type FontWeight = number
-//     | "normal" | "bold" | "bolder" | "lighter"
-//     | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900
-//     | "initial" | "inherit" | "unset" | "revert"
-//     | (string & {})
-//
-// function adjustFontWeight(weight: FontWeight | undefined, adjustment: number, defaultWeight: number = 500): number {
-//     return parseInt(`${weight?.valueOf() || defaultWeight}`) + adjustment;
-// }
-
-type FontSize = string | number | (string & {})
-
-function adjustFontSize(size: FontSize | undefined, adjustment: number, defaultSize: number = 15): number {
-    return parseInt(`${size?.valueOf() || defaultSize}`) + adjustment;
-}
+/*
+    The markdown's custom components. They're defined once, here, rather than inline in the
+    `<ReactMarkdown>` (e.g. `img: image => CustomImage(image, theme)`): React tells components apart
+    by their function, so an inline arrow -- a new function on every render -- is a *different*
+    component on every render, and every re-render of the intro (e.g. opening the table of contents)
+    would throw away every link, figure, and image on the page and create them again. A re-created
+    image is briefly empty while it reloads, which made the text below it jump up and back. Each
+    component reads the theme from the theme store itself, so it still follows theme changes.
+ */
 
 const hoverLinkStyle: CSSProperties = {textDecoration: 'underline', textDecorationStyle: 'solid'}
-const linkStyle: CSSProperties = {textDecoration: 'underline',  textDecorationStyle: 'dashed'}
+const linkStyle: CSSProperties = {textDecoration: 'underline', textDecorationStyle: 'dashed'}
 
-function CustomLink(
-    anchor: ClassAttributes<HTMLAnchorElement> & AnchorHTMLAttributes<HTMLAnchorElement>,
-    css: CSSProperties
-): JSX.Element {
-    const [hoverStyle, setHoverStyle] = useState<CSSProperties>(linkStyle)
-    return <a
-        href={anchor.href}
-        target="_blank" rel="noopener noreferrer"
-        onMouseOver={() => setHoverStyle(hoverLinkStyle)}
-        onMouseLeave={() => setHoverStyle(linkStyle)}
-        style={{...anchor.style, ...css, ...hoverStyle}}
-    >
-        {anchor.children}
-    </a>
-}
-
-function CustomFigure(
-    figure: ClassAttributes<HTMLElement> & HTMLAttributes<HTMLElement>,
-    css: CSSProperties
-): JSX.Element {
-    return <figure style={{...figure.style, ...css}}>
-        {figure.children}
-    </figure>
-}
-
-function CustomFigureCaption(
-    caption: ClassAttributes<HTMLElement> & HTMLAttributes<HTMLElement>,
-    css: CSSProperties
-): JSX.Element {
-    return <figcaption style={{...caption.style, ...css}}>
-        {caption.children}
-    </figcaption>
+/**
+ * A link, which opens in a new tab, and whose underline goes from dashed to solid while hovered
+ * @param props The link's properties (from the markdown)
+ * @return The link
+ */
+function MarkdownLink(props: ComponentProps<'a'> & ExtraProps): JSX.Element {
+    const {href, style, children} = props
+    const {theme} = useThemeStore()
+    const [hovered, setHovered] = useState<boolean>(false)
+    return (
+        <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onMouseOver={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            style={{...style, color: theme.color, ...(hovered ? hoverLinkStyle : linkStyle)}}
+        >
+            {children}
+        </a>
+    )
 }
 
 /**
- * Updates the base (fallback) image name with the theme name. For example, if
- * the base image name is "navigation-bar.png" and the theme is set to "dark", then will
- * attempt to find an image named "navigation-bar-dark.png". Similarly, if the theme
- * is set to "light" then it will attempt to find an image named "navigation-bar-light.png".
- * If not found, will revert to the fallback image. Note that the base image need not
- * actually exist. But if it doesn't, the fallback will fail.
- * @param image The image element
- * @param css The styles for the image
- * @param [theme=lightTheme]
- * @return A an image element
+ * A figure, as wide as the page's content
+ * @param props The figure's properties (from the markdown)
+ * @return The figure
  */
-function CustomImage(
-    image: ClassAttributes<HTMLImageElement> & ImgHTMLAttributes<HTMLImageElement> & ExtraProps,
-    css: CSSProperties,
-    theme: Theme = lightTheme
-): JSX.Element {
-    const [error, setError] = useState(false)
+function MarkdownFigure(props: ComponentProps<'figure'> & ExtraProps): JSX.Element {
+    const {style, children} = props
+    return <figure style={{...style, paddingLeft: 0, marginLeft: 0, width: "100%"}}>{children}</figure>
+}
 
-    const extensionIndex = image.src?.lastIndexOf(".") || -1
-    if (extensionIndex >= 0 && !error) {
-        const imageSrc = `${image.src?.slice(0, extensionIndex)}-${theme.name}${image.src?.slice(extensionIndex)}`
-        return <img
-            src={imageSrc}
-            alt={image.alt}
-            onError={() => setError(true)}
-            width={image.width}
-            height={image.height}
-            style={{...image.style, ...css}}
+/**
+ * A figure's caption, in a slightly smaller font than the page's text
+ * @param props The caption's properties (from the markdown)
+ * @return The caption
+ */
+function MarkdownFigureCaption(props: ComponentProps<'figcaption'> & ExtraProps): JSX.Element {
+    const {style, children} = props
+    const {theme} = useThemeStore()
+    return <figcaption style={{...style, color: theme.color, fontSize: INTRO_FONT_SIZE - 2}}>{children}</figcaption>
+}
+
+/**
+ * The theme's version of an image's file: e.g. "./images/navigation-bar-dark.png" for the image
+ * "./images/navigation-bar.png" and the theme "dark"
+ * @param src The image's file
+ * @param themeName The theme's name
+ * @return The theme's version of the image's file, or `undefined` when the file name has no
+ * extension to put the theme's name in front of
+ */
+function themedSourceFor(src: string, themeName: string): string | undefined {
+    // (the extension is looked for in the file's name only, so that a dot in a directory's name
+    // isn't mistaken for it)
+    const fileNameStart = src.lastIndexOf("/") + 1
+    const extensionIndex = src.lastIndexOf(".")
+    if (extensionIndex <= fileNameStart) return undefined
+    return `${src.slice(0, extensionIndex)}-${themeName}${src.slice(extensionIndex)}`
+}
+
+/**
+ * An image that shows the theme's version of itself when there is one. For example, for the image
+ * "navigation-bar.png" and the theme "dark", shows "navigation-bar-dark.png", falling back to
+ * "navigation-bar.png" when that doesn't exist (so the image itself need only exist when some
+ * theme has no version of its own).
+ * @param props The image's properties (from the markdown)
+ * @return The image
+ */
+function MarkdownImage(props: ComponentProps<'img'> & ExtraProps): JSX.Element {
+    const {src, alt, width, height, style} = props
+    const {theme} = useThemeStore()
+    const themedSrc = typeof src === 'string' ? themedSourceFor(src, theme.name) : undefined
+    // the theme's version of the image that turned out not to exist. Remembering *which* file
+    // failed (rather than just that one did) means a missing file isn't requested again, while
+    // switching themes still tries the new theme's version.
+    const [failedSrc, setFailedSrc] = useState<string | undefined>(undefined)
+    const showThemed = themedSrc !== undefined && themedSrc !== failedSrc
+    return (
+        <img
+            src={showThemed ? themedSrc : src}
+            alt={alt}
+            onError={showThemed ? () => setFailedSrc(themedSrc) : undefined}
+            width={width}
+            height={height}
+            style={{...style, maxWidth: "100%", height: "auto", borderRadius: 10}}
         />
-    }
-    return <img
-        src={image.src}
-        alt={image.alt}
-        width={image.width}
-        height={image.height}
-        style={{...image.style, ...css}}
-    />
+    )
 }
 
-function CustomVideo(
-    video: ClassAttributes<HTMLVideoElement> & VideoHTMLAttributes<HTMLVideoElement>,
-    css: CSSProperties
-): JSX.Element {
-    return <video controls={video.controls} width={css.width} style={{...video.style, ...css}}>
-        {video.children}
-    </video>
+/**
+ * A video, with its controls, as wide as the page's content
+ * @param props The video's properties (from the markdown)
+ * @return The video
+ */
+function MarkdownVideo(props: ComponentProps<'video'> & ExtraProps): JSX.Element {
+    const {controls, style, children} = props
+    return <video controls={controls} width="100%" style={{...style, width: "100%"}}>{children}</video>
 }
+
+const MARKDOWN_COMPONENTS: Components = {
+    a: MarkdownLink,
+    figure: MarkdownFigure,
+    figcaption: MarkdownFigureCaption,
+    img: MarkdownImage,
+    video: MarkdownVideo,
+}
+const REHYPE_PLUGINS = [rehypeRaw]
+const REMARK_PLUGINS = [remarkGfm]
