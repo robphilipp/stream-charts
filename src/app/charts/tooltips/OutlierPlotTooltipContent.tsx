@@ -1,16 +1,16 @@
 import type {CSSProperties, ReactElement} from "react"
-import {useEffect, useMemo, useState} from "react"
+import {useEffect, useMemo, useState, useRef} from "react"
 import {createPortal} from "react-dom"
 import {useChart} from "../hooks/useChart"
 import {usePlotDimensions} from "../hooks/usePlotDimensions"
 import type {ContinuousNumericAxis, SeriesLineStyle} from "../axes/axes"
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange"
-import {defaultTooltipStyle, type TooltipDimensions, type TooltipStyle, tooltipX, tooltipY} from "./tooltipUtils"
+import {defaultTooltipStyle, type TooltipDimensions, type TooltipStyle} from "./tooltipUtils"
+import {tooltipAnchorFor, type TooltipAnchor, useTooltipPlacement} from "./useTooltipPlacement"
 import {withAlpha} from "../styling/canvasStyle"
 import type {TooltipData} from "../hooks/useTooltip"
 import type {OutlierBandTooltipMetadata} from "../plots/OutlierPlot"
 import type {OutlierDatum} from "../series/outlierSeries"
-import type {Dimensions, Margin} from "../styling/margins"
 
 export interface Props {
     style?: Partial<TooltipStyle>
@@ -58,14 +58,9 @@ interface OutlierTooltipContentState {
     bandLine: string
     explanationLines: Array<string>
     countLine: string
-    left: number
-    top: number
+    // where the tooltip is anchored (the mouse)
+    anchor: TooltipAnchor
 }
-
-/** A generous estimate of the tooltip's rendered width, used to keep it from running off the right edge of the viewport. */
-const ESTIMATED_WIDTH = 320
-/** A generous estimate of the tooltip's rendered height, used to keep it from running off the bottom edge of the plot. */
-const ESTIMATED_HEIGHT = 140
 
 /**
  * Registers a tooltip content provider for {@link OutlierPlot} bands. When the user hovers over
@@ -114,6 +109,8 @@ export function OutlierPlotTooltipContent(props: Props): ReactElement | null {
     )
 
     const [tooltipContent, setTooltipContent] = useState<OutlierTooltipContentState | null>(null)
+    // the tooltip (its portal), which is placed next to the mouse once rendered
+    const tooltipRef = useRef<HTMLDivElement>(null)
 
     // register the tooltip content provider, which when called on mouse-over-band events
     // captures the data needed to render the tooltip; the actual rendering happens declaratively
@@ -129,7 +126,7 @@ export function OutlierPlotTooltipContent(props: Props): ReactElement | null {
                         mouseCoords: [x: number, y: number]
                     ) => captureTooltipContent(
                         seriesName, tooltipData.metadata, mouseCoords,
-                        canvas, margin, plotDimensions, tooltipStyle,
+                        canvas,
                         datumFormatter, bandFormatter, measureFormatter,
                         setTooltipContent
                     )
@@ -152,12 +149,17 @@ export function OutlierPlotTooltipContent(props: Props): ReactElement | null {
         [chartId, registerMouseLeaveHandler, unregisterMouseLeaveHandler]
     )
 
+    // positions the tooltip next to the mouse, based on its rendered size
+    useTooltipPlacement(tooltipRef, tooltipContent?.anchor ?? null, plotDimensions, margin, tooltipStyle)
+
     if (tooltipContent === null) return null
 
     const divStyle: CSSProperties = {
         position: 'fixed',
-        left: tooltipContent.left,
-        top: tooltipContent.top,
+        // (placed next to the mouse, based on its rendered size, by `useTooltipPlacement`, before
+        // it's painted)
+        left: 0,
+        top: 0,
         backgroundColor: withAlpha(tooltipStyle.backgroundColor, tooltipStyle.backgroundOpacity),
         border: `${tooltipStyle.borderWidth}px solid ${withAlpha(tooltipStyle.borderColor, tooltipStyle.borderOpacity)}`,
         borderRadius: tooltipStyle.borderRadius,
@@ -170,7 +172,7 @@ export function OutlierPlotTooltipContent(props: Props): ReactElement | null {
     }
 
     return createPortal(
-        <div style={divStyle}>
+        <div ref={tooltipRef} style={divStyle}>
             <div style={{fontWeight: tooltipStyle.fontWeight + 500, fontSize: tooltipStyle.fontSize + 2}}>
                 {tooltipContent.header}
             </div>
@@ -193,9 +195,6 @@ export function OutlierPlotTooltipContent(props: Props): ReactElement | null {
  * @param metadata The band metadata
  * @param mouseCoords The coordinates of the mouse when the event was fired, in canvas-local coordinates
  * @param canvas The chart's canvas element
- * @param margin The plot margins
- * @param plotDimensions The dimensions of the plot
- * @param tooltipStyle The style properties for the tooltip
  * @param datumFormatter Formatter for the hovered datum
  * @param bandFormatter Formatter for the band's bounds
  * @param measureFormatter Formatter for the band's inside/outside probabilities
@@ -207,9 +206,6 @@ function captureTooltipContent(
     metadata: OutlierBandTooltipMetadata,
     mouseCoords: [x: number, y: number],
     canvas: HTMLCanvasElement,
-    margin: Margin,
-    plotDimensions: Dimensions,
-    tooltipStyle: TooltipStyle,
     datumFormatter: (x: number, y: number) => string,
     bandFormatter: (lower: number, upper: number) => string,
     measureFormatter: (innerProb: number, outerProb: number) => Array<string>,
@@ -223,20 +219,14 @@ function captureTooltipContent(
     } = metadata
     const outerProb = 1 - upperMeasure
     const innerProb = upperMeasure - lowerMeasure
-    const [x, y] = mouseCoords
 
-    const xCoord = tooltipX(x, ESTIMATED_WIDTH, plotDimensions, tooltipStyle, margin)
-    const yCoord = tooltipY(y, ESTIMATED_HEIGHT, plotDimensions, tooltipStyle, margin)
-
-    const canvasRect = canvas.getBoundingClientRect()
     setTooltipContent({
         header: `Series: ${seriesName}`,
         datumLine: datum ? datumFormatter(datum.datum.x, datum.datum.y) : undefined,
         bandLine: bandFormatter(lowerMeasure, upperMeasure),
         explanationLines: measureFormatter(innerProb, outerProb),
         countLine: `Points in band: ${pointsInBand}`,
-        left: canvasRect.left + xCoord,
-        top: canvasRect.top + yCoord,
+        anchor: tooltipAnchorFor(mouseCoords, canvas),
     })
 
     // return off-screen coordinates so the Tooltip parent's background div is invisible

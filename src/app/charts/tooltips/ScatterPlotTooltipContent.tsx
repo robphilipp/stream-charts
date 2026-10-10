@@ -1,9 +1,9 @@
 import type {CSSProperties, ReactElement} from "react";
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useState, useRef} from "react";
 import {createPortal} from "react-dom";
 import {type Series} from "../plots/plot";
-import type {Dimensions, Margin} from "../styling/margins";
-import {boundingPoints, defaultTooltipStyle, type TooltipDimensions, type TooltipStyle, tooltipX, tooltipY} from "./tooltipUtils";
+import {boundingPoints, defaultTooltipStyle, type TooltipDimensions, type TooltipStyle} from "./tooltipUtils";
+import {tooltipAnchorFor, type TooltipAnchor, useTooltipPlacement} from "./useTooltipPlacement"
 import {withAlpha} from "../styling/canvasStyle";
 import {formatTime, formatTimeChange, formatValue, formatValueChange} from "../utils";
 import {type NoTooltipMetadata, useChart} from "../hooks/useChart";
@@ -112,14 +112,9 @@ interface ScatterTooltipContent {
     yBefore: string
     yAfter: string
     yDelta: string
-    left: number
-    top: number
+    // where the tooltip is anchored (the mouse)
+    anchor: TooltipAnchor
 }
-
-/** A generous estimate of the tooltip's rendered width, used to keep it from running off the right edge of the viewport. */
-const ESTIMATED_WIDTH = 320
-/** A generous estimate of the tooltip's rendered height, used to keep it from running off the bottom edge of the plot. */
-const ESTIMATED_HEIGHT = 90
 
 /**
  * Adds tooltip content as a table. The columns of the table are the "label", the value before
@@ -171,6 +166,8 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
     const tooltipStyle = useMemo(() => ({...defaultTooltipStyle, ...style}), [style])
 
     const [tooltipContent, setTooltipContent] = useState<ScatterTooltipContent | null>(null)
+    // the tooltip (its portal), which is placed next to the mouse once rendered
+    const tooltipRef = useRef<HTMLDivElement>(null)
 
     // register the tooltip content provider, which when called on mouse-over-series events
     // captures the data needed to render the tooltip (this plot holds all the information needed
@@ -191,7 +188,7 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
                     (seriesName: string, time: number, tooltipData: TooltipData<Datum, NoTooltipMetadata>, mouseCoords: [x: number, y: number]) =>
                         captureTooltipContent(
                             seriesName, time, tooltipData.series, mouseCoords,
-                            canvas, margin, plotDimensions, tooltipStyle,
+                            canvas,
                             options,
                             setTooltipContent
                         )
@@ -217,12 +214,17 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
         [chartId, registerMouseLeaveHandler, unregisterMouseLeaveHandler]
     )
 
+    // positions the tooltip next to the mouse, based on its rendered size
+    useTooltipPlacement(tooltipRef, tooltipContent?.anchor ?? null, plotDimensions, margin, tooltipStyle)
+
     if (tooltipContent === null) return null
 
     const divStyle: CSSProperties = {
         position: 'fixed',
-        left: tooltipContent.left,
-        top: tooltipContent.top,
+        // (placed next to the mouse, based on its rendered size, by `useTooltipPlacement`, before
+        // it's painted)
+        left: 0,
+        top: 0,
         backgroundColor: withAlpha(tooltipStyle.backgroundColor, tooltipStyle.backgroundOpacity),
         border: `${tooltipStyle.borderWidth}px solid ${withAlpha(tooltipStyle.borderColor, tooltipStyle.borderOpacity)}`,
         borderRadius: tooltipStyle.borderRadius,
@@ -237,7 +239,7 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
     const rowLabelStyle: CSSProperties = {...cellStyle, textAlign: 'left', paddingLeft: 0}
 
     return createPortal(
-        <div style={divStyle}>
+        <div ref={tooltipRef} style={divStyle}>
             <div style={{fontSize: tooltipStyle.fontSize, fontWeight: tooltipStyle.fontWeight, marginBottom: 4}}>
                 {tooltipContent.seriesName}
             </div>
@@ -280,9 +282,6 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
  * @param series The datum (t ms, s mV)
  * @param mouseCoords The coordinates of the mouse when the event was fired, in canvas-local coordinates
  * @param canvas The chart's canvas element
- * @param margin The plot margins
- * @param plotDimensions The dimensions of the plot
- * @param tooltipStyle The style properties for the tooltip
  * @param options The options passed through the function that adds the tooltip content
  * @param setTooltipContent Setter that stashes the captured content for the component to render
  * @return Off-screen {@link TooltipDimensions}, so the parent <Tooltip>'s own background stays invisible
@@ -293,20 +292,12 @@ function captureTooltipContent(
     series: Series<Datum>,
     mouseCoords: [x: number, y: number],
     canvas: HTMLCanvasElement,
-    margin: Margin,
-    plotDimensions: Dimensions,
-    tooltipStyle: TooltipStyle,
     options: TooltipOptions,
     setTooltipContent: (content: ScatterTooltipContent) => void,
 ): TooltipDimensions {
     const {labels, headers, formatters} = options
-    const [x, y] = mouseCoords
     const [lower, upper] = boundingPoints(series, time, value => value.x, () => emptyDatum())
 
-    const xCoord = tooltipX(x, ESTIMATED_WIDTH, plotDimensions, tooltipStyle, margin)
-    const yCoord = tooltipY(y, ESTIMATED_HEIGHT, plotDimensions, tooltipStyle, margin)
-
-    const canvasRect = canvas.getBoundingClientRect()
     setTooltipContent({
         seriesName,
         beforeHeader: headers.before,
@@ -320,8 +311,7 @@ function captureTooltipContent(
         yBefore: formatters.y.value(lower.y),
         yAfter: formatters.y.value(upper.y),
         yDelta: formatters.y.change(lower.y, upper.y),
-        left: canvasRect.left + xCoord,
-        top: canvasRect.top + yCoord,
+        anchor: tooltipAnchorFor(mouseCoords, canvas),
     })
 
     // return off-screen coordinates so the Tooltip parent's background div is invisible

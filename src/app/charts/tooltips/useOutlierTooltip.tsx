@@ -1,8 +1,10 @@
 import {type JSX, createContext, useContext} from "react"
 import type {OutlierBandTooltipMetadata} from "../plots/OutlierPlot"
 import type {TooltipStyle} from "./tooltipUtils"
+import type {TooltipAnchor} from "./useTooltipPlacement"
 
-export type TooltipLocation = {left: number, top: number}
+// where the tooltip is anchored (the mouse); the tooltip itself is placed next to it once rendered
+export type TooltipLocation = {anchor: TooltipAnchor}
 export type TooltipSeriesName = {seriesName: string}
 export type TooltipContent<M extends readonly number[] = readonly number[]> = TooltipSeriesName & OutlierBandTooltipMetadata<M> & TooltipLocation
 

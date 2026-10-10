@@ -94,69 +94,68 @@ export function removeTooltip(scope: ParentNode): void {
 }
 
 /**
- * Calculates the x-coordinate of the upper left-hand side of the tooltip rectangle (obviously without
- * "rounded corners"). Adjusts the x-coordinate so that tooltip is visible on the edges of the plot.
- * @param x The current x-coordinate of the mouse
- * @param textWidth The width of the tooltip text
+ * Calculates the x-coordinate of the left side of the tooltip. The tooltip goes to the right of the
+ * mouse, unless it would run past the right edge of the plot, in which case it goes to the left of
+ * the mouse (and never past the left edge of the chart).
+ * @param x The x-coordinate of the mouse, relative to the chart
+ * @param width The tooltip's (rendered) width, including its padding and border
  * @param plotDimensions The dimensions of the plot
- * @param tooltipStyle The tooltip style information
+ * @param tooltipStyle The tooltip style information (its left padding is used as the gap between
+ * the mouse and the tooltip)
  * @param margin The plot margin
- * @return The x-coordinate of the lower left-hand side of the tooltip rectangle
+ * @return The x-coordinate of the tooltip's left side, relative to the chart
  */
-export function tooltipX(x: number, textWidth: number, plotDimensions: Dimensions, tooltipStyle: TooltipStyle, margin: Margin): number {
-    if (x > plotDimensions.width + margin.left - (textWidth + tooltipStyle.paddingLeft + tooltipStyle.paddingRight)) {
-        return x - textWidth - margin.right + tooltipStyle.paddingRight + tooltipStyle.paddingLeft
+export function tooltipX(x: number, width: number, plotDimensions: Dimensions, tooltipStyle: TooltipStyle, margin: Margin): number {
+    const gap = tooltipStyle.paddingLeft
+    if (x + gap + width <= margin.left + plotDimensions.width) {
+        return x + gap
     }
-    return x + tooltipStyle.paddingLeft
+    return Math.max(0, x - gap - width)
 }
 
 /**
- * Calculates the y-coordinate of the upper-left-hand corner of the tooltip rectangle. Adjusts the y-coordinate
- * so that the tooltip is visible on the upper edge of the plot
- * @param y The y-coordinate of the mouse
- * @param textHeight The height of the header and neuron ID text
+ * Calculates the y-coordinate of the top of the tooltip. The tooltip goes below the mouse, unless it
+ * would run past the bottom of the plot, in which case it's moved up so that its bottom lines up
+ * with the plot's bottom (and never past the top edge of the chart).
+ * @param y The y-coordinate of the mouse, relative to the chart
+ * @param height The tooltip's (rendered) height, including its padding and border
  * @param plotDimensions The dimensions of the plot
- * @param tooltipStyle The tooltip style information
+ * @param tooltipStyle The tooltip style information (its top padding is used as the gap between
+ * the mouse and the tooltip)
  * @param margin The plot margin
- * @return The y-coordinate of the lower-left-hand corner of the tooltip rectangle
+ * @return The y-coordinate of the tooltip's top, relative to the chart
  */
-export function tooltipY(y: number, textHeight: number, plotDimensions: Dimensions, tooltipStyle: TooltipStyle, margin: Margin): number {
-    if (y > plotDimensions.height + margin.top - (textHeight + tooltipStyle.paddingTop + tooltipStyle.paddingBottom)) {
-        return plotDimensions.height + margin.top - (textHeight + tooltipStyle.paddingTop + tooltipStyle.paddingBottom)
+export function tooltipY(y: number, height: number, plotDimensions: Dimensions, tooltipStyle: TooltipStyle, margin: Margin): number {
+    const gap = tooltipStyle.paddingTop
+    if (y + gap + height <= margin.top + plotDimensions.height) {
+        return y + gap
     }
-    return y + tooltipStyle.paddingTop
+    return Math.max(0, margin.top + plotDimensions.height - height)
 }
 
 /**
- * Calculates the y-coordinate for the upper-left-hand the tooltip rectangle. Adjusts the y-coordinate so
- * that the tooltip is visible on the upper and lower edges of the plot
- * @param seriesName The name of the series
- * @param textHeight The height of the header and neuron ID text
+ * Calculates the y-coordinate of the top of a tooltip for a category (e.g. a raster plot's row):
+ * the tooltip is centered on the category, but kept within the plot's top and bottom edges.
+ * @param seriesName The name of the series (the category)
+ * @param height The tooltip's (rendered) height, including its padding and border
  * @param axis The category axis for determining the y-value of the tooltip
- * @param tooltipStyle The tooltip style
  * @param margin The plot margin
  * @param categoryHeight The height (in pixels) of the category
  * @param plotDimensions The dimensions of the plot
- * @return The y-coordinate of the lower-left-hand corner of the tooltip rectangle
+ * @return The y-coordinate of the tooltip's top, relative to the chart
  */
 export function categoryTooltipY(
     seriesName: string,
-    textHeight: number,
+    height: number,
     axis: OrdinalStringAxis,
-    tooltipStyle: TooltipStyle,
     margin: Margin,
     categoryHeight: number,
     plotDimensions: Dimensions
 ): number {
-    const y = axis.scale(seriesName) || 0
-    const halfHeight = (tooltipStyle.paddingBottom + textHeight + tooltipStyle.paddingTop) / 2
-    if (y < halfHeight) {
-        return margin.top
-    }
-    if (y > plotDimensions.height + margin.top - halfHeight) {
-        return plotDimensions.height + margin.top - textHeight
-    }
-    return y + margin.top - halfHeight + categoryHeight / 2
+    const categoryCenter = margin.top + (axis.scale(seriesName) || 0) + categoryHeight / 2
+    const top = categoryCenter - height / 2
+    const lowest = margin.top + plotDimensions.height - height
+    return Math.max(margin.top, Math.min(top, lowest))
 }
 
 /**

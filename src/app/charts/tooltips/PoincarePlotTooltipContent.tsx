@@ -1,14 +1,13 @@
 import type {CSSProperties, ReactElement} from "react";
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useState, useRef} from "react";
 import {createPortal} from "react-dom";
 import {
     defaultTooltipStyle,
     findPointAndNeighbors,
     type TooltipDimensions,
     type TooltipStyle,
-    tooltipX,
-    tooltipY
 } from "./tooltipUtils";
+import {tooltipAnchorFor, type TooltipAnchor, useTooltipPlacement} from "./useTooltipPlacement"
 import {withAlpha} from "../styling/canvasStyle";
 import {formatTime, formatValue} from "../utils";
 import {type NoTooltipMetadata, useChart} from "../hooks/useChart";
@@ -16,7 +15,6 @@ import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import {emptyIterateDatum, type IterateDatum} from "../series/iterateSeries";
 import type {ContinuousNumericAxis, SeriesLineStyle} from "../axes/axes";
 import type {TooltipData} from "../hooks/useTooltip";
-import type {Dimensions, Margin} from "../styling/margins";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 
 /**
@@ -102,14 +100,9 @@ interface PoincareTooltipContent {
     yPrev: string
     yCurrent: string
     yNext: string
-    left: number
-    top: number
+    // where the tooltip is anchored (the mouse)
+    anchor: TooltipAnchor
 }
-
-/** A generous estimate of the tooltip's rendered width, used to keep it from running off the right edge of the viewport. */
-const ESTIMATED_WIDTH = 300
-/** A generous estimate of the tooltip's rendered height, used to keep it from running off the bottom edge of the plot. */
-const ESTIMATED_HEIGHT = 90
 
 /**
  * Adds tooltip content as a table. The columns of the table are the previous, current, and next
@@ -168,6 +161,8 @@ export function PoincarePlotTooltipContent(props: Props): ReactElement | null {
     )
 
     const [tooltipContent, setTooltipContent] = useState<PoincareTooltipContent | null>(null)
+    // the tooltip (its portal), which is placed next to the mouse once rendered
+    const tooltipRef = useRef<HTMLDivElement>(null)
 
     // register the tooltip content provider, which when called on mouse-over-point events
     // captures the data needed to render the tooltip; the actual rendering happens declaratively
@@ -179,7 +174,7 @@ export function PoincarePlotTooltipContent(props: Props): ReactElement | null {
                     (seriesName: string, time: number, tooltipData: TooltipData<IterateDatum, NoTooltipMetadata>, mouseCoords: [x: number, y: number]) =>
                         captureTooltipContent(
                             seriesName, time, tooltipData, mouseCoords,
-                            canvas, margin, plotDimensions, tooltipStyle,
+                            canvas,
                             {xLabel, yLabel, xValueFormatter, yValueFormatter},
                             setTooltipContent
                         )
@@ -204,12 +199,17 @@ export function PoincarePlotTooltipContent(props: Props): ReactElement | null {
         [chartId, registerMouseLeaveHandler, unregisterMouseLeaveHandler]
     )
 
+    // positions the tooltip next to the mouse, based on its rendered size
+    useTooltipPlacement(tooltipRef, tooltipContent?.anchor ?? null, plotDimensions, margin, tooltipStyle)
+
     if (tooltipContent === null) return null
 
     const divStyle: CSSProperties = {
         position: 'fixed',
-        left: tooltipContent.left,
-        top: tooltipContent.top,
+        // (placed next to the mouse, based on its rendered size, by `useTooltipPlacement`, before
+        // it's painted)
+        left: 0,
+        top: 0,
         backgroundColor: withAlpha(tooltipStyle.backgroundColor, tooltipStyle.backgroundOpacity),
         border: `${tooltipStyle.borderWidth}px solid ${withAlpha(tooltipStyle.borderColor, tooltipStyle.borderOpacity)}`,
         borderRadius: tooltipStyle.borderRadius,
@@ -227,7 +227,7 @@ export function PoincarePlotTooltipContent(props: Props): ReactElement | null {
     const currentColumnStyle: CSSProperties = {...cellStyle, fontWeight: tooltipStyle.fontWeight + 300}
 
     return createPortal(
-        <div style={divStyle}>
+        <div ref={tooltipRef} style={divStyle}>
             <div style={{fontSize: tooltipStyle.fontSize, fontWeight: tooltipStyle.fontWeight, marginBottom: 4}}>
                 {tooltipContent.seriesName}
             </div>
@@ -276,9 +276,6 @@ interface CaptureOptions {
  * @param tooltipData The series data and metadata
  * @param mouseCoords The coordinates of the mouse when the event was fired, in canvas-local coordinates
  * @param canvas The chart's canvas element
- * @param margin The plot margins
- * @param plotDimensions The dimensions of the plot
- * @param tooltipStyle The style properties for the tooltip
  * @param options Header labels and value formatters
  * @param setTooltipContent Setter that stashes the captured content for the component to render
  * @return Off-screen {@link TooltipDimensions}, so the parent <Tooltip>'s own background stays invisible
@@ -289,23 +286,15 @@ function captureTooltipContent(
     tooltipData: TooltipData<IterateDatum, NoTooltipMetadata>,
     mouseCoords: [x: number, y: number],
     canvas: HTMLCanvasElement,
-    margin: Margin,
-    plotDimensions: Dimensions,
-    tooltipStyle: TooltipStyle,
     options: CaptureOptions,
     setTooltipContent: (content: PoincareTooltipContent) => void,
 ): TooltipDimensions {
-    const [x, y] = mouseCoords
     const {series} = tooltipData
     const [lower, point, upper, index] = findPointAndNeighbors(
         series, time, 0.1, value => value.time, () => emptyIterateDatum
     )
     const {xLabel, yLabel, xValueFormatter, yValueFormatter} = options
 
-    const xCoord = tooltipX(x, ESTIMATED_WIDTH, plotDimensions, tooltipStyle, margin)
-    const yCoord = tooltipY(y, ESTIMATED_HEIGHT, plotDimensions, tooltipStyle, margin)
-
-    const canvasRect = canvas.getBoundingClientRect()
     setTooltipContent({
         seriesName,
         // matches the original: the header props are accepted but unused; headers are always this
@@ -321,8 +310,7 @@ function captureTooltipContent(
         yPrev: yValueFormatter(lower.iterateN_1),
         yCurrent: yValueFormatter(point.iterateN_1),
         yNext: yValueFormatter(upper.iterateN_1),
-        left: canvasRect.left + xCoord,
-        top: canvasRect.top + yCoord,
+        anchor: tooltipAnchorFor(mouseCoords, canvas),
     })
 
     // return off-screen coordinates so the Tooltip parent's background div is invisible

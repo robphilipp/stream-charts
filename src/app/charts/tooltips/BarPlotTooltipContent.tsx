@@ -1,7 +1,8 @@
 import type {CSSProperties, ReactElement} from "react";
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useState, useRef} from "react";
 import {createPortal} from "react-dom";
-import {defaultTooltipStyle, type TooltipDimensions, type TooltipStyle, tooltipX, tooltipY} from "./tooltipUtils";
+import {defaultTooltipStyle, type TooltipDimensions, type TooltipStyle} from "./tooltipUtils";
+import {tooltipAnchorFor, type TooltipAnchor, useTooltipPlacement} from "./useTooltipPlacement"
 import {withAlpha} from "../styling/canvasStyle";
 import {formatNumber, formatTime, formatValue} from "../utils";
 import {useChart} from "../hooks/useChart";
@@ -13,7 +14,6 @@ import type {WindowedOrdinalStats} from "../datasources/ordinalDataSource";
 import {defaultOrdinalValueStats} from "../observables/ordinals";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "../plots/constants.ts";
-import type {Dimensions, Margin} from "../styling/margins";
 
 /**
  # Want to write your own tooltip-content component?
@@ -90,14 +90,9 @@ interface BarTooltipContent {
     headerLabel: string
     valueLine: string
     rows: Array<StatsRow>
-    left: number
-    top: number
+    // where the tooltip is anchored (the mouse)
+    anchor: TooltipAnchor
 }
-
-/** A generous estimate of the tooltip's rendered width, used to keep it from running off the right edge of the viewport. */
-const ESTIMATED_WIDTH = 260
-/** A generous estimate of the tooltip's rendered height, used to keep it from running off the bottom edge of the plot. */
-const ESTIMATED_HEIGHT = 160
 
 /**
  * Adds tooltip content that shows the series name, the current value, and a small stats table
@@ -128,6 +123,8 @@ export function BarPlotTooltipContent(props: Props): ReactElement | null {
     const tooltipStyle = useMemo(() => ({...defaultTooltipStyle, ...style}), [style])
 
     const [tooltipContent, setTooltipContent] = useState<BarTooltipContent | null>(null)
+    // the tooltip (its portal), which is placed next to the mouse once rendered
+    const tooltipRef = useRef<HTMLDivElement>(null)
 
     // register the tooltip content provider, which when called on mouse-over-element events
     // captures the data needed to render the tooltip; the actual rendering happens declaratively
@@ -155,7 +152,7 @@ export function BarPlotTooltipContent(props: Props): ReactElement | null {
                         }
                         return captureTooltipContent(
                             seriesName, providerId, tooltipData, mouseCoords,
-                            canvas, margin, plotDimensions, tooltipStyle,
+                            canvas,
                             ordinalUnits,
                             setTooltipContent
                         )
@@ -180,12 +177,17 @@ export function BarPlotTooltipContent(props: Props): ReactElement | null {
         [chartId, registerMouseLeaveHandler, unregisterMouseLeaveHandler]
     )
 
+    // positions the tooltip next to the mouse, based on its rendered size
+    useTooltipPlacement(tooltipRef, tooltipContent?.anchor ?? null, plotDimensions, margin, tooltipStyle)
+
     if (tooltipContent === null) return null
 
     const divStyle: CSSProperties = {
         position: 'fixed',
-        left: tooltipContent.left,
-        top: tooltipContent.top,
+        // (placed next to the mouse, based on its rendered size, by `useTooltipPlacement`, before
+        // it's painted)
+        left: 0,
+        top: 0,
         backgroundColor: withAlpha(tooltipStyle.backgroundColor, tooltipStyle.backgroundOpacity),
         border: `${tooltipStyle.borderWidth}px solid ${withAlpha(tooltipStyle.borderColor, tooltipStyle.borderOpacity)}`,
         borderRadius: tooltipStyle.borderRadius,
@@ -202,7 +204,7 @@ export function BarPlotTooltipContent(props: Props): ReactElement | null {
     const highlightStyle: CSSProperties = {fontWeight: tooltipStyle.fontWeight + 300}
 
     return createPortal(
-        <div style={divStyle}>
+        <div ref={tooltipRef} style={divStyle}>
             <div style={{fontSize: tooltipStyle.fontSize, fontWeight: tooltipStyle.fontWeight}}>
                 {tooltipContent.seriesName} ({tooltipContent.headerLabel})
             </div>
@@ -287,9 +289,6 @@ function highlightFor(providerId: string): (rowLabel: 'Count' | 'Min' | 'Max' | 
  * @param tooltipData The series data and metadata
  * @param mouseCoords The coordinates of the mouse when the event was fired, in canvas-local coordinates
  * @param canvas The chart's canvas element
- * @param margin The plot margins
- * @param plotDimensions The dimensions of the plot
- * @param tooltipStyle The style properties for the tooltip
  * @param ordinalUnits The units of the ordinal data (i.e. "mV")
  * @param setTooltipContent Setter that stashes the captured content for the component to render
  * @return Off-screen {@link TooltipDimensions}, so the parent <Tooltip>'s own background stays invisible
@@ -300,13 +299,9 @@ function captureTooltipContent(
     tooltipData: TooltipData<OrdinalDatum, WindowedOrdinalStats>,
     mouseCoords: [x: number, y: number],
     canvas: HTMLCanvasElement,
-    margin: Margin,
-    plotDimensions: Dimensions,
-    tooltipStyle: TooltipStyle,
     ordinalUnits: string,
     setTooltipContent: (content: BarTooltipContent) => void,
 ): TooltipDimensions {
-    const [x, y] = mouseCoords
     const {series, metadata: statistics} = tooltipData
 
     const currentDatum = series.length > 0 ? series[series.length - 1] : emptyOrdinalDatum
@@ -323,17 +318,12 @@ function captureTooltipContent(
         {label: `Mean${unitsSuffix}`, windowed: formatValue(windowedValueStats.mean), all: formatValue(valueStats.mean), highlight: highlight('Mean')},
     ]
 
-    const xCoord = tooltipX(x, ESTIMATED_WIDTH, plotDimensions, tooltipStyle, margin)
-    const yCoord = tooltipY(y, ESTIMATED_HEIGHT, plotDimensions, tooltipStyle, margin)
-
-    const canvasRect = canvas.getBoundingClientRect()
     setTooltipContent({
         seriesName,
         headerLabel: labelForProviderId(providerId),
         valueLine: `${formatValue(currentDatum.value)}${displayOrdinalUnits}  (${formatTime(currentDatum.time)} ms)`,
         rows,
-        left: canvasRect.left + xCoord,
-        top: canvasRect.top + yCoord,
+        anchor: tooltipAnchorFor(mouseCoords, canvas),
     })
 
     // return off-screen coordinates so the Tooltip parent's background div is invisible

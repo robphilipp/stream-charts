@@ -1,7 +1,8 @@
 import type {CSSProperties, ReactElement} from "react";
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useState, useRef} from "react";
 import {createPortal} from "react-dom";
-import {categoryTooltipY, defaultTooltipStyle, type TooltipDimensions, type TooltipStyle, tooltipX} from "./tooltipUtils";
+import {categoryTooltipY, defaultTooltipStyle, type TooltipDimensions, type TooltipStyle} from "./tooltipUtils";
+import {tooltipAnchorFor, type TooltipAnchor, useTooltipPlacement} from "./useTooltipPlacement"
 import {withAlpha} from "../styling/canvasStyle";
 import {formatTime, formatValue} from "../utils";
 import {type NoTooltipMetadata, useChart} from "../hooks/useChart";
@@ -88,12 +89,9 @@ interface RasterTooltipContent {
     seriesName: string
     spikeTime: number
     value: number
-    left: number
-    top: number
+    // where the tooltip is anchored (the mouse, and the spike's row)
+    anchor: TooltipAnchor
 }
-
-/** A generous estimate of the tooltip's rendered width, used to keep it from running off the right edge of the viewport. */
-const ESTIMATED_WIDTH = 220
 
 /**
  * Adds tooltip content that shows the series name and the (time, value) of the selected point.
@@ -139,6 +137,8 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
     const tooltipStyle = useMemo(() => ({...defaultTooltipStyle, ...style}), [style])
 
     const [tooltipContent, setTooltipContent] = useState<RasterTooltipContent | null>(null)
+    // the tooltip (its portal), which is placed next to the mouse once rendered
+    const tooltipRef = useRef<HTMLDivElement>(null)
 
     // register the tooltip content provider, which when called on mouse-over-series events
     // captures the data needed to render the tooltip (this plot holds all the information needed
@@ -169,7 +169,7 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
                             .getOrThrow(() => new Error(`No assigned y-axis exists; axis_id: ${yAxisId}`))
                         return captureTooltipContent(
                             seriesName, tooltipData.series[0], mouseCoords,
-                            canvas, margin, plotDimensions, tooltipStyle,
+                            canvas, margin, plotDimensions,
                             assignedAxis,// options,
                             setTooltipContent
                         )
@@ -196,12 +196,17 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
         [chartId, registerMouseLeaveHandler, unregisterMouseLeaveHandler]
     )
 
+    // positions the tooltip next to the mouse, based on its rendered size
+    useTooltipPlacement(tooltipRef, tooltipContent?.anchor ?? null, plotDimensions, margin, tooltipStyle)
+
     if (tooltipContent === null) return null
 
     const divStyle: CSSProperties = {
         position: 'fixed',
-        left: tooltipContent.left,
-        top: tooltipContent.top,
+        // (placed next to the mouse, based on its rendered size, by `useTooltipPlacement`, before
+        // it's painted)
+        left: 0,
+        top: 0,
         backgroundColor: withAlpha(tooltipStyle.backgroundColor, tooltipStyle.backgroundOpacity),
         border: `${tooltipStyle.borderWidth}px solid ${withAlpha(tooltipStyle.borderColor, tooltipStyle.borderOpacity)}`,
         borderRadius: tooltipStyle.borderRadius,
@@ -213,7 +218,7 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
     }
 
     return createPortal(
-        <div style={divStyle}>
+        <div ref={tooltipRef} style={divStyle}>
             <div style={{fontSize: tooltipStyle.fontSize, fontWeight: tooltipStyle.fontWeight}}>
                 {tooltipContent.seriesName}
             </div>
@@ -235,7 +240,6 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
  * @param canvas The chart's canvas element
  * @param margin The plot margins
  * @param plotDimensions The dimensions of the plot
- * @param tooltipStyle The style properties for the tooltip
  * @param axis The category axis to which the time-series is associated
  * @param setTooltipContent Setter that stashes the captured content for the component to render
  * @return Off-screen {@link TooltipDimensions}, so the parent <Tooltip>'s own background stays invisible
@@ -247,7 +251,6 @@ function captureTooltipContent(
     canvas: HTMLCanvasElement,
     margin: Margin,
     plotDimensions: Dimensions,
-    tooltipStyle: TooltipStyle,
     axis: OrdinalStringAxis,
     // options: TooltipOptions,
     setTooltipContent: (content: RasterTooltipContent | null) => void,
@@ -262,23 +265,17 @@ function captureTooltipContent(
         return {x: -99999, y: -99999, contentWidth: 0, contentHeight: 0}
     }
 
-    const [x] = mouseCoords
     const {x: spikeTime, y} = selected
 
-    // rough content size estimate, used only to keep the tooltip within the plot/viewport edges
-    // (the browser lays out and sizes the actual content; we don't need an exact measurement)
-    const estimatedTextHeight = tooltipStyle.fontSize * 2 + 4
-
-    const xCoord = tooltipX(x, ESTIMATED_WIDTH, plotDimensions, tooltipStyle, margin)
-    const yCoord = categoryTooltipY(seriesName, estimatedTextHeight, axis, tooltipStyle, margin, axis.scale.bandwidth(), plotDimensions)
-
-    const canvasRect = canvas.getBoundingClientRect()
     setTooltipContent({
         seriesName,
         spikeTime,
         value: y,
-        left: canvasRect.left + xCoord,
-        top: canvasRect.top + yCoord,
+        // (vertically, the tooltip is centered on the spike's row, rather than placed below the mouse)
+        anchor: tooltipAnchorFor(
+            mouseCoords, canvas,
+            height => categoryTooltipY(seriesName, height, axis, margin, axis.scale.bandwidth(), plotDimensions)
+        ),
     })
 
     // return off-screen coordinates so the Tooltip parent's background div is invisible

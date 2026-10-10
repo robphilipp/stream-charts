@@ -1,4 +1,5 @@
-import {boundingPoints, removeTooltip} from "./tooltipUtils";
+import {boundingPoints, categoryTooltipY, defaultTooltipStyle, removeTooltip, tooltipX, tooltipY} from "./tooltipUtils";
+import type {OrdinalStringAxis} from "../axes/axes";
 
 type Point = { x: number, y: number }
 
@@ -76,5 +77,69 @@ describe('removeTooltip', () => {
         const {scope} = fakeScope(0)
 
         expect(() => removeTooltip(scope)).not.toThrow()
+    })
+})
+
+describe('tooltip placement', () => {
+    // a 400 x 300 plot, with a 40 px margin on each side (so the plot spans x in [40, 440], and y
+    // in [40, 340], relative to the chart)
+    const margin = {top: 40, bottom: 40, left: 40, right: 40}
+    const plotDimensions = {width: 400, height: 300}
+    const style = {...defaultTooltipStyle, paddingLeft: 10, paddingTop: 10}
+
+    describe('tooltipX', () => {
+        it('places the tooltip to the right of the mouse when it fits', () => {
+            expect(tooltipX(100, 200, plotDimensions, style, margin)).toBe(110)
+        })
+
+        it('places the tooltip right up against the plot edge when it just fits', () => {
+            // 230 + 10 + 200 = 440, the plot's right edge
+            expect(tooltipX(230, 200, plotDimensions, style, margin)).toBe(240)
+        })
+
+        it("flips the tooltip to the left of the mouse, the same gap away, when it doesn't fit", () => {
+            // the tooltip's right edge sits the gap (10 px) to the left of the mouse -- regardless
+            // of the chart's right margin, and of how wide the tooltip is
+            expect(tooltipX(400, 200, plotDimensions, style, margin)).toBe(400 - 10 - 200)
+            expect(tooltipX(400, 120, plotDimensions, style, margin)).toBe(400 - 10 - 120)
+        })
+
+        it("doesn't flip the tooltip past the chart's left edge", () => {
+            expect(tooltipX(150, 380, plotDimensions, style, margin)).toBe(0)
+        })
+    })
+
+    describe('tooltipY', () => {
+        it('places the tooltip below the mouse when it fits', () => {
+            expect(tooltipY(100, 80, plotDimensions, style, margin)).toBe(110)
+        })
+
+        it("moves the tooltip up to the plot's bottom edge when it doesn't fit below the mouse", () => {
+            // the plot's bottom is at 340, so an 80 px tooltip's top goes at 260
+            expect(tooltipY(300, 80, plotDimensions, style, margin)).toBe(260)
+        })
+
+        it("doesn't move the tooltip past the chart's top edge", () => {
+            expect(tooltipY(300, 400, plotDimensions, style, margin)).toBe(0)
+        })
+    })
+
+    describe('categoryTooltipY', () => {
+        // ten 30 px categories, "c0" through "c9", from the top of the plot
+        const axis = {scale: (name: string) => Number(name.slice(1)) * 30} as unknown as OrdinalStringAxis
+
+        it('centers the tooltip on the category', () => {
+            // "c4" spans [160, 190] (relative to the chart), so a 50 px tooltip's top goes at 150
+            expect(categoryTooltipY('c4', 50, axis, margin, 30, plotDimensions)).toBe(150)
+        })
+
+        it("keeps the tooltip within the plot's top edge", () => {
+            expect(categoryTooltipY('c0', 50, axis, margin, 30, plotDimensions)).toBe(40)
+        })
+
+        it("keeps the tooltip within the plot's bottom edge", () => {
+            // the plot's bottom is at 340, so a 50 px tooltip's top goes at most at 290
+            expect(categoryTooltipY('c9', 50, axis, margin, 30, plotDimensions)).toBe(290)
+        })
     })
 })
