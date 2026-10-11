@@ -60,7 +60,7 @@ export interface Props {
      * or the limits change. When `false` (the default), the domain is exactly the `domain` prop.
      *
      * For y-axes only (an x-axis' domain follows time, and its zooming and panning), in the plots
-     * that support it (currently the scatter plot). Elsewhere, it's ignored, with a warning.
+     * that support it (the scatter, bar, and outlier plots). Elsewhere, it's ignored, with a warning.
      */
     autoScale?: boolean
     /**

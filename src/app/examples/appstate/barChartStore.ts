@@ -73,6 +73,12 @@ type BarChartState = {
     // the bar plot's zoom/pan state (undefined when never zoomed/panned), handed back to the
     // plot when it remounts so that navigating away and back doesn't reset the zoom
     zoomState: BarPlotZoomState | undefined
+    // whether the y-axes auto-scale (grow to fit the data)
+    autoScaleYAxes: boolean
+    // the auto-scaled y-axes' domains, kept so that their growth survives navigating away and back
+    // (undefined until they've been auto-scaled)
+    y1AutoScaledDomain: [min: number, max: number] | undefined
+    y2AutoScaledDomain: [min: number, max: number] | undefined
 }
 
 const initialState: BarChartState = {
@@ -87,6 +93,9 @@ const initialState: BarChartState = {
     showWinMinMax: true,
     showWinMean: true,
     zoomState: undefined,
+    autoScaleYAxes: false,
+    y1AutoScaledDomain: undefined,
+    y2AutoScaledDomain: undefined,
 }
 
 type BarChartActions = {
@@ -101,6 +110,9 @@ type BarChartActions = {
     setShowWinMinMax: (show: boolean) => void
     setShowWinMean: (show: boolean) => void
     setZoomState: (zoomState: BarPlotZoomState) => void
+    setAutoScaleYAxes: (autoScaleYAxes: boolean) => void
+    setY1AutoScaledDomain: (domain: [min: number, max: number]) => void
+    setY2AutoScaledDomain: (domain: [min: number, max: number]) => void
     reset: () => void
 }
 
@@ -144,6 +156,12 @@ export const useBarChartStore: UseBoundStore<StoreApi<BarChartStore>> = create<B
         setShowWinMean: (showWinMean: boolean) => set({showWinMean}),
 
         setZoomState: (zoomState: BarPlotZoomState) => set({zoomState}),
+
+        // (turning auto-scaling on, or off, starts the axes afresh)
+        setAutoScaleYAxes: (autoScaleYAxes: boolean) =>
+            set({autoScaleYAxes, y1AutoScaledDomain: undefined, y2AutoScaledDomain: undefined}),
+        setY1AutoScaledDomain: (domain: [min: number, max: number]) => set({y1AutoScaledDomain: domain}),
+        setY2AutoScaledDomain: (domain: [min: number, max: number]) => set({y2AutoScaledDomain: domain}),
 
         // the update period is baked into the generator, so give the data source a new one (only
         // possible while stopped, which is the only time the control is enabled)

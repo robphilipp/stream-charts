@@ -33,7 +33,7 @@ import {INTERPOLATIONS} from "./options/interpolations.ts";
 import {InterpolationControl} from "./controls/InterpolationControl.tsx";
 import {ExpandableControlBar} from "../ui/ExpandableControlBar.tsx";
 import {CommonExecutionControls} from "./controls/CommonExecutionControls.tsx";
-import {FilterIcon, HighlightAxesIcon, InterpolationIcon, LagIcon, MarkersIcon, TooltipIcon} from "../ui/Icons.tsx";
+import {AutoScaleIcon, FilterIcon, HighlightAxesIcon, InterpolationIcon, LagIcon, MarkersIcon, TooltipIcon} from "../ui/Icons.tsx";
 import {CommonControls} from "./controls/CommonControls.tsx";
 import {DropDataControl} from "./controls/DropDataControl.tsx";
 import {LagDisplay} from "./controls/LagDisplay.tsx";
@@ -64,6 +64,13 @@ const MEASURE_DESCRIPTIONS = [
 
 const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
 const X_AXIS_ID = 'x-axis-1'
+
+// The y-axis' domain. With auto-scaling on, the axis starts out narrower, and grows (up to the
+// limits) as the index and its bands wander beyond it -- with the usual domain, there would
+// never be anything to grow for.
+const Y_DOMAIN: [number, number] = [0, 250]
+const Y_AUTO_SCALE_DOMAIN: [number, number] = [80, 160]
+const Y_AUTO_SCALE_LIMITS: [number, number] = [0, 250]
 const INITIAL_POINT_COUNT = 400  // 100 * 25ms = 2500ms, fills the default x-axis window
 
 function defaultInitialOutlierData(): Array<OutlierSeries<Measures>> {
@@ -153,6 +160,12 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
     const setTooltipType = useOutlierChartStore(state => state.setTooltipType)
     const highlightAxes = useOutlierChartStore(state => state.highlightAxes)
     const setHighlightAxes = useOutlierChartStore(state => state.setHighlightAxes)
+    const autoScaleYAxis = useOutlierChartStore(state => state.autoScaleYAxis)
+    const setAutoScaleYAxis = useOutlierChartStore(state => state.setAutoScaleYAxis)
+    // the auto-scaled y-axis' domain, kept in the store so that its growth survives navigating
+    // away from the chart and back
+    const yAutoScaledDomain = useOutlierChartStore(state => state.yAutoScaledDomain)
+    const setYAutoScaledDomain = useOutlierChartStore(state => state.setYAutoScaledDomain)
     //
     // ----------------------------------------------------------------
 
@@ -313,6 +326,7 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
                             {/*<TrackerIcon color={visibility.tracker ? theme.color : theme.disabledBackgroundColor}/>*/}
                             <MarkersIcon color={showMarkers ? theme.color : theme.disabledBackgroundColor}/>
                             <HighlightAxesIcon color={highlightAxes ? theme.color : theme.disabledBackgroundColor}/>
+                            <AutoScaleIcon color={autoScaleYAxis ? theme.color : theme.disabledBackgroundColor}/>
                             <InterpolationIcon
                                 color={selectedInterpolationName === "curveLinear" ? theme.disabledBackgroundColor : theme.color}/>
                         </CommonExecutionControls>
@@ -411,6 +425,15 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
                                 labelColor={theme.color}
                                 onChange={() => setHighlightAxes(!highlightAxes)}
                             />
+                            <Checkbox
+                                key={7}
+                                checked={autoScaleYAxis}
+                                label="auto-scale y-axis"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setAutoScaleYAxis(!autoScaleYAxis)}
+                            />
                             <Divider theme={theme}/>
                             <InterpolationControl
                                 theme={theme}
@@ -453,7 +476,12 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
                     <ContinuousAxis
                         axisId="y-axis-1"
                         location={AxisLocation.Left}
-                        domain={[0, 250]}
+                        domain={autoScaleYAxis ? Y_AUTO_SCALE_DOMAIN : Y_DOMAIN}
+                        autoScale={autoScaleYAxis}
+                        autoScaleMin={Y_AUTO_SCALE_LIMITS[0]}
+                        autoScaleMax={Y_AUTO_SCALE_LIMITS[1]}
+                        autoScaledDomain={yAutoScaledDomain}
+                        onAutoScale={setYAutoScaledDomain}
                         label="Spot Price Index (USD)"
                     />
                     <OutlierPlot<Measures>

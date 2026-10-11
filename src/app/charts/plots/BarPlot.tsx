@@ -34,7 +34,8 @@ import {OrdinalAxisRange} from "../axes/OrdinalAxisRange";
 import {Optional} from "result-fn";
 import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./constants.ts";
 import {AxisInterval} from "../axes/AxisInterval";
-import {warnAboutIgnoredAutoScale} from "../axes/autoScale";
+import {extentOf, extentWith} from "../axes/autoScale";
+import {type AutoScaleAxes, growAutoScaledYAxes, useAutoScaleRestart} from "./autoScaleYAxes";
 
 /**
  * A snapshot of the bar plot's zoom/pan state, in a form that can be held outside the plot (e.g.
@@ -194,15 +195,11 @@ export function BarPlot(props: Props): null {
         setAxisAssignments,
         setAxisIntervalFor,
         setOriginalAxisIntervalFor,
-        axesRanges
+        axesRanges,
+        axisRangeFor,
+        updateAxisRanges,
     } = axes
 
-    // this plot doesn't auto-scale its y-axes, so warn about any that ask to be (see
-    // `ContinuousAxis`'s `autoScale` prop)
-    useEffect(
-        () => warnAboutIgnoredAutoScale("BarPlot", yAxesState.axes),
-        [yAxesState]
-    )
 
     const {mouseOverHandlerFor, mouseLeaveHandlerFor} = mouse
 
@@ -436,6 +433,60 @@ export function BarPlot(props: Props): null {
                 context2D.restore()
             }
 
+            /**
+             * Grows the auto-scaling y-axes (see `ContinuousAxis`'s `autoScale` prop) to fit what's
+             * shown of the series whose categories are on screen (within the x-axis' current,
+             * possibly zoomed, window): the min/max bars, the windowed min/max bars, the mean and
+             * windowed-mean lines, and the value lines -- each only when it's shown. Registered to
+             * run before the axes draw (they're at z-index 0), so the axes and the bars are drawn
+             * with the grown domain in the same frame.
+             */
+            const autoScaleYAxes = (): void => {
+                const extents = new Map<string, [min: number, max: number]>()
+                dataRef.current.forEach(series => {
+                    if (!series.name.match(seriesFilter) || series.data.length === 0) return
+                    const [xAxis, yAxis] = axesFor(
+                        series.name,
+                        axisAssignments,
+                        axisId => xAxesState.axisFor(axisId).getOrUndefined(),
+                        axisId => yAxesState.axisFor(axisId).getOrUndefined()
+                    )
+                    if (xAxis === undefined || yAxis?.autoScale === undefined) return
+
+                    // only the categories (at least partly) on screen
+                    const x = xAxis.scale(series.name)
+                    if (x === undefined || x + xAxis.scale.bandwidth() <= 0 || x >= plotDimensions.width) return
+
+                    // what's shown of the series (mirrors the draw function above)
+                    const values: Array<number> = []
+                    const stats = statsRef.current.valueStatsForSeries.get(series.name)
+                    if (showMinMaxBars && stats !== undefined) values.push(stats.min.value, stats.max.value)
+                    const windowedStats = statsRef.current.windowedValueStatsForSeries.get(series.name)
+                    if (windowedStats !== undefined) {
+                        if (showWindowedMinMaxBars) values.push(windowedStats.min.value, windowedStats.max.value)
+                        if (showMeanValueLines && stats !== undefined) values.push(stats.mean)
+                        if (showWindowedMeanValueLines) values.push(windowedStats.mean)
+                    }
+                    if (showValueLines) values.push(series.data[series.data.length - 1].value)
+
+                    const seriesExtent = extentOf(values, yAxis.scale)
+                    if (seriesExtent === undefined) return
+                    const extent = extents.get(yAxis.axisId)
+                    extents.set(
+                        yAxis.axisId,
+                        extent === undefined ? seriesExtent : extentWith(extentWith(extent, seriesExtent[0]), seriesExtent[1])
+                    )
+                })
+                // (the y-axes are continuous axes, even though this plot's axes context is typed
+                // for its ordinal x-axes)
+                growAutoScaledYAxes(extents, {
+                    yAxes: yAxesState.axes,
+                    axisRangeFor,
+                    updateAxisRanges: updateAxisRanges as unknown as AutoScaleAxes['updateAxisRanges'],
+                })
+            }
+
+            cc.register(`bar-plot-autoscale-${chartId}`, autoScaleYAxes, -10)
             cc.register(`bar-plot-${chartId}`, draw, 10)
             cc.requestRedraw()
         },
@@ -448,9 +499,17 @@ export function BarPlot(props: Props): null {
             showMinMaxBars,
             showMeanValueLines,
             showWindowedMeanValueLines,
-            showWindowedMinMaxBars
+            showWindowedMinMaxBars,
+            axisRangeFor, updateAxisRanges
         ]
     )
+
+    // new data, new scale: restarts the auto-scaling y-axes when the data source is replaced
+    useAutoScaleRestart(dataSource, {
+        yAxes: yAxesState.axes,
+        axisRangeFor,
+        updateAxisRanges: updateAxisRanges as unknown as AutoScaleAxes['updateAxisRanges'],
+    })
 
     // need to keep the function references for use by the subscription, which forms a closure
     // on them. without the references, the closures become stale, and resizing during streaming
@@ -917,6 +976,7 @@ export function BarPlot(props: Props): null {
         () => {
             return () => {
                 if (canvasContext) {
+                    canvasContext.unregister(`bar-plot-autoscale-${chartId}`)
                     canvasContext.unregister(`bar-plot-${chartId}`)
                 }
             }

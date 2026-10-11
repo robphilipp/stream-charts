@@ -40,6 +40,7 @@ import {defaultMargin} from "../charts/hooks/defaultPlotDimensions";
 import {ExpandableControlBar} from "../ui/ExpandableControlBar.tsx";
 import {CommonExecutionControls} from "./controls/CommonExecutionControls.tsx";
 import {
+    AutoScaleIcon,
     HighlightAxesIcon,
     LagIcon,
     MeanIcon,
@@ -94,6 +95,13 @@ interface Props {
     seriesHeight?: number
     plotWidth?: number
 }
+
+// The y-axes' domain. With auto-scaling on, the axes start out narrower, and grow (up to the
+// limits) as the bars' values wander beyond them -- the example's values stay within [-1, 1], so
+// with the usual domain, there would never be anything to grow for.
+const Y_DOMAIN: [number, number] = [-1.1, 1.1]
+const Y_AUTO_SCALE_DOMAIN: [number, number] = [-0.5, 0.5]
+const Y_AUTO_SCALE_LIMITS: [number, number] = [-1.1, 1.1]
 
 // calculates a unique chart ID when the module is loaded
 const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
@@ -200,6 +208,15 @@ export function StreamingBarChart(props: Props): JSX.Element {
     const setShowWinMinMax = useBarChartStore(state => state.setShowWinMinMax)
     const showWinMean = useBarChartStore(state => state.showWinMean)
     const setShowWinMean = useBarChartStore(state => state.setShowWinMean)
+
+    const autoScaleYAxes = useBarChartStore(state => state.autoScaleYAxes)
+    const setAutoScaleYAxes = useBarChartStore(state => state.setAutoScaleYAxes)
+    // the auto-scaled y-axes' domains, kept in the store so that their growth survives navigating
+    // away from the chart and back
+    const y1AutoScaledDomain = useBarChartStore(state => state.y1AutoScaledDomain)
+    const setY1AutoScaledDomain = useBarChartStore(state => state.setY1AutoScaledDomain)
+    const y2AutoScaledDomain = useBarChartStore(state => state.y2AutoScaledDomain)
+    const setY2AutoScaledDomain = useBarChartStore(state => state.setY2AutoScaledDomain)
 
     const zoomState = useBarChartStore(state => state.zoomState)
     const setZoomState = useBarChartStore(state => state.setZoomState)
@@ -373,6 +390,7 @@ export function StreamingBarChart(props: Props): JSX.Element {
                             <TooltipIcon color={visibility.tooltip ? theme.color : theme.disabledBackgroundColor}/>
                             <TrackerIcon color={visibility.tracker ? theme.color : theme.disabledBackgroundColor}/>
                             <HighlightAxesIcon color={visibility.highlightAxes ? theme.color : theme.disabledBackgroundColor}/>
+                            <AutoScaleIcon color={autoScaleYAxes ? theme.color : theme.disabledBackgroundColor}/>
                         </CommonExecutionControls>
                         <CommonControls>
                             <DropDataControl
@@ -437,6 +455,15 @@ export function StreamingBarChart(props: Props): JSX.Element {
                                 borderColor={theme.color}
                                 labelColor={theme.color}
                                 onChange={() => setVisibility({...visibility, highlightAxes: !visibility.highlightAxes})}
+                            />
+                            <Checkbox
+                                key={9}
+                                checked={autoScaleYAxes}
+                                label="auto-scale y-axes"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setAutoScaleYAxes(!autoScaleYAxes)}
                             />
                         </CommonControls>
                     </ExpandableControlBar>
@@ -576,13 +603,23 @@ export function StreamingBarChart(props: Props): JSX.Element {
                     <ContinuousAxis
                         axisId="y-axis-1"
                         location={AxisLocation.Left}
-                        domain={[-1.1, 1.1]}
+                        domain={autoScaleYAxes ? Y_AUTO_SCALE_DOMAIN : Y_DOMAIN}
+                        autoScale={autoScaleYAxes}
+                        autoScaleMin={Y_AUTO_SCALE_LIMITS[0]}
+                        autoScaleMax={Y_AUTO_SCALE_LIMITS[1]}
+                        autoScaledDomain={y1AutoScaledDomain}
+                        onAutoScale={setY1AutoScaledDomain}
                         label="ρ (mV)"
                     />
                     <ContinuousAxis
                         axisId="y-axis-2"
                         location={AxisLocation.Right}
-                        domain={[-1.1, 1.1]}
+                        domain={autoScaleYAxes ? Y_AUTO_SCALE_DOMAIN : Y_DOMAIN}
+                        autoScale={autoScaleYAxes}
+                        autoScaleMin={Y_AUTO_SCALE_LIMITS[0]}
+                        autoScaleMax={Y_AUTO_SCALE_LIMITS[1]}
+                        autoScaledDomain={y2AutoScaledDomain}
+                        onAutoScale={setY2AutoScaledDomain}
                         label="ρ (mV)"
                     />
                     <Tracker

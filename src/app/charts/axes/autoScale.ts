@@ -116,61 +116,93 @@ export function extentWith(
     return [Math.min(extent[0], value), Math.max(extent[1], value)]
 }
 
-type Point = { readonly x: number, readonly y: number }
+/**
+ * Calculates the extent (the [min, max]) of the specified values, skipping those the y-scale
+ * can't show (e.g. values <= 0 on a log scale, or NaN)
+ * @param values The values
+ * @param yScale The y-axis' scale
+ * @return The extent of the values, or `undefined` when there are none (that can be shown)
+ */
+export function extentOf(
+    values: Iterable<number>,
+    yScale: ScaleContinuousNumeric<number, number>
+): [min: number, max: number] | undefined {
+    let extent: [min: number, max: number] | undefined = undefined
+    for (const value of values) {
+        if (Number.isFinite(yScale(value))) extent = extentWith(extent, value)
+    }
+    return extent
+}
 
 /**
  * Calculates the extent (the [min, max] of the y-values) of a series' data that's visible within
- * the x-axis' window: the points within the window, and -- when the series is drawn as a line --
- * the line's height where it crosses the window's left and right edges (a line from a point just
- * off screen can reach higher, or lower, within the window than any point that's on screen).
- * Values the y-scale can't show (e.g. values <= 0 on a log scale) are skipped.
+ * the x-axis' window: the values of the points within the window, and -- when the series is drawn
+ * with lines -- the lines' heights where they cross the window's left and right edges (a line from
+ * a point just off screen can reach higher, or lower, within the window than any point that's on
+ * screen). Values the y-scale can't show (e.g. values <= 0 on a log scale) are skipped.
  *
- * The crossings are calculated in the y-scale's own space (as the line is drawn), so they're exact
- * for straight lines, on any kind of scale.
+ * A point can have several values, each drawn as its own line across the points (e.g. an outlier
+ * series' value, and its bands' lower and upper bounds), so the crossings are calculated for each.
+ * They're calculated in the y-scale's own space (as the lines are drawn), so they're exact for
+ * straight lines, on any kind of scale.
  * @param data The series' data, ordered by x
  * @param window The x-axis' [start, end]
  * @param yScale The y-axis' scale
- * @param withLine Whether the series is drawn as a line (rather than just points)
+ * @param withLines Whether the series is drawn with lines (rather than just points)
+ * @param xOf The point's x-value (defaults to its `x`)
+ * @param valuesOf The point's y-values, each drawn as its own line (defaults to its `y`)
  * @return The extent of the visible data, or `undefined` when nothing is visible
+ * @template P The type of the data's points
  */
-export function visibleExtent(
-    data: { length: number, [index: number]: Point },
+export function visibleExtent<P>(
+    data: { length: number, [index: number]: P },
     window: [start: number, end: number],
     yScale: ScaleContinuousNumeric<number, number>,
-    withLine: boolean
+    withLines: boolean,
+    xOf: (point: P) => number = point => (point as { x: number }).x,
+    valuesOf: (point: P) => Array<number> = point => [(point as { y: number }).y],
 ): [min: number, max: number] | undefined {
     const [start, end] = window
-    const showable = (point: Point) => Number.isFinite(yScale(point.y))
-    // the line's height where the segment between the two points crosses x
-    const crossing = (from: Point, to: Point, x: number): number => {
-        if (to.x === from.x) return to.y
-        const fraction = (x - from.x) / (to.x - from.x)
-        const fromY = yScale(from.y)
-        return yScale.invert(fromY + (yScale(to.y) - fromY) * fraction)
+    const showable = (value: number) => Number.isFinite(yScale(value))
+    // includes the heights where the lines between the two points cross x
+    const withCrossings = (
+        extent: [min: number, max: number] | undefined,
+        from: P,
+        to: P,
+        x: number
+    ): [min: number, max: number] | undefined => {
+        const fromValues = valuesOf(from)
+        const toValues = valuesOf(to)
+        const fraction = xOf(to) === xOf(from) ? 1 : (x - xOf(from)) / (xOf(to) - xOf(from))
+        fromValues.forEach((fromValue, index) => {
+            const toValue = toValues[index]
+            if (toValue === undefined || !showable(fromValue) || !showable(toValue)) return
+            const fromY = yScale(fromValue)
+            extent = extentWith(extent, yScale.invert(fromY + (yScale(toValue) - fromY) * fraction))
+        })
+        return extent
     }
 
     let extent: [min: number, max: number] | undefined = undefined
-    let index = firstIndexAtOrAfter(data, start, point => point.x)
+    let index = firstIndexAtOrAfter(data, start, xOf)
 
-    // the line entering through the window's left edge
-    if (withLine && index > 0 && index < data.length && data[index].x <= end &&
-        showable(data[index - 1]) && showable(data[index])) {
-        extent = extentWith(extent, crossing(data[index - 1], data[index], start))
+    // the lines entering through the window's left edge
+    if (withLines && index > 0 && index < data.length && xOf(data[index]) <= end) {
+        extent = withCrossings(extent, data[index - 1], data[index], start)
     }
 
     // the points within the window
-    for (; index < data.length && data[index].x <= end; index++) {
-        if (showable(data[index])) extent = extentWith(extent, data[index].y)
+    for (; index < data.length && xOf(data[index]) <= end; index++) {
+        valuesOf(data[index]).forEach(value => {
+            if (showable(value)) extent = extentWith(extent, value)
+        })
     }
 
-    // the line leaving through the window's right edge (or, when no point is within the window,
+    // the lines leaving through the window's right edge (or, when no point is within the window,
     // passing straight across it)
-    if (withLine && index > 0 && index < data.length && data[index - 1].x < end &&
-        showable(data[index - 1]) && showable(data[index])) {
-        const from = data[index - 1]
-        const to = data[index]
-        extent = extentWith(extent, crossing(from, to, end))
-        if (from.x < start) extent = extentWith(extent, crossing(from, to, start))
+    if (withLines && index > 0 && index < data.length && xOf(data[index - 1]) < end) {
+        extent = withCrossings(extent, data[index - 1], data[index], end)
+        if (xOf(data[index - 1]) < start) extent = withCrossings(extent, data[index - 1], data[index], start)
     }
     return extent
 }

@@ -86,6 +86,11 @@ type OutlierChartState = {
     showTooltip: boolean
     tooltipType: 'html' | 'svg'
     highlightAxes: boolean
+    // whether the y-axis auto-scales (grows to fit the data)
+    autoScaleYAxis: boolean
+    // the auto-scaled y-axis' domain, kept so that its growth survives navigating away and back
+    // (undefined until it's been auto-scaled)
+    yAutoScaledDomain: Range | undefined
 }
 
 const initialState: OutlierChartState = {
@@ -101,6 +106,8 @@ const initialState: OutlierChartState = {
     showTooltip: true,
     tooltipType: 'html',
     highlightAxes: false,
+    autoScaleYAxis: false,
+    yAutoScaledDomain: undefined,
 }
 
 type OutlierChartActions = {
@@ -115,6 +122,8 @@ type OutlierChartActions = {
     setShowTooltip: (show: boolean) => void
     setTooltipType: (tooltipType: 'html' | 'svg') => void
     setHighlightAxes: (highlight: boolean) => void
+    setAutoScaleYAxis: (autoScaleYAxis: boolean) => void
+    setYAutoScaledDomain: (domain: Range) => void
 }
 
 type OutlierChartStore = OutlierChartState & OutlierChartActions &
@@ -162,4 +171,7 @@ export const useOutlierChartStore: UseBoundStore<StoreApi<OutlierChartStore>> = 
         setShowTooltip: (showTooltip: boolean) => set({showTooltip}),
         setTooltipType: (tooltipType: 'html' | 'svg') => set({tooltipType}),
         setHighlightAxes: (highlightAxes: boolean) => set({highlightAxes}),
+        // (turning auto-scaling on, or off, starts the axis afresh)
+        setAutoScaleYAxis: (autoScaleYAxis: boolean) => set({autoScaleYAxis, yAutoScaledDomain: undefined}),
+        setYAutoScaledDomain: (yAutoScaledDomain: Range) => set({yAutoScaledDomain}),
     })));

@@ -26,6 +26,8 @@ The tracker on this chart is horizontal, and labels the value on the y-axis – 
 
 The bar chart has a *second* control bar, to the right of the first, with a checkbox for each of the five things above: **value**, **min/max**, **mean**, **win min/max**, and **win mean**. Its header shows an icon for each one that lights up when it's shown. Turn some off to see the rest more clearly. *Wired to:* the plot's `showValueLines`, `showMinMaxBars`, `showMeanValueLines`, `showWindowedMinMaxBars`, and `showWindowedMeanValueLines` properties.
 
+The first control bar also has an **auto-scale y-axes** checkbox, which works just like the scatter chart's: when it's on, the y-axes start out narrower (−0.5 to 0.5), and grow to fit what's shown of the bars on screen – the min/max bars, the means, and the values, whichever are shown – but never past −1.1 to 1.1. Like the scatter chart's, an axis only ever grows, keeps its growth when you switch tabs, and starts over when the data is replaced. *Wired to:* the y-axes' `autoScale`, `autoScaleMin`, `autoScaleMax`, `autoScaledDomain`, and `onAutoScale` properties.
+
 #### where the code lives
 
 The example (yours to copy, change, or ignore):

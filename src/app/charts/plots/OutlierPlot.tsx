@@ -14,7 +14,8 @@ import {noop} from "../utils"
 import type {Dimensions} from "../styling/margins"
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange"
 import {AxisInterval} from "../axes/AxisInterval"
-import {warnAboutIgnoredAutoScale} from "../axes/autoScale"
+import {extentWith, visibleExtent} from "../axes/autoScale"
+import {growAutoScaledYAxes, useAutoScaleRestart} from "./autoScaleYAxes"
 import {
     axesForSeriesGen,
     type BaseAxis,
@@ -181,15 +182,9 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
         yAxesState,
         setAxisIntervalFor,
         updateAxisRanges = noop,
+        axisRangeFor,
         onUpdateAxesInterval,
     } = axes
-
-    // this plot doesn't auto-scale its y-axes, so warn about any that ask to be (see
-    // `ContinuousAxis`'s `autoScale` prop)
-    useEffect(
-        () => warnAboutIgnoredAutoScale("OutlierPlot", yAxesState.axes),
-        [yAxesState]
-    )
 
     const {plotDimensions, margin} = usePlotDimensions()
 
@@ -372,6 +367,45 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
                 context2D.restore()
             }
 
+            /**
+             * Grows the auto-scaling y-axes (see `ContinuousAxis`'s `autoScale` prop) to fit the
+             * data that's on screen: for each shown series (those matching the filter), the values
+             * and the bands' lower and upper bounds of its points within the x-axis' current
+             * window, along with where their lines cross the window's edges (see `visibleExtent`).
+             * Since an axis only ever grows, only the visible data needs checking each frame.
+             * Registered to run before the axes draw (they're at z-index 0), so the axes and the
+             * series are drawn with the grown domain in the same frame.
+             */
+            const autoScaleYAxes = (): void => {
+                const extents = new Map<string, [min: number, max: number]>()
+                seriesRef.current.forEach(series => {
+                    if (!series.name.match(seriesFilter)) return
+                    const [xAxis, yAxis] = axesFor(
+                        series.name,
+                        axisAssignments,
+                        id => xAxesState.axisFor(id).getOrUndefined(),
+                        id => yAxesState.axisFor(id).getOrUndefined()
+                    )
+                    if (xAxis === undefined || yAxis?.autoScale === undefined) return
+
+                    const [start, end] = xAxis.scale.domain()
+                    // (the series' line and its bands' edges are always drawn as lines)
+                    const seriesExtent = visibleExtent(
+                        series.data, [start, end], yAxis.scale, true,
+                        point => point.datum.x,
+                        point => [point.datum.y, ...point.bounds.flatMap(({lower, upper}) => [lower, upper])]
+                    )
+                    if (seriesExtent === undefined) return
+                    const extent = extents.get(yAxis.axisId)
+                    extents.set(
+                        yAxis.axisId,
+                        extent === undefined ? seriesExtent : extentWith(extentWith(extent, seriesExtent[0]), seriesExtent[1])
+                    )
+                })
+                growAutoScaledYAxes(extents, {yAxes: yAxesState.axes, axisRangeFor, updateAxisRanges})
+            }
+
+            cc.register(`outlier-plot-autoscale-${chartId}`, autoScaleYAxes, -10)
             cc.register(`outlier-plot-${chartId}`, draw, 10)
             cc.requestRedraw()
         },
@@ -381,9 +415,13 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
             xAxesState, yAxesState,
             seriesStyles, seriesFilter, interpolation,
             bandOpacity, bandOpacityStep, markerRadius, outlierMarkerColors, hoveredSeriesName,
-            running
+            running,
+            axisRangeFor, updateAxisRanges
         ]
     )
+
+    // new data, new scale: restarts the auto-scaling y-axes when the data source is replaced
+    useAutoScaleRestart(dataSource, {yAxes: yAxesState.axes, axisRangeFor, updateAxisRanges})
 
     const updatePlotRef = useRef<(cc: CanvasContext) => void>(updatePlot)
     useEffect(() => {
@@ -850,6 +888,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
         () => {
             return () => {
                 if (canvasContext) {
+                    canvasContext.unregister(`outlier-plot-autoscale-${chartId}`)
                     canvasContext.unregister(`outlier-plot-${chartId}`)
                 }
             }

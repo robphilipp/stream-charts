@@ -33,7 +33,8 @@ import {useInitialData} from "../hooks/useInitialData";
 import type {TooltipData} from "../hooks/useTooltip";
 import {Optional} from "result-fn";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
-import {extentWith, grownDomain, visibleExtent} from "../axes/autoScale";
+import {extentWith, visibleExtent} from "../axes/autoScale";
+import {growAutoScaledYAxes, useAutoScaleRestart} from "./autoScaleYAxes";
 import {AxisInterval} from "../axes/AxisInterval";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import type {FastShiftArray} from "fast-shift-array";
@@ -433,19 +434,7 @@ export function ScatterPlot(props: Props): null {
                     )
                 })
 
-                const updates = new Map<string, ContinuousAxisRange>()
-                extents.forEach((extent, axisId) => yAxesState.axisFor(axisId).ifPresent(axis => {
-                    const {autoScale, scale} = axis as ContinuousNumericAxis
-                    if (autoScale === undefined) return
-                    const [currentMin, currentMax] = scale.domain()
-                    const [min, max] = grownDomain([currentMin, currentMax], extent, autoScale, scale)
-                    if (min !== currentMin || max !== currentMax) {
-                        updates.set(axisId, axisRangeFor(axisId)
-                            .map(range => range.update(min, max) as ContinuousAxisRange)
-                            .getOrElse(ContinuousAxisRange.from(min, max)))
-                    }
-                }))
-                if (updates.size > 0) updateAxisRanges(updates)
+                growAutoScaledYAxes(extents, {yAxes: yAxesState.axes, axisRangeFor, updateAxisRanges})
             }
 
             cc.register(`scatter-plot-autoscale-${chartId}`, autoScaleYAxes, -10)
@@ -1027,38 +1016,8 @@ export function ScatterPlot(props: Props): null {
         [canvasContext, chartId]
     )
 
-    // New data, new scale: when the data source is replaced (e.g. on a reset, or a change to the
-    // number of series), the auto-scaling y-axes go back to their starts (and then grow to fit the
-    // new data). Only on a *change* of data source -- not when this plot mounts with its data
-    // source, which would throw away an axis' kept growth (see `ContinuousAxis`'s
-    // `autoScaledDomain`). The axes and their ranges are read through refs, so that this only runs
-    // when the data source changes -- not, say, when an axis is added.
-    const autoScaleDataSourceRef = useRef(dataSource)
-    const autoScaleResetRef = useRef({yAxesState, axisRangeFor, updateAxisRanges})
-    useEffect(
-        () => {
-            autoScaleResetRef.current = {yAxesState, axisRangeFor, updateAxisRanges}
-        },
-        [yAxesState, axisRangeFor, updateAxisRanges]
-    )
-    useEffect(
-        () => {
-            if (autoScaleDataSourceRef.current === dataSource) return
-            autoScaleDataSourceRef.current = dataSource
-            const {yAxesState, axisRangeFor, updateAxisRanges} = autoScaleResetRef.current
-            const updates = new Map<string, ContinuousAxisRange>()
-            yAxesState.axes.forEach((axis, axisId) => {
-                const {autoScale} = axis as ContinuousNumericAxis
-                if (autoScale === undefined) return
-                const [min, max] = autoScale.domain
-                updates.set(axisId, axisRangeFor(axisId)
-                    .map(range => range.update(min, max) as ContinuousAxisRange)
-                    .getOrElse(ContinuousAxisRange.from(min, max)))
-            })
-            if (updates.size > 0) updateAxisRanges(updates)
-        },
-        [dataSource]
-    )
+    // new data, new scale: restarts the auto-scaling y-axes when the data source is replaced
+    useAutoScaleRestart(dataSource, {yAxes: yAxesState.axes, axisRangeFor, updateAxisRanges})
 
     return null
 }

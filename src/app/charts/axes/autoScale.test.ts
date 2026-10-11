@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import {clampedDomain, extentWith, grownDomain, sameAutoScale, visibleExtent} from "./autoScale";
+import {clampedDomain, extentOf, extentWith, grownDomain, sameAutoScale, visibleExtent} from "./autoScale";
 
 const linear = d3.scaleLinear()
 const noLimits = {min: -Infinity, max: Infinity, padding: 0}
@@ -133,5 +133,35 @@ describe('visibleExtent', () => {
         const data = points([0, 1], [100, 100])
         const [min] = visibleExtent(data, [50, 100], d3.scaleLog(), true)!
         expect(min).toBeCloseTo(10)
+    })
+
+    it('covers every value of a point, and each value\'s line, when a point has several', () => {
+        // each point has a value, and a band around it: [value, lower, upper]
+        type Banded = { t: number, values: Array<number> }
+        const data: Array<Banded> = [
+            {t: 0, values: [50, 0, 100]},
+            {t: 20, values: [50, 40, 60]},
+            {t: 30, values: [55, 45, 65]},
+        ]
+        const extent = visibleExtent(data, [10, 30], linear, true, point => point.t, point => point.values)
+        // within the window: 40..65; the lower bound's line crosses the left edge (x = 10) at 20,
+        // and the upper bound's at 80
+        expect(extent).toEqual([20, 80])
+    })
+})
+
+describe('extentOf', () => {
+    it('covers the values', () => {
+        expect(extentOf([3, -1, 7, 2], linear)).toEqual([-1, 7])
+    })
+
+    it("skips the values the scale can't show", () => {
+        expect(extentOf([NaN, 5, Infinity], linear)).toEqual([5, 5])
+        expect(extentOf([0, -3, 10, 100], d3.scaleLog())).toEqual([10, 100])
+    })
+
+    it("is undefined when there's nothing to show", () => {
+        expect(extentOf([], linear)).toBeUndefined()
+        expect(extentOf([NaN], linear)).toBeUndefined()
     })
 })
