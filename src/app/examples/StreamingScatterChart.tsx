@@ -37,7 +37,7 @@ import {CommonExecutionControls} from "./controls/CommonExecutionControls.tsx";
 import {INTERPOLATIONS} from "./options/interpolations.ts";
 import {EXTERNAL_LEGEND_WIDTH, LEGEND_ANIMATION_DURATION_MS, LegendControl} from "./controls/LegendControl.tsx";
 import {InterpolationControl} from "./controls/InterpolationControl.tsx";
-import {FilterIcon, InterpolationIcon, LagIcon, MarkersIcon, TooltipIcon, TrackerIcon} from "../ui/Icons.tsx";
+import {AutoScaleIcon, FilterIcon, HighlightAxesIcon, InterpolationIcon, LagIcon, MarkersIcon, TooltipIcon, TrackerIcon} from "../ui/Icons.tsx";
 import {SeriesFilter} from "./controls/SeriesFilter.tsx";
 import {DropDataControl} from "./controls/DropDataControl.tsx";
 import {NumberOfSeriesControl} from "./controls/NumberOfSeriesControl.tsx";
@@ -455,6 +455,8 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                             <FilterIcon color={filterValue.length > 0 ? theme.color : theme.disabledBackgroundColor}/>
                             <TooltipIcon color={visibility.tooltip ? theme.color : theme.disabledBackgroundColor}/>
                             <TrackerIcon color={visibility.tracker ? theme.color : theme.disabledBackgroundColor}/>
+                            <HighlightAxesIcon color={visibility.highlightAxes ? theme.color : theme.disabledBackgroundColor}/>
+                            <AutoScaleIcon color={autoScaleYAxes ? theme.color : theme.disabledBackgroundColor}/>
                             <MarkersIcon color={visibility.markers ? theme.color : theme.disabledBackgroundColor}/>
                             <InterpolationIcon color={selectedInterpolationName === "curveLinear" ? theme.disabledBackgroundColor : theme.color}/>
                         </CommonExecutionControls>

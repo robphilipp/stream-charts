@@ -33,7 +33,7 @@ import {INTERPOLATIONS} from "./options/interpolations.ts";
 import {InterpolationControl} from "./controls/InterpolationControl.tsx";
 import {ExpandableControlBar} from "../ui/ExpandableControlBar.tsx";
 import {CommonExecutionControls} from "./controls/CommonExecutionControls.tsx";
-import {FilterIcon, InterpolationIcon, LagIcon, MarkersIcon, TooltipIcon} from "../ui/Icons.tsx";
+import {FilterIcon, HighlightAxesIcon, InterpolationIcon, LagIcon, MarkersIcon, TooltipIcon} from "../ui/Icons.tsx";
 import {CommonControls} from "./controls/CommonControls.tsx";
 import {DropDataControl} from "./controls/DropDataControl.tsx";
 import {LagDisplay} from "./controls/LagDisplay.tsx";
@@ -312,6 +312,7 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
                             <TooltipIcon color={showTooltip ? theme.color : theme.disabledBackgroundColor}/>
                             {/*<TrackerIcon color={visibility.tracker ? theme.color : theme.disabledBackgroundColor}/>*/}
                             <MarkersIcon color={showMarkers ? theme.color : theme.disabledBackgroundColor}/>
+                            <HighlightAxesIcon color={highlightAxes ? theme.color : theme.disabledBackgroundColor}/>
                             <InterpolationIcon
                                 color={selectedInterpolationName === "curveLinear" ? theme.disabledBackgroundColor : theme.color}/>
                         </CommonExecutionControls>

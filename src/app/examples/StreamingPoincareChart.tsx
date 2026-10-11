@@ -37,7 +37,7 @@ import {interpolationFactoryFor} from "./options/interpolations.ts";
 import {iteratesGenerator, type IterateFunction, usePoincareChartStore} from "./appstate/poincareChartStore.ts";
 import {ExpandableControlBar} from "../ui/ExpandableControlBar.tsx";
 import {CommonExecutionControls} from "./controls/CommonExecutionControls.tsx";
-import {GaussMapIcon, LagIcon, LogisticMapIcon, TentMapIcon, TooltipIcon, TrackerIcon} from "../ui/Icons.tsx";
+import {GaussMapIcon, HighlightAxesIcon, LagIcon, LogisticMapIcon, TentMapIcon, TooltipIcon, TrackerIcon} from "../ui/Icons.tsx";
 import {CommonControls} from "./controls/CommonControls.tsx";
 import {LagDisplay} from "./controls/LagDisplay.tsx";
 import {Divider} from "../ui/Divider.tsx";
@@ -379,6 +379,7 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
                             />
                             <TooltipIcon color={visibility.tooltip ? theme.color : theme.disabledBackgroundColor}/>
                             <TrackerIcon color={visibility.tracker ? theme.color : theme.disabledBackgroundColor}/>
+                            <HighlightAxesIcon color={highlightAxes ? theme.color : theme.disabledBackgroundColor}/>
                             {selectedIterateIcon()}
                         </CommonExecutionControls>
                         <CommonControls>

@@ -524,3 +524,52 @@ export function TableOfContentsCollapseIcon(props: { color: string }): JSX.Eleme
         </svg>
     )
 }
+
+/**
+ * Bold axes (the left and bottom ones) with a thin data line between them: the axes a series is
+ * plotted against are highlighted
+ * @param props The icon's color
+ * @return The icon
+ */
+export function HighlightAxesIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <polyline
+                points="1.5,1 1.5,13.5 14,13.5"
+                fill="none"
+                stroke={color}
+                strokeWidth={2.5}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+            />
+            <polyline
+                points="4.5,10 7.5,6 10,8.5 13.5,3"
+                fill="none"
+                stroke={color}
+                strokeWidth={1}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+            />
+        </svg>
+    )
+}
+
+/**
+ * A y-axis with a double-headed arrow beside it: the y-axes stretch (up and down) to fit the data
+ * @param props The icon's color
+ * @return The icon
+ */
+export function AutoScaleIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <line x1={2} y1={1} x2={2} y2={14} stroke={color} strokeWidth={1.5} strokeLinecap="round"/>
+            <line x1={2} y1={4} x2={4} y2={4} stroke={color} strokeWidth={1} strokeLinecap="round"/>
+            <line x1={2} y1={11} x2={4} y2={11} stroke={color} strokeWidth={1} strokeLinecap="round"/>
+            <line x1={10} y1={3.5} x2={10} y2={11.5} stroke={color} strokeWidth={1.5}/>
+            <path d="M7 4.5 L10 0.5 L13 4.5 Z" fill={color} stroke={color} strokeWidth={0.5} strokeLinejoin="round"/>
+            <path d="M7 10.5 L10 14.5 L13 10.5 Z" fill={color} stroke={color} strokeWidth={0.5} strokeLinejoin="round"/>
+        </svg>
+    )
+}
