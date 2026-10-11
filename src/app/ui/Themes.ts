@@ -17,7 +17,7 @@ export const darkTheme: Theme = {
 export const lightTheme: Theme = {
     name: 'light',
     color: '#100f0c',
-    backgroundColor: '#f4f4f4',
+    backgroundColor: '#fdfcfc',
     disabledColor: '#989797',
     disabledBackgroundColor: '#cccaca'
 }
