@@ -52,8 +52,8 @@ describe('grownDomain', () => {
 
     it("doesn't grow past the limits", () => {
         expect(grownDomain([0, 100], [-50, 150], {min: -10, max: 120, padding: 0}, linear)).toEqual([-10, 120])
-        // nor does the padding take it past them
-        expect(grownDomain([0, 100], [0, 119], {min: -10, max: 120, padding: 0.1}, linear)).toEqual([0, 120])
+        // nor does the padding take it past them (the data is clear of the bottom's padding)
+        expect(grownDomain([0, 100], [20, 119], {min: -10, max: 120, padding: 0.1}, linear)).toEqual([0, 120])
     })
 
     it('never shrinks a side, should the domain already be past a limit', () => {
@@ -67,6 +67,30 @@ describe('grownDomain', () => {
         expect((max - 150) / (max - min)).toBeCloseTo(0.1)
     })
 
+    it('grows when the data reaches into the padding, not only past the edge', () => {
+        // 96 is within the domain, but within its top 5%: the domain grows so 96 sits 5% from the top
+        const [min, max] = grownDomain([0, 100], [10, 96], {...noLimits, padding: 0.05}, linear)
+        expect(min).toBe(0)
+        expect(max).toBeGreaterThan(100)
+        expect((max - 96) / (max - min)).toBeCloseTo(0.05)
+        // and data clear of the padding leaves the domain as it is
+        expect(grownDomain([0, 100], [10, 94], {...noLimits, padding: 0.05}, linear)).toEqual([0, 100])
+    })
+
+    it("settles: growing again for the same data doesn't change the domain", () => {
+        const settings = {...noLimits, padding: 0.05}
+        const once = grownDomain([0, 100], [-30, 140], settings, linear)
+        expect(grownDomain(once, [-30, 140], settings, linear)).toEqual(once)
+        const log = d3.scaleLog()
+        const onceLog = grownDomain([10, 100], [5, 900], settings, log)
+        expect(grownDomain(onceLog, [5, 900], settings, log)).toEqual(onceLog)
+    })
+
+    it("can't grow into the padding past a limit, and then leaves the domain as it is", () => {
+        // the domain is already at the limit (100), so data in its padding can't grow it
+        expect(grownDomain([0, 100], [10, 99], {min: -Infinity, max: 100, padding: 0.05}, linear)).toEqual([0, 100])
+    })
+
     it('leaves the same padding on both sides when both grow', () => {
         const [min, max] = grownDomain([0, 100], [-50, 150], {...noLimits, padding: 0.1}, linear)
         expect((-50 - min) / (max - min)).toBeCloseTo(0.1)
@@ -75,7 +99,8 @@ describe('grownDomain', () => {
 
     it('pads in the scale\'s own space (e.g. logarithmically)', () => {
         const log = d3.scaleLog()
-        const [min, max] = grownDomain([10, 100], [10, 1000], {...noLimits, padding: 0.1}, log)
+        // (the data is clear of the bottom's padding, so only the top grows)
+        const [min, max] = grownDomain([10, 100], [20, 1000], {...noLimits, padding: 0.1}, log)
         expect(min).toBe(10)
         // 1000 sits 10% of the axis' (logarithmic) length below the top
         expect((Math.log(max) - Math.log(1000)) / (Math.log(max) - Math.log(min))).toBeCloseTo(0.1)

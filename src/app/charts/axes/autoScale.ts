@@ -56,13 +56,15 @@ export function sameAutoScale(a: AutoScale | undefined, b: AutoScale | undefined
 }
 
 /**
- * Grows an axis' domain to include the specified extent of the data (plus the padding, on each
- * side that grows), without going past the auto-scaling limits. The domain only ever grows: an
- * extent that's within the domain leaves the domain as it is.
+ * Grows an axis' domain to include the specified extent of the data, with the padding beyond it,
+ * without going past the auto-scaling limits. A side grows when the data reaches into its padding
+ * (not only when the data goes past the edge), so that the data always has the padding's room to
+ * spare (until a limit is reached), and it grows so that the data's extreme sits exactly the
+ * padding from the edge. The domain only ever grows: an extent that's within the domain, and
+ * clear of its padding, leaves the domain as it is.
  *
  * The padding is applied in the scale's own space (e.g. logarithmically, for a log scale), as a
- * fraction of the axis' length, so the data's extreme ends up about that fraction of the axis
- * away from the edge.
+ * fraction of the axis' length.
  * @param domain The axis' current domain
  * @param extent The [min, max] of the data plotted against the axis, or `undefined` when there's
  * no data
@@ -78,13 +80,20 @@ export function grownDomain(
 ): [min: number, max: number] {
     if (extent === undefined) return domain
     const [domainMin, domainMax] = domain
-    const growsDown = extent[0] < domainMin
-    const growsUp = extent[1] > domainMax
+    const padding = Math.min(0.45, Math.max(0, autoScale.padding))
+
+    // a side grows when the data reaches into its padding (or past its edge). Where the data sits
+    // within the current domain is measured in the scale's own space, with a little tolerance, so
+    // that an extreme that sits exactly the padding from the edge (as growing leaves it) doesn't
+    // grow the domain again by rounding errors on every frame.
+    const tolerance = 1e-9
+    const current = scale.copy().domain([domainMin, domainMax]).range([0, 1])
+    const growsDown = extent[0] < domainMin || current(extent[0]) < padding - tolerance
+    const growsUp = extent[1] > domainMax || current(extent[1]) > 1 - padding + tolerance
     if (!growsDown && !growsUp) return domain
 
     let min = growsDown ? extent[0] : domainMin
     let max = growsUp ? extent[1] : domainMax
-    const padding = Math.min(0.45, Math.max(0, autoScale.padding))
     if (padding > 0 && min < max) {
         // the normalized scale over the grown domain, extended on each growing side so that the
         // extreme sits `padding` of the (extended) axis' length from that edge: with n growing
