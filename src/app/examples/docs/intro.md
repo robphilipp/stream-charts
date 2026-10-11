@@ -4,21 +4,36 @@
 
 For managing a chart's memory usage, the data have a configurable time-to-live, after which the data is dropped. And because the ingestion is from an [RxJs](https://rxjs.dev) stream, if you are so inclined, you can build the ingestion stream to offload data to a desired location. 
 
-[stream-charts](https://www.npmjs.com/package/stream-charts) support standard charting capabilities such as themes, zoom, pan, legends, scrolling time-axes, tooltips, and trackers. Themes can be customized. Tooltips can be customized or replaced wholesale with custom implementations. Legends can be configured to reside inside the chart as SVG components, or externally as a React portal.
+[stream-charts](https://www.npmjs.com/package/stream-charts) support standard charting capabilities such as themes, zoom, pan, legends, scrolling time-axes, tooltips, and trackers. Themes can be customized. Tooltips can be customized or replaced wholesale with custom implementations. Legends can be configured to reside inside the chart, or externally as a React portal.
+
+#### what sets stream-charts apart
+
+Plenty of charting libraries can draw a line. What [stream-charts](https://www.npmjs.com/package/stream-charts) adds is everything that comes with data that never stops arriving:
+
+- **Data that keeps streaming, even when the chart isn't on screen.** A chart's data lives in a *data source* that your application owns, rather than in the chart itself. So the data keeps coming in while the chart is hidden (say, on another tab), and the chart picks up right where it left off when it comes back.
+- **Buffering that keeps up.** Incoming data is batched before each redraw, and you choose the batch size. And an optional *cadence* keeps the time axis scrolling smoothly between batches.
+- **Time axes that move on their own.** As new data arrives past the end of the time window, the window *scrolls* along with it – or, for the scatter and outlier charts, if you'd rather, *squeezes* to fit it all in.
+- **Zoom and pan while the data streams.** While a chart with a time axis runs, zooming keeps "now" fixed on screen, so the newest data never runs off the edge while you look at the past.
+- **Up to four axes per chart.** Each series is assigned its own x- and y-axis (top or bottom, left or right), and each axis can be linear, logarithmic, or one of [d3](https://d3js.org)'s other continuous scales.
+- **Auto-scaling y-axes.** A y-axis can grow to fit the data as it arrives, with limits on how far it may grow, and a little headroom so the data doesn't run up against the edge.
+- **Charts for data with a story to tell.** Besides scatter charts, there are raster charts (for events, like neurons firing), Poincare charts (for spotting structure in a series), bar charts with both lifetime and recent-window statistics, and outlier charts that shade a model's bounds and flag the points outside them.
+- **A filter that works mid-stream.** A regular expression picks which series to show, and you can change it while the data streams in. The legend follows along.
+- **Legends and tooltips you can make your own.** Hovering over a legend entry highlights its series in the chart, and vice versa. Tooltips come in SVG or HTML flavors, take formatters for their values, and can be replaced with your own content altogether.
+- **Fast drawing.** Each chart draws onto a single canvas, rather than juggling thousands of SVG elements, which is a big part of how it keeps up with high-frequency data.
 
 See the [stream-charts](https://www.npmjs.com/package/stream-charts) documentation for more information.
 
 ### what is this application?
 
-This application contains example uses of the [stream-charts](https://www.npmjs.com/package/stream-charts) library. In particular, the source code for these examples is intended to serve as a reference for how to use the library and its available options. This application allows you to explore [stream-charts'](https://www.npmjs.com/package/stream-charts) many features and get a sense of its performance and limitations so that you can use the [stream-charts](https://www.npmjs.com/package/stream-charts) library effectively.
+This application is a demo of the [stream-charts](https://www.npmjs.com/package/stream-charts) library. It attempts to provide real-world usage of the chart library rather than just a few simple examples. The source code for these examples is intended to serve as a reference for how to use the library and its available options. This application allows you to explore [stream-charts'](https://www.npmjs.com/package/stream-charts) many features and get a sense of its performance and limitations so that you can use the [stream-charts](https://www.npmjs.com/package/stream-charts) library effectively.
 
 This application is not a complete implementation of all the ways to create stream-charts. Rather, it provides an example implementation for each of the available chart types. Each implementation is merely an example, intended to show off all the features of the chart type so that you can select the features you like and have a reference implementation for them.
 
 ### how to use the intro
 
-For reference, you're in the **Intro** tab, which provides a series of pages describing the examples presented in this application. 
+To state the obvious, you're in the **Intro** tab, which provides a series of pages describing the examples presented in this application. 
 
-You use the navigation bar to navigate between these pages. Yeah, the navigation looks like this, and you can see it up there **&#x2197;**.
+You use the navigation bar to navigate between these pages. You can see the navigation bar up there **&#x2191;**, and it is shown in figure 1. 
 
 <figure>
     <img src="./images/navigation-bar.png" alt="Navigation Bar" width="350px">
@@ -27,7 +42,7 @@ You use the navigation bar to navigate between these pages. Yeah, the navigation
     </figcaption>
 </figure>
 
-If the navigation bar gets in the way, you can move it by dragging it. The buttons on the navigation bar allow you to navigate to the next page, previous page, and to the first and last pages – should be pretty obvious &#x1F60A;. 
+If the navigation bar gets in the way, you can move it by dragging it. The buttons on the navigation bar allow you to navigate to any page, the next page, previous page, and to the first and last pages – should be pretty obvious &#x1F60A;. 
 
 When the `First` or `Previous` buttons are disabled, that means you're on the first page. And similarly, when the `Next` and `Last` buttons are disabled, that means you're on the last page.
 

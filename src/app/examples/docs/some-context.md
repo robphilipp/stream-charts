@@ -4,20 +4,20 @@ The application uses a few libraries that you don't need to use. But you may nee
 some of them. The following sections describe the libraries, their use, and whether you need to provide similar
 functionality for them if you choose not to use them.
 
-The "app" column says whether this example application uses the library, and the "library" column says whether the
+The "demo" column says whether this example application uses the library, and the "library" column says whether the
 [stream-charts](https://www.npmjs.com/package/stream-charts) library itself uses it. When a library is only used by the
 app, it's your call – use it, use something else, or roll your own.
 
-| library                                                                                  | app | library | what for                                                     |
+| library                                                                                  | demo | library | what for                                                     |
 |------------------------------------------------------------------------------------------|-----|---------|--------------------------------------------------------------|
-| [react](https://www.npmjs.com/package/react)                                             | yes | yes     | well, everything                                             |
-| [rxjs](https://www.npmjs.com/package/rxjs)                                               | yes | yes     | the streams of data that feed the charts                     |
-| [d3](https://www.npmjs.com/package/d3)                                                   | yes | yes     | scales, axes, and curve interpolations                       |
-| [result-fn](https://www.npmjs.com/package/result-fn)                                     | yes | yes     | `Result` and `Optional` types for error handling             |
-| [react-resizable-grid-layout](https://www.npmjs.com/package/react-resizable-grid-layout) | yes | no      | laying out the page, and telling the charts their size       |
-| [zustand](https://www.npmjs.com/package/zustand)                                         | yes | no      | holding each example's state (and its data) across tabs      |
-| [@tanstack/react-router](https://www.npmjs.com/package/@tanstack/react-router)           | yes | no      | the tabs, and the page you're on in these intro pages        |
-| [react-markdown](https://www.npmjs.com/package/react-markdown)                           | yes | no      | rendering these intro pages (they're markdown files)         |
+| [react](https://www.npmjs.com/package/react)                                             | ✓   | ✓       | well, everything                                             |
+| [rxjs](https://www.npmjs.com/package/rxjs)                                               | ✓   | ✓       | the streams of data that feed the charts                     |
+| [d3](https://www.npmjs.com/package/d3)                                                   | ✓   | ✓       | scales, axes, and curve interpolations                       |
+| [result-fn](https://www.npmjs.com/package/result-fn)                                     | ✓   | ✓       | `Result` and `Optional` types for error handling             |
+| [react-resizable-grid-layout](https://www.npmjs.com/package/react-resizable-grid-layout) | ✓   | ✗       | laying out the page, and telling the charts their size       |
+| [zustand](https://www.npmjs.com/package/zustand)                                         | ✓   | ✗       | holding each example's state (and its data) across tabs      |
+| [@tanstack/react-router](https://www.npmjs.com/package/@tanstack/react-router)           | ✓   | ✗       | the tabs, and the page you're on in these intro pages        |
+| [react-markdown](https://www.npmjs.com/package/react-markdown)                           | ✓   | ✗       | rendering these intro pages (they're markdown files)         |
 
 Of the app-only libraries, the one you'll most likely need a replacement for is the
 [react-resizable-grid-layout](https://www.npmjs.com/package/react-resizable-grid-layout) library. Here's why.
