@@ -77,8 +77,13 @@ export function ExpandableControlBar(props: Props): JSX.Element {
                 backgroundColor: expanded ? `rgba(from ${backgroundColor}, r g b / 0.5)` : backgroundColor,
                 backdropFilter: expanded ? "blur(10px)" : "blur(2px)",
                 WebkitBackdropFilter: expanded ? "blur(10px)" : "blur(2px)",
-                boxShadow: expanded ? `0 0px 25px ${borderColor}` : `0 0 10px ${borderColor}`,
-                transition: "background-color 240ms ease, box-shadow 240ms ease, backdrop-filter 240ms ease, -webkit-backdrop-filter 240ms ease",
+                // like the floating navigation bar: lying flat (a border, no shadow) until the mouse
+                // is over it, and then lifted (a drop shadow, no border). (The border is made
+                // transparent, rather than removed, so the bar's size, and so the page's layout,
+                // doesn't change.)
+                border: `1px solid ${hovered ? 'transparent' : borderColor}`,
+                boxShadow: hovered ? `0 10px 25px ${borderColor}` : 'none',
+                transition: "background-color 240ms ease, box-shadow 240ms ease, border-color 240ms ease, backdrop-filter 240ms ease, -webkit-backdrop-filter 240ms ease",
             }}
             onMouseEnter={() => {
                 if (collapseTimeoutRef.current) {
