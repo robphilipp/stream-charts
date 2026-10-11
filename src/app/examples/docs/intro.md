@@ -1,6 +1,6 @@
 ### what is stream-charts?
 
-[stream-charts](https://www.npmjs.com/package/stream-charts) is a react-based library for building real-time time-series charts to view high-frequency data. The [stream-charts](https://www.npmjs.com/package/stream-charts) library is designed to ingest data from an [RxJs](https://rxjs.dev) [Observable](https://rxjs.dev/api/index/class/Observable) and plot the data as it arrives. Buffering is recommended and available. [stream-charts](https://www.npmjs.com/package/stream-charts) can generally handle plotting new data for about 100 time-series with data arriving every few milliseconds using a 25 ms buffer.
+[stream-charts](https://www.npmjs.com/package/stream-charts) is a react-based library for building real-time time-series charts for viewing high-frequency data. The [stream-charts](https://www.npmjs.com/package/stream-charts) library is designed to ingest data from an [RxJs](https://rxjs.dev) [Observable](https://rxjs.dev/api/index/class/Observable) and plot the data as it arrives. Buffering is recommended and available. [stream-charts](https://www.npmjs.com/package/stream-charts) can generally handle plotting new data for about 100 time-series with data arriving every few milliseconds using a 25 ms buffer.
 
 For managing a chart's memory usage, the data have a configurable time-to-live, after which the data is dropped. And because the ingestion is from an [RxJs](https://rxjs.dev) stream, if you are so inclined, you can build the ingestion stream to offload data to a desired location. 
 
