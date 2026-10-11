@@ -65,6 +65,8 @@ type ScatterChartState = {
     windowingTime: number
     cadence: number
     dataUpdatePeriod: number
+    // whether the y-axes auto-scale (grow to fit the data)
+    autoScaleYAxes: boolean
 }
 
 const initialState: ScatterChartState = {
@@ -77,6 +79,7 @@ const initialState: ScatterChartState = {
     windowingTime: 50,
     cadence: 0,
     dataUpdatePeriod: DEFAULT_DATA_UPDATE_PERIOD,
+    autoScaleYAxes: false,
 }
 
 type ScatterChartActions = {
@@ -89,6 +92,7 @@ type ScatterChartActions = {
     setWindowingTime: (windowingTime: number) => void
     setCadence: (cadence: number) => void
     setDataUpdatePeriod: (dataUpdatePeriod: number) => void
+    setAutoScaleYAxes: (autoScaleYAxes: boolean) => void
     reset: () => void
 }
 
@@ -131,6 +135,8 @@ export const useScatterChartStore: UseBoundStore<StoreApi<ScatterChartStore>> = 
         setWindowingTime: (windowingTime: number) => set({windowingTime}),
 
         setCadence: (cadence: number) => set({cadence}),
+
+        setAutoScaleYAxes: (autoScaleYAxes: boolean) => set({autoScaleYAxes}),
 
         // the update period is baked into the generator, so give the data source a new one (only
         // possible while stopped, which is the only time the control is enabled)

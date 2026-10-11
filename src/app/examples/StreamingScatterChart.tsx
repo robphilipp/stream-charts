@@ -57,6 +57,16 @@ const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
 const X1_AXIS_ID = 'x-axis-1'
 const X2_AXIS_ID = 'x-axis-2'
 
+// The y-axes' domains. With auto-scaling on, they start out narrower, and grow (up to the limits)
+// as the data wanders beyond them -- the example's data never leaves [10, 1000], so with the
+// usual domains, there would never be anything to grow for.
+const Y1_DOMAIN: [number, number] = [0, 1000]
+const Y1_AUTO_SCALE_DOMAIN: [number, number] = [400, 600]
+const Y1_AUTO_SCALE_LIMITS: [number, number] = [0, 1000]
+const Y2_DOMAIN: [number, number] = [10, 1200]
+const Y2_AUTO_SCALE_DOMAIN: [number, number] = [200, 800]
+const Y2_AUTO_SCALE_LIMITS: [number, number] = [10, 1200]
+
 const AXIS_ASSIGNMENTS = new Map([
     ['Series 2', assignAxes("x-axis-2", "y-axis-2")],
     ['Series 3', assignAxes("x-axis-2", "y-axis-1")],
@@ -151,6 +161,9 @@ export function StreamingScatterChart(props: Props): JSX.Element {
 
     const cadence = useScatterChartStore(state => state.cadence)
     const setCadence = useScatterChartStore(state => state.setCadence)
+
+    const autoScaleYAxes = useScatterChartStore(state => state.autoScaleYAxes)
+    const setAutoScaleYAxes = useScatterChartStore(state => state.setAutoScaleYAxes)
 
     const reset = useScatterChartStore(state => state.reset)
     //
@@ -506,6 +519,15 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                                 onChange={() => setVisibility({...visibility, highlightAxes: !visibility.highlightAxes})}
                             />
                             <Checkbox
+                                key={7}
+                                checked={autoScaleYAxes}
+                                label="auto-scale y-axes"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setAutoScaleYAxes(!autoScaleYAxes)}
+                            />
+                            <Checkbox
                                 key={2}
                                 checked={visibility.tracker && !running}
                                 disabled={running}
@@ -583,7 +605,10 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                     <ContinuousAxis
                         axisId="y-axis-1"
                         location={AxisLocation.Left}
-                        domain={[0, 1000]}
+                        domain={autoScaleYAxes ? Y1_AUTO_SCALE_DOMAIN : Y1_DOMAIN}
+                        autoScale={autoScaleYAxes}
+                        autoScaleMin={Y1_AUTO_SCALE_LIMITS[0]}
+                        autoScaleMax={Y1_AUTO_SCALE_LIMITS[1]}
                         label="Distance (µm)"
                     />
                     <ContinuousAxis
@@ -596,7 +621,10 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                         axisId="y-axis-2"
                         location={AxisLocation.Right}
                         scale={d3.scaleLog()}
-                        domain={[10, 1200]}
+                        domain={autoScaleYAxes ? Y2_AUTO_SCALE_DOMAIN : Y2_DOMAIN}
+                        autoScale={autoScaleYAxes}
+                        autoScaleMin={Y2_AUTO_SCALE_LIMITS[0]}
+                        autoScaleMax={Y2_AUTO_SCALE_LIMITS[1]}
                         label="Distance (µm)"
                     />
                     <Tracker

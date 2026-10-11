@@ -1,5 +1,6 @@
 import type {Dimensions, Margin} from "../styling/margins";
 import {ContinuousAxisRange} from "./ContinuousAxisRange";
+import type {AutoScale} from "./autoScale";
 import * as d3 from "d3";
 import {type ScaleBand, type ScaleContinuousNumeric, type ScaleLinear} from "d3";
 import type {CanvasContext, DrawHandle} from "../d3types";
@@ -141,6 +142,12 @@ export interface ContinuousNumericAxis extends BaseAxis {
      * A d3 scale for a continuous numeric axis.
      */
     scale: ScaleContinuousNumeric<number, number>
+    /**
+     * When set, the axis' domain grows to fit the data plotted against it, within the settings'
+     * limits (see `ContinuousAxis`'s `autoScale` prop). Set by the axis component, and applied by
+     * the plots that support it (for y-axes).
+     */
+    autoScale?: AutoScale
     /**
      * Updates the axis based on the specified domain and plot dimensions and requests the plot
      * to be redrawn.

@@ -50,6 +50,27 @@ export interface Props {
     // for a different "iterates" function is selected. And in such a case, we set
     // this property to false.
     updateAxisBasedOnDomainValues?: boolean
+    /**
+     * When `true`, the axis' domain grows to fit the data plotted against it: when the data goes
+     * above (or below) the domain, the domain grows to include it, but never past `autoScaleMax`
+     * (or `autoScaleMin`). The domain only ever grows -- it's restored to the `domain` prop when the
+     * plot's data is replaced (e.g. on a reset), or when the `domain` prop changes. When `false`
+     * (the default), the domain is exactly the `domain` prop.
+     *
+     * For y-axes only (an x-axis' domain follows time, and its zooming and panning), in the plots
+     * that support it (currently the scatter plot).
+     */
+    autoScale?: boolean
+    /**
+     * The smallest value an auto-scaling axis' domain may grow down to. Defaults to `-Infinity`
+     * (no limit).
+     */
+    autoScaleMin?: number
+    /**
+     * The largest value an auto-scaling axis' domain may grow up to. Defaults to `Infinity` (no
+     * limit).
+     */
+    autoScaleMax?: number
 }
 
 /**
@@ -92,6 +113,9 @@ export function ContinuousAxis(props: Props): null {
         domain,
         updateAxisBasedOnDomainValues = true,
         label,
+        autoScale = false,
+        autoScaleMin = -Infinity,
+        autoScaleMax = Infinity,
     } = props
 
     const axisRef = useRef<ContinuousNumericAxis>(undefined)
@@ -226,6 +250,22 @@ export function ContinuousAxis(props: Props): null {
                     // without recreating the axis or touching its domain
                     axisRef.current.updateFont(font)
                 }
+
+                // the auto-scaling settings, which the plot applies (y-axes only: an x-axis' domain
+                // follows time, and its zooming and panning)
+                const isYAxis = location === AxisLocation.Left || location === AxisLocation.Right
+                const wasAutoScaling = axisRef.current.autoScale !== undefined
+                axisRef.current.autoScale = autoScale && isYAxis ?
+                    {domain: AxisInterval.as(domain).asTuple(), min: autoScaleMin, max: autoScaleMax} :
+                    undefined
+                // turning auto-scaling off puts the axis back to its own domain
+                if (wasAutoScaling && axisRef.current.autoScale === undefined) {
+                    const propDomain = AxisInterval.as(domain)
+                    updateAxisRanges(new Map([[axisId, axisRangeFor(axisId)
+                        .map(range => range.update(propDomain.start, propDomain.end) as ContinuousAxisRange)
+                        .getOrElse(ContinuousAxisRange.from(propDomain.start, propDomain.end))
+                    ]]))
+                }
             }
         },
         [
@@ -235,7 +275,8 @@ export function ContinuousAxis(props: Props): null {
             addAxesRangesUpdateHandler,
             removeAxesRangesUpdateHandler,
             updateAxisRanges,
-            color, updateAxisBasedOnDomainValues
+            color, updateAxisBasedOnDomainValues,
+            autoScale, autoScaleMin, autoScaleMax
         ]
     )
 
