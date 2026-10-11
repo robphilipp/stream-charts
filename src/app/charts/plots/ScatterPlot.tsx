@@ -19,6 +19,7 @@ import {
 import type {CanvasContext} from "../d3types";
 import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
 import {firstIndexAtOrAfter, noop} from "../utils";
+import {NoCurveFactory} from "./constants";
 import type {Dimensions, Margin} from "../styling/margins";
 import {
     timeSeriesViewDriverFor,
@@ -32,7 +33,7 @@ import {useInitialData} from "../hooks/useInitialData";
 import type {TooltipData} from "../hooks/useTooltip";
 import {Optional} from "result-fn";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
-import {extentWith, grownDomain} from "../axes/autoScale";
+import {extentWith, grownDomain, visibleExtent} from "../axes/autoScale";
 import {AxisInterval} from "../axes/AxisInterval";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import type {FastShiftArray} from "fast-shift-array";
@@ -402,13 +403,15 @@ export function ScatterPlot(props: Props): null {
             /**
              * Grows the auto-scaling y-axes (see `ContinuousAxis`'s `autoScale` prop) to fit the
              * data that's on screen: the data of the shown series (those matching the filter)
-             * within their x-axis' current window. Since an axis only ever grows, the data that
-             * has scrolled off screen was already accounted for while it was on screen, so only
-             * the visible data needs checking each frame. Registered to run before the axes draw
+             * within their x-axis' current window, including where their lines cross the window's
+             * edges (see `visibleExtent`). Since an axis only ever grows, the data that has
+             * scrolled off screen was already accounted for while it was on screen, so only the
+             * visible data needs checking each frame. Registered to run before the axes draw
              * (they're at z-index 0), so the axes and the series are drawn with the grown domain
              * in the same frame.
              */
             const autoScaleYAxes = (): void => {
+                const withLine = interpolation !== NoCurveFactory
                 const extents = new Map<string, [min: number, max: number]>()
                 dataRef.current.forEach(series => {
                     if (!series.name.match(seriesFilter)) return
@@ -421,15 +424,13 @@ export function ScatterPlot(props: Props): null {
                     if (xAxisLinear === undefined || yAxisLinear?.autoScale === undefined) return
 
                     const [start, end] = xAxisLinear.scale.domain()
-                    const data = series.data
-                    let extent = extents.get(yAxisLinear.axisId)
-                    for (let i = firstIndexAtOrAfter(data, start, (d: Datum) => d.x); i < data.length; i++) {
-                        const datum = data[i]
-                        if (datum.x > end) break
-                        // (skips values the scale can't show, e.g. values <= 0 on a log scale)
-                        if (Number.isFinite(yAxisLinear.scale(datum.y))) extent = extentWith(extent, datum.y)
-                    }
-                    if (extent !== undefined) extents.set(yAxisLinear.axisId, extent)
+                    const seriesExtent = visibleExtent(series.data, [start, end], yAxisLinear.scale, withLine)
+                    if (seriesExtent === undefined) return
+                    const extent = extents.get(yAxisLinear.axisId)
+                    extents.set(
+                        yAxisLinear.axisId,
+                        extent === undefined ? seriesExtent : extentWith(extentWith(extent, seriesExtent[0]), seriesExtent[1])
+                    )
                 })
 
                 const updates = new Map<string, ContinuousAxisRange>()
@@ -437,7 +438,7 @@ export function ScatterPlot(props: Props): null {
                     const {autoScale, scale} = axis as ContinuousNumericAxis
                     if (autoScale === undefined) return
                     const [currentMin, currentMax] = scale.domain()
-                    const [min, max] = grownDomain([currentMin, currentMax], extent, autoScale.min, autoScale.max)
+                    const [min, max] = grownDomain([currentMin, currentMax], extent, autoScale, scale)
                     if (min !== currentMin || max !== currentMax) {
                         updates.set(axisId, axisRangeFor(axisId)
                             .map(range => range.update(min, max) as ContinuousAxisRange)
@@ -1027,9 +1028,12 @@ export function ScatterPlot(props: Props): null {
     )
 
     // New data, new scale: when the data source is replaced (e.g. on a reset, or a change to the
-    // number of series), the auto-scaling y-axes go back to their own domains (and then grow to
-    // fit the new data). The axes and their ranges are read through refs, so that this only runs
+    // number of series), the auto-scaling y-axes go back to their starts (and then grow to fit the
+    // new data). Only on a *change* of data source -- not when this plot mounts with its data
+    // source, which would throw away an axis' kept growth (see `ContinuousAxis`'s
+    // `autoScaledDomain`). The axes and their ranges are read through refs, so that this only runs
     // when the data source changes -- not, say, when an axis is added.
+    const autoScaleDataSourceRef = useRef(dataSource)
     const autoScaleResetRef = useRef({yAxesState, axisRangeFor, updateAxisRanges})
     useEffect(
         () => {
@@ -1039,6 +1043,8 @@ export function ScatterPlot(props: Props): null {
     )
     useEffect(
         () => {
+            if (autoScaleDataSourceRef.current === dataSource) return
+            autoScaleDataSourceRef.current = dataSource
             const {yAxesState, axisRangeFor, updateAxisRanges} = autoScaleResetRef.current
             const updates = new Map<string, ContinuousAxisRange>()
             yAxesState.axes.forEach((axis, axisId) => {

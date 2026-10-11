@@ -1,47 +1,104 @@
+import type {ScaleContinuousNumeric} from "d3";
+import {firstIndexAtOrAfter} from "../utils";
+
 /**
  * The auto-scaling settings of a (y-) axis whose domain grows to fit the data plotted against it
- * (see `ContinuousAxis`'s `autoScale`, `autoScaleMin`, and `autoScaleMax` props)
+ * (see `ContinuousAxis`'s `autoScale`, `autoScaleMin`, `autoScaleMax`, and `autoScalePadding` props)
  */
 export type AutoScale = {
     /**
-     * The axis' own domain (its `domain` prop): where the axis starts out, and what it's restored
-     * to when its plot's data is replaced (e.g. on a reset)
+     * Where the axis' domain starts out: its `domain` prop, clamped to the limits. It's what the
+     * domain is restored to when its plot's data is replaced (e.g. on a reset).
      */
     domain: [min: number, max: number]
     /**
-     * The smallest value the axis' domain may grow down to
+     * The smallest value the axis' domain may reach
      */
     min: number
     /**
-     * The largest value the axis' domain may grow up to
+     * The largest value the axis' domain may reach
      */
     max: number
+    /**
+     * The fraction of the axis' length left beyond the data's extreme on a side that grows (so
+     * the extreme point isn't drawn right on the edge), from 0 up to (not including) 0.5
+     */
+    padding: number
 }
 
 /**
- * Grows an axis' domain to include the specified extent of the data, without growing past the
- * auto-scaling limits. The domain only ever grows: an extent that's within the domain leaves the
- * domain as it is.
+ * Clamps a domain to the auto-scaling limits, so that an auto-scaling axis never starts out past
+ * them. (When the domain lies entirely beyond a limit, it collapses onto that limit.)
+ * @param domain The domain
+ * @param min The smallest value the domain may reach
+ * @param max The largest value the domain may reach
+ * @return The domain, clamped to the limits
+ */
+export function clampedDomain(
+    domain: [min: number, max: number],
+    min: number,
+    max: number
+): [min: number, max: number] {
+    const clamp = (value: number) => Math.min(max, Math.max(min, value))
+    return [clamp(domain[0]), clamp(domain[1])]
+}
+
+/**
+ * Whether two auto-scaling settings are the same (`undefined` means "not auto-scaling")
+ * @param a The first settings
+ * @param b The second settings
+ * @return `true` when they're the same; `false` otherwise
+ */
+export function sameAutoScale(a: AutoScale | undefined, b: AutoScale | undefined): boolean {
+    if (a === undefined || b === undefined) return a === b
+    return a.domain[0] === b.domain[0] && a.domain[1] === b.domain[1] &&
+        a.min === b.min && a.max === b.max && a.padding === b.padding
+}
+
+/**
+ * Grows an axis' domain to include the specified extent of the data (plus the padding, on each
+ * side that grows), without going past the auto-scaling limits. The domain only ever grows: an
+ * extent that's within the domain leaves the domain as it is.
+ *
+ * The padding is applied in the scale's own space (e.g. logarithmically, for a log scale), as a
+ * fraction of the axis' length, so the data's extreme ends up about that fraction of the axis
+ * away from the edge.
  * @param domain The axis' current domain
  * @param extent The [min, max] of the data plotted against the axis, or `undefined` when there's
  * no data
- * @param min The smallest value the domain may grow down to
- * @param max The largest value the domain may grow up to
+ * @param autoScale The auto-scaling settings (the limits, and the padding)
+ * @param scale The axis' scale (only its kind matters: linear, log, ...)
  * @return The grown domain (or the current domain, when there's nothing to grow for)
  */
 export function grownDomain(
     domain: [min: number, max: number],
     extent: [min: number, max: number] | undefined,
-    min: number,
-    max: number
+    autoScale: Pick<AutoScale, 'min' | 'max' | 'padding'>,
+    scale: ScaleContinuousNumeric<number, number>
 ): [min: number, max: number] {
     if (extent === undefined) return domain
     const [domainMin, domainMax] = domain
-    const [extentMin, extentMax] = extent
-    // (a side only ever grows: when the domain already reaches past a limit, the limit leaves it be)
+    const growsDown = extent[0] < domainMin
+    const growsUp = extent[1] > domainMax
+    if (!growsDown && !growsUp) return domain
+
+    let min = growsDown ? extent[0] : domainMin
+    let max = growsUp ? extent[1] : domainMax
+    const padding = Math.min(0.45, Math.max(0, autoScale.padding))
+    if (padding > 0 && min < max) {
+        // the normalized scale over the grown domain, extended on each growing side so that the
+        // extreme sits `padding` of the (extended) axis' length from that edge: with n growing
+        // sides, each extension e satisfies e / (1 + n e) = padding
+        const normalized = scale.copy().domain([min, max]).range([0, 1])
+        const growingSides = (growsDown ? 1 : 0) + (growsUp ? 1 : 0)
+        const extension = padding / (1 - growingSides * padding)
+        if (growsDown) min = normalized.invert(-extension)
+        if (growsUp) max = normalized.invert(1 + extension)
+    }
+    // (never past the limits -- and never shrinking a side, should the domain already be past one)
     return [
-        Math.min(domainMin, Math.max(min, extentMin)),
-        Math.max(domainMax, Math.min(max, extentMax)),
+        growsDown ? Math.min(domainMin, Math.max(autoScale.min, min)) : domainMin,
+        growsUp ? Math.max(domainMax, Math.min(autoScale.max, max)) : domainMax,
     ]
 }
 
@@ -57,4 +114,90 @@ export function extentWith(
 ): [min: number, max: number] {
     if (extent === undefined) return [value, value]
     return [Math.min(extent[0], value), Math.max(extent[1], value)]
+}
+
+type Point = { readonly x: number, readonly y: number }
+
+/**
+ * Calculates the extent (the [min, max] of the y-values) of a series' data that's visible within
+ * the x-axis' window: the points within the window, and -- when the series is drawn as a line --
+ * the line's height where it crosses the window's left and right edges (a line from a point just
+ * off screen can reach higher, or lower, within the window than any point that's on screen).
+ * Values the y-scale can't show (e.g. values <= 0 on a log scale) are skipped.
+ *
+ * The crossings are calculated in the y-scale's own space (as the line is drawn), so they're exact
+ * for straight lines, on any kind of scale.
+ * @param data The series' data, ordered by x
+ * @param window The x-axis' [start, end]
+ * @param yScale The y-axis' scale
+ * @param withLine Whether the series is drawn as a line (rather than just points)
+ * @return The extent of the visible data, or `undefined` when nothing is visible
+ */
+export function visibleExtent(
+    data: { length: number, [index: number]: Point },
+    window: [start: number, end: number],
+    yScale: ScaleContinuousNumeric<number, number>,
+    withLine: boolean
+): [min: number, max: number] | undefined {
+    const [start, end] = window
+    const showable = (point: Point) => Number.isFinite(yScale(point.y))
+    // the line's height where the segment between the two points crosses x
+    const crossing = (from: Point, to: Point, x: number): number => {
+        if (to.x === from.x) return to.y
+        const fraction = (x - from.x) / (to.x - from.x)
+        const fromY = yScale(from.y)
+        return yScale.invert(fromY + (yScale(to.y) - fromY) * fraction)
+    }
+
+    let extent: [min: number, max: number] | undefined = undefined
+    let index = firstIndexAtOrAfter(data, start, point => point.x)
+
+    // the line entering through the window's left edge
+    if (withLine && index > 0 && index < data.length && data[index].x <= end &&
+        showable(data[index - 1]) && showable(data[index])) {
+        extent = extentWith(extent, crossing(data[index - 1], data[index], start))
+    }
+
+    // the points within the window
+    for (; index < data.length && data[index].x <= end; index++) {
+        if (showable(data[index])) extent = extentWith(extent, data[index].y)
+    }
+
+    // the line leaving through the window's right edge (or, when no point is within the window,
+    // passing straight across it)
+    if (withLine && index > 0 && index < data.length && data[index - 1].x < end &&
+        showable(data[index - 1]) && showable(data[index])) {
+        const from = data[index - 1]
+        const to = data[index]
+        extent = extentWith(extent, crossing(from, to, end))
+        if (from.x < start) extent = extentWith(extent, crossing(from, to, start))
+    }
+    return extent
+}
+
+// the warnings already issued (each is only issued once)
+const issuedWarnings = new Set<string>()
+
+/**
+ * Issues a warning to the console, once (e.g. about auto-scaling settings that are ignored)
+ * @param message The warning
+ */
+export function warnOnce(message: string): void {
+    if (issuedWarnings.has(message)) return
+    issuedWarnings.add(message)
+    console.warn(message)
+}
+
+/**
+ * Warns (once per axis) about the auto-scaling y-axes of a plot that doesn't support auto-scaling,
+ * whose `autoScale` setting is therefore ignored
+ * @param plotName The name of the plot (e.g. "BarPlot")
+ * @param yAxes The plot's y-axes, by their IDs
+ */
+export function warnAboutIgnoredAutoScale(plotName: string, yAxes: Map<string, object>): void {
+    yAxes.forEach((axis, axisId) => {
+        if ((axis as { autoScale?: AutoScale }).autoScale !== undefined) {
+            warnOnce(`The ${plotName} doesn't support auto-scaling y-axes, so the "autoScale" setting of y-axis "${axisId}" is ignored`)
+        }
+    })
 }

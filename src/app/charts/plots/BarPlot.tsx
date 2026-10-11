@@ -34,6 +34,7 @@ import {OrdinalAxisRange} from "../axes/OrdinalAxisRange";
 import {Optional} from "result-fn";
 import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./constants.ts";
 import {AxisInterval} from "../axes/AxisInterval";
+import {warnAboutIgnoredAutoScale} from "../axes/autoScale";
 
 /**
  * A snapshot of the bar plot's zoom/pan state, in a form that can be held outside the plot (e.g.
@@ -195,6 +196,13 @@ export function BarPlot(props: Props): null {
         setOriginalAxisIntervalFor,
         axesRanges
     } = axes
+
+    // this plot doesn't auto-scale its y-axes, so warn about any that ask to be (see
+    // `ContinuousAxis`'s `autoScale` prop)
+    useEffect(
+        () => warnAboutIgnoredAutoScale("BarPlot", yAxesState.axes),
+        [yAxesState]
+    )
 
     const {mouseOverHandlerFor, mouseLeaveHandlerFor} = mouse
 

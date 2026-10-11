@@ -164,6 +164,12 @@ export function StreamingScatterChart(props: Props): JSX.Element {
 
     const autoScaleYAxes = useScatterChartStore(state => state.autoScaleYAxes)
     const setAutoScaleYAxes = useScatterChartStore(state => state.setAutoScaleYAxes)
+    // the auto-scaled y-axes' domains, kept in the store so that their growth survives navigating
+    // away from the chart and back
+    const y1AutoScaledDomain = useScatterChartStore(state => state.y1AutoScaledDomain)
+    const setY1AutoScaledDomain = useScatterChartStore(state => state.setY1AutoScaledDomain)
+    const y2AutoScaledDomain = useScatterChartStore(state => state.y2AutoScaledDomain)
+    const setY2AutoScaledDomain = useScatterChartStore(state => state.setY2AutoScaledDomain)
 
     const reset = useScatterChartStore(state => state.reset)
     //
@@ -611,6 +617,8 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                         autoScale={autoScaleYAxes}
                         autoScaleMin={Y1_AUTO_SCALE_LIMITS[0]}
                         autoScaleMax={Y1_AUTO_SCALE_LIMITS[1]}
+                        autoScaledDomain={y1AutoScaledDomain}
+                        onAutoScale={setY1AutoScaledDomain}
                         label="Distance (µm)"
                     />
                     <ContinuousAxis
@@ -627,6 +635,8 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                         autoScale={autoScaleYAxes}
                         autoScaleMin={Y2_AUTO_SCALE_LIMITS[0]}
                         autoScaleMax={Y2_AUTO_SCALE_LIMITS[1]}
+                        autoScaledDomain={y2AutoScaledDomain}
+                        onAutoScale={setY2AutoScaledDomain}
                         label="Distance (µm)"
                     />
                     <Tracker

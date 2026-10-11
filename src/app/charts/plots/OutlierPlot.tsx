@@ -14,6 +14,7 @@ import {noop} from "../utils"
 import type {Dimensions} from "../styling/margins"
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange"
 import {AxisInterval} from "../axes/AxisInterval"
+import {warnAboutIgnoredAutoScale} from "../axes/autoScale"
 import {
     axesForSeriesGen,
     type BaseAxis,
@@ -182,6 +183,13 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
         updateAxisRanges = noop,
         onUpdateAxesInterval,
     } = axes
+
+    // this plot doesn't auto-scale its y-axes, so warn about any that ask to be (see
+    // `ContinuousAxis`'s `autoScale` prop)
+    useEffect(
+        () => warnAboutIgnoredAutoScale("OutlierPlot", yAxesState.axes),
+        [yAxesState]
+    )
 
     const {plotDimensions, margin} = usePlotDimensions()
 

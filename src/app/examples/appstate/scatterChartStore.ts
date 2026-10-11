@@ -67,6 +67,10 @@ type ScatterChartState = {
     dataUpdatePeriod: number
     // whether the y-axes auto-scale (grow to fit the data)
     autoScaleYAxes: boolean
+    // the auto-scaled y-axes' domains, kept so that their growth survives navigating away and back
+    // (undefined until they've been auto-scaled)
+    y1AutoScaledDomain: Range | undefined
+    y2AutoScaledDomain: Range | undefined
 }
 
 const initialState: ScatterChartState = {
@@ -80,6 +84,8 @@ const initialState: ScatterChartState = {
     cadence: 0,
     dataUpdatePeriod: DEFAULT_DATA_UPDATE_PERIOD,
     autoScaleYAxes: false,
+    y1AutoScaledDomain: undefined,
+    y2AutoScaledDomain: undefined,
 }
 
 type ScatterChartActions = {
@@ -93,6 +99,8 @@ type ScatterChartActions = {
     setCadence: (cadence: number) => void
     setDataUpdatePeriod: (dataUpdatePeriod: number) => void
     setAutoScaleYAxes: (autoScaleYAxes: boolean) => void
+    setY1AutoScaledDomain: (domain: Range) => void
+    setY2AutoScaledDomain: (domain: Range) => void
     reset: () => void
 }
 
@@ -136,7 +144,11 @@ export const useScatterChartStore: UseBoundStore<StoreApi<ScatterChartStore>> = 
 
         setCadence: (cadence: number) => set({cadence}),
 
-        setAutoScaleYAxes: (autoScaleYAxes: boolean) => set({autoScaleYAxes}),
+        // (turning auto-scaling on, or off, starts the axes afresh)
+        setAutoScaleYAxes: (autoScaleYAxes: boolean) =>
+            set({autoScaleYAxes, y1AutoScaledDomain: undefined, y2AutoScaledDomain: undefined}),
+        setY1AutoScaledDomain: (domain: Range) => set({y1AutoScaledDomain: domain}),
+        setY2AutoScaledDomain: (domain: Range) => set({y2AutoScaledDomain: domain}),
 
         // the update period is baked into the generator, so give the data source a new one (only
         // possible while stopped, which is the only time the control is enabled)

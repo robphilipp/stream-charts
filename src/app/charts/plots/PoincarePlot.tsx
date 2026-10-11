@@ -26,6 +26,7 @@ import {useInitialData} from "../hooks/useInitialData";
 import {type TooltipData, useTooltip} from "../hooks/useTooltip";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 import {AxisInterval} from "../axes/AxisInterval";
+import {warnAboutIgnoredAutoScale} from "../axes/autoScale";
 import {FastShiftArray} from "fast-shift-array";
 
 type IteratePoint = { n: number, n_1: number, time: number, index: number }
@@ -181,6 +182,13 @@ export function PoincarePlot(props: Props): null {
         addAxesRangesUpdateHandler,
         removeAxesRangesUpdateHandler,
     } = axes
+
+    // this plot doesn't auto-scale its y-axes, so warn about any that ask to be (see
+    // `ContinuousAxis`'s `autoScale` prop)
+    useEffect(
+        () => warnAboutIgnoredAutoScale("PoincarePlot", yAxesState.axes),
+        [yAxesState]
+    )
 
     const {
         mouseOverHandlerFor,
