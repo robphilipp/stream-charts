@@ -87,11 +87,12 @@ type PoincareChartState = {
     axesRange: [start: number, end: number]
     visibility: Visibility
     highlightAxes: boolean
-    // whether the lines connecting the points change color along their length, and the colors
-    // they start (oldest point) and end (newest point) with
+    // whether the lines connecting the points change color along their length, the colors their
+    // sweep starts and ends with, and the number of points (steps) a sweep takes
     colorizeLines: boolean
     lineStartColor: string
     lineEndColor: string
+    lineColorSteps: number
     // the plot's zoom/pan state (undefined when never zoomed/panned), handed back to the plot
     // when it remounts so that navigating away and back doesn't reset the zoom
     zoomState: PoincarePlotZoomState | undefined
@@ -108,6 +109,8 @@ const initialState: PoincareChartState = {
     colorizeLines: false,
     lineStartColor: DEFAULT_LINE_START_COLOR,
     lineEndColor: DEFAULT_LINE_END_COLOR,
+    // (a slow sweep: at the example's 20 iterates a second, 100,000 steps take well over an hour)
+    lineColorSteps: 100_000,
     zoomState: undefined,
 }
 
@@ -122,6 +125,7 @@ type PoincareChartActions = {
     setColorizeLines: (colorize: boolean) => void
     setLineStartColor: (color: string) => void
     setLineEndColor: (color: string) => void
+    setLineColorSteps: (steps: number) => void
     setZoomState: (zoomState: PoincarePlotZoomState) => void
 }
 
@@ -158,5 +162,6 @@ export const usePoincareChartStore: UseBoundStore<StoreApi<PoincareChartStore>> 
         setColorizeLines: (colorizeLines: boolean) => set({colorizeLines}),
         setLineStartColor: (lineStartColor: string) => set({lineStartColor}),
         setLineEndColor: (lineEndColor: string) => set({lineEndColor}),
+        setLineColorSteps: (lineColorSteps: number) => set({lineColorSteps}),
         setZoomState: (zoomState: PoincarePlotZoomState) => set({zoomState}),
     })));

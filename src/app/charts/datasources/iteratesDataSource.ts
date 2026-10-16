@@ -47,6 +47,8 @@ export interface IteratesDataSourceOptions {
 export class IteratesDataSource extends BaseStreamingDataSource<IterateChartData, IterateDatum, IterateSeries> {
     private dropDataAfter: number
     private readonly onUpdateData: ((seriesName: string, data: Array<IterateDatum>) => void) | undefined
+    // the number of points dropped from each series so far (see `droppedCountFor`)
+    private readonly droppedCounts = new Map<string, number>()
 
     /**
      * Creates a iterates data source (stopped: call {@link start} to start it)
@@ -70,6 +72,18 @@ export class IteratesDataSource extends BaseStreamingDataSource<IterateChartData
      * @return The latest time (the `time` of the last datum) over all the series, or
      * `-Infinity` when there is no data
      */
+    /**
+     * The number of points dropped (as too old) from the front of the specified series so far --
+     * so that a point's overall sequence number in its series is this plus its index in the
+     * series' data, even as old points are dropped (e.g. for colorizing the lines by point, see
+     * the `PoincarePlot`'s `lineColorSteps`)
+     * @param seriesName The name of the series
+     * @return The number of points dropped from the series (0 for an unknown series)
+     */
+    droppedCountFor(seriesName: string): number {
+        return this.droppedCounts.get(seriesName) ?? 0
+    }
+
     latestTime(): number {
         return this.seriesList().reduce(
             (tMax, series) => Math.max(tMax, series.last().map(datum => datum.time).getOrElse(tMax)),
@@ -79,8 +93,9 @@ export class IteratesDataSource extends BaseStreamingDataSource<IterateChartData
 
     /**
      * Adds each series' new points to it, and drops the points that are older than
-     * `dropDataAfter` relative to the chunk's current time (see {@link iteratesCurrentTime}). New
-     * points for a series that isn't in the source are ignored. Calls `onUpdateData` with each
+     * `dropDataAfter` relative to the chunk's current time (see {@link iteratesCurrentTime}),
+     * counting them (see {@link droppedCountFor}). New points for a series that isn't in the
+     * source are ignored. Calls `onUpdateData` with each
      * series' new points.
      * @param data The chunk of chart data emitted by the generator
      */
@@ -96,9 +111,12 @@ export class IteratesDataSource extends BaseStreamingDataSource<IterateChartData
             series.data.push(...newData)
 
             // drop data that is older than the max time-window -- guarded on series.data.length
+            let dropped = 0
             while (series.data.length > 0 && currentTime - series.data[0].time > this.dropDataAfter) {
                 series.data.shift()
+                dropped++
             }
+            if (dropped > 0) this.droppedCounts.set(seriesName, this.droppedCountFor(seriesName) + dropped)
         })
     }
 }

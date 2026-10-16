@@ -28,7 +28,13 @@ import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 import {AxisInterval} from "../axes/AxisInterval";
 import {warnAboutIgnoredAutoScale} from "../axes/autoScale";
 import {FastShiftArray} from "fast-shift-array";
-import {DEFAULT_LINE_END_COLOR, DEFAULT_LINE_START_COLOR, lineColorScale, strokeColorizedLine} from "./colorizedLine";
+import {
+    DEFAULT_LINE_COLOR_STEPS,
+    DEFAULT_LINE_END_COLOR,
+    DEFAULT_LINE_START_COLOR,
+    pointColorScale,
+    strokeColorizedLine
+} from "./colorizedLine";
 
 // an iterate as the plot draws it: f[n](x), f[n+1](x), the iterate's time, and its index in its series
 type IteratePoint = { n: number, n_1: number, time: number, index: number }
@@ -83,20 +89,30 @@ export interface Props {
      */
     showPoints?: boolean
     /**
-     * When `true`, the lines connecting the points change color along their length: from
-     * `lineStartColor` at each series' oldest point to `lineEndColor` at its newest, sweeping the
-     * colors of the spectrum in between (the long way around the hue circle -- e.g. from blue,
-     * through cyan, green, and yellow, to red), so that the path's direction, and its age, can be
-     * seen. When `false` (the default), the lines are drawn in the series' own color.
+     * When `true`, the lines connecting the points change color along their length, one step per
+     * point: from `lineStartColor` at each series' first point to `lineEndColor` after
+     * `lineColorSteps` points, then back to `lineStartColor` over the next `lineColorSteps` points,
+     * and so on, sweeping the colors of the spectrum in between (the long way around the hue
+     * circle -- e.g. from blue, through cyan, green, and yellow, to red). A point keeps its color
+     * as old points are dropped (with an {@link IteratesDataSource}, which counts them), so that
+     * the path's direction, and its age, can be seen. When `false` (the default), the lines are
+     * drawn in the series' own color.
      */
     colorizeLines?: boolean
     /**
-     * The color of the colorized lines' start (each series' oldest point). Defaults to a blue
+     * The number of points (steps) it takes the colorized lines' color to sweep from
+     * `lineStartColor` to `lineEndColor` (and as many to sweep back) -- the larger, the slower the
+     * color changes. Defaults to {@link DEFAULT_LINE_COLOR_STEPS} (1,000). Only used when
+     * `colorizeLines` is `true`.
+     */
+    lineColorSteps?: number
+    /**
+     * The color the colorized lines' sweep starts at (each series' first point). Defaults to a blue
      * ({@link DEFAULT_LINE_START_COLOR}). Only used when `colorizeLines` is `true`.
      */
     lineStartColor?: string
     /**
-     * The color of the colorized lines' end (each series' newest point). Defaults to a red
+     * The color the colorized lines' sweep ends at (after `lineColorSteps` points). Defaults to a red
      * ({@link DEFAULT_LINE_END_COLOR}). Only used when `colorizeLines` is `true`.
      */
     lineEndColor?: string
@@ -255,6 +271,7 @@ export function PoincarePlot(props: Props): null {
         colorizeLines = false,
         lineStartColor = DEFAULT_LINE_START_COLOR,
         lineEndColor = DEFAULT_LINE_END_COLOR,
+        lineColorSteps = DEFAULT_LINE_COLOR_STEPS,
         zoomState = undefined,
         onZoomStateChange = noop,
         onZoomReset = noop,
@@ -321,8 +338,9 @@ export function PoincarePlot(props: Props): null {
         (cc: CanvasContext) => {
             onUpdateChartTime(currentTimeRef.current)
 
-            // the colorized lines' color, by the fraction of the way along a line (see `colorizeLines`)
-            const lineColorAt = lineColorScale(lineStartColor, lineEndColor)
+            // the colorized lines' color at a point, by the point's overall sequence number in its
+            // series (see `colorizeLines`)
+            const lineColorOf = pointColorScale(lineStartColor, lineEndColor, lineColorSteps)
 
             const draw = (context: CanvasContext) => {
                 const {context2D} = context
@@ -404,11 +422,15 @@ export function PoincarePlot(props: Props): null {
 
                         context2D.lineWidth = seriesLineStyle.lineWidth
                         if (colorizeLines) {
-                            // the line's color changes along it, from its oldest point to its newest
+                            // the line's color changes along it, one step per point: a point's
+                            // overall sequence number is the number of points dropped from the
+                            // series so far (when the data source counts them) plus its index
+                            const dropped = droppedCountFor(dataSource, name)
+                            const linePoints = Array.from(plotData)
                             strokeColorizedLine(
-                                context2D, Array.from(plotData),
+                                context2D, linePoints,
                                 d => xAxis.scale(d.n || 0), d => yAxis.scale(d.n_1 || 0),
-                                interpolation, lineColorAt
+                                interpolation, index => lineColorOf(dropped + linePoints[index].index)
                             )
                         } else {
                             context2D.strokeStyle = seriesLineStyle.color
@@ -494,7 +516,7 @@ export function PoincarePlot(props: Props): null {
             xAxesState, yAxesState,
             seriesStyles, seriesFilter, showPoints,
             interpolation, backgroundColor,
-            colorizeLines, lineStartColor, lineEndColor,
+            colorizeLines, lineStartColor, lineEndColor, lineColorSteps, dataSource,
         ]
     )
 
@@ -1027,6 +1049,18 @@ export function PoincarePlot(props: Props): null {
     )
 
     return null
+}
+
+/**
+ * @param dataSource The chart's data source
+ * @param seriesName The name of the series
+ * @return The number of points dropped from the series so far, when the data source counts them
+ * (an {@link IteratesDataSource} does); otherwise 0
+ */
+function droppedCountFor(dataSource: unknown, seriesName: string): number {
+    return dataSource !== null && typeof dataSource === 'object' && 'droppedCountFor' in dataSource ?
+        (dataSource as {droppedCountFor: (name: string) => number}).droppedCountFor(seriesName) :
+        0
 }
 
 /**

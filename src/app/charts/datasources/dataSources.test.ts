@@ -331,6 +331,30 @@ describe('IteratesDataSource', () => {
         expect(dataSource.latestTime()).toBe(1200)
     })
 
+    it('counts the points dropped from each series', () => {
+        const {source, generator} = controllableGenerator<IterateChartData>()
+        const dataSource = new IteratesDataSource({
+            initialData: [
+                seriesFrom<IterateDatum>('a', [iterate(0), iterate(500)]) as IterateSeries,
+                seriesFrom<IterateDatum>('b', [iterate(900)]) as IterateSeries,
+            ],
+            generator,
+            dropDataAfter: 1000,
+        })
+        dataSource.start()
+        expect(dataSource.droppedCountFor('a')).toBe(0)
+
+        source.next(iterateData(new Map([['a', [iterate(1200)]], ['b', [iterate(1200)]]])))
+        expect(dataSource.droppedCountFor('a')).toBe(1)
+        expect(dataSource.droppedCountFor('b')).toBe(0)
+
+        source.next(iterateData(new Map([['a', [iterate(2100)]], ['b', [iterate(2100)]]])))
+        // (a: 500 dropped too, while 1200 is kept; b: 900 dropped)
+        expect(dataSource.droppedCountFor('a')).toBe(2)
+        expect(dataSource.droppedCountFor('b')).toBe(1)
+        expect(dataSource.droppedCountFor('unknown')).toBe(0)
+    })
+
     it('computes the current time as the latest new point over all series', () => {
         expect(iteratesCurrentTime(iterateData(new Map([['a', [iterate(5)]], ['b', [iterate(9)]], ['c', []]])))).toBe(9)
     })

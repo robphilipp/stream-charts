@@ -198,6 +198,8 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
     const setLineStartColor = usePoincareChartStore(state => state.setLineStartColor)
     const lineEndColor = usePoincareChartStore(state => state.lineEndColor)
     const setLineEndColor = usePoincareChartStore(state => state.setLineEndColor)
+    const lineColorSteps = usePoincareChartStore(state => state.lineColorSteps)
+    const setLineColorSteps = usePoincareChartStore(state => state.setLineColorSteps)
 
     const selectedInterpolationName = usePoincareChartStore(state => state.selectedInterpolationName)
     const setSelectedInterpolationName = usePoincareChartStore(state => state.setSelectedInterpolationName)
@@ -470,6 +472,8 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
                                 setStartColor={setLineStartColor}
                                 endColor={lineEndColor}
                                 setEndColor={setLineEndColor}
+                                steps={lineColorSteps}
+                                setSteps={setLineColorSteps}
                             />
                             <Divider theme={theme}/>
                             <DropDown
@@ -609,6 +613,7 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
                         colorizeLines={colorizeLines}
                         lineStartColor={lineStartColor}
                         lineEndColor={lineEndColor}
+                        lineColorSteps={lineColorSteps}
                         zoomState={zoomState}
                         onZoomStateChange={setZoomState}
                         onZoomReset={handleZoomReset}
