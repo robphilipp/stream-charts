@@ -4,7 +4,7 @@ import {initialRandomWeightData} from "./examples/dataproviders/randomWeightData
 import {initialRandomSpikeData} from "./examples/dataproviders/randomSpikeData.ts";
 import {SPIKE_MEAN_VALUE, SPIKE_VALUE_SPREAD} from "./examples/appstate/rasterChartStore.ts";
 import {initialTentMapData} from "./examples/dataproviders/randomIterateData.ts";
-import {initialSineFnData} from "./examples/dataproviders/randomOrdinalData.ts";
+import {initialBarDanceData} from "./examples/dataproviders/randomOrdinalData.ts";
 
 /*
     Example data is generated once at module load so navigating between routes doesn't
@@ -23,7 +23,7 @@ for (let i = 0; i < 50; ++i) {
     spikeSeriesNames.push(`HC ${i + 1}`)
 }
 export const initialSpikeData = initialRandomSpikeData(spikeSeriesNames, 10, 200, 10, SPIKE_MEAN_VALUE, SPIKE_VALUE_SPREAD)
-export const initialBarData = initialSineFnData(spikeSeriesNames.slice(), 1000, 4)
+export const initialBarData = initialBarDanceData(spikeSeriesNames.slice(), 1000, 4)
 
 /*
     The tabs, now driven by routes rather than the <Tabs> component's internal state.

@@ -4,7 +4,7 @@ import {timeSeriesFromTuples} from "../../charts/series/timeSeries.ts";
 import {initialTimeSeriesChartData, type TimeSeriesChartData} from "../../charts/series/timeSeriesChartData.ts";
 import {seriesFrom} from "../../charts/series/baseSeries.ts";
 import {type OrdinalDatum, ordinalDatumOf} from "../../charts/series/ordinalSeries.ts";
-import {barDanceDataObservable} from "./randomOrdinalData.ts";
+import {barDanceDataObservable, initialBarDanceData} from "./randomOrdinalData.ts";
 import {initialRandomSpikeData, randomSpikeDataObservable} from "./randomSpikeData.ts";
 
 describe('when creating random data from an initial series', () => {
@@ -75,6 +75,43 @@ describe('dancing-bar data (barDanceDataObservable)', () => {
             expect(data.maxTimes.get('a')).toBe(data.newPoints.get('a')!.at(-1)!.x)
             expect(data.maxTimes.get('b')).toBe(data.newPoints.get('b')!.at(-1)!.x)
             expect(data.maxTime).toBe(data.newPoints.get('a')!.at(-1)!.x)
+        })
+    })
+})
+
+describe('initial dancing-bar data (initialBarDanceData)', () => {
+    afterEach(() => jest.useRealTimers())
+
+    it('creates the points at successive times', () => {
+        const data = initialBarDanceData(['a', 'b'], 1000, 4)
+        expect(data.map(series => series.name)).toEqual(['a', 'b'])
+        data.forEach(series => expect(Array.from(series.data).map(datum => datum.x)).toEqual([0, 1000, 2000, 3000]))
+    })
+
+    it('limits the values to the same range as the streamed data', () => {
+        // (the last of 50 series reaches about 1.12 unlimited)
+        const names = Array.from({length: 50}, (_, index) => `s${index}`)
+        const values = initialBarDanceData(names, 25, 400).flatMap(series => Array.from(series.data).map(datum => datum.y))
+        expect(Math.max(...values)).toBeLessThanOrEqual(1)
+        expect(Math.min(...values)).toBeGreaterThanOrEqual(-1)
+    })
+
+    it('has the same values as the streamed data, at the same times', () => {
+        const names = ['a', 'b', 'c']
+        // initial data at 0, 50, and 100 ms; the stream (from no data) emits at 50, 100, ... ms
+        const initial = initialBarDanceData(names, 50, 3)
+        jest.useFakeTimers()
+        const emitted: Array<TimeSeriesChartData> = []
+        const empty = names.map(name => seriesFrom<OrdinalDatum>(name, []))
+        const subscription = barDanceDataObservable(empty, 50).subscribe(data => emitted.push(data))
+        jest.advanceTimersByTime(100)
+        subscription.unsubscribe()
+
+        names.forEach((name, index) => {
+            const streamed = emitted.map(data => data.newPoints.get(name)!.at(-1)!)
+            const initialPoints = Array.from(initial[index].data)
+            expect(streamed.map(datum => datum.x)).toEqual([50, 100])
+            expect(streamed.map(datum => datum.y)).toEqual([initialPoints[1].y, initialPoints[2].y])
         })
     })
 })

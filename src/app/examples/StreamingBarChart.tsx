@@ -1,7 +1,7 @@
 import {type JSX, useCallback, useMemo, useRef, useState} from 'react';
 import * as d3 from "d3";
 import Checkbox from "../ui/Checkbox";
-import {initialSineFnData} from "./dataproviders/randomOrdinalData.ts";
+import {initialBarDanceData} from "./dataproviders/randomOrdinalData.ts";
 import {
     Grid,
     gridArea,
@@ -119,7 +119,7 @@ const SERIES_NUM_POINTS = 4
  */
 function initialDataForSeriesCount(numberOfSeries: number): Array<TimeSeries> {
     const seriesNames = Array.from({length: numberOfSeries}, (_, index) => `HC ${index + 1}`)
-    return initialSineFnData(seriesNames, SERIES_TIME_INTERVAL, SERIES_NUM_POINTS)
+    return initialBarDanceData(seriesNames, SERIES_TIME_INTERVAL, SERIES_NUM_POINTS)
 }
 
 /**

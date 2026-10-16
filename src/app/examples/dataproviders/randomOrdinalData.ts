@@ -10,32 +10,30 @@ import {interval, Observable} from "rxjs";
 import {map, scan} from "rxjs/operators";
 
 /**
- * Creates the initial data for the sine function
+ * Creates the initial (static) data for the dancing bars: for each series, `numPoints` values at
+ * successive times (`timeInterval` apart, starting at 0), calculated with the same function as
+ * the streamed data (see {@link barDanceValue}), and limited to the same range (see
+ * {@link barDanceDataObservable}) -- so the initial bars and the streamed ones follow the same
+ * dance.
  * @param seriesNames The names of the series
- * @param timeInterval The time between points (the x-values)
- * cycle of the sin function
- * @param numPoints The number of points to create
- * @return An array holding the series for each of the specified series names
+ * @param timeInterval The time (ms) between successive points
+ * @param numPoints The number of points for each series
+ * @param [min=-1] The minimum allowed value
+ * @param [max=1] The maximum allowed value
+ * @return The initial data, one series for each name
  */
-export function initialSineFnData(
+export function initialBarDanceData(
     seriesNames: Array<string>,
     timeInterval: number,
-    numPoints: number
+    numPoints: number,
+    min: number = -1,
+    max: number = 1
 ): Array<BaseSeries<Datum>> {
-    const intercept = 0.1
-    const slope = 0.3 / seriesNames.length
     return seriesNames.map((name, index) => {
         const data: Array<Datum> = []
-        for (let x = 0; x < numPoints; x++) {
-            const sequenceTime = x * timeInterval
-            data.push(datumOf(
-                    sequenceTime,
-                    Math.cos((6 * index) * Math.PI / seriesNames.length) * // envelope for x
-                    Math.min(1, (1.2 + Math.sin(sequenceTime * Math.PI / 1513)) / 2) * // time-evolving envelope
-                    Math.sin((sequenceTime / 27 + x) * Math.PI / seriesNames.length / 2) + // series values
-                    slope * index - intercept
-                )
-            )
+        for (let point = 0; point < numPoints; point++) {
+            const time = point * timeInterval
+            data.push(datumOf(time, Math.max(min, Math.min(max, barDanceValue(time, index, seriesNames.length)))))
         }
         return seriesFrom<Datum>(name, data)
     })
@@ -148,8 +146,6 @@ function barDanceData(
 ): TimeSeriesChartData {
     // every series' latest point is the new one, at the current time
     const maxTimes = new Map(seriesNames.map(name => [name, sequenceTime]))
-    const intercept = 0.1
-    const slope = 0.3 / seriesNames.length
     return {
         seriesNames: new Set(seriesNames),
         maxTime: sequenceTime,
@@ -159,12 +155,26 @@ function barDanceData(
                 name,
                 [{
                     x: sequenceTime,
-                    y: Math.cos((6 * index) * Math.PI / seriesNames.length) * // envelope for index
-                        Math.min(1, (1.2 + Math.sin(sequenceTime * Math.PI / 1513)) / 2) * // time-evolving envelope
-                        Math.sin((sequenceTime / 27 + index) * Math.PI / seriesNames.length / 2) + // series values
-                        slope * index - intercept,
+                    y: barDanceValue(sequenceTime, index, seriesNames.length),
                 }]
             ]
         }))
     };
+}
+
+/**
+ * The value of a dancing bar (series) at the specified time: some complicated function to make the
+ * bars dance. Used for both the initial data and the streamed data, so the two match.
+ * @param time The time
+ * @param index The index of the series
+ * @param numSeries The number of series
+ * @return The series' value at that time
+ */
+function barDanceValue(time: number, index: number, numSeries: number): number {
+    const intercept = 0.1
+    const slope = 0.3 / numSeries
+    return Math.cos((6 * index) * Math.PI / numSeries) * // envelope for index
+        Math.min(1, (1.2 + Math.sin(time * Math.PI / 1513)) / 2) * // time-evolving envelope
+        Math.sin((time / 27 + index) * Math.PI / numSeries / 2) + // series values
+        slope * index - intercept
 }
