@@ -5,6 +5,7 @@ import {
     removeTooltip,
     scatterTooltipPointList,
     scatterTooltipPoints,
+    sparklineFor,
     tooltipX,
     tooltipY
 } from "./tooltipUtils";
@@ -205,5 +206,47 @@ describe('scatterTooltipPoints', () => {
             .toEqual([data[1], data[2], data[3]])
         expect(scatterTooltipPointList({kind: 'point', point: data[0], after: data[1]})).toEqual([data[0], data[1]])
         expect(scatterTooltipPointList({kind: 'segment', before: data[2], after: data[3]})).toEqual([data[2], data[3]])
+    })
+})
+
+describe('sparklineFor', () => {
+    const series = (...values: Array<number>) => values.map((value, index) => ({time: index * 10, value}))
+
+    it('scales time across the width, and the values to fill the height (highest at the top)', () => {
+        // 100 x 20, with 0 padding: times 0..20 -> x 0..100; values 0..10 -> y 20..0
+        const sparkline = sparklineFor(series(0, 10, 5), 100, 20, 0)
+        expect(sparkline?.path).toBe('M0,20 L50,0 L100,10')
+        expect(sparkline?.end).toEqual([100, 10])
+    })
+
+    it('leaves the padding around the line', () => {
+        expect(sparklineFor(series(0, 10), 100, 20, 2)?.path).toBe('M2,18 L98,2')
+    })
+
+    it('draws a flat line in the middle', () => {
+        expect(sparklineFor(series(5, 5, 5), 100, 20, 0)?.path).toBe('M0,10 L50,10 L100,10')
+    })
+
+    it("is undefined when there aren't two values to draw", () => {
+        expect(sparklineFor([], 100, 20)).toBeUndefined()
+        expect(sparklineFor(series(3), 100, 20)).toBeUndefined()
+        expect(sparklineFor(series(NaN, 3), 100, 20)).toBeUndefined()
+    })
+
+    it('skips values that are not finite', () => {
+        expect(sparklineFor(series(0, NaN, 10), 100, 20, 0)?.path).toBe('M0,20 L100,0')
+    })
+
+    it("reduces a long series to each pixel column's first, lowest, highest, and last values", () => {
+        // 1,000 values across 10 px: a sawtooth, with one spike that must survive the reduction
+        const values = Array.from({length: 1000}, (_, index) => index === 555 ? 100 : index % 10)
+        const sparkline = sparklineFor(series(...values), 10, 20, 0)!
+        const ys = sparkline.path.split(' ').map(command => Number(command.split(',')[1]))
+        // at most four points per column (11 columns: 0..10)
+        expect(ys.length).toBeLessThanOrEqual(4 * 11)
+        // the spike (the highest value) is at the top
+        expect(Math.min(...ys)).toBe(0)
+        // and the line ends at the last value (999 % 10 = 9, near the bottom of 0..100)
+        expect(sparkline.end[1]).toBeCloseTo(20 - 9 / 100 * 20)
     })
 })

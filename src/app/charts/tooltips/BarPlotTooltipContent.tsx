@@ -1,7 +1,7 @@
 import type {CSSProperties, ReactElement} from "react";
 import {useEffect, useMemo, useState, useRef} from "react";
 import {createPortal} from "react-dom";
-import {defaultTooltipStyle, type TooltipDimensions, type TooltipStyle} from "./tooltipUtils";
+import {defaultTooltipStyle, type Sparkline, sparklineFor, type TooltipDimensions, type TooltipStyle} from "./tooltipUtils";
 import {tooltipAnchorFor, type TooltipAnchor, useTooltipPlacement} from "./useTooltipPlacement"
 import {withAlpha} from "../styling/canvasStyle";
 import {formatNumber, formatTime, formatValue} from "../utils";
@@ -85,10 +85,16 @@ interface StatsRow {
  * back out during render. Replaces the old version's immediate SVG DOM manipulation (via
  * `svg-table`'s `createTable`).
  */
+// the size of the tooltip's sparkline (of the value over time)
+const SPARKLINE_WIDTH = 180
+const SPARKLINE_HEIGHT = 36
+
 interface BarTooltipContent {
     seriesName: string
     headerLabel: string
     valueLine: string
+    // the value over time (the data the chart holds), when there's enough of it to draw
+    sparkline: Sparkline | undefined
     rows: Array<StatsRow>
     // where the tooltip is anchored (the mouse)
     anchor: TooltipAnchor
@@ -211,6 +217,30 @@ export function BarPlotTooltipContent(props: Props): ReactElement | null {
             <div style={{fontSize: tooltipStyle.fontSize + 2, fontWeight: tooltipStyle.fontWeight + 150, marginBottom: 6}}>
                 {tooltipContent.valueLine}
             </div>
+            {/* the value over time, ending in the current value (the dot) */}
+            {tooltipContent.sparkline !== undefined &&
+                <svg
+                    width={SPARKLINE_WIDTH}
+                    height={SPARKLINE_HEIGHT}
+                    style={{display: 'block', marginBottom: 6}}
+                    aria-hidden="true"
+                >
+                    <path
+                        d={tooltipContent.sparkline.path}
+                        fill="none"
+                        stroke={tooltipStyle.fontColor}
+                        strokeWidth={1.25}
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                    />
+                    <circle
+                        cx={tooltipContent.sparkline.end[0]}
+                        cy={tooltipContent.sparkline.end[1]}
+                        r={2.5}
+                        fill={tooltipStyle.fontColor}
+                    />
+                </svg>
+            }
             <table style={{fontSize: tooltipStyle.fontSize, borderCollapse: 'collapse', border: 'none'}}>
                 <thead>
                 <tr>
@@ -322,6 +352,7 @@ function captureTooltipContent(
         seriesName,
         headerLabel: labelForProviderId(providerId),
         valueLine: `${formatValue(currentDatum.value)}${displayOrdinalUnits}  (${formatTime(currentDatum.time)} ms)`,
+        sparkline: sparklineFor(series, SPARKLINE_WIDTH, SPARKLINE_HEIGHT),
         rows,
         anchor: tooltipAnchorFor(mouseCoords, canvas),
     })

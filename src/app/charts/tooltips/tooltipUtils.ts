@@ -348,3 +348,84 @@ export function scatterTooltipPointList(points: ScatterTooltipPoints): Array<Dat
         [points.before, points.after]
     return list.filter((datum): datum is Datum => datum !== undefined)
 }
+
+/**
+ * A sparkline: a small line chart of a series' values over time (e.g. for a tooltip), as an SVG
+ * path, and where its last point is
+ */
+export interface Sparkline {
+    // the SVG path of the line, within the sparkline's width and height
+    path: string
+    // where the line ends (the latest value)
+    end: [x: number, y: number]
+}
+
+/**
+ * Creates a sparkline of the specified (time-ordered) values: time runs left to right across the
+ * width, and the values are scaled to fill the height (the highest at the top). Values that
+ * aren't finite are skipped.
+ *
+ * A long series is reduced to (at most) four points per pixel column -- the column's first,
+ * lowest, highest, and last values, in the order they occurred -- so that the path stays small,
+ * while still tracing the line's true shape, spikes included.
+ * @param data The values, ordered by time
+ * @param width The sparkline's width (in pixels)
+ * @param height The sparkline's height (in pixels)
+ * @param padding The space (in pixels) to leave around the line, within the width and height
+ * @return The sparkline, or `undefined` when there are fewer than two values to draw
+ */
+export function sparklineFor(
+    data: { length: number, [index: number]: { time: number, value: number } },
+    width: number,
+    height: number,
+    padding: number = 2
+): Sparkline | undefined {
+    const points: Array<{ time: number, value: number }> = []
+    for (let i = 0; i < data.length; i++) {
+        if (Number.isFinite(data[i].time) && Number.isFinite(data[i].value)) points.push(data[i])
+    }
+    if (points.length < 2) return undefined
+
+    const startTime = points[0].time
+    const timeSpan = points[points.length - 1].time - startTime
+    let minValue = Infinity
+    let maxValue = -Infinity
+    points.forEach(({value}) => {
+        minValue = Math.min(minValue, value)
+        maxValue = Math.max(maxValue, value)
+    })
+    const innerWidth = width - 2 * padding
+    const innerHeight = height - 2 * padding
+    const xOf = (time: number) => padding + (timeSpan > 0 ? (time - startTime) / timeSpan * innerWidth : innerWidth / 2)
+    // (a flat line sits in the middle)
+    const yOf = (value: number) => padding + (maxValue > minValue ? (maxValue - value) / (maxValue - minValue) * innerHeight : innerHeight / 2)
+
+    // each pixel column's first, lowest, highest, and last values, in the order they occurred
+    const reduced: Array<{ time: number, value: number }> = []
+    let column: Array<{ index: number, point: { time: number, value: number } }> = []
+    let columnX = Math.floor(xOf(points[0].time))
+    const flushColumn = () => {
+        if (column.length === 0) return
+        const lowest = column.reduce((low, entry) => entry.point.value < low.point.value ? entry : low)
+        const highest = column.reduce((high, entry) => entry.point.value > high.point.value ? entry : high)
+        const kept = new Map([column[0], lowest, highest, column[column.length - 1]].map(entry => [entry.index, entry.point]))
+        Array.from(kept.entries()).sort(([a], [b]) => a - b).forEach(([, point]) => reduced.push(point))
+        column = []
+    }
+    points.forEach((point, index) => {
+        const x = Math.floor(xOf(point.time))
+        if (x !== columnX) {
+            flushColumn()
+            columnX = x
+        }
+        column.push({index, point})
+    })
+    flushColumn()
+
+    const coordinates = reduced.map(({time, value}) => [xOf(time), yOf(value)] as [number, number])
+    const round = (value: number) => Math.round(value * 100) / 100
+    return {
+        path: coordinates.map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${round(x)},${round(y)}`).join(' '),
+        end: coordinates[coordinates.length - 1],
+    }
+}
