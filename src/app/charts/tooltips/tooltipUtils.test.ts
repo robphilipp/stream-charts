@@ -1,4 +1,14 @@
-import {boundingPoints, categoryTooltipY, defaultTooltipStyle, removeTooltip, tooltipX, tooltipY} from "./tooltipUtils";
+import {
+    boundingPoints,
+    categoryTooltipY,
+    defaultTooltipStyle,
+    removeTooltip,
+    scatterTooltipPointList,
+    scatterTooltipPoints,
+    tooltipX,
+    tooltipY
+} from "./tooltipUtils";
+import * as d3 from "d3";
 import type {OrdinalStringAxis} from "../axes/axes";
 
 type Point = { x: number, y: number }
@@ -141,5 +151,59 @@ describe('tooltip placement', () => {
             // the plot's bottom is at 340, so a 50 px tooltip's top goes at most at 290
             expect(categoryTooltipY('c9', 50, axis, margin, 30, plotDimensions)).toBe(290)
         })
+    })
+})
+
+describe('scatterTooltipPoints', () => {
+    // points every 10 ms, plotted 10 px apart (x: 0..100 ms -> 0..100 px; y: 0..100 -> 100..0 px)
+    const xScale = d3.scaleLinear().domain([0, 100]).range([0, 100])
+    const yScale = d3.scaleLinear().domain([0, 100]).range([100, 0])
+    const data = [{x: 0, y: 50}, {x: 10, y: 60}, {x: 20, y: 40}, {x: 30, y: 70}, {x: 40, y: 50}]
+    const at = ({x, y}: {x: number, y: number}, dx = 0, dy = 0): [number, number] => [xScale(x) + dx, yScale(y) + dy]
+
+    it('is the point, and its neighbors, when the mouse is directly over a point', () => {
+        expect(scatterTooltipPoints(data, at(data[2], 1, -2), xScale, yScale, 4))
+            .toEqual({kind: 'point', before: data[1], point: data[2], after: data[3]})
+    })
+
+    it("has no neighbor beyond the series' ends", () => {
+        expect(scatterTooltipPoints(data, at(data[0]), xScale, yScale, 4))
+            .toEqual({kind: 'point', before: undefined, point: data[0], after: data[1]})
+        expect(scatterTooltipPoints(data, at(data[4]), xScale, yScale, 4))
+            .toEqual({kind: 'point', before: data[3], point: data[4], after: undefined})
+    })
+
+    it('is the points on either side when the mouse is over a segment', () => {
+        // halfway between (20, 40) and (30, 70), on the line
+        const mouse: [number, number] = [25, yScale(55)]
+        expect(scatterTooltipPoints(data, mouse, xScale, yScale, 4))
+            .toEqual({kind: 'segment', before: data[2], after: data[3]})
+    })
+
+    it("isn't over a point just outside the radius", () => {
+        // the radius (4 px) is less than a third of the way to the nearest neighbor (~22 px away)
+        expect(scatterTooltipPoints(data, at(data[2], 5, 0), xScale, yScale, 4).kind).toBe('segment')
+        expect(scatterTooltipPoints(data, at(data[2], 4, 0), xScale, yScale, 4).kind).toBe('point')
+    })
+
+    it('shrinks the radius to a third of the way to the nearest neighbor, for dense data', () => {
+        // points 3 px apart (on a flat line): even with a 6 px radius, a point covers only 1 px
+        const dense = [{x: 0, y: 50}, {x: 3, y: 50}, {x: 6, y: 50}, {x: 9, y: 50}]
+        expect(scatterTooltipPoints(dense, at(dense[1], 1, 0), xScale, yScale, 6).kind).toBe('point')
+        expect(scatterTooltipPoints(dense, at(dense[1], 1.5, 0), xScale, yScale, 6))
+            .toEqual({kind: 'segment', before: dense[1], after: dense[2]})
+    })
+
+    it('picks the nearest point when more than one could be over', () => {
+        const dense = [{x: 0, y: 50}, {x: 3, y: 50}, {x: 6, y: 50}]
+        const points = scatterTooltipPoints(dense, at(dense[1], -0.5, 0), xScale, yScale, 6)
+        expect(points.kind === 'point' && points.point).toEqual(dense[1])
+    })
+
+    it('lists the points in order, without the missing ones', () => {
+        expect(scatterTooltipPointList({kind: 'point', before: data[1], point: data[2], after: data[3]}))
+            .toEqual([data[1], data[2], data[3]])
+        expect(scatterTooltipPointList({kind: 'point', point: data[0], after: data[1]})).toEqual([data[0], data[1]])
+        expect(scatterTooltipPointList({kind: 'segment', before: data[2], after: data[3]})).toEqual([data[2], data[3]])
     })
 })

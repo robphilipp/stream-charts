@@ -1,8 +1,14 @@
 import {useCallback, useEffect, useEffectEvent, useMemo, useRef} from 'react'
-import {type NoTooltipMetadata, useChart} from "../hooks/useChart";
+import {useChart} from "../hooks/useChart";
+import {
+    type ScatterTooltipMetadata,
+    type ScatterTooltipPoints,
+    scatterTooltipPointList,
+    scatterTooltipPoints
+} from "../tooltips/tooltipUtils";
 import * as d3 from "d3";
 import {type D3ZoomEvent} from "d3";
-import {type AxesAssignment, clipToArea, currentIntervalsFrom, type Series} from "./plot";
+import {type AxesAssignment, clipToArea, currentIntervalsFrom} from "./plot";
 import type {Datum, TimeSeries} from "../series/timeSeries";
 import {
     axesForSeriesGen,
@@ -20,7 +26,7 @@ import type {CanvasContext} from "../d3types";
 import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
 import {firstIndexAtOrAfter, noop} from "../utils";
 import {NoCurveFactory} from "./constants";
-import type {Dimensions, Margin} from "../styling/margins";
+import type {Dimensions} from "../styling/margins";
 import {
     timeSeriesViewDriverFor,
     timeSeriesWithCadenceViewDriverFor,
@@ -30,7 +36,6 @@ import {useDataObservable} from "../hooks/useDataObservable";
 import {useDataSource, useDataSourceRunning} from "../hooks/useDataSource";
 import type {TimeSeriesChartData} from "../series/timeSeriesChartData";
 import {useInitialData} from "../hooks/useInitialData";
-import type {TooltipData} from "../hooks/useTooltip";
 import {Optional} from "result-fn";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 import {extentWith, visibleExtent} from "../axes/autoScale";
@@ -149,6 +154,13 @@ export interface Props {
  *      zoomKeyModifiersRequired={true}
  *  />
  */
+// how close (in pixels) the mouse must be to a data point to be over that point (rather than over a
+// line segment) -- at least this, or a little more than the markers' radius when they're larger
+const MIN_POINT_HOVER_RADIUS = 6
+// the radii of the highlights on the points the tooltip shows: the hovered point, and the others
+const TOOLTIP_POINT_RADIUS = 5
+const TOOLTIP_NEIGHBOR_RADIUS = 3.5
+
 export function ScatterPlot(props: Props): null {
     const {
         chartId,
@@ -159,7 +171,8 @@ export function ScatterPlot(props: Props): null {
         seriesFilter,
         mouse,
         hoveredSeriesName,
-    } = useChart<Datum, SeriesLineStyle, NoTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
+        backgroundColor,
+    } = useChart<Datum, SeriesLineStyle, ScatterTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
 
     const {
         initialData
@@ -242,6 +255,9 @@ export function ScatterPlot(props: Props): null {
     // the name of the series the mouse was over on the previous `mousemove`, so we know when to
     // fire a "leave" for the old series before firing an "over" for the new one
     const lastHoveredRef = useRef<string | undefined>(undefined)
+    // the points the tooltip is showing (for the hovered series), which the plot highlights -- set
+    // on mouse-over while a tooltip is shown, and cleared when the mouse leaves the series
+    const tooltipPointsRef = useRef<{ seriesName: string, points: ScatterTooltipPoints } | undefined>(undefined)
 
     // tooltips are only shown while the data source is paused (and not while panning)
     const allowTooltip = useRef<boolean>(!(dataSource?.running ?? false))
@@ -397,6 +413,37 @@ export function ScatterPlot(props: Props): null {
                     }
                 })
 
+                // highlights the points the tooltip is showing (on top of the series): the
+                // hovered point is drawn larger than its neighbors (or than a segment's ends)
+                const tooltipPoints = tooltipPointsRef.current
+                if (tooltipPoints !== undefined && !running && tooltipPoints.seriesName.match(seriesFilter)) {
+                    const [xAxisLinear, yAxisLinear] = axesFor(
+                        tooltipPoints.seriesName,
+                        axisAssignments,
+                        axisId => xAxesState.axisFor(axisId).getOrUndefined(),
+                        axisId => yAxesState.axisFor(axisId).getOrUndefined()
+                    )
+                    if (xAxisLinear !== undefined && yAxisLinear !== undefined) {
+                        const {highlightColor = color} = seriesStyles.get(tooltipPoints.seriesName) ?? {}
+                        const {points} = tooltipPoints
+                        scatterTooltipPointList(points).forEach(datum => {
+                            const isHoveredPoint = points.kind === 'point' && datum === points.point
+                            context2D.beginPath()
+                            context2D.arc(
+                                xAxisLinear.scale(datum.x), yAxisLinear.scale(datum.y),
+                                isHoveredPoint ? TOOLTIP_POINT_RADIUS : TOOLTIP_NEIGHBOR_RADIUS,
+                                0, 2 * Math.PI
+                            )
+                            context2D.fillStyle = highlightColor
+                            context2D.fill()
+                            // outlined in the background color, so it stands out from the line
+                            context2D.lineWidth = 1.5
+                            context2D.strokeStyle = backgroundColor
+                            context2D.stroke()
+                        })
+                    }
+                }
+
                 geometryRef.current = newGeometry
                 context2D.restore()
             }
@@ -447,7 +494,8 @@ export function ScatterPlot(props: Props): null {
             xAxesState, yAxesState,
             seriesStyles, seriesFilter, interpolation,
             hoveredSeriesName, markerRadius, running, hideMarkersWhileRunning,
-            axisRangeFor, updateAxisRanges
+            axisRangeFor, updateAxisRanges,
+            color, backgroundColor
         ]
     )
 
@@ -907,27 +955,47 @@ export function ScatterPlot(props: Props): null {
                     lastHoveredRef.current = hitName
                 }
 
+                // the points the tooltip shows (and the plot highlights): the point under the mouse
+                // and its neighbors, or the two ends of the segment under the mouse
+                let tooltipPoints: { seriesName: string, points: ScatterTooltipPoints } | undefined = undefined
                 if (hitName !== undefined) {
                     const series = seriesRef.current.get(hitName)
-                    if (series !== undefined) {
-                        const xAxisLinear = axesFor(
-                            hitName,
-                            axisAssignments,
-                            axisId => xAxesState.axisFor(axisId).getOrUndefined(),
-                            axisId => yAxesState.axisFor(axisId).getOrUndefined()
-                        )[0]
-                        if (xAxisLinear !== undefined) {
-                            handleMouseOverSeries(
-                                xAxisLinear,
-                                hitName,
-                                series.data,
-                                [x, y],
-                                margin,
-                                mouseOverHandlerFor(`tooltip-${chartId}`)
-                            )
-                        }
+                    const mouseOverHandler = mouseOverHandlerFor(`tooltip-${chartId}`)
+                    const [xAxisLinear, yAxisLinear] = axesFor(
+                        hitName,
+                        axisAssignments,
+                        axisId => xAxesState.axisFor(axisId).getOrUndefined(),
+                        axisId => yAxesState.axisFor(axisId).getOrUndefined()
+                    )
+                    if (series !== undefined && xAxisLinear !== undefined && yAxisLinear !== undefined && mouseOverHandler !== undefined) {
+                        const points = scatterTooltipPoints(
+                            series.data,
+                            [x - margin.left, y - margin.top],
+                            xAxisLinear.scale,
+                            yAxisLinear.scale,
+                            Math.max(MIN_POINT_HOVER_RADIUS, (markerRadius ?? 0) + 3)
+                        )
+                        tooltipPoints = {seriesName: hitName, points}
+                        const time = Math.round(xAxisLinear.scale.invert(x - margin.left))
+                        mouseOverHandler(hitName, time, {series: series.data, metadata: {points}}, [x, y])
                     }
                 }
+                updateTooltipPoints(tooltipPoints)
+            }
+
+            // remembers the points the tooltip shows, and redraws (to highlight them) when they change
+            const updateTooltipPoints = (tooltipPoints: { seriesName: string, points: ScatterTooltipPoints } | undefined): void => {
+                const previous = tooltipPointsRef.current
+                if (previous === undefined && tooltipPoints === undefined) return
+                if (previous !== undefined && tooltipPoints !== undefined &&
+                    previous.seriesName === tooltipPoints.seriesName &&
+                    previous.points.kind === tooltipPoints.points.kind) {
+                    const previousList = scatterTooltipPointList(previous.points)
+                    const list = scatterTooltipPointList(tooltipPoints.points)
+                    if (previousList.length === list.length && previousList.every((datum, index) => datum === list[index])) return
+                }
+                tooltipPointsRef.current = tooltipPoints
+                canvasContext.requestRedraw()
             }
 
             const handleLeaveCanvas = () => {
@@ -935,6 +1003,7 @@ export function ScatterPlot(props: Props): null {
                     handleMouseLeaveSeries(lastHoveredRef.current, mouseLeaveHandlerFor(`tooltip-${chartId}`))
                     lastHoveredRef.current = undefined
                 }
+                updateTooltipPoints(undefined)
             }
 
             canvas.addEventListener('mousemove', handleMove)
@@ -944,7 +1013,7 @@ export function ScatterPlot(props: Props): null {
                 canvas.removeEventListener('mouseleave', handleLeaveCanvas)
             }
         },
-        [canvasContext, chartId, margin, axisAssignments, xAxesState, yAxesState, mouseOverHandlerFor, mouseLeaveHandlerFor]
+        [canvasContext, chartId, margin, axisAssignments, xAxesState, yAxesState, mouseOverHandlerFor, mouseLeaveHandlerFor, markerRadius]
     )
 
     // the latest `updateTimingAndPlot`, for the view driver to call -- the driver is created once
@@ -1050,35 +1119,6 @@ function axesFor(
     const xAxisLinear = xAxis as ContinuousNumericAxis
     const yAxisLinear = yAxis as ContinuousNumericAxis
     return [xAxisLinear, yAxisLinear]
-}
-
-/**
- * Reports a tooltip showing the neuron, spike time, and the spike strength when the mouse hovers over a spike.
- * Replaces the old version, which mutated the hovered SVG `<path>`'s stroke directly; highlighting is now
- * handled by the draw function reading `hoveredSeriesName` from chart state (set via `setHoveredSeriesName`
- * elsewhere) rather than by touching an element here.
- * @param xAxis The x-axis
- * @param seriesName The name of the series (i.e. the neuron ID)
- * @param series The time series
- * @param mouseCoords The `[x, y]` position of the mouse, in canvas coordinates
- * @param margin The plot margin
- * @param mouseOverHandlerFor The handler for the mouse over (registered by the <Tooltip/>)
- */
-function handleMouseOverSeries(
-    xAxis: ContinuousNumericAxis,
-    seriesName: string,
-    series: Series<Datum>,
-    mouseCoords: [x: number, y: number],
-    margin: Margin,
-    mouseOverHandlerFor: ((seriesName: string, time: number, tooltipData: TooltipData<Datum, NoTooltipMetadata>, mouseCoords: [x: number, y: number]) => void) | undefined,
-): void {
-    // grab the time needed for the tooltip ID
-    const [x] = mouseCoords
-    const time = Math.round(xAxis.scale.invert(x - margin.left))
-
-    if (mouseOverHandlerFor) {
-        mouseOverHandlerFor(seriesName, time, {series, metadata: {}}, mouseCoords)
-    }
 }
 
 /**

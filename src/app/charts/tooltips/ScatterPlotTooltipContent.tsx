@@ -2,11 +2,18 @@ import type {CSSProperties, ReactElement} from "react";
 import {useEffect, useMemo, useState, useRef} from "react";
 import {createPortal} from "react-dom";
 import {type Series} from "../plots/plot";
-import {boundingPoints, defaultTooltipStyle, type TooltipDimensions, type TooltipStyle} from "./tooltipUtils";
+import {
+    boundingPoints,
+    defaultTooltipStyle,
+    type ScatterTooltipMetadata,
+    type ScatterTooltipPoints,
+    type TooltipDimensions,
+    type TooltipStyle
+} from "./tooltipUtils";
 import {tooltipAnchorFor, type TooltipAnchor, useTooltipPlacement} from "./useTooltipPlacement"
 import {withAlpha} from "../styling/canvasStyle";
 import {formatTime, formatTimeChange, formatValue, formatValueChange} from "../utils";
-import {type NoTooltipMetadata, useChart} from "../hooks/useChart";
+import {useChart} from "../hooks/useChart";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import type {ContinuousNumericAxis, SeriesLineStyle} from "../axes/axes";
 import {type Datum, emptyDatum} from "../series/timeSeries";
@@ -61,7 +68,7 @@ just to capture the data needed to render, via a bit of React state.
  */
 interface TooltipOptions {
     labels: { x: string, y: string }
-    headers: {before: string, after: string, delta: string}
+    headers: {before: string, point: string, after: string, delta: string}
     formatters: {
         x: { value: (value: number) => string, change: (value1: number, value2: number) => string },
         y: { value: (value: number) => string, change: (value1: number, value2: number) => string },
@@ -70,12 +77,17 @@ interface TooltipOptions {
 
 /**
  * Properties for rendering the tooltip content. The properties are applied as
- * shown below.
+ * shown below (over a segment; and over a point).
  * ```
  * series name
  *          beforeHeader      afterHeader        deltaHeader
  * xLabel   xValueFormatter   xValueFormatter    xChangeFormatter
  * yLabel   yValueFormatter   yValueFormatter    yChangeFormatter
+ *
+ * series name
+ *          beforeHeader      pointHeader        afterHeader
+ * xLabel   xValueFormatter   xValueFormatter    xValueFormatter
+ * yLabel   yValueFormatter   yValueFormatter    yValueFormatter
  * ```
  */
 export interface Props {
@@ -83,6 +95,8 @@ export interface Props {
     xLabel: string
     yLabel: string
     beforeHeader?: string
+    // header of the column for the point under the mouse (when the mouse is directly over a point)
+    pointHeader?: string
     afterHeader?: string
     deltaHeader?: string
     xValueFormatter?: (value: number) => string
@@ -101,32 +115,41 @@ export interface Props {
  */
 interface ScatterTooltipContent {
     seriesName: string
-    beforeHeader: string
-    afterHeader: string
-    deltaHeader: string
+    // the column headers (e.g. before, after, and the change between them)
+    headers: Array<string>
     xLabel: string
-    xBefore: string
-    xAfter: string
-    xDelta: string
+    xValues: Array<string>
     yLabel: string
-    yBefore: string
-    yAfter: string
-    yDelta: string
+    yValues: Array<string>
+    // the column to emphasize (the point under the mouse), if any
+    emphasizedColumn?: number
     // where the tooltip is anchored (the mouse)
     anchor: TooltipAnchor
 }
 
 /**
- * Adds tooltip content as a table. The columns of the table are the "label", the value before
- * the mouse cursor, then value after the mouse cursor, and the difference between the two values.
- * The rows of the table are x-values for the first row, and the y-values for the second row.
- * The table has the following form.
+ * Adds tooltip content as a table, whose rows are the x-values and the y-values, and whose
+ * columns depend on where the mouse is over the series (as the plot reports it, see
+ * `ScatterTooltipMetadata` -- the plot also highlights the same points):
+ *
+ * When the mouse is over a line segment, the points before and after the mouse, and the
+ * difference between them:
  * ```
  * series name
  *            before     after         ∆
  * x-label     x_tb      x_ta       x_ta - x_tb
  * y-label     y_tb      y_ta       y_ta - y_tb
  * ```
+ *
+ * When the mouse is directly over a data point, that point (emphasized), and the points before and
+ * after it:
+ * ```
+ * series name
+ *            before     point     after
+ * x-label     x_b        x_p       x_a
+ * y-label     y_b        y_p       y_a
+ * ```
+ * A point that doesn't exist (e.g. before the series' first point) shows a dash.
  *
  * Registers the tooltip-content provider with the `ChartContext` so that when the plot's
  * mousemove hit-test finds the mouse over a series, this component's content is shown. On
@@ -143,7 +166,7 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
         canvas,
         tooltip,
         mouse
-    } = useChart<Datum, SeriesLineStyle, NoTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
+    } = useChart<Datum, SeriesLineStyle, ScatterTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
 
     const {registerTooltipContentProvider} = tooltip
     const {registerMouseLeaveHandler, unregisterMouseLeaveHandler} = mouse
@@ -154,6 +177,7 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
         xLabel,
         yLabel,
         beforeHeader = 'before',
+        pointHeader = 'point',
         afterHeader = 'after',
         deltaHeader = '∆',
         xValueFormatter = formatTime,
@@ -177,7 +201,7 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
             if (canvas) {
                 const options: TooltipOptions = {
                     labels: {x: xLabel, y: yLabel},
-                    headers: {before: beforeHeader, after: afterHeader, delta: deltaHeader},
+                    headers: {before: beforeHeader, point: pointHeader, after: afterHeader, delta: deltaHeader},
                     formatters: {
                         x: {value: xValueFormatter, change: xChangeFormatter},
                         y: {value: yValueFormatter, change: yChangeFormatter},
@@ -185,9 +209,9 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
                 }
 
                 registerTooltipContentProvider(
-                    (seriesName: string, time: number, tooltipData: TooltipData<Datum, NoTooltipMetadata>, mouseCoords: [x: number, y: number]) =>
+                    (seriesName: string, time: number, tooltipData: TooltipData<Datum, Partial<ScatterTooltipMetadata>>, mouseCoords: [x: number, y: number]) =>
                         captureTooltipContent(
-                            seriesName, time, tooltipData.series, mouseCoords,
+                            seriesName, time, tooltipData.series, tooltipData.metadata.points, mouseCoords,
                             canvas,
                             options,
                             setTooltipContent
@@ -199,7 +223,7 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
             canvas, margin, plotDimensions, registerTooltipContentProvider,
             xLabel, xChangeFormatter, xValueFormatter,
             yLabel, yChangeFormatter, yValueFormatter,
-            beforeHeader, afterHeader, deltaHeader,
+            beforeHeader, pointHeader, afterHeader, deltaHeader,
             tooltipStyle
         ]
     )
@@ -237,6 +261,10 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
 
     const cellStyle: CSSProperties = {padding: '1px 8px', textAlign: 'right', border: 'none'}
     const rowLabelStyle: CSSProperties = {...cellStyle, textAlign: 'left', paddingLeft: 0}
+    // the point under the mouse stands out (as it does on the plot)
+    const cellStyleFor = (column: number): CSSProperties => column === tooltipContent.emphasizedColumn ?
+        {...cellStyle, fontWeight: tooltipStyle.fontWeight + 650, textDecoration: 'underline'} :
+        cellStyle
 
     return createPortal(
         <div ref={tooltipRef} style={divStyle}>
@@ -247,23 +275,23 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
                 <thead>
                 <tr style={{fontWeight: tooltipStyle.fontWeight + 550}}>
                     <td style={rowLabelStyle}/>
-                    <td style={cellStyle}>{tooltipContent.beforeHeader}</td>
-                    <td style={cellStyle}>{tooltipContent.afterHeader}</td>
-                    <td style={cellStyle}>{tooltipContent.deltaHeader}</td>
+                    {tooltipContent.headers.map((header, column) => (
+                        <td key={column} style={cellStyleFor(column)}>{header}</td>
+                    ))}
                 </tr>
                 </thead>
                 <tbody>
                 <tr>
                     <td style={rowLabelStyle}>{tooltipContent.xLabel}</td>
-                    <td style={cellStyle}>{tooltipContent.xBefore}</td>
-                    <td style={cellStyle}>{tooltipContent.xAfter}</td>
-                    <td style={cellStyle}>{tooltipContent.xDelta}</td>
+                    {tooltipContent.xValues.map((value, column) => (
+                        <td key={column} style={cellStyleFor(column)}>{value}</td>
+                    ))}
                 </tr>
                 <tr>
                     <td style={rowLabelStyle}>{tooltipContent.yLabel}</td>
-                    <td style={cellStyle}>{tooltipContent.yBefore}</td>
-                    <td style={cellStyle}>{tooltipContent.yAfter}</td>
-                    <td style={cellStyle}>{tooltipContent.yDelta}</td>
+                    {tooltipContent.yValues.map((value, column) => (
+                        <td key={column} style={cellStyleFor(column)}>{value}</td>
+                    ))}
                 </tr>
                 </tbody>
             </table>
@@ -290,30 +318,71 @@ function captureTooltipContent(
     seriesName: string,
     time: number,
     series: Series<Datum>,
+    points: ScatterTooltipPoints | undefined,
     mouseCoords: [x: number, y: number],
     canvas: HTMLCanvasElement,
     options: TooltipOptions,
     setTooltipContent: (content: ScatterTooltipContent) => void,
 ): TooltipDimensions {
     const {labels, headers, formatters} = options
-    const [lower, upper] = boundingPoints(series, time, value => value.x, () => emptyDatum())
+    // the points to show, as determined by the plot -- or, when the plot doesn't say, the points on
+    // either side of the mouse's time
+    const shown = points ?? segmentAround(series, time)
 
+    // a value, or a dash for a point that doesn't exist (e.g. before the series' first point)
+    const valueOf = (datum: Datum | undefined, formatter: (value: number) => string, value: (datum: Datum) => number): string =>
+        datum === undefined ? MISSING_VALUE : formatter(value(datum))
+    const changeOf = (formatter: (value1: number, value2: number) => string, value: (datum: Datum) => number): string =>
+        shown.before === undefined || shown.after === undefined ?
+            MISSING_VALUE :
+            formatter(value(shown.before), value(shown.after))
+
+    const xOf = (datum: Datum) => datum.x
+    const yOf = (datum: Datum) => datum.y
     setTooltipContent({
         seriesName,
-        beforeHeader: headers.before,
-        afterHeader: headers.after,
-        deltaHeader: headers.delta,
         xLabel: labels.x,
-        xBefore: formatters.x.value(lower.x),
-        xAfter: formatters.x.value(upper.x),
-        xDelta: formatters.x.change(lower.x, upper.x),
         yLabel: labels.y,
-        yBefore: formatters.y.value(lower.y),
-        yAfter: formatters.y.value(upper.y),
-        yDelta: formatters.y.change(lower.y, upper.y),
         anchor: tooltipAnchorFor(mouseCoords, canvas),
+        ...(shown.kind === 'point' ?
+            // directly over a point: the point before it, the point, and the point after it
+            {
+                headers: [headers.before, headers.point, headers.after],
+                xValues: [shown.before, shown.point, shown.after].map(datum => valueOf(datum, formatters.x.value, xOf)),
+                yValues: [shown.before, shown.point, shown.after].map(datum => valueOf(datum, formatters.y.value, yOf)),
+                emphasizedColumn: 1,
+            } :
+            // over a segment: the points on either side of the mouse, and the change between them
+            {
+                headers: [headers.before, headers.after, headers.delta],
+                xValues: [
+                    valueOf(shown.before, formatters.x.value, xOf),
+                    valueOf(shown.after, formatters.x.value, xOf),
+                    changeOf(formatters.x.change, xOf)
+                ],
+                yValues: [
+                    valueOf(shown.before, formatters.y.value, yOf),
+                    valueOf(shown.after, formatters.y.value, yOf),
+                    changeOf(formatters.y.change, yOf)
+                ],
+            })
     })
 
     // return off-screen coordinates so the Tooltip parent's background div is invisible
     return {x: -99999, y: -99999, contentWidth: 0, contentHeight: 0}
+}
+
+// shown in place of the values of a point that doesn't exist (e.g. before the series' first point)
+const MISSING_VALUE = '–'
+
+/**
+ * The points on either side of the specified time (the segment it's on)
+ * @param series The series' data
+ * @param time The time
+ * @return The points before and after the time (undefined where there's none)
+ */
+function segmentAround(series: Series<Datum>, time: number): ScatterTooltipPoints {
+    const [before, after] = boundingPoints(series, time, value => value.x, () => emptyDatum())
+    const orUndefined = (datum: Datum) => isNaN(datum.x) ? undefined : datum
+    return {kind: 'segment', before: orUndefined(before), after: orUndefined(after)}
 }

@@ -6,7 +6,7 @@ In the examples, both are turned on and off with checkboxes in the control bar, 
 
 #### tooltips
 
-Hover over a series (or a point, a spike, a bar, or a band) with the tooltip on, and a little box pops up with the details: the series name, the values, and whatever else makes sense for the chart type. For example, the scatter chart's tooltip shows the data points on either side of the mouse and the change between them, and the outlier chart's tooltip describes the band you're hovering over.
+Hover over a series (or a point, a spike, a bar, or a band) with the tooltip on, and a little box pops up with the details: the series name, the values, and whatever else makes sense for the chart type. For example, the scatter chart's tooltip shows the data points on either side of the mouse and the change between them – or, when the mouse is right on a data point, that point along with the points before and after it – and the chart highlights the points the tooltip is showing. The outlier chart's tooltip describes the band you're hovering over.
 
 In the library, a tooltip comes in two parts:
 

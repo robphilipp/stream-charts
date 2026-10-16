@@ -1,6 +1,9 @@
 import type {Series} from "../plots/plot";
 import type {Dimensions, Margin} from "../styling/margins";
 import type {OrdinalStringAxis} from "../axes/axes";
+import type {ScaleContinuousNumeric} from "d3";
+import type {Datum} from "../series/timeSeries";
+import {firstIndexAtOrAfter} from "../utils";
 
 /**
  * Properties for rendering the tooltip. This is the style for the container
@@ -256,4 +259,92 @@ export function textWidthFor(element: HTMLElement): number {
  */
 export function textHeightFor(element: HTMLElement): number {
     return textDimensionsFor(element).height
+}
+
+/**
+ * The points of a scatter series that a tooltip shows (and the plot highlights), depending on
+ * where the mouse is over the series:
+ * - directly over a data point: that `point`, along with the points `before` and `after` it
+ * - over a line segment between two points: the points `before` and `after` the mouse
+ *
+ * `before` and `after` are undefined when there's no such point (e.g. before the first point).
+ */
+export type ScatterTooltipPoints =
+    | { kind: 'point', before?: Datum, point: Datum, after?: Datum }
+    | { kind: 'segment', before?: Datum, after?: Datum }
+
+/**
+ * The scatter plot's tooltip metadata: the points the tooltip shows
+ */
+export interface ScatterTooltipMetadata {
+    points: ScatterTooltipPoints
+}
+
+/**
+ * Determines which of a scatter series' points a tooltip shows, from where the mouse is: when the
+ * mouse is over a data point, that point (and its neighbors); otherwise the points on either side
+ * of the mouse (the segment it's over).
+ *
+ * The mouse is over a point when it's within `pointRadius` pixels of it -- or, when the point's
+ * nearest neighbor is closer than three times that, within a third of the way to that neighbor.
+ * Otherwise, with dense data (points a few pixels apart), the mouse would almost always be within
+ * the radius of some point, and the segments between them could hardly be hovered at all.
+ * @param data The series' data, ordered by x
+ * @param mouse The mouse's coordinates, within the plot area (i.e. in the axes' ranges)
+ * @param xScale The series' x-axis scale
+ * @param yScale The series' y-axis scale
+ * @param pointRadius How close (in pixels) the mouse must be to a data point to be over it
+ * @return The points the tooltip shows
+ */
+export function scatterTooltipPoints(
+    data: { length: number, [index: number]: Datum },
+    mouse: [x: number, y: number],
+    xScale: ScaleContinuousNumeric<number, number>,
+    yScale: ScaleContinuousNumeric<number, number>,
+    pointRadius: number
+): ScatterTooltipPoints {
+    const [mouseX, mouseY] = mouse
+    const pointAt = (index: number): Datum | undefined => index >= 0 && index < data.length ? data[index] : undefined
+    // the first point at, or after, the mouse's x-value
+    const index = firstIndexAtOrAfter(data, xScale.invert(mouseX), datum => datum.x)
+
+    // the on-screen distance between two points
+    const distanceBetween = (a: Datum, b: Datum): number => Math.hypot(xScale(a.x) - xScale(b.x), yScale(a.y) - yScale(b.y))
+    // how close the mouse must be to the point (see above)
+    const radiusFor = (candidate: number): number => {
+        const neighborDistances = [pointAt(candidate - 1), pointAt(candidate + 1)]
+            .filter((neighbor): neighbor is Datum => neighbor !== undefined)
+            .map(neighbor => distanceBetween(data[candidate], neighbor))
+        return Math.min(pointRadius, ...neighborDistances.map(distance => distance / 3))
+    }
+
+    // the nearest point (on screen) that the mouse is over, among those around the mouse's x-value
+    let nearest: number | undefined = undefined
+    let nearestDistance = Infinity
+    for (let candidate = index - 2; candidate <= index + 1; candidate++) {
+        const datum = pointAt(candidate)
+        if (datum === undefined) continue
+        const distance = Math.hypot(xScale(datum.x) - mouseX, yScale(datum.y) - mouseY)
+        if (distance <= radiusFor(candidate) && distance < nearestDistance) {
+            nearestDistance = distance
+            nearest = candidate
+        }
+    }
+
+    if (nearest !== undefined) {
+        return {kind: 'point', before: pointAt(nearest - 1), point: data[nearest], after: pointAt(nearest + 1)}
+    }
+    return {kind: 'segment', before: pointAt(index - 1), after: pointAt(index)}
+}
+
+/**
+ * The points a scatter tooltip shows, as a list (e.g. for highlighting them)
+ * @param points The points the tooltip shows
+ * @return The points, in order
+ */
+export function scatterTooltipPointList(points: ScatterTooltipPoints): Array<Datum> {
+    const list = points.kind === 'point' ?
+        [points.before, points.point, points.after] :
+        [points.before, points.after]
+    return list.filter((datum): datum is Datum => datum !== undefined)
 }
