@@ -6,6 +6,7 @@ import {
     scatterTooltipPointList,
     scatterTooltipPoints,
     sparklineFor,
+    spikeStatistics,
     tooltipX,
     tooltipY
 } from "./tooltipUtils";
@@ -248,5 +249,40 @@ describe('sparklineFor', () => {
         expect(Math.min(...ys)).toBe(0)
         // and the line ends at the last value (999 % 10 = 9, near the bottom of 0..100)
         expect(sparkline.end[1]).toBeCloseTo(20 - 9 / 100 * 20)
+    })
+})
+
+describe('spikeStatistics', () => {
+    const spikes = (...xys: Array<[number, number]>) => xys.map(([x, y]) => ({x, y}))
+
+    it('calculates the mean and (sample) standard deviation of the values, and the mean interval', () => {
+        // values 2, 4, 4, 4, 5, 5, 7, 9: mean 5, sample standard deviation sqrt(32 / 7)
+        const data = spikes([0, 2], [10, 4], [20, 4], [30, 4], [40, 5], [50, 5], [60, 7], [70, 9])
+        const statistics = spikeStatistics(data)
+        expect(statistics.count).toBe(8)
+        expect(statistics.meanValue).toBe(5)
+        expect(statistics.valueStandardDeviation).toBeCloseTo(Math.sqrt(32 / 7))
+        expect(statistics.meanInterval).toBe(10)
+    })
+
+    it('averages uneven intervals', () => {
+        // intervals of 10, 30, and 20: a mean of 20
+        expect(spikeStatistics(spikes([0, 1], [10, 1], [40, 1], [60, 1])).meanInterval).toBe(20)
+    })
+
+    it("leaves what needs two spikes undefined when there's only one", () => {
+        expect(spikeStatistics(spikes([5, 3]))).toEqual(
+            {count: 1, meanValue: 3, valueStandardDeviation: undefined, meanInterval: undefined}
+        )
+    })
+
+    it("is empty when there are no spikes", () => {
+        expect(spikeStatistics([])).toEqual(
+            {count: 0, meanValue: undefined, valueStandardDeviation: undefined, meanInterval: undefined}
+        )
+    })
+
+    it("skips spikes whose value or time isn't finite", () => {
+        expect(spikeStatistics(spikes([0, 1], [10, NaN], [20, 3])).meanValue).toBe(2)
     })
 })

@@ -1,8 +1,9 @@
-import {type AxesAssignment, clipToArea, currentIntervalsFrom} from "./plot";
+import {type AxesAssignment, clipToArea, currentIntervalsFrom, type Series} from "./plot";
 import * as d3 from "d3";
 import {type D3DragEvent, type D3ZoomEvent} from "d3";
 import {noop} from "../utils";
-import {type NoTooltipMetadata, useChart} from "../hooks/useChart";
+import {useChart} from "../hooks/useChart";
+import type {RasterTooltipMetadata} from "../tooltips/tooltipUtils";
 import {useCallback, useEffect, useEffectEvent, useMemo, useRef} from "react";
 import type {Datum, TimeSeries} from "../series/timeSeries";
 import {
@@ -119,7 +120,7 @@ export function RasterPlot(props: Props): null {
         seriesFilter,
         mouse,
         hoveredSeriesName,
-    } = useChart<Datum, SeriesLineStyle, NoTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
+    } = useChart<Datum, SeriesLineStyle, RasterTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
 
     const {
         xAxesState,
@@ -726,11 +727,12 @@ export function RasterPlot(props: Props): null {
                         axisId => xAxesState.axisFor(axisId).getOrUndefined(),
                         axisId => yAxesState.axisFor(axisId).getOrUndefined()
                     )[0]
-                    if (selectedDatum !== undefined && xAxis !== undefined) {
+                    if (series !== undefined && selectedDatum !== undefined && xAxis !== undefined) {
                         handleMouseOverSeries(
                             xAxis,
                             hit.name,
                             selectedDatum,
+                            series.data,
                             [x, y],
                             margin,
                             mouseOverHandlerFor(`tooltip-${chartId}`)
@@ -867,6 +869,7 @@ function axesFor(
  * @param xAxis The x-axis
  * @param seriesName The name of the series (i.e. the neuron ID)
  * @param selectedDatum The selected datum
+ * @param spikes All the series' spikes that the chart holds (for the tooltip's statistics)
  * @param mouseCoords The `[x, y]` position of the mouse, in canvas coordinates
  * @param margin The plot margin
  * @param mouseOverHandlerFor The handler for the mouse over (registered by the <Tooltip/>)
@@ -875,9 +878,10 @@ function handleMouseOverSeries(
     xAxis: ContinuousNumericAxis,
     seriesName: string,
     selectedDatum: Datum,
+    spikes: Series<Datum>,
     mouseCoords: [x: number, y: number],
     margin: Margin,
-    mouseOverHandlerFor: ((seriesName: string, time: number, tooltipData: TooltipData<Datum, NoTooltipMetadata>, mouseCoords: [x: number, y: number]) => void) | undefined,
+    mouseOverHandlerFor: ((seriesName: string, time: number, tooltipData: TooltipData<Datum, RasterTooltipMetadata>, mouseCoords: [x: number, y: number]) => void) | undefined,
 ): void {
     // grab the time needed for the tooltip ID
     const [x] = mouseCoords
@@ -887,8 +891,9 @@ function handleMouseOverSeries(
         // the contract for the mouse over handler is for a time-series, but here we only
         // need one point, the selected datum, and so we convert it into an array of point
         // (i.e. a time-series). The category tooltip is (and custom ones, must) be
-        // written to expect only the selected point
-        mouseOverHandlerFor(seriesName, time, {series: [selectedDatum], metadata: {}}, mouseCoords)
+        // written to expect only the selected point. All the series' spikes (that the chart
+        // holds) come along in the metadata, for the tooltip's statistics
+        mouseOverHandlerFor(seriesName, time, {series: [selectedDatum], metadata: {spikes}}, mouseCoords)
     }
 }
 

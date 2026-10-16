@@ -429,3 +429,54 @@ export function sparklineFor(
         end: coordinates[coordinates.length - 1],
     }
 }
+
+/**
+ * The raster plot's tooltip metadata: all of the hovered series' spikes that the chart holds (the
+ * tooltip data's `series` holds just the hovered spike)
+ */
+export interface RasterTooltipMetadata {
+    spikes: Series<Datum>
+}
+
+/**
+ * Statistics of a series of spikes (events with a value), e.g. over the window of data that a
+ * raster chart holds. Those that need at least two spikes are undefined when there's only one.
+ */
+export interface SpikeStatistics {
+    // the number of spikes
+    count: number
+    // the mean of the spikes' values
+    meanValue: number | undefined
+    // the (sample) standard deviation of the spikes' values
+    valueStandardDeviation: number | undefined
+    // the mean time between consecutive spikes
+    meanInterval: number | undefined
+}
+
+/**
+ * Calculates the statistics of a series of spikes: their count, the mean and the (sample)
+ * standard deviation of their values, and the mean time between consecutive spikes. Spikes whose
+ * value or time isn't finite are skipped.
+ * @param spikes The spikes, ordered by time
+ * @return The statistics
+ */
+export function spikeStatistics(spikes: { length: number, [index: number]: Datum }): SpikeStatistics {
+    const valid: Array<Datum> = []
+    for (let i = 0; i < spikes.length; i++) {
+        if (Number.isFinite(spikes[i].x) && Number.isFinite(spikes[i].y)) valid.push(spikes[i])
+    }
+    const count = valid.length
+    if (count === 0) return {count, meanValue: undefined, valueStandardDeviation: undefined, meanInterval: undefined}
+
+    const meanValue = valid.reduce((sum, spike) => sum + spike.y, 0) / count
+    if (count < 2) return {count, meanValue, valueStandardDeviation: undefined, meanInterval: undefined}
+
+    const sumOfSquares = valid.reduce((sum, spike) => sum + (spike.y - meanValue) ** 2, 0)
+    return {
+        count,
+        meanValue,
+        valueStandardDeviation: Math.sqrt(sumOfSquares / (count - 1)),
+        // the intervals between consecutive spikes sum to the span from the first to the last
+        meanInterval: (valid[count - 1].x - valid[0].x) / (count - 1),
+    }
+}

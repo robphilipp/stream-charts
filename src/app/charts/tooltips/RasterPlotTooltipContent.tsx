@@ -1,17 +1,28 @@
 import type {CSSProperties, ReactElement} from "react";
 import {useEffect, useMemo, useState, useRef} from "react";
 import {createPortal} from "react-dom";
-import {categoryTooltipY, defaultTooltipStyle, type TooltipDimensions, type TooltipStyle} from "./tooltipUtils";
+import {
+    categoryTooltipY,
+    defaultTooltipStyle,
+    type RasterTooltipMetadata,
+    type Sparkline,
+    sparklineFor,
+    type SpikeStatistics,
+    spikeStatistics,
+    type TooltipDimensions,
+    type TooltipStyle
+} from "./tooltipUtils";
 import {tooltipAnchorFor, type TooltipAnchor, useTooltipPlacement} from "./useTooltipPlacement"
 import {withAlpha} from "../styling/canvasStyle";
-import {formatTime, formatValue} from "../utils";
-import {type NoTooltipMetadata, useChart} from "../hooks/useChart";
+import {formatNumber, formatTime, formatValue} from "../utils";
+import {useChart} from "../hooks/useChart";
 import type {OrdinalStringAxis, SeriesLineStyle} from "../axes/axes";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import type {Datum} from "../series/timeSeries";
 import type {TooltipData} from "../hooks/useTooltip";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 import type {Dimensions, Margin} from "../styling/margins";
+import type {Series} from "../plots/plot";
 
 /**
  # Want to write your own tooltip-content component?
@@ -85,10 +96,29 @@ export interface Props {
  * during render. Replaces the old version's immediate SVG DOM manipulation -- content is now
  * declarative React, driven by this piece of state.
  */
+// the size of the tooltip's sparkline (of the spikes' values over the window)
+const SPARKLINE_WIDTH = 180
+const SPARKLINE_HEIGHT = 36
+
+/**
+ * Formats a value, or shows a dash when there isn't one (e.g. the standard deviation of a single
+ * spike)
+ * @param value The value, if there is one
+ * @param formatter Formats the value
+ * @return The formatted value, or a dash
+ */
+function valueOrMissing(value: number | undefined, formatter: (value: number) => string): string {
+    return value === undefined ? '–' : formatter(value)
+}
+
 interface RasterTooltipContent {
     seriesName: string
     spikeTime: number
     value: number
+    // statistics of the series' spikes in the window (the data the chart holds)
+    statistics: SpikeStatistics | undefined
+    // the spikes' values over the window, when there are enough of them to draw
+    sparkline: Sparkline | undefined
     // where the tooltip is anchored (the mouse, and the spike's row)
     anchor: TooltipAnchor
 }
@@ -116,7 +146,7 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
         tooltip,
         mouse,
         axes
-    } = useChart<Datum, SeriesLineStyle, NoTooltipMetadata, ContinuousAxisRange, OrdinalStringAxis>()
+    } = useChart<Datum, SeriesLineStyle, Partial<RasterTooltipMetadata>, ContinuousAxisRange, OrdinalStringAxis>()
 
     const {registerTooltipContentProvider} = tooltip
     const {registerMouseLeaveHandler, unregisterMouseLeaveHandler} = mouse
@@ -162,13 +192,13 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
                      * @param mouseCoords The coordinates of the mouse, in canvas-local coordinates
                      * @return Off-screen dimensions, so the parent <Tooltip>'s own background stays invisible
                      */
-                    (seriesName: string, _time: number, tooltipData: TooltipData<Datum, NoTooltipMetadata>, mouseCoords: [x: number, y: number]) => {
+                    (seriesName: string, _time: number, tooltipData: TooltipData<Datum, Partial<RasterTooltipMetadata>>, mouseCoords: [x: number, y: number]) => {
                         const yAxisId = axisAssignmentsFor(seriesName).yAxis
                         const assignedAxis = yAxesState
                             .axisFor(yAxisId)
                             .getOrThrow(() => new Error(`No assigned y-axis exists; axis_id: ${yAxisId}`))
                         return captureTooltipContent(
-                            seriesName, tooltipData.series[0], mouseCoords,
+                            seriesName, tooltipData.series[0], tooltipData.metadata.spikes, mouseCoords,
                             canvas, margin, plotDimensions,
                             assignedAxis,// options,
                             setTooltipContent
@@ -225,6 +255,48 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
             <div style={{fontSize: tooltipStyle.fontSize + 2, fontWeight: tooltipStyle.fontWeight + 150}}>
                 {xFormatter(tooltipContent.spikeTime)}, {yFormatter(tooltipContent.value)}
             </div>
+            {/* the series' spikes over the window (the data the chart holds) */}
+            {tooltipContent.statistics !== undefined && tooltipContent.statistics.count > 0 &&
+                <table style={{fontSize: tooltipStyle.fontSize, borderCollapse: 'collapse', border: 'none', marginTop: 6}}>
+                    <tbody>
+                    {[
+                        ['Spikes', formatNumber(tooltipContent.statistics.count, " ,.0f")],
+                        ['Mean value', valueOrMissing(tooltipContent.statistics.meanValue, yFormatter)],
+                        ['Std. deviation', valueOrMissing(tooltipContent.statistics.valueStandardDeviation, yFormatter)],
+                        ['Mean interval', valueOrMissing(tooltipContent.statistics.meanInterval, xFormatter)],
+                    ].map(([label, value]) => (
+                        <tr key={label}>
+                            <td style={{padding: '1px 12px 1px 0', textAlign: 'left', border: 'none'}}>{label}</td>
+                            <td style={{padding: '1px 0', textAlign: 'right', border: 'none'}}>{value}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            }
+            {/* the spikes' values over the window, ending in the latest spike (the dot) */}
+            {tooltipContent.sparkline !== undefined &&
+                <svg
+                    width={SPARKLINE_WIDTH}
+                    height={SPARKLINE_HEIGHT}
+                    style={{display: 'block', marginTop: 8}}
+                    aria-hidden="true"
+                >
+                    <path
+                        d={tooltipContent.sparkline.path}
+                        fill="none"
+                        stroke={tooltipStyle.fontColor}
+                        strokeWidth={1.25}
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                    />
+                    <circle
+                        cx={tooltipContent.sparkline.end[0]}
+                        cy={tooltipContent.sparkline.end[1]}
+                        r={2.5}
+                        fill={tooltipStyle.fontColor}
+                    />
+                </svg>
+            }
         </div>,
         document.body
     )
@@ -247,6 +319,7 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
 function captureTooltipContent(
     seriesName: string,
     selected: Datum | undefined,
+    spikes: Series<Datum> | undefined,
     mouseCoords: [x: number, y: number],
     canvas: HTMLCanvasElement,
     margin: Margin,
@@ -267,10 +340,18 @@ function captureTooltipContent(
 
     const {x: spikeTime, y} = selected
 
+    // the spikes' statistics, and their values over time, over the window (the data the chart holds)
+    const spikeValues: Array<{ time: number, value: number }> = []
+    if (spikes !== undefined) {
+        for (let i = 0; i < spikes.length; i++) spikeValues.push({time: spikes[i].x, value: spikes[i].y})
+    }
+
     setTooltipContent({
         seriesName,
         spikeTime,
         value: y,
+        statistics: spikes !== undefined ? spikeStatistics(spikes) : undefined,
+        sparkline: sparklineFor(spikeValues, SPARKLINE_WIDTH, SPARKLINE_HEIGHT),
         // (vertically, the tooltip is centered on the spike's row, rather than placed below the mouse)
         anchor: tooltipAnchorFor(
             mouseCoords, canvas,
