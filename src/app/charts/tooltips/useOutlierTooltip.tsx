@@ -5,9 +5,17 @@ import type {TooltipAnchor} from "./useTooltipPlacement"
 
 // where the tooltip is anchored (the mouse); the tooltip itself is placed next to it once rendered
 export type TooltipLocation = {anchor: TooltipAnchor}
+// the name of the series under the mouse
 export type TooltipSeriesName = {seriesName: string}
+/**
+ * What the outlier tooltip shows: the series, the band (and datum) under the mouse, and where the
+ * tooltip is anchored
+ */
 export type TooltipContent<M extends readonly number[] = readonly number[]> = TooltipSeriesName & OutlierBandTooltipMetadata<M> & TooltipLocation
 
+/**
+ * The (optional) formatters for the outlier tooltip's content
+ */
 export type OutlierTooltipContentFormatters = {
     /**
      * Formatter for the datum
@@ -17,9 +25,10 @@ export type OutlierTooltipContentFormatters = {
      */
     datumFormatter?: (x: number, y: number) => string | JSX.Element
     /**
-     * Formatter for the measure
-     * @param lower Lower bound of the band
-     * @param upper Upper bound of the band
+     * Formatter for the band (it's handed the band's measures, not its bounds)
+     * @param lower The measure of the band's inner edge (the measure of the next tighter band, or
+     * 0 for the tightest band)
+     * @param upper The measure of the band's outer edge (the hovered band's own measure)
      * @return a human-readable description of the band
      */
     bandFormatter?: (lower: number, upper: number) => string | JSX.Element
@@ -40,6 +49,9 @@ export type OutlierTooltipContentFormatters = {
     measureFormatter?: (innerProb: number, outerProb: number) => string | JSX.Element
 }
 
+/**
+ * The outlier tooltip's context: its content (`null` when there's no tooltip), style, and formatters
+ */
 export type OutlierTooltipContextValue = {
     tooltipContent: TooltipContent | null
     tooltipStyle: TooltipStyle
@@ -53,6 +65,8 @@ export const UseOutlierTooltip = createContext<OutlierTooltipContextValue | null
 /**
  * Hook for consuming the outlier tooltip context inside a child of
  * {@link OutlierPlotHtmlTooltipContent}.
+ * @return The tooltip's content, style, and formatters
+ * @throws Error when used outside an `<OutlierPlotHtmlTooltipContent>`
  */
 export function useOutlierTooltip(): OutlierTooltipContextValue {
     const context = useContext(UseOutlierTooltip)

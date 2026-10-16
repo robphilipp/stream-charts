@@ -9,7 +9,9 @@ import {DropDown, type DropDownOption} from "../../ui/DropDown.tsx";
 const LOCATION_OPTIONS: Array<DropDownOption<LegendLocation>> = Array.from(LEGEND_LOCATIONS.entries())
     .map(([label, value]) => ({value, label}))
 
+// the width (px) of the external legend's container (beside the chart)
 export const EXTERNAL_LEGEND_WIDTH = 100
+// how long (ms) the external legend's container takes to open or close
 export const LEGEND_ANIMATION_DURATION_MS = 220
 
 type Props = {
@@ -20,6 +22,13 @@ type Props = {
     setLegendLocation: (location: LegendLocation) => void
 }
 
+/**
+ * Checkbox for showing the legend, and a drop-down for where it's shown (disabled while the
+ * legend is hidden)
+ * @param props The theme, whether the legend is shown, the handler for showing or hiding it, the
+ * legend's location, and the handler for a new location
+ * @return The checkbox and the drop-down
+ */
 export function LegendControl(props: Props): JSX.Element {
     const {
         theme,

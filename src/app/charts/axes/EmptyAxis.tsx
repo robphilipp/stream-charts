@@ -32,11 +32,12 @@ const EMPTY_AXIS_SCALE = d3.scaleLinear()
 const EMPTY_AXIS_DOMAIN: [min: number, max: number] = [0, 1]
 
 /**
- * Represents an empty axis (x or y) that can be place on the top, bottom,
+ * Represents an empty axis (x or y) that can be placed on the top, bottom,
  * left, or right of the chart. An empty axis is just a line where the axis
  * would be, without any ticks or labels. This component returns null, meaning React won't
  * render it because we are drawing directly onto the chart's shared canvas.
  * @param props The properties for the axis
+ * @return `null` (the axis draws onto the chart's canvas)
  */
 export function EmptyAxis(props: Props): null {
     const {

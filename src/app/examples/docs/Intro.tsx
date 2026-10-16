@@ -69,6 +69,13 @@ const TABLE_OF_CONTENTS_ID = "intro-table-of-contents"
 // the font size of the pages' text
 const INTRO_FONT_SIZE = 15
 
+/**
+ * The style of the (scrollable) page content: the theme's colors, a readable width, and at most
+ * the grid cell's height
+ * @param theme The theme
+ * @param height The height (px) of the grid cell the content is in
+ * @return The page content's style
+ */
 function style(theme: Theme, height: number): CSSProperties {
     return {
         backgroundColor: theme.backgroundColor,
@@ -94,6 +101,13 @@ const SCROLL_RESTORATION_ID = "intro-content"
 
 const introRouteApi = getRouteApi("/intro")
 
+/**
+ * The intro pages (the markdown files in this directory, rendered in order), one at a time, with
+ * a floating navigation bar for moving between them, and a table of contents. The current page
+ * comes from the URL's `?page=N` search parameter, so the browser's back and forward buttons move
+ * between pages.
+ * @return The intro pages
+ */
 export default function Intro() {
     const {theme} = useThemeStore()
     const numPages = pages.length
@@ -186,6 +200,13 @@ type NavigationProps = {
     onTableOfContentsToggle: () => void
 }
 
+/**
+ * The intro pages' navigation: the button that opens and closes the table of contents, and the
+ * buttons that move to the first, previous, next, and last page
+ * @param props The theme, the current page's index, the number of pages, the handler for moving
+ * to a page, whether the table of contents is open, and the handler for opening or closing it
+ * @return The navigation buttons
+ */
 function Navigation(props: NavigationProps): JSX.Element {
 
     const {theme, pageNum, numPages, updatePageNum, tableOfContentsOpen, onTableOfContentsToggle} = props

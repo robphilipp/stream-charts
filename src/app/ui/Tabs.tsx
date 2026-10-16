@@ -22,6 +22,14 @@ type Props = {
     children: Array<JSX.Element>
 }
 
+/**
+ * Tabs: a row of tab buttons (one per name), and the content of the active tab (the child at the
+ * same index as the active tab, which starts out as the first). Optionally laid out in a grid.
+ * @param props The tabs' style (and the active tab's), the tabs' names, the handler for a change
+ * of tab, whether to lay them out in a grid, and the tabs' contents (one child per name)
+ * @return The tabs
+ * @throws Error when the number of names differs from the number of children
+ */
 export function Tabs(props: Props): JSX.Element {
     const {
         tabNames = [],
@@ -69,6 +77,13 @@ export function Tabs(props: Props): JSX.Element {
 
 }
 
+/**
+ * Lays out the tabs' header and content in a grid: the header in a 55 px row, the content in the
+ * rest (less 10 px at the bottom)
+ * @param tabHeader The row of tab buttons
+ * @param tabContent The active tab's content
+ * @return The grid
+ */
 function wrapWithGrid(tabHeader: JSX.Element, tabContent: JSX.Element): JSX.Element {
     return <>
         <Grid
@@ -106,6 +121,12 @@ type HeaderProps = {
     setActiveTab: (index: number) => void
 }
 
+/**
+ * The row of tab buttons; the active tab's button is underlined, and styled with the active style
+ * @param props The tabs' style (and the active tab's), the tabs' names, the index of the active
+ * tab, and the handler for a click on a tab
+ * @return The row of tab buttons
+ */
 function TabHeader(props: HeaderProps): JSX.Element {
     const {
         style = defaultTabStyle,

@@ -7,9 +7,15 @@ import type {TooltipData} from "../hooks/useTooltip";
 import {BaseAxisRange} from "../axes/BaseAxisRange";
 import {withAlpha} from "../styling/canvasStyle";
 
+/**
+ * The properties of the {@link Tooltip}
+ */
 export interface Props {
+    /** whether the tooltip is shown when the mouse is over a series */
     visible: boolean
+    /** the style of the tooltip's box */
     style?: Partial<TooltipStyle>
+    /** the tooltip content (e.g. a `<ScatterPlotTooltipContent>`) */
     children: JSX.Element
 }
 
@@ -21,11 +27,12 @@ export interface Props {
  * to remain general, this {@link Tooltip} also uses the {@link useTooltip}'s
  * {@link UseTooltipValues.tooltipContentProvider} to render the actual content of the tooltip.
  * The content provider is given the series' name on which the mouse-over event occurred, the plot
- * time associated with mouse-over event, and the {@link TimeSeries} associated with the
- * mouse-over event. The plot (for example {@link ScatterPlot}) is responsible for rendering the
+ * time associated with mouse-over event, the tooltip data (the series, and the plot's metadata
+ * about the element under the mouse), the mouse coordinates, and the ID of the content provider
+ * for the kind of element under the mouse (when the plot has several). The plot (for example {@link ScatterPlot}) is responsible for rendering the
  * tooltip, and it registers this tooltip-content provider with the {@link useTooltip} hook.
  *
- * The {@link useChart} hook allows the plots and this tooltip to register methods needed its siblings.
+ * The {@link useChart} hook allows the plots and this tooltip to register methods needed by their siblings.
  *
  * ## on mount
  * 1. The plot (for example {@link ScatterPlot}) hit-tests the mouse position against its drawn
@@ -48,7 +55,12 @@ export interface Props {
  * the same coordinates.
  *
  * @param props The properties of the tooltip (i.e. visibility and style)
- * @return null
+ * @return The tooltip content (the child), cloned with the tooltip's properties
+ * @template D The type of the series' datum
+ * @template S The type of the series style
+ * @template TM The type of the tooltip metadata
+ * @template AR The type of the axis range
+ * @template A The type of the axis
  */
 export function Tooltip<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A extends BaseAxis>(props: Props): JSX.Element {
     const {

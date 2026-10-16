@@ -47,6 +47,13 @@ export interface SeriesGeometry {
 
 /**
  * Squared distance from a point to a line segment (avoids a sqrt when just comparing distances).
+ * @param px The point's x-coordinate
+ * @param py The point's y-coordinate
+ * @param x1 The x-coordinate of the segment's start
+ * @param y1 The y-coordinate of the segment's start
+ * @param x2 The x-coordinate of the segment's end
+ * @param y2 The y-coordinate of the segment's end
+ * @return The squared distance from the point to the nearest point on the segment
  */
 function distanceSquaredToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
     const dx = x2 - x1
@@ -73,7 +80,12 @@ function distanceSquaredToSegment(px: number, py: number, x1: number, y1: number
  * can look up the specific datum involved (e.g. for a tooltip) rather than just the series name.
  */
 export interface SeriesHit {
+    /** the name of the series that was hit */
     name: string
+    /**
+     * the index of the point (for point or polyline geometry -- for a polyline, whichever end of
+     * the hit segment is nearer the mouse), segment, or rect that was hit
+     */
     index: number
 }
 

@@ -23,7 +23,8 @@ import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "../plots/constants.ts";
  To create your own tooltip content `<MyTooltipContent/>` you must do the following:
  1. Create a react component for your tooltip content (see for example, {@link ScatterPlotTooltipContent}
  as a reference.
- 2. Use the {@link useChart} hook to get the {@link registerTooltipContentProvider} registration function.
+ 2. Use the {@link useChart} hook to get the {@link registerTooltipContentProvider} registration function
+ (it's `useChart().tooltip.registerTooltipContentProvider`).
  3. When your tooltip content component (`<MyTooltipContent/>`) mounts, use the {@link registerTooltipContentProvider}
  function to register your tooltip content provider.
  4. When the chart dimensions, margin, canvas, etc, change, register your tooltip content provider
@@ -36,11 +37,15 @@ import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "../plots/constants.ts";
  one tooltip content provider. A second call to this function will cause the {@link useChart} hook to drop
  the first one in favor of the second one.
 
- The {@link registerTooltipContentProvider} function from the {@link useChart} hook accepts a higher-order
- function that allowing a closure on content/chart-specific data. Specifically, you must hand the
+ The {@link registerTooltipContentProvider} function from the {@link useChart} hook accepts a function
+ that can close over content/chart-specific data. Specifically, you must hand the
  {@link registerTooltipContentProvider} a function of the form:
 
- `(seriesName: string, time: number, series: TimeSeries, mouseCoords: [x: number, y: number]) => TooltipDimensions`
+ `(seriesName: string, time: number, tooltipData: TooltipData<D, TM>, mouseCoords: [x: number, y: number], providerId?: string) => TooltipDimensions`
+
+ where the tooltip data holds the series (or the part of it the plot passes along) and the plot's
+ metadata, and the provider ID says which kind of element is hovered (for plots, like the bar plot,
+ that have several).
 
  Your function to capture the actual content will be what this function calls whenever the plot's
  mousemove hit-test finds the mouse hovering over one of the elements in the chart. Tooltip content
@@ -57,15 +62,12 @@ import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "../plots/constants.ts";
  */
 
 /**
- * Properties for rendering the tooltip content. The properties are applied as
- * shown below.
- * ```
- * series name
- * xFormatter, yFormatter
- * ```
+ * Properties for rendering the tooltip content
  */
 export interface Props {
+    /** the units of the values (e.g. "mV"), shown after the values (none by default) */
     ordinalUnits?: string
+    /** the style of the tooltip */
     style?: Partial<TooltipStyle>
 }
 
@@ -80,15 +82,15 @@ interface StatsRow {
     highlight: 'windowed' | 'all' | 'none'
 }
 
+// the size of the tooltip's sparkline (of the value over time)
+const SPARKLINE_WIDTH = 180
+const SPARKLINE_HEIGHT = 36
+
 /**
  * The data needed to render the tooltip's table content, captured at mouse-over time and read
  * back out during render. Replaces the old version's immediate SVG DOM manipulation (via
  * `svg-table`'s `createTable`).
  */
-// the size of the tooltip's sparkline (of the value over time)
-const SPARKLINE_WIDTH = 180
-const SPARKLINE_HEIGHT = 36
-
 interface BarTooltipContent {
     seriesName: string
     headerLabel: string
@@ -101,8 +103,9 @@ interface BarTooltipContent {
 }
 
 /**
- * Adds tooltip content that shows the series name, the current value, and a small stats table
- * (count/min/max/mean, windowed vs. all-time) for the bar-chart element being hovered.
+ * Adds tooltip content that shows the series name, the current value, a small stats table
+ * (count/min/max/mean, windowed vs. all-time) for the bar-chart element being hovered, and a
+ * sparkline of the value over the data the chart holds.
  *
  * Registers the tooltip-content provider with the `ChartContext` so that when the plot's
  * mousemove hit-test finds the mouse over one of the bar-chart's five element types, this
@@ -311,9 +314,10 @@ function highlightFor(providerId: string): (rowLabel: 'Count' | 'Min' | 'Max' | 
 }
 
 /**
- * Captures the data needed to render the tooltip's table content, and computes its viewport-fixed
- * position. Replaces the old version, which built and positioned an SVG table via `svg-table`'s
- * `createTable`.
+ * Captures the data needed to render the tooltip's content (its header, value, stats table, and
+ * sparkline), and where it's anchored (the mouse -- the tooltip is placed next to it once it's
+ * rendered, see {@link useTooltipPlacement}). Replaces the old version, which built and positioned
+ * an SVG table via `svg-table`'s `createTable`.
  * @param seriesName The name of the series (i.e. the neuron ID)
  * @param providerId The tooltip content provider ID (i.e. which bar-chart element is hovered)
  * @param tooltipData The series data and metadata

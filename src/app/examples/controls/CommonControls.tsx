@@ -4,6 +4,11 @@ type Props = {
     children: JSX.Element | Array<JSX.Element>
 }
 
+/**
+ * The controls common to the charts, in a column (shown when the control bar is expanded)
+ * @param props The controls
+ * @return The controls
+ */
 export function CommonControls(props: Props): JSX.Element {
     const {children} = props
 

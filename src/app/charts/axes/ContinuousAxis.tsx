@@ -75,7 +75,7 @@ export interface Props {
     /**
      * The fraction of the axis' length left beyond the data's extreme when the axis grows, so the
      * extreme point isn't drawn right on the edge (in the scale's own space, e.g. logarithmically
-     * for a log scale). From 0 up to (not including) 0.5; defaults to 0.05.
+     * for a log scale). From 0 to 0.45 (a larger value is treated as 0.45); defaults to 0.05.
      */
     autoScalePadding?: number
     /**
@@ -93,12 +93,13 @@ export interface Props {
 }
 
 /**
- * Represents a continuous numeric axis (x or y) that can be place on the top, bottom,
+ * Represents a continuous numeric axis (x or y) that can be placed on the top, bottom,
  * left, or right of the chart. The domain (axis range) can be managed by this axis
  * component or managed externally (i.e. deferred). This component returns null, meaning
  * React won't render it because we are drawing directly onto the chart's shared canvas and
  * don't want React involved, except to call this function if the props change.
  * @param props The properties for the axis
+ * @return `null` (the axis draws onto the chart's canvas)
  */
 export function ContinuousAxis(props: Props): null {
     const {

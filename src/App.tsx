@@ -4,6 +4,11 @@ import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
 
+/**
+ * The Vite starter template's demo page (a counter and links). Not used: the app's entry point,
+ * `main.tsx`, renders the router instead.
+ * @return The demo page
+ */
 function App() {
   const [count, setCount] = useState(0)
 

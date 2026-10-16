@@ -34,12 +34,12 @@ export interface OrdinalChartData extends ChartData {
  */
 export interface OrdinalStats {
     /**
-     * The min values for (time, value) for the data in the newPoints map
+     * The data with the min time, and with the min value, over all the data so far
      */
     minDatum: OrdinalDatumExtremum
 
     /**
-     * The max values for (time, iterate n, and iterate n+1) for the data in the newPoints map
+     * The data with the max time, and with the max value, over all the data so far
      */
     maxDatum: OrdinalDatumExtremum
 
@@ -49,6 +49,10 @@ export interface OrdinalStats {
     valueStatsForSeries: Map<string, OrdinalValueStats>
 }
 
+/**
+ * Statistics about the values of a series: the data with the min and max values, the number of
+ * values, their sum, the sum of their squares, and their mean
+ */
 export type OrdinalValueStats = {
     min: OrdinalDatum
     max: OrdinalDatum
@@ -58,6 +62,9 @@ export type OrdinalValueStats = {
     mean: number
 }
 
+/**
+ * The data with the extreme (min or max) time, and with the extreme value
+ */
 export type OrdinalDatumExtremum = {
     // holds the ordinal datum with the minimum or maximum time
     time: OrdinalDatum
@@ -65,30 +72,68 @@ export type OrdinalDatumExtremum = {
     value: OrdinalDatum
 }
 
+/**
+ * @return The datum to start a search for the min value from: its value (`Infinity`) is larger
+ * than any other
+ */
 export const initialMinValueDatum = (): OrdinalDatum => ordinalDatumOf(NaN, "", Infinity)
+/**
+ * @return The datum to start a search for the max value from: its value (`-Infinity`) is smaller
+ * than any other
+ */
 export const initialMaxValueDatum = (): OrdinalDatum => ordinalDatumOf(NaN, "", -Infinity)
 
+/**
+ * @return The datum to start a search for the min time from: its time (`Infinity`) is later than
+ * any other
+ */
 export const initialMinTimeDatum = (): OrdinalDatum => ordinalDatumOf(Infinity, "", NaN)
+/**
+ * @return The datum to start a search for the max time from: its time (`-Infinity`) is earlier
+ * than any other
+ */
 export const initialMaxTimeDatum = (): OrdinalDatum => ordinalDatumOf(-Infinity, "", NaN)
 
+/**
+ * Returns the specified datum, or the default value-stats datum (`NaN` time and value, and an
+ * empty ordinal -- see {@link isDefaultValueStatsDatum}) when there's none
+ * @param datum The datum, or `undefined`
+ * @return The datum, or the default value-stats datum
+ */
 export function valueStatusDatumOfDefault(datum: OrdinalDatum | undefined): OrdinalDatum {
     return (datum === undefined) ? ordinalDatumOf(NaN, "", NaN) : datum
 }
 
+/**
+ * Whether the datum is the default value-stats datum (see {@link valueStatusDatumOfDefault})
+ * @param datum The datum
+ * @return `true` when the datum's time and value are `NaN`, and its ordinal is empty
+ */
 export function isDefaultValueStatsDatum(datum: OrdinalDatum): boolean {
     return isNaN(datum.time) && datum.ordinal === "" && isNaN(datum.value)
 }
 
+/**
+ * @return The extremum to start a search for the min time and value from
+ */
 const initialMinOrdinalDatum = (): OrdinalDatumExtremum => ({
     time: ordinalDatumOf(Infinity, "", NaN),
     value: initialMinValueDatum()
 })
 
+/**
+ * @return The extremum to start a search for the max time and value from
+ */
 const initialMaxOrdinalDatum = (): OrdinalDatumExtremum => ({
     time: ordinalDatumOf(-Infinity, "", NaN),
     value: initialMaxValueDatum()
 })
 
+/**
+ * Copies an extremum (and its data)
+ * @param datum The extremum to copy
+ * @return The copy
+ */
 export function copyOrdinalDatumExtremum(datum: OrdinalDatumExtremum): OrdinalDatumExtremum {
     return {
         time: copyOrdinalDatum(datum.time),
@@ -96,12 +141,19 @@ export function copyOrdinalDatumExtremum(datum: OrdinalDatumExtremum): OrdinalDa
     }
 }
 
+/**
+ * @return Stats for no data: extremes to start the searches from, and no series' stats
+ */
 export const defaultOrdinalStats = (): OrdinalStats => ({
     minDatum: initialMinOrdinalDatum(),
     maxDatum: initialMaxOrdinalDatum(),
     valueStatsForSeries: new Map<string, OrdinalValueStats>()
 })
 
+/**
+ * @return Value stats for no data: a count, sum, and sum of squares of 0, a `NaN` mean, and min
+ * and max data to start the searches from
+ */
 export const defaultOrdinalValueStats = (): OrdinalValueStats => ({
     min: initialMinValueDatum(),
     max: initialMaxValueDatum(),
@@ -111,6 +163,11 @@ export const defaultOrdinalValueStats = (): OrdinalValueStats => ({
     sumSquared: 0,
 })
 
+/**
+ * Copies a series' value stats (and their min and max data)
+ * @param data The value stats to copy
+ * @return The copy
+ */
 export function copyOrdinalValueStats(data: OrdinalValueStats): OrdinalValueStats {
     return {
         ...data,
@@ -119,18 +176,31 @@ export function copyOrdinalValueStats(data: OrdinalValueStats): OrdinalValueStat
     }
 }
 
+/**
+ * Copies the map of each series' value stats (and the stats)
+ * @param valueStats The value stats, by series name
+ * @return The copy
+ */
 export function copyValueStatsForSeries(valueStats: Map<string, OrdinalValueStats>): Map<string, OrdinalValueStats> {
     return new Map<string, OrdinalValueStats>(Array.from(valueStats.entries())
         .map(([seriesName, valueStats]) => [seriesName, copyOrdinalValueStats(valueStats)])
     )
 }
 
+/**
+ * Copies the stats (the extremes, and each series' value stats)
+ * @param data The stats to copy
+ * @return The copy
+ */
 export const copyOrdinalStats = (data: OrdinalStats): OrdinalStats => ({
     minDatum: copyOrdinalDatumExtremum(data.minDatum),
     maxDatum: copyOrdinalDatumExtremum(data.maxDatum),
     valueStatsForSeries: copyValueStatsForSeries(data.valueStatsForSeries),
 })
 
+/**
+ * @return Ordinal chart data without any series or points, and with the default stats
+ */
 const emptyOrdinalData = (): OrdinalChartData => ({
     ...defaultChartData(),
     stats: defaultOrdinalStats(),
@@ -139,8 +209,10 @@ const emptyOrdinalData = (): OrdinalChartData => ({
 })
 
 /**
- * Makes a deep copy of the ordinal chart data
+ * Makes a copy of the ordinal chart data: a new set of series names, copies of the stats, and new
+ * arrays of points (the points themselves are shared)
  * @param data The ordinal chart data to copy
+ * @return The copy
  */
 export const copyOrdinalDataFrom = (data: OrdinalChartData): OrdinalChartData => ({
     ...copyChartData(data),
@@ -163,9 +235,11 @@ const initialAccumulate = (initialStats?: OrdinalStats): OrdinalChartData =>
         }
 
 /**
- * Accepts a {@link TimeSeriesChartData} observable and converts it to an observable of {@link OrdinalChartData}.
+ * Accepts a {@link TimeSeriesChartData} observable and converts it to an observable of {@link OrdinalChartData}:
+ * each emission holds the incoming chunk's points (as ordinal data), and the stats accumulated over
+ * all the data so far.
  * @param dataObservable The observable over {@link TimeSeriesChartData}
- * @param compactingSize The number of shifts a series' backing array accumulates before it's compacted
+ * @param [compactingSize=DEFAULT_COMPACTING_SIZE] The number of shifts a series' backing array accumulates before it's compacted
  * @param initialStats Optional stats of the data that already exists (e.g. a chart's accumulated
  * series, see `calculateOrdinalStats`), from which the stats accumulate -- so that the stats cover
  * that data without the data having to be re-emitted through `dataObservable`
@@ -178,7 +252,7 @@ export function ordinalsObservable(
 ): Observable<OrdinalChartData> {
     return dataObservable
         .pipe(
-            // calculate the iterates for each series in the chart data
+            // calculate the stats for each series in the chart data
             //
             // note: only the stats and the latest new points are accumulated -- the incoming points
             // themselves aren't kept (the data source holds the series). A previous version also

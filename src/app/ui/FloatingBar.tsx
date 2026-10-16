@@ -49,7 +49,9 @@ type Props = {
  * The bar can also have a panel that expands below its controls (see the `panel` prop), which
  * animates open and closed like the expandable control bar: it grows to its content's height while
  * the content fades in, and the reverse when it collapses.
- * @param props
+ * @param props The bar's initial location, its style, its controls (the children), and its
+ * (optional) panel: the panel's content, whether it's expanded, the handler for collapsing it, and
+ * how soon after the mouse leaves the bar that it collapses
  * @return A floating navigation bar
  */
 export function FloatingBar(props: Props): JSX.Element {
@@ -222,6 +224,20 @@ export function FloatingBar(props: Props): JSX.Element {
     </div>
 }
 
+/**
+ * The floating bar's style: fixed, horizontally centered (then moved by the drag offset), at the
+ * location's offset from the top or the bottom of the window, styled like a pill (less rounded
+ * while its panel is expanded) that's translucent and lies flat (with a border) until the mouse
+ * is over it, when it's opaque and lifted (with a drop shadow); the passed-in style overrides it all
+ * @param style The bar's style (and theme colors)
+ * @param location Where the bar is: its offset from the top or the bottom of the window
+ * @param [x=0] How far (px) the bar has been dragged horizontally
+ * @param [y=0] How far (px) the bar has been dragged vertically
+ * @param [isDragging=false] Whether the bar is being dragged (for the cursor)
+ * @param [mouseInBounds=false] Whether the mouse is over the bar
+ * @param [panelExpanded=false] Whether the bar's panel is expanded
+ * @return The bar's style
+ */
 function navStyle(
     style: FloatingNavigationStyle,
     location: Location,

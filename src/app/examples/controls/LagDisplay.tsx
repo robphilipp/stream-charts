@@ -7,6 +7,11 @@ type Props = {
     lag: number
 }
 
+/**
+ * Shows the update lag: how far (ms) the chart's time is behind the data's time (never less than 0)
+ * @param props The theme, and the lag (ms)
+ * @return The lag display
+ */
 export function LagDisplay(props: Props): JSX.Element {
     const {theme, lag} = props;
     return (

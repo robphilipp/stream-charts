@@ -1,6 +1,9 @@
 import {type CSSProperties, type JSX, type MouseEvent, useState} from "react";
 import {interpolateColor} from "./utils";
 
+/**
+ * The properties of the {@link Button}
+ */
 interface Props {
     style?: CSSProperties
     disabledStyle?: CSSProperties
@@ -36,6 +39,13 @@ const defaultDisabledButtonStyle = {
     backgroundColor: '#9c9b9b',
 }
 
+/**
+ * A themable button, with an optional icon before its text. It lightens toward its text color
+ * when hovered, and is drawn in muted colors (mixed from its own) when disabled.
+ * @param props The button's style (and disabled style), its click handler, whether it's disabled,
+ * its icon (a function of the icon's color), its text, and its ARIA attributes
+ * @return The button
+ */
 export function Button(props: Props): JSX.Element {
     const {
         style = defaultButtonStyle,

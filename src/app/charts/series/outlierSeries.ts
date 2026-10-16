@@ -3,6 +3,10 @@ import {type BaseSeries, seriesFrom} from "./baseSeries";
 import {failureResult, type Result, resultFromAll, successResult} from "result-fn";
 import type {FastShiftArray} from "fast-shift-array";
 
+/**
+ * A series of {@link OutlierDatum}s, along with the measures that the data's bounds are for
+ * @template M The type of the measures that is expressed as a tuple of numbers.
+ */
 export interface OutlierSeries<M extends readonly number[]> extends BaseSeries<OutlierDatum<M>> {
     /**
      * The measures of the datum. For example, this could be a series of probabilities of
@@ -31,9 +35,9 @@ export interface OutlierBounds {
 }
 
 /**
- * A datum with and upper and lower bounds B(L, U) associate with each measure. The idea is the
+ * A datum with an upper and lower bounds B(L, U) associated with each measure. The idea is the
  * following. We have a datum (x, y) value. The bounds determine whether the datum is
- * within the range assocated with the measure. For example, the measure could be the
+ * within the range associated with the measure. For example, the measure could be the
  * 0.95 probability that the datum falls within that bound. And if the (x, y) value falls
  * outside the bounds B(L, U), the datum could be considered an "outlier".
  *
@@ -46,10 +50,10 @@ export interface OutlierBounds {
  * treat it differently from an "outlier".
  *
  * Note that there are constraints.
- * 1. The cardinatilty of the measures and the bounds must be the same.
+ * 1. The cardinality of the measures and the bounds must be the same.
  * 2. The i-th bound is associated with the i-th measure.
  *
- * @param M The type of the measures that is expressed as a tuple of numbers.
+ * @template M The type of the measures that is expressed as a tuple of numbers.
  * @see OutlierBounds
  * @see outlierBoundsFor
  * @see outlierDatumFor
@@ -98,6 +102,7 @@ export function outlierBoundsFor(lower: number, upper: number): OutlierBounds {
  * @return A {@link Result} object with the outcome of the operation. If the operation is successful,
  * then the result is an {@link OutlierDatum} object. If the operation is not successful, then
  * the result is a {@link string} with the error message.
+ * @template M The type of the measures that is expressed as a tuple of numbers.
  */
 export function outlierDatumFor<M extends readonly number[]>(
     datum: Datum,
@@ -118,7 +123,7 @@ export function outlierDatumFor<M extends readonly number[]>(
 }
 
 /**
- * Creates an outlier series from the name and the array of (x, y, bounds) tuples (tuples). If any of the
+ * Creates an outlier series from the name and the array of (x, y, bounds) tuples. If any of the
  * datum have bounds that do not have the same length as the measures, then this function will fail and
  * return a failure result. Otherwise, it will return a success result with the outlier series.
  * @param name The name of the series
@@ -143,7 +148,7 @@ export function outlierSeriesFor<M extends readonly number[]>(
     )
 
     // if all data has bounds-dimensions that match the measures-dimensions, then we can safely
-    // create the outlier series, otherwise we must report the error and return an empty series
+    // create the outlier series, otherwise we must report the errors
     if (outlierData.filter(datum => datum.succeeded).length === data.length) {
         // convert the Array<Result<OutlierDatum<M>, string>> to Result<Array<OutlierDatum<M>>, Array<string>>
         return resultFromAll(outlierData)
@@ -171,7 +176,7 @@ export function outlierSeriesFor<M extends readonly number[]>(
  * @param measures The measure defining the outlier bands
  * @param measureDescriptions The (optional) meaning of each band
  * @return An outlier series
- * @template M The outlier metadata
+ * @template M The type of the measures that is expressed as a tuple of numbers.
  */
 export function outlierSeriesFrom<M extends readonly number[]>(
     name: string,

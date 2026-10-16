@@ -2,7 +2,8 @@ import type {ChartData} from "./ChartData.ts";
 import type {OutlierDatum} from "../series/outlierSeries.ts";
 
 /**
- * Converts an observable of {@link TimeSeriesChartData} into an observable of {@link OutlierDatum}
+ * The chart data for outlier charts: each series' new {@link OutlierDatum}s (each a value, with
+ * the bands it may fall outside of)
  */
 export interface OutlierChartData<M extends readonly number[]> extends ChartData {
 

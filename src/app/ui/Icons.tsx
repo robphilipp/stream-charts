@@ -1,5 +1,10 @@
 import {type JSX} from "react";
 
+/**
+ * A chevron pointing right (forward)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function ForwardIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -16,6 +21,11 @@ export function ForwardIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A chevron pointing right, with a bar at the right edge (go to the last)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function LastIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -42,6 +52,11 @@ export function LastIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A chevron pointing left (back)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function BackIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -58,6 +73,11 @@ export function BackIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A chevron pointing left, with a bar at the left edge (go to the first)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function FirstIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -84,6 +104,11 @@ export function FirstIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A filled triangle pointing right (run)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function PlayIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -100,6 +125,11 @@ export function PlayIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * Two vertical bars (pause)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function PauseIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -128,6 +158,11 @@ export function PauseIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A circular arrow (reset)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function ResetIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -150,6 +185,11 @@ export function ResetIcon(props: { color: string }): JSX.Element {
 }
 
 
+/**
+ * Two filled triangles pointing toward each other (shown when the control bar is expanded: clicking it collapses the bar)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function ExpandedIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -176,6 +216,11 @@ export function ExpandedIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * Two filled triangles pointing away from each other (shown when the control bar is collapsed: clicking it expands the bar)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function CollapsedIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -202,6 +247,11 @@ export function CollapsedIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A clock face (the update lag)
+ * @param props The icon's color, and its fill (default: none)
+ * @return The icon
+ */
 export function LagIcon(props: { color: string, fill: string }): JSX.Element {
     const {color, fill = "none"} = props
     return (
@@ -213,6 +263,11 @@ export function LagIcon(props: { color: string, fill: string }): JSX.Element {
     )
 }
 
+/**
+ * A filled funnel (the series filter)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function FilterIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -229,6 +284,11 @@ export function FilterIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A box with lines of text, and a mouse pointer (the tooltip)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function TooltipIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -267,6 +327,11 @@ export function TooltipIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A vertical line, and a mouse pointer (the tracker)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function TrackerIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -294,6 +359,11 @@ export function TrackerIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A line with a filled circle on it (the data-point markers)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function MarkersIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -304,6 +374,11 @@ export function MarkersIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A line between two filled circles (the interpolation between points)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function InterpolationIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -315,6 +390,11 @@ export function InterpolationIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A tent (the tent map)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function TentMapIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -331,6 +411,11 @@ export function TentMapIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A bell curve over a baseline (the Gauss map)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function GaussMapIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -345,6 +430,11 @@ export function GaussMapIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * A parabola over a baseline (the logistic map)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function LogisticMapIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -362,6 +452,11 @@ export function LogisticMapIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * The math symbol x (the current value)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function ValueIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -375,6 +470,11 @@ export function ValueIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * The math symbol x with a "min" subscript (the min/max bars)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function MinValueIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -389,6 +489,11 @@ export function MinValueIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * The math symbol x-bar (the mean value)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function MeanIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -403,6 +508,11 @@ export function MeanIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * The math symbol x with a "win, min" subscript (the windowed min/max bars)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function WindowedMinValueIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (
@@ -417,6 +527,11 @@ export function WindowedMinValueIcon(props: { color: string }): JSX.Element {
     )
 }
 
+/**
+ * The math symbol x-bar with a "win" subscript (the windowed mean value)
+ * @param props The icon's color
+ * @return The icon
+ */
 export function WindowedMeanIcon(props: { color: string }): JSX.Element {
     const {color} = props
     return (

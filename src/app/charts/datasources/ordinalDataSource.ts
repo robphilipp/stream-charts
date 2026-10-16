@@ -39,7 +39,7 @@ export function initialOrdinalStats(series: Array<BaseSeries<OrdinalDatum>>): Wi
  * First of two functions to calculate the current ordinal stats for the current time window. This
  * function updates the windowed stats for the new data.
  * @param newData The new data for that series
- * @param windowedStats The current windowed ordinal value status
+ * @param windowedStats The current windowed ordinal value stats
  * @return The windowed ordinal value stats updated for the new data
  */
 function updatedWindowedValueStatsForNewData(newData: Array<OrdinalDatum>, windowedStats: OrdinalValueStats): OrdinalValueStats {
@@ -56,7 +56,8 @@ function updatedWindowedValueStatsForNewData(newData: Array<OrdinalDatum>, windo
 
 /**
  * Second of two functions to calculate the current ordinal stats for the current time window. This
- * function updates the windowed stats by for the dropped data
+ * function updates the windowed stats for the dropped data (the min and max are recalculated from
+ * the data that's left)
  * @param droppedData An array of datum that was dropped from the time window
  * @param windowedStats The current windowed ordinal value stats
  * @param series An array of series holding all the current data in the time-window
@@ -112,6 +113,10 @@ export class OrdinalDataSource extends BaseStreamingDataSource<OrdinalChartData,
     private dropDataAfter: number
     private readonly onUpdateData: ((seriesName: string, data: Array<OrdinalDatum>) => void) | undefined
 
+    /**
+     * Creates a ordinal data source (stopped: call {@link start} to start it)
+     * @param options The initial data, the generator, and the data-retention settings
+     */
     constructor(options: OrdinalDataSourceOptions) {
         super(options.initialData, options.generator)
         this.stats = initialOrdinalStats(options.initialData)
@@ -127,6 +132,10 @@ export class OrdinalDataSource extends BaseStreamingDataSource<OrdinalChartData,
         this.dropDataAfter = dropDataAfter
     }
 
+    /**
+     * @return The latest time (the `time` of the last datum) over all the series, or
+     * `-Infinity` when there is no data
+     */
     latestTime(): number {
         return this.seriesList().reduce(
             (tMax, series) => Math.max(tMax, series.last().map(datum => datum.time).getOrElse(tMax)),
@@ -134,6 +143,15 @@ export class OrdinalDataSource extends BaseStreamingDataSource<OrdinalChartData,
         )
     }
 
+    /**
+     * Adds each series' new points to it, copies the chunk's lifetime stats, updates the series'
+     * windowed stats for the new points, and then drops the points that are older than
+     * `dropDataAfter` relative to the chart-wide current time (the time of the latest datum over
+     * all series), removing them from the windowed stats too. New points for a series that isn't
+     * in the source are ignored (bar charts have a fixed set of categories). Calls `onUpdateData`
+     * with each series' new points.
+     * @param data The chunk of chart data emitted by the generator
+     */
     protected ingest(data: OrdinalChartData): void {
         // the chart-wide current time (the time of the latest datum over all series). When it
         // isn't a number, the drop comparison below is simply false, so nothing is dropped.

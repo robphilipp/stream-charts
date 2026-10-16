@@ -8,6 +8,12 @@ interface Props extends HTMLAttributes<HTMLHRElement> {
     verticalSpacing?: number | string
 }
 
+/**
+ * A horizontal divider (an `<hr>`) in the theme's disabled background color, spanning its container
+ * @param props The theme, the divider's thickness (default 1px), the space above and below it
+ * (default 10px), and any other `<hr>` attributes
+ * @return The divider
+ */
 export function Divider(props: Props): JSX.Element {
     const {
         theme,

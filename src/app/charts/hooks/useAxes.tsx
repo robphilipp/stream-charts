@@ -25,7 +25,7 @@ export type UseAxesValues<AR extends BaseAxisRange, A extends BaseAxis> = {
      */
     addXAxis: (axis: A, id: string, range?: AR) => void
     /**
-     * The y-axes state holds the currently set x-axes, manipulation and accessor functions
+     * The y-axes state holds the currently set y-axes, manipulation and accessor functions
      */
     yAxesState: AxesState<A>
     /**
@@ -42,17 +42,20 @@ export type UseAxesValues<AR extends BaseAxisRange, A extends BaseAxis> = {
      */
     setAxisAssignments: (assignments: Map<string, AxesAssignment>) => void
     /**
-     * Retrieves the axis assigned to the specified series
+     * Retrieves the axes assigned to the specified series (the default x- and y-axes, when the
+     * series has no assignment)
+     * @param seriesName The name of the series
      * @return The axes assigned to the specified series
      */
     axisAssignmentsFor: (seriesName: string) => AxesAssignment
     /**
-     * Sets the axis ranges specified in the input map
+     * Sets the axis ranges specified in the input map (without dispatching them to the update
+     * handlers -- see {@link updateAxisRanges} for that)
      * @param ranges A map holding the axis ID to the axis range
      */
     setAxesRanges: (ranges: Map<string, AR>) => void
     /**
-     * Sets the axis range for the specified axis ID
+     * Sets the axis range for the specified axis ID (without dispatching it to the update handlers)
      * @param axisId The ID of the axis for which to set the range
      * @param range The new axis range
      */
@@ -61,42 +64,52 @@ export type UseAxesValues<AR extends BaseAxisRange, A extends BaseAxis> = {
      * Retrieves the current axis range for the specified axis ID
      * @param axisId The ID of the axis for which to retrieve the range
      * @return The current axis range for the specified axis ID wrapped
-     * in a n {@link Optional}, or an empty {@link Optional} if the axis
+     * in an {@link Optional}, or an empty {@link Optional} if the axis
      * ID is not found
      */
     axisRangeFor: (axisId: string) => Optional<AR>
     /**
-     * Sets the domain (interval) for the specified axis ID to the specified range
+     * Sets the domain (interval) of the specified axis' current range, leaving its original range
+     * as it is (does nothing when the axis has no range yet; doesn't dispatch the change to the
+     * update handlers)
      * @param axisId The ID of the axis for which to set the range
-     * @param domain The new domain as a `[start: number, end: number]` tuple
+     * @param domain The new domain
      */
     setAxisIntervalFor: (axisId: string, domain: AxisInterval) => void
     /**
-     * Sets the original axis bounds for the specified axis ID to the specified range
+     * Sets the original axis bounds for the specified axis ID to the specified range (does nothing
+     * when the axis has no range yet)
      * @param axisId The ID of the axis for which to set the range
-     * @param range The new range as a `[start, end]` tuple
+     * @param range The new original range
      */
     setOriginalAxisIntervalFor: (axisId: string, range: AxisInterval) => void
     /**
-     * Callback function that is called when the time ranges change. The time ranges could
-     * change because of a zoom action, a pan action, or as new data is streamed in.
+     * Updates the ranges of the specified axes, and dispatches the updates to every registered
+     * update handler (see {@link addAxesRangesUpdateHandler}) -- e.g. the axes, which redraw with
+     * their new domains. Called when the ranges change because of a zoom action, a pan action, or
+     * as new data is streamed in.
      * @param domains A `map(axis_id -> domain)` that associates the axis ID with the
      * current time range.
      */
     updateAxisRanges: (domains: Map<string, AR>) => void
     /**
-     * Retrieves the current axis bounds for the specified axis ID
-     * @return The current axis bounds as a map(axis_id, (start, end))
+     * Retrieves the current ranges of all the axes
+     * @return A copy of the current axis ranges, as a map(axis_id, range)
      */
     axesRanges: () => Map<string, AR>
     /**
-     * Resets the axis bounds to its original bounds
+     * Re-applies the specified axis' stored range: dispatches it, unchanged, to the update handlers
+     * (so that the axis redraws with it). Note that, despite its name, this does *not* restore the
+     * axis' original range, and the `<AxesProvider>`'s implementation ignores `axisBounds`.
      * @param axisId The ID of the axis
-     * @param [axisBounds] An optional bounds that resets the original bounds
+     * @param [axisBounds] Unused
      */
     resetAxisIntervalFor: (axisId: string, axisBounds?: AxisInterval) => void
     /**
-     * Resets all the axes bound to the original bounds
+     * Sets the ranges of the axes in the specified map, and dispatches them to the update handlers
+     * (the same as {@link updateAxisRanges}). Axes that aren't in the map are left as they are, so
+     * calling this without a map changes nothing -- despite its name, it doesn't restore the axes'
+     * original ranges.
      * @param [axesBounds] An optional map holds the new bounds for specified axes. The map
      * associates an axis ID with the new bounds.
      */
@@ -143,8 +156,10 @@ export type UseAxesValues<AR extends BaseAxisRange, A extends BaseAxis> = {
 export const AxesContext = createContext<unknown>(undefined)
 
 /**
- * React hook that sets up the React context for the chart values.
+ * React hook for the chart's axes: their state, ranges, and the functions for updating them.
+ * Must be used within an {@link AxesProvider} (i.e. within a `<Chart>`).
  * @return The {@link UseAxesValues} held in the React context.
+ * @throws Error when used outside an `<AxesProvider>`
  * @template AR The type of the axis range (e.g. {@link ContinuousAxisRange} or {@link OrdinalAxisRange})
  * @template A The axis type
  */

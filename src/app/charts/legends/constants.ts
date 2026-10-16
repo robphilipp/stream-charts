@@ -15,6 +15,9 @@ export const LegendLocation = {
 } as const
 export type LegendLocation = (typeof LegendLocation)[keyof typeof LegendLocation];
 
+/**
+ * The legend's default style
+ */
 export const defaultLegendStyle: LegendStyle = {
     fontSize: 12,
     fontFamily: "sans-serif",

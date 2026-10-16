@@ -64,7 +64,8 @@ function renderBatching<CD>(windowingTime: number, dataUpdatePeriod?: number): O
 
 /**
  * Advances the visible window for the specified axis (in place, within `timesWindows`) so its
- * right edge sits at `targetTime`, preserving the window's current width -- but only once
+ * right edge sits at `targetTime`, preserving the window's current width (but never starting
+ * before 0, in which case the window stays at [0, width] until the time passes its width) -- but only once
  * `targetTime` actually exceeds the window's current right edge. This gate is what lets a user
  * pan/zoom the window ahead of the current time and watch the data catch up to it before scrolling
  * resumes. Leaves `.original` untouched (zoom math is incremental, so it doesn't depend on it).
@@ -106,6 +107,8 @@ function scrollOrSqueezeRangeTo(
 }
 
 /**
+ * @param axisAssignments The assignment of the series to their x- and y-axes
+ * @param xAxesState The current state of the x-axes (for the default x-axis)
  * @return A {@link TimeGroupFor} that groups series by their assigned x-axis (or the default x-axis)
  */
 function xAxisGroupFor(axisAssignments: Map<string, AxesAssignment>, xAxesState: AxesState<ContinuousNumericAxis>): TimeGroupFor {
@@ -117,6 +120,11 @@ function xAxisGroupFor(axisAssignments: Map<string, AxesAssignment>, xAxesState:
  * Browsers pause `requestAnimationFrame` and throttle timers for hidden pages (including a macOS
  * Spaces switch), and the cadence and data timers don't resume in lockstep, so without this an
  * axis can lag behind until whichever clock fell behind organically catches up.
+ * @param dataSource The data source (for the data's ground-truth time)
+ * @param xAxesState The current state of the x-axes
+ * @param timesWindows A `map(axis_id -> range)` of the x-axes' windows, updated in place
+ * @param setCurrentTime Records the current time for an axis
+ * @param updateTimingAndPlot Redraws the plot for the (advanced) time-windows
  * @return The teardown for the listener, to add to the driver's subscription
  */
 function resyncOnVisible(
@@ -147,6 +155,13 @@ function resyncOnVisible(
  * fall permanently behind) merged, unbuffered, with the batched data updates. Cadence ticks must
  * not go through the render batching, or each batch would deliver its cadence ticks in one burst,
  * collapsing the smooth per-tick scroll down to the batch rate.
+ * @param updates$ The data source's updates
+ * @param windowingTime The time (ms) over which the data updates are batched
+ * @param cadencePeriod The time (ms) between cadence ticks
+ * @param cadenceTick Creates the (empty) chart data for a cadence tick, from the time (ms) elapsed
+ * since the cadence started
+ * @return The data updates (each batch flattened back into single updates), merged with the
+ * cadence ticks
  */
 function withCadence<CD extends {currentTime?: number}>(
     updates$: Observable<CD>,
@@ -165,6 +180,9 @@ function withCadence<CD extends {currentTime?: number}>(
  * kept ingesting while the plot was unmounted, so this is the true current time even right after
  * a remount -- and corrected forward whenever real data overtakes the projection (but never
  * backward, which would make cadence stutter by the data's processing latency on every tick).
+ * @param seedTime The best-known stream time to start from (`-Infinity` when there's no data yet)
+ * @return The anchor: `now()` projects the current stream time, `isKnown()` says whether there's a
+ * stream time to project from, and `correctTo(time)` moves the anchor forward to a later real time
  */
 function cadenceAnchor(seedTime: number) {
     let knownTime = seedTime
@@ -322,6 +340,15 @@ export function timeSeriesWithCadenceViewDriverFor(
 /**
  * The view driver for an outlier plot without cadence. Mirrors {@link timeSeriesViewDriverFor}
  * for outlier data, where each series' current time is the newest datum in the chunk.
+ * @param dataSource The data source whose updates drive the view
+ * @param windowingTime The time (ms) over which updates are batched before redrawing
+ * @param axisAssignments The assignment of the series to their x- and y-axes
+ * @param xAxesState The current state of the x-axes
+ * @param updateTimingAndPlot Redraws the plot for the (advanced) time-windows
+ * @param setCurrentTime Records the current time for an axis
+ * @param [timeWindowBehavior=SCROLL] Whether the time axis scrolls or squeezes
+ * @param [initialTimes] The pinned start time for each axis, for SQUEEZE
+ * @param [dataUpdatePeriod] The period (ms) at which the source emits, when known (see {@link renderBatching})
  * @return The driver's subscription, to unsubscribe when the plot unmounts
  */
 export function outlierViewDriverFor<M extends readonly number[]>(
@@ -363,6 +390,12 @@ export function outlierViewDriverFor<M extends readonly number[]>(
  * The view driver for an outlier plot with cadence. Mirrors
  * {@link timeSeriesWithCadenceViewDriverFor}; outlier plots don't support per-series axis
  * assignments here, so all axes advance to the same time.
+ * @param dataSource The data source whose updates drive the view
+ * @param windowingTime The time (ms) over which data updates are batched before redrawing
+ * @param xAxesState The current state of the x-axes
+ * @param updateTimingAndPlot Redraws the plot for the (advanced) time-windows
+ * @param setCurrentTime Records the current time for an axis
+ * @param cadencePeriod The time (ms) between cadence ticks
  * @return The driver's subscription, to unsubscribe when the plot unmounts
  */
 export function outlierWithCadenceViewDriverFor<M extends readonly number[]>(
@@ -452,7 +485,13 @@ export function ordinalViewDriverFor(
 
 /**
  * The view driver for an iterates (Poincaré) plot: reports the current time and asks the plot to
- * redraw as new data arrives.
+ * redraw as new data arrives (once the plot has both an x-axis and a y-axis).
+ * @param dataSource The data source whose updates drive the view
+ * @param windowingTime The time (ms) over which updates are batched before redrawing
+ * @param xAxesState The current state of the x-axes
+ * @param yAxesState The current state of the y-axes
+ * @param updateRangesAndPlot Updates the axes' ranges, and redraws the plot
+ * @param updateCurrentTime Records the current time (see {@link iteratesCurrentTime})
  * @return The driver's subscription, to unsubscribe when the plot unmounts
  */
 export function iteratesViewDriverFor(

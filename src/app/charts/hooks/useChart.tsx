@@ -63,7 +63,7 @@ export interface UseChartValues<D, S extends SeriesStyle, TM, AR extends BaseAxi
      | DATA PROCESSING
      */
     /**
-     * A regular expression uses against the series names to determine which series to show in the chart
+     * A regular expression used against the series names to determine which series to show in the chart
      */
     seriesFilter: RegExp
 
@@ -101,8 +101,11 @@ export interface UseChartValues<D, S extends SeriesStyle, TM, AR extends BaseAxi
 export const ChartContext = createContext<unknown>(defaultUseChartValues())
 
 /**
- * React hook that sets up the React context for the chart values.
+ * React hook for the chart's values: its ID, canvas, colors, styles, axes, mouse and tooltip
+ * handlers, and highlighted series. Must be used within a {@link ChartProvider} (i.e. within a
+ * `<Chart>`).
  * @return The {@link UseChartValues} held in the React context.
+ * @throws Error when used outside a `<ChartProvider>`
  * @template D The type of the series' datum
  * @template S The type of the series style
  * @template TM The type of the tooltip's metadata (data about the series data)

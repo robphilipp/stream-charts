@@ -8,6 +8,9 @@ import {createPortal} from "react-dom";
 import * as d3 from "d3";
 import {defaultLegendStyle, LegendLocation} from "./constants";
 
+/**
+ * The style of the legend's box and entries
+ */
 export interface LegendStyle {
     /** Font size for the legend labels */
     fontSize: number
@@ -37,12 +40,15 @@ export interface LegendStyle {
     swatchHeight: number
     /** Gap between the swatch and the label text */
     swatchLabelGap: number
-    /** Maximum height of the legend before it starts scrolling (in pixels). If not provided, defaults to the plot height. */
+    /** Maximum height of the legend before it starts scrolling (in pixels). If not provided, defaults to a little less than the plot height. */
     maxHeight?: number
     /** Duration of the visibility transition in milliseconds */
     transitionDuration: number
 }
 
+/**
+ * The properties of the {@link Legend}
+ */
 export interface Props {
     /** Whether the legend is visible */
     visible: boolean
@@ -83,6 +89,17 @@ export interface Props {
  * custom scrolling machinery existed only because SVG has no native scrolling or text
  * auto-sizing -- an HTML `<div>` with `overflowY: 'auto'` gets both for free, which is exactly
  * what the already-existing external-container path relied on.
+ *
+ * Hovering over an entry highlights its series (through the chart's shared hovered-series state),
+ * and hovering over a series in the plot highlights its entry.
+ * @param props The properties of the legend
+ * @return The legend (rendered into a portal), or `null` when it isn't visible, there are no
+ * series to show, or there's nowhere (yet) to render it into
+ * @template D The type of the series' datum
+ * @template S The type of the series style
+ * @template TM The type of the tooltip metadata
+ * @template AR The type of the axis range
+ * @template A The type of the axis
  *
  * @example
  * ```tsx

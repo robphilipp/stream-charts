@@ -49,6 +49,9 @@ export interface TooltipStyle {
     paddingBottom: number;
 }
 
+/**
+ * The default tooltip style
+ */
 export const defaultTooltipStyle: TooltipStyle = {
     visible: false,
 
@@ -73,6 +76,10 @@ export const defaultTooltipStyle: TooltipStyle = {
     paddingBottom: 10,
 };
 
+/**
+ * Where a tooltip's box goes (the x and y of its top left corner, relative to the chart), and the
+ * size of its content (without the padding)
+ */
 export interface TooltipDimensions {
     x: number,
     y: number,
@@ -163,9 +170,9 @@ export function categoryTooltipY(
 
 /**
  * Returns the index of the data point whose time is the upper boundary on the specified
- * time. If the specified time is larger than any time in the specified data, the returns
+ * time. If the specified time is larger than any time in the specified data, then returns
  * the length of the data array. If the specified time is smaller than all the values in
- * the specified array, then returns -1.
+ * the specified array, then returns 0. The data must not be empty.
  * @param data The array of points from which to select the
  * boundary.
  * @param value The time for which to find the bounding points
@@ -194,9 +201,9 @@ function boundingPointsIndex<D>(data: Series<D>, value: number, xFrom: (value: D
  * @param xFrom A function that extracts the x-value from the datum
  * @param emptyDatum A function that returns an empty datum
  * @template D The type of the datum in the data-series
- * @return {[[number, number], [number, number]]} the (time, value) point that comes just before
- * the mouse and just after the mouse. If the mouse is after the last point, then the "after" point
- * is `[NaN, NaN]`. If the mouse is before the first point, then the "before" point is `[NaN, NaN]`.
+ * @return The point that comes just before the mouse and just after the mouse. If the mouse is
+ * after the last point, then the "after" point is the empty datum. If the mouse is before the
+ * first point, then the "before" point is the empty datum. (Both are, for an empty series.)
  */
 export function boundingPoints<D>(data: Series<D>, value: number, xFrom: (value: D) => number, emptyDatum: () => D): [D, D] {
     // an empty series has no bounding points at all -- guard here (not just inside
@@ -215,6 +222,19 @@ export function boundingPoints<D>(data: Series<D>, value: number, xFrom: (value:
     return [data[upperIndex - 1], data[upperIndex]]
 }
 
+/**
+ * Finds the first point whose x-value is within the tolerance of the specified value, along with
+ * the points before and after it
+ * @param data The series' data
+ * @param value The x-value to look for
+ * @param tolerance How far (in the x-value's units) a point's x-value may be from the value
+ * @param xFrom A function that extracts the x-value from the datum
+ * @param emptyDatum A function that returns an empty datum (for a point that doesn't exist)
+ * @return The point before, the point, the point after, and the point's index (-1 when no point
+ * is within the tolerance, in which case the point and the point before are empty, and the point
+ * after is the series' first point)
+ * @template D The type of the datum in the data-series
+ */
 export function findPointAndNeighbors<D>(
     data: Series<D>,
     value: number,

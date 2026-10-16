@@ -4,8 +4,12 @@ import type {FastShiftArray} from "fast-shift-array";
 import type {BaseAxisRange} from "../axes/BaseAxisRange";
 import type {AxisInterval} from "../axes/AxisInterval";
 
+/**
+ * A series' data: a plain array, or the `FastShiftArray` that backs a {@link BaseSeries}
+ */
 export type Series<D> = Array<D> | FastShiftArray<D>
 
+// a draw function registered with the canvas context, and where it falls in the drawing order
 interface RegisteredDraw {
     draw: DrawFn
     zIndex: number
@@ -15,10 +19,15 @@ interface RegisteredDraw {
  * Creates the {@link CanvasContext} for the chart -- the drawing context plus the redraw
  * registration/scheduling API that axes, plots, and the tracker use to (re)paint themselves.
  * Replaces the old `createPlotContainer`, which appended the root SVG `<g>`.
+ * Each redraw clears the canvas, and then calls every registered draw function in z-index order
+ * (lowest first); a draw function that throws is logged and skipped, so it doesn't blank the rest.
+ * The canvas isn't sized here: call {@link resizeCanvasTo} immediately after this with the actual
+ * container dimensions.
  * @param chartId A unique value identifying the chart.
  * @param canvas The `<canvas>` DOM element backing the chart.
- * immediately after this with the actual container dimensions).
  * @param color The default `color` used for text/strokes when nothing more specific is set.
+ * @return The canvas context
+ * @throws Error when the canvas has no 2D rendering context
  */
 export function createCanvasContext(
     chartId: number,

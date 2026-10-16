@@ -2,15 +2,19 @@ import type {BaseAxis} from "./axes";
 import {Optional} from "result-fn";
 
 /**
- * Holds the information to allow mapping axes names to the underlying axes objects.
- * These objects hold the axis ID, its location on the chart (i.e. left, right, bottom, upper)
- * and the underlying d3 selection objects for managing the axes. Axis objects that extend
- * the `BaseAxis` class may have additional properties.
+ * Holds the information to allow mapping axes IDs to the underlying axes objects (of either the
+ * x-axes or the y-axes). These objects hold the axis ID, its location on the chart (i.e. left,
+ * right, bottom, top), its type, and (for the axis types that extend `BaseAxis`) its scale and the
+ * functions for updating and drawing it.
  * @typeParam A The type of the axes (must extend `BaseAxis`)
  */
 export class AxesState<A extends BaseAxis> {
     readonly axes: Map<string, A>
 
+    /**
+     * Use {@link from} or {@link empty} to create an axes state
+     * @param axes Mapping of the axes IDs to the axes
+     */
     private constructor(axes: Map<string, A>) {
         this.axes = axes
     }
@@ -40,7 +44,8 @@ export class AxesState<A extends BaseAxis> {
     }
 
     /**
-     * Adds an axis to the current axis state and returns a new axis state. This is an internal state
+     * Adds an axis to this axes state's map of axes (in place), and returns a new axes state holding
+     * that same map (a new object, so that React sees the change). This is an internal state
      * management function. This should generally not be used. Instead, use the {@link UseAxesValues.addXAxis}
      * and {@link UseAxesValues.addYAxis} functions to add axes.
      * @param axis The axis to add
@@ -74,8 +79,8 @@ export class AxesState<A extends BaseAxis> {
     }
 
     /**
-     * Returns the default axis
-     * @return The default axis
+     * Returns the default axis: the first axis added
+     * @return The default axis, or an empty `Optional` when there are no axes
      * @see axisDefaultId
      */
     defaultAxis(): Optional<A> {
@@ -86,14 +91,15 @@ export class AxesState<A extends BaseAxis> {
     }
 
     /**
-     * @return An array holding all existing the x-axis IDs
+     * @return An array holding the IDs of all the axes
      */
     axisIds(): Array<string> {
         return Array.from(this.axes.keys())
     }
 
     /**
-     * @return The default name of the x-axis (in case only on default axis was added)
+     * @return The ID of the default axis (the first axis added), or an empty `Optional` when there
+     * are no axes
      */
     axisDefaultId(): Optional<string> {
         const ids = Array.from(this.axes.keys())

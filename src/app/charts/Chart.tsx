@@ -36,11 +36,13 @@ const defaultBackground = '#202020';
  * @param dataSource The application-owned {@link StreamingDataSource} that holds (and ingests) the chart's data
  * @param windowingTime The time-window (in milliseconds) to buffer the incoming data before updating the chart. This is
  * a lever to reduce the lag between real-time and chart-time when a large amount of data is being
- * sourced by the observable. Smaller time-windows result in smoother scrolling, but more updates, and
+ * ingested by the data source. Smaller time-windows result in smoother scrolling, but more updates, and
  * possibly a larger lag.
+ * @param dataUpdatePeriod The period (ms) at which the data source's generator emits new data, when known
  * @param onUpdateAxesBounds Callback when the time range changes. This is generally used by plots where the
  * x-axis starts to scroll as the data streams in past the end of the current time
  * @param onUpdateChartTime Callback for updating the current chart time. This is generally used by plots
+ * whose axes don't represent time (e.g. the Poincaré plot)
  * @template CD refers to the chart-data that is used by the Observable that has the stream of data.
  * @template D refers to the datum in the data-series
  * @template S refers to the type for the series style
@@ -96,7 +98,7 @@ export interface Props<CD extends ChartData, D, S extends SeriesStyle> {
     /**
      * The time-window (in milliseconds) to buffer the incoming data before updating the chart. This is
      * a lever to reduce the lag between real-time and chart-time when a large amount of data is being
-     * sourced by the observable. Smaller time-windows result in smoother scrolling, but more updates, and
+     * ingested by the data source. Smaller time-windows result in smoother scrolling, but more updates, and
      * possibly a larger lag.
      */
     windowingTime?: number
@@ -146,6 +148,7 @@ export interface Props<CD extends ChartData, D, S extends SeriesStyle> {
  * `useCanvasSurface()`), and the canvas context clears and repaints all registered draw functions
  * whenever a redraw is requested.
  * @param props The properties of the chart
+ * @return The chart, with its children inside the chart's context providers
  * @template CD Chart data
  * @template D The type of the datum type held in a series
  * @template S The type of the series style
@@ -162,13 +165,13 @@ export interface Props<CD extends ChartData, D, S extends SeriesStyle> {
     backgroundColor={theme.backgroundColor}
     seriesStyles={new Map([
         ['neuron1', {
-            ...defaultLineStyle,
+            ...defaultLineStyle(),
             color: 'orange',
             lineWidth: 2,
             highlightColor: 'orange'
         }],
         ['neuron6', {
-            ...defaultLineStyle,
+            ...defaultLineStyle(),
             color: theme.name === 'light' ? 'blue' : 'gray',
             lineWidth: 3,
             highlightColor: theme.name === 'light' ? 'blue' : 'gray',
@@ -186,13 +189,13 @@ export interface Props<CD extends ChartData, D, S extends SeriesStyle> {
         domain={[0, 5000]}
         label="t (ms)"
     />
-    <CategoryAxis
+    <OrdinalAxis
         axisId="y-axis-1"
         location={AxisLocation.Left}
         categories={dataSource.seriesList().map(series => series.name)}
         label="neuron"
     />
-    <CategoryAxis
+    <OrdinalAxis
         axisId="y-axis-2"
         location={AxisLocation.Right}
         categories={dataSource.seriesList().map(series => series.name)}

@@ -4,7 +4,8 @@ import {FastShiftArray} from "fast-shift-array";
 import {DEFAULT_COMPACTING_SIZE} from "./baseSeries.ts";
 
 /**
- * The spike-chart data produced by the rxjs observable that is pushed to a streaming chart
+ * The time-series chart data produced by the rxjs observable that is pushed to a streaming chart
+ * (e.g. the scatter and raster charts): each chunk's new points, and the latest times
  */
 export interface TimeSeriesChartData extends ChartData {
     /**
@@ -30,9 +31,10 @@ export interface TimeSeriesChartData extends ChartData {
 }
 
 /**
- * Creates an empty chart data object with all the values set to 0
- * @param {Array<string>} series The list of series names (identifiers) to update
- * @return {TimeSeriesChartData} An empty chart data object
+ * Creates a chart data object for the specified series whose times are all 0, and whose new
+ * points are a single (0, 0) point for each series
+ * @param series The list of series names (identifiers) to update
+ * @return The chart data object
  */
 export function emptyTimeSeriesChartData(series: Array<string>): TimeSeriesChartData {
     return {
@@ -45,10 +47,15 @@ export function emptyTimeSeriesChartData(series: Array<string>): TimeSeriesChart
 }
 
 /**
- * Creates an empty chart data object with all the values set to 0
- * @param seriesList The list of series names (identifiers) to update
+ * Creates the chart data object to start a stream from, for the specified series: its new points
+ * are each series' last datum (or (0, 0), for an empty series), each series' max time is the
+ * time of its last datum (or 0), and the max time is the latest of those (or `-Infinity`, when
+ * there are no series)
+ * @param seriesList The series
  * @param [currentTime=0] The current time
- * @return An empty chart data object
+ * @param [compactingSize=DEFAULT_COMPACTING_SIZE] The number of shifts each new-points array
+ * accumulates before it's compacted
+ * @return The chart data object
  */
 export function initialTimeSeriesChartData(
     seriesList: Array<TimeSeries>,

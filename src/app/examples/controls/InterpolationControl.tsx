@@ -14,6 +14,13 @@ type Props = {
     handleInterpolationChange: (selected: string) => void
 }
 
+/**
+ * Drop-down for the interpolation between a series' points (e.g. linear, or step), labeled
+ * "Interpolation"
+ * @param props The theme, the selected interpolation's name (e.g. "curveLinear"), and the
+ * handler for a new selection
+ * @return The labeled drop-down
+ */
 export function InterpolationControl(props: Props): JSX.Element {
     const {
         theme,

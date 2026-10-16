@@ -59,9 +59,9 @@ function accumulateChartData(accum: TimeSeriesChartData, currentData: TimeSeries
 }
 
 /**
- * *Side effect*
- * Calculates the successive differences in the values to create a random walk for simulating neuron weights.
- * Updates the specified `accum` parameter.
+ * Calculates the successive differences in the values to create a random walk for simulating neuron weights:
+ * each series' first new value is its last accumulated value plus the change (limited to the min and max).
+ * Returns a new map (rather than updating `accum`).
  * @param accum The "position" in the random walk
  * @param incoming The changes in position
  * @param min The minimum allowed value
@@ -95,7 +95,8 @@ function mergeSeries(
 
 /**
  * Creates random set of time-series data, essentially creating a random walk for each series
- * @param series The number of time-series for which to generate data (i.e. one for each neuron)
+ * @param series The series for which to generate data (i.e. one for each neuron) -- the walks
+ * continue from each series' last value, and the times from each series' last time
  * @param delta The max change in weight
  * @param [updatePeriod=25] The time-interval between the generation of subsequent data points
  * @param [min=-1] The minimum allowed value
@@ -134,6 +135,19 @@ export function randomWeightDataObservable(
     )
 }
 
+/**
+ * Creates initial (static) random-walk data for the specified series (the scatter example's
+ * initial data): for each series, a walk that starts within `delta` of the initial value, with one
+ * point at a random time within each of `numTimes` successive update periods, each point's value
+ * within `delta` of the previous point's
+ * @param seriesNames The names of the series
+ * @param initialTime The time at which the first update period starts
+ * @param initialValue The value around which the walks start
+ * @param updatePeriod The length of each update period (ms)
+ * @param delta The largest change in value from one point to the next
+ * @param numTimes The number of points (and update periods) for each series
+ * @return The initial data, one series for each name
+ */
 export function initialRandomWeightData(
     seriesNames: Array<string>,
     initialTime: number,

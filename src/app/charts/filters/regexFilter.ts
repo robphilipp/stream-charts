@@ -18,14 +18,14 @@ export function isSafeRegex(pattern: RegExp | string): boolean {
 }
 
 /**
- * Wraps the creation of the regex in a try/catch and returns the regex, wrapped in an option,
+ * Wraps the creation of the regex in a try/catch and returns the regex, wrapped in a `Result`,
  * when it is valid. This can be used, for example, in a text field where the user types a regex.
  * Also rejects a pattern that compiles fine but risks catastrophic backtracking (see
  * {@link isSafeRegex}) -- a syntax error and an exponential-time pattern are both "can't use this"
  * outcomes from the caller's point of view, so both are reported the same way.
  * @param regexString The string representation of the regex
- * @return The regular expression (`RegExp`) wrapped in an option. If the regexp
- * is invalid, or is unsafe, then the option is none.
+ * @return The regular expression (`RegExp`) wrapped in a successful `Result`. If the regex is
+ * invalid, or is unsafe, then a failed `Result` holding a message that says why.
  */
 export function regexFilter(regexString: string): Result<RegExp, string> {
     try {
@@ -49,7 +49,8 @@ export function regexFilter(regexString: string): Result<RegExp, string> {
  * being given unintended regex semantics. Escapes those metacharacters before handing the result
  * to {@link regexFilter}, so it shares the same `Result`-wrapped, never-throws contract.
  * @param text The literal text to match
- * @return The regular expression (`RegExp`) wrapped in an option, matching `text` literally
+ * @return The regular expression (`RegExp`) matching `text` literally, wrapped in a `Result` (see
+ * {@link regexFilter})
  */
 export function literalFilter(text: string): Result<RegExp, string> {
     return regexFilter(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))

@@ -25,7 +25,8 @@ import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
  To create your own tooltip content `<MyTooltipContent/>` you must do the following:
  1. Create a react component for your tooltip content (see for example, {@link PoincarePlotTooltipContent}
  as a reference.
- 2. Use the {@link useChart} hook to get the {@link registerTooltipContentProvider} registration function.
+ 2. Use the {@link useChart} hook to get the {@link registerTooltipContentProvider} registration function
+ (it's `useChart().tooltip.registerTooltipContentProvider`).
  3. When your tooltip content component (`<MyTooltipContent/>`) mounts, use the {@link registerTooltipContentProvider}
  function to register your tooltip content provider.
  4. When the chart dimensions, margin, canvas, etc, change, register your tooltip content provider
@@ -38,11 +39,15 @@ import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
  one tooltip content provider. A second call to this function will cause the {@link useChart} hook to drop
  the first one in favor of the second one.
 
- The {@link registerTooltipContentProvider} function from the {@link useChart} hook accepts a higher-order
- function that allowing a closure on content/chart-specific data. Specifically, you must hand the
+ The {@link registerTooltipContentProvider} function from the {@link useChart} hook accepts a function
+ that can close over content/chart-specific data. Specifically, you must hand the
  {@link registerTooltipContentProvider} a function of the form:
 
- `(seriesName: string, time: number, series: TimeSeries, mouseCoords: [x: number, y: number]) => TooltipDimensions`
+ `(seriesName: string, time: number, tooltipData: TooltipData<D, TM>, mouseCoords: [x: number, y: number], providerId?: string) => TooltipDimensions`
+
+ where the tooltip data holds the series (or the part of it the plot passes along) and the plot's
+ metadata, and the provider ID says which kind of element is hovered (for plots, like the bar plot,
+ that have several).
 
  Your function to capture the actual content will be what this function calls whenever the plot's
  mousemove hit-test finds the mouse hovering over one of the points in the chart. Tooltip content
@@ -63,14 +68,18 @@ import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
  * shown below.
  * ```
  * series name
- *          beforeHeader      afterHeader        deltaHeader
- * xLabel   xValueFormatter   xValueFormatter    xChangeFormatter
- * yLabel   yValueFormatter   yValueFormatter    yChangeFormatter
+ *          f[n-1](x)         f[n](x)            f[n+1](x)
+ * xLabel   xValueFormatter   xValueFormatter    xValueFormatter
+ * yLabel   yValueFormatter   yValueFormatter    yValueFormatter
  * ```
+ * The column headers are always the `f[i](x)` form, built from the hovered point's index: the
+ * `nMinusLagHeader`, `nHeader`, and `nPlusLagHeader` properties, and the `xChangeFormatter` and
+ * `yChangeFormatter` properties, are accepted, but not (yet) used.
  */
 export interface Props {
     // label for the x-values (x-value row header)
     xLabel: string
+    // label for the y-values (y-value row header)
     yLabel: string
     nMinusLagHeader?: string
     nHeader?: string
@@ -107,7 +116,7 @@ interface PoincareTooltipContent {
 /**
  * Adds tooltip content as a table. The columns of the table are the previous, current, and next
  * iterate (relative to the hovered point). The rows of the table are the time values for the
- * first row, and the iterate values for the second row.
+ * first row, and the iterate values (each point's `f[n+1](x)`) for the second row.
  * ```
  * series name
  *            f[n-1](x)     f[n](x)      f[n+1](x)
@@ -260,6 +269,7 @@ export function PoincarePlotTooltipContent(props: Props): ReactElement | null {
     )
 }
 
+// the row labels and value formatters for the tooltip's table
 interface CaptureOptions {
     xLabel: string
     yLabel: string
@@ -268,8 +278,9 @@ interface CaptureOptions {
 }
 
 /**
- * Captures the data needed to render the tooltip's table content, and computes its viewport-fixed
- * position. Replaces the old version, which built and positioned an SVG table via `svg-table`'s
+ * Captures the data needed to render the tooltip's table content (the hovered point -- the first
+ * point within 0.1 of the mouse's time -- and its neighbors), and where it's anchored (the mouse --
+ * the tooltip is placed next to it once it's rendered, see {@link useTooltipPlacement}). Replaces the old version, which built and positioned an SVG table via `svg-table`'s
  * `createTable`.
  * @param seriesName The name of the series (i.e. the neuron ID)
  * @param time The time (x-coordinate value) corresponding to the mouse location

@@ -28,7 +28,8 @@ Here's how to write your own tooltip-content component.
 To create your own tooltip content `<MyTooltipContent/>` you must do the following:
 1. Create a React component for your tooltip content (see, for example, {@link ScatterPlotTooltipContent}
    as a reference.
-2. Use the {@link useChart} hook to get the {@link registerTooltipContentProvider} registration function.
+2. Use the {@link useChart} hook to get the {@link registerTooltipContentProvider} registration function
+   (it's `useChart().tooltip.registerTooltipContentProvider`).
 3. When your tooltip content component (`<MyTooltipContent/>`) mounts, use the {@link registerTooltipContentProvider}
    function to register your tooltip content provider.
 4. When the chart dimensions, margin, canvas, etc, change, register your tooltip content provider
@@ -41,11 +42,15 @@ The {@link registerTooltipContentProvider} function from the {@link useChart} ho
 one tooltip content provider. A second call to this function will cause the {@link useChart} hook to drop
 the first one in favor of the second one.
 
-The {@link registerTooltipContentProvider} function from the {@link useChart} hook accepts a higher-order
-function that allowing a closure on content/chart-specific data. Specifically, you must hand the
+The {@link registerTooltipContentProvider} function from the {@link useChart} hook accepts a function
+that can close over content/chart-specific data. Specifically, you must hand the
 {@link registerTooltipContentProvider} a function of the form:
 
-`(seriesName: string, time: number, series: TimeSeries, mouseCoords: [x: number, y: number]) => TooltipDimensions`
+`(seriesName: string, time: number, tooltipData: TooltipData<D, TM>, mouseCoords: [x: number, y: number], providerId?: string) => TooltipDimensions`
+
+where the tooltip data holds the series (or the part of it the plot passes along) and the plot's
+metadata, and the provider ID says which kind of element is hovered (for plots, like the bar plot,
+that have several).
 
 Your function to capture the actual content will be what this function calls whenever the plot's
 mousemove hit-test finds the mouse hovering over one of the time-series in the chart. Tooltip
@@ -58,12 +63,17 @@ just to capture the data needed to render, via a bit of React state.
 /**
  * Options for displaying the tooltip content. These options are specific to this
  * particular implementation of a tooltip content. The options effect are applied
- * as shown below.
+ * as shown below (over a segment; and over a point).
  * ```
  * series name
  *            headers.before       headers.after         headers.delta
  * labels.x   formatters.x.value   formatters.x.value    formatters.x.change
  * labels.y   formatters.y.value   formatters.y.value    formatters.y.change
+ *
+ * series name
+ *            headers.before       headers.point         headers.after
+ * labels.x   formatters.x.value   formatters.x.value    formatters.x.value
+ * labels.y   formatters.y.value   formatters.y.value    formatters.y.value
  * ```
  */
 interface TooltipOptions {
@@ -93,16 +103,25 @@ interface TooltipOptions {
 export interface Props {
     // label for the x-values (x-value row header)
     xLabel: string
+    // label for the y-values (y-value row header)
     yLabel: string
+    // header of the column for the point before the mouse (or before the point under the mouse)
     beforeHeader?: string
     // header of the column for the point under the mouse (when the mouse is directly over a point)
     pointHeader?: string
+    // header of the column for the point after the mouse (or after the point under the mouse)
     afterHeader?: string
+    // header of the column for the change from the point before the mouse to the point after it
     deltaHeader?: string
+    // formats the x-values
     xValueFormatter?: (value: number) => string
+    // formats the y-values
     yValueFormatter?: (value: number) => string
+    // formats the change in the x-values (from the first value to the second)
     xChangeFormatter?: (value1: number, value2: number) => string,
+    // formats the change in the y-values (from the first value to the second)
     yChangeFormatter?: (value1: number, value2: number) => string,
+    // the style of the tooltip
     style?: Partial<TooltipStyle>
 }
 
@@ -301,13 +320,16 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
 }
 
 /**
- * Captures the data needed to render the tooltip's table content, and computes its viewport-fixed
- * position. Replaces the old version, which measured and hand-positioned each SVG `<text>` cell
+ * Captures the data needed to render the tooltip's table content, and where it's anchored (the
+ * mouse -- the tooltip is placed next to it once it's rendered, see {@link useTooltipPlacement}).
+ * Replaces the old version, which measured and hand-positioned each SVG `<text>` cell
  * via `getBBox()` and a `spacesWidthFor` pixel-width heuristic -- an HTML `<table>` (see the
  * component above) handles all of that alignment natively.
  * @param seriesName The name of the series (i.e. the neuron ID)
  * @param time The time (x-coordinate value) corresponding to the mouse location
- * @param series The datum (t ms, s mV)
+ * @param series The series' data
+ * @param points The points to show, as the plot determined them (see {@link scatterTooltipPoints});
+ * when `undefined`, the points on either side of the mouse's time are shown
  * @param mouseCoords The coordinates of the mouse when the event was fired, in canvas-local coordinates
  * @param canvas The chart's canvas element
  * @param options The options passed through the function that adds the tooltip content

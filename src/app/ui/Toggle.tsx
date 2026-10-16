@@ -25,6 +25,13 @@ interface Props {
     disabledBorderColor?: string
 }
 
+/**
+ * A toggle switch between two labels (by default "On" and "Off"), which starts out off, and calls
+ * `onToggle` with the new status each time it's clicked
+ * @param props The labels, the colors (on, off, and disabled), the switch's size, the handler for
+ * a new status, and whether the switch is disabled
+ * @return The toggle switch
+ */
 export function Toggle(props: Props): JSX.Element {
     const {
         leftLabel = "On",

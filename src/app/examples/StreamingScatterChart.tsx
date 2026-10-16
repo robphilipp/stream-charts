@@ -96,10 +96,10 @@ function initialDataForSeriesCount(numberOfSeries: number): Array<TimeSeries> {
 
 /**
  * Compiles the filter's regex string into a `RegExp`, falling back to a match-everything
- * regex when the string isn't a valid regular expression. The compiled regex is held in the
- * store (rather than derived in a selector) so that its reference remains stable across
- * renders. A selector that compiled the regex would hand `useSyncExternalStore` a new object
- * on every call, and React would re-render forever.
+ * regex when the string isn't a valid regular expression. The component compiles it in a
+ * `useMemo` keyed on the filter's string (which is what the store holds), so that its reference
+ * remains stable across renders -- rather than in a store selector, which would hand
+ * `useSyncExternalStore` a new object on every call, and React would re-render forever.
  * @param filterValue The string representation of the regex
  * @return The compiled regex, or a match-everything regex when the string is invalid
  */
@@ -109,13 +109,24 @@ const filterFrom = (filterValue: string): RegExp => regexFilter(filterValue).get
  * The properties
  */
 interface Props {
+    // the theme (defaults to the light theme)
     theme?: Theme
+    // (unused)
     timeWindow?: number
+    // the initial data (the default number of series, see routeData.ts)
     initialData?: Array<TimeSeries>
+    // (unused)
     plotHeight?: number
+    // (unused)
     plotWidth?: number
 }
 
+/**
+ * The scatter-chart example: its control bar (run/pause, reset, and the settings), and a scatter
+ * chart of random walks, with two x-axes and two y-axes, streamed from the store's data source
+ * @param props The theme and the initial data
+ * @return The example
+ */
 export function StreamingScatterChart(props: Props): JSX.Element {
     const {
         theme = lightTheme,
@@ -266,9 +277,10 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     }, [shouldShowExternalLegend])
 
     /**
-     * Processes an array of time series data and returns a new array with modified series.
-     * @param data - The input array of time series objects to process.
-     * @return A new array of time series objects with modifications applied.
+     * Copies the specified series (each series' data too, so that the data source that's handed
+     * the copies doesn't mutate the originals as data streams in)
+     * @param data The series to copy
+     * @return The copies
      */
     function initialDataFrom(data: Array<TimeSeries>): Array<TimeSeries> {
         return data.map(series => seriesFrom<Datum>(series.name, series.data.slice()))
@@ -279,7 +291,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
      * @param updatedFilter The updated the filter
      */
     function handleUpdateFilterValue(updatedFilter: string): void {
-        // the store compiles the regex from the filter value
+        // the component compiles the regex from the filter value (see `filterFrom`)
         setFilterValue(updatedFilter)
     }
 
@@ -708,6 +720,14 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     );
 }
 
+/**
+ * The color of a series: from d3's red-blue color scale, by the series' index (from the
+ * scale's lighter middle for the dark theme)
+ * @param index The index of the series
+ * @param numSeries The number of series
+ * @param themeName The name of the theme ("light" or "dark")
+ * @return The series' color
+ */
 function colorFor(index: number, numSeries: number, themeName: string): string {
     const ratio = index / numSeries / 2
     return themeName === 'light' ?
@@ -715,6 +735,12 @@ function colorFor(index: number, numSeries: number, themeName: string): string {
         d3.interpolateRdBu(ratio + 0.25)
 }
 
+/**
+ * The line width of a series: wider for "Series 2" and "Series 3" (the series assigned to the
+ * second x-axis), so that they stand out
+ * @param name The name of the series
+ * @return The series' line width (px)
+ */
 function linewidthFor(name: string): number {
     if (name === 'Series 1') return 1
     if (name === 'Series 2' || name === 'Series 3') return 3
@@ -722,6 +748,12 @@ function linewidthFor(name: string): number {
     return 1
 }
 
+/**
+ * The line width of a series when it's highlighted (hovered): 2 px wider than its normal width
+ * (see {@link linewidthFor})
+ * @param name The name of the series
+ * @return The series' highlighted line width (px)
+ */
 function highlightLinewidthFor(name: string): number {
     if (name === 'Series 1') return 3
     if (name === 'Series 2' || name === 'Series 3') return 5

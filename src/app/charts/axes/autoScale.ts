@@ -21,7 +21,7 @@ export type AutoScale = {
     max: number
     /**
      * The fraction of the axis' length left beyond the data's extreme on a side that grows (so
-     * the extreme point isn't drawn right on the edge), from 0 up to (not including) 0.5
+     * the extreme point isn't drawn right on the edge), from 0 to 0.45
      */
     padding: number
 }

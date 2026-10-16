@@ -13,6 +13,12 @@ type Props = {
     disabled: boolean
 }
 
+/**
+ * Drop-down for how long the chart keeps data (e.g. "Drop after 10 s", or "Keep All")
+ * @param props The theme, the selected option, the handler for a new selection (handed the
+ * option's time, in ms -- `Infinity` to keep all the data), and whether the drop-down is disabled
+ * @return The drop-down
+ */
 export function DropDataControl(props: Props): JSX.Element {
     const {
         theme,

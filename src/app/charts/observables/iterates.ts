@@ -27,12 +27,14 @@ export interface IterateChartData extends ChartData {
     maxIterate: IterateDatum
 
     /**
-     * Holds the association of the series name to the current min time for that series
+     * Holds the association of the series name to the min values for (time, iterate n, and
+     * iterate n+1) for that series
      */
     minIterates: Map<string, IterateDatum>
 
     /**
-     * Holds the association of the series name to the current max time for that series
+     * Holds the association of the series name to the max values for (time, iterate n, and
+     * iterate n+1) for that series
      */
     maxIterates: Map<string, IterateDatum>
 
@@ -43,6 +45,9 @@ export interface IterateChartData extends ChartData {
     newPoints: Map<string, Array<IterateDatum>>
 }
 
+/**
+ * @return Iterate chart data without any series or points, and with empty min and max iterates
+ */
 const emptyIterateData = (): IterateChartData => ({
     ...defaultChartData(),
     minIterate: emptyIterateDatum,
@@ -53,8 +58,10 @@ const emptyIterateData = (): IterateChartData => ({
 })
 
 /**
- * Makes a deep copy of the iterate chart data
+ * Makes a copy of the iterate chart data: new sets, maps, and arrays of points (the points
+ * themselves are shared)
  * @param data The iterate chart data to copy
+ * @return The copy
  */
 export const copyIterateDataFrom = (data: IterateChartData): IterateChartData => ({
     ...copyChartData(data),
@@ -65,12 +72,19 @@ export const copyIterateDataFrom = (data: IterateChartData): IterateChartData =>
     newPoints: new Map<string, Array<IterateDatum>>(Array.from(data.newPoints.entries()).map(([name, points]) => [name, points.slice()])),
 })
 
+// the state accumulated, from one chunk of time-series chart data to the next, while calculating
+// the iterates: the iterate distance, the points not yet paired up (by series), and the iterates
 type Accumulator = {
     n: number
     previous: Map<string, Array<Datum>>
     accumulated: IterateChartData
 }
 
+/**
+ * The accumulator to start calculating the n-iterates from
+ * @param n The iterate distance
+ * @return An accumulator with no points and no iterates
+ */
 const initialAccumulate = (n: number): Accumulator => ({n, previous: new Map(), accumulated: emptyIterateData()})
 
 /**
@@ -81,7 +95,8 @@ const initialAccumulate = (n: number): Accumulator => ({n, previous: new Map(), 
  * points `(f[m](x), f[m+n](x))` are n-iterates.
  * @param dataObservable The observable over {@link TimeSeriesChartData}
  * @param [n=1] The iterate distance
- * @return An over {@link IterateChartData} holding the n-iterate for the incoming chart data
+ * @return An observable over {@link IterateChartData} holding the n-iterate for the incoming chart
+ * data (nothing is emitted until the first iterate has been calculated)
  */
 export function iteratesObservable(dataObservable: Observable<TimeSeriesChartData>, n: number = 1): Observable<IterateChartData> {
     return dataObservable
@@ -128,8 +143,7 @@ export function iteratesObservable(dataObservable: Observable<TimeSeriesChartDat
                             accum.maxIterates.set(name, maxIterateFor(iterate, accum.maxIterates.get(name)))
 
                             // add the newly calculated iterate, and then trim from the
-                            // head of the array to a size n. For the iterates, we only need
-                            // to keep enough to create points (x(j), x(j+n))
+                            // head of the array to the number of points in this chunk
                             const updatedPoints = accum.newPoints.get(name) || []
                             if (updatedPoints.length === 0) {
                                 accum.newPoints.set(name, updatedPoints)
@@ -143,7 +157,8 @@ export function iteratesObservable(dataObservable: Observable<TimeSeriesChartDat
                 return {n, previous, accumulated: accum}
             }, initialAccumulate(n)),
 
-            // remove new points from the map that are empty
+            // skip the chunks until the first iterate has been calculated, and remove the empty
+            // new points
             filter(accum => !isNaN(accum.accumulated.minIterate.iterateN) && !isNaN(accum.accumulated.minIterate.iterateN_1)),
             map(accum => removeEmptyNewPoints(accum)),
             map(accum => accum.accumulated === undefined ? emptyIterateData() : accum.accumulated)
@@ -186,6 +201,11 @@ function maxIterateFor(iterate: IterateDatum, maxIterate: IterateDatum = emptyIt
     }
 }
 
+/**
+ * Removes the empty iterates from the accumulated new points
+ * @param accum The accumulator
+ * @return A new accumulator, whose accumulated new points are the non-empty ones
+ */
 function removeEmptyNewPoints(accum: Accumulator): Accumulator {
     const newPoints = new Map(
         Array

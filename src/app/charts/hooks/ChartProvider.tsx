@@ -35,7 +35,7 @@ export interface Props<S extends SeriesStyle> {
      */
     seriesStyles?: Map<string, S>
     /**
-     * An optional regular expression uses against the series names to determine which series to show in the chart
+     * An optional regular expression used against the series names to determine which series to show in the chart
      */
     seriesFilter?: RegExp
 
@@ -46,9 +46,7 @@ export interface Props<S extends SeriesStyle> {
  * The React context provider for the {@link UseChartValues}
  * @param props The properties
  * @return The children wrapped in this provider
- * @template D The type of the series' datum
  * @template S The type of the series style
- * @template TM The type of the tooltip's metadata (data about the series data)
  * @template AR The type of the axis range
  * @template A The type of the axis
  */

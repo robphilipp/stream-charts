@@ -10,7 +10,9 @@ export type Props = {
 }
 
 /**
- * Providers for the plot's dimensions and margins.
+ * Provides the plot's dimensions and margins (see {@link usePlotDimensions}): the plot dimensions
+ * are the container's dimensions less the margins, and are updated (and the registered change
+ * handlers called) when the container's dimensions or the margins change.
  * @param props The properties
  * @return The children wrapped in this provider
  */

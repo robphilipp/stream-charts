@@ -32,7 +32,8 @@ import type {Series} from "../plots/plot";
  To create your own tooltip content `<MyTooltipContent/>` you must do the following:
  1. Create a react component for your tooltip content (see for example, {@link ScatterPlotTooltipContent}
  as a reference.
- 2. Use the {@link useChart} hook to get the {@link registerTooltipContentProvider} registration function.
+ 2. Use the {@link useChart} hook to get the {@link registerTooltipContentProvider} registration function
+ (it's `useChart().tooltip.registerTooltipContentProvider`).
  3. When your tooltip content component (`<MyTooltipContent/>`) mounts, use the {@link registerTooltipContentProvider}
  function to register your tooltip content provider.
  4. When the chart dimensions, margin, canvas, etc, change, register your tooltip content provider
@@ -45,11 +46,15 @@ import type {Series} from "../plots/plot";
  one tooltip content provider. A second call to this function will cause the {@link useChart} hook to drop
  the first one in favor of the second one.
 
- The {@link registerTooltipContentProvider} function from the {@link useChart} hook accepts a higher-order
- function that allowing a closure on content/chart-specific data. Specifically, you must hand the
+ The {@link registerTooltipContentProvider} function from the {@link useChart} hook accepts a function
+ that can close over content/chart-specific data. Specifically, you must hand the
  {@link registerTooltipContentProvider} a function of the form:
 
- `(seriesName: string, time: number, series: TimeSeries, mouseCoords: [x: number, y: number]) => TooltipDimensions`
+ `(seriesName: string, time: number, tooltipData: TooltipData<D, TM>, mouseCoords: [x: number, y: number], providerId?: string) => TooltipDimensions`
+
+ where the tooltip data holds the series (or the part of it the plot passes along) and the plot's
+ metadata, and the provider ID says which kind of element is hovered (for plots, like the bar plot,
+ that have several).
 
  Your function to add that actual content will be what this function calls whenever the plot's
  mousemove hit-test finds the mouse hovering over one of the time-series in the chart.
@@ -86,16 +91,14 @@ import type {Series} from "../plots/plot";
  * ```
  */
 export interface Props {
+    /** formats the times (the spike's time, and the mean time between spikes) */
     xFormatter?: (value: number) => string
+    /** formats the values (the spike's value, and the mean and standard deviation of the values) */
     yFormatter?: (value: number) => string
+    /** the style of the tooltip */
     style?: Partial<TooltipStyle>
 }
 
-/**
- * The data needed to render the tooltip's content, captured at mouse-over time and read back out
- * during render. Replaces the old version's immediate SVG DOM manipulation -- content is now
- * declarative React, driven by this piece of state.
- */
 // the size of the tooltip's sparkline (of the spikes' values over the window)
 const SPARKLINE_WIDTH = 180
 const SPARKLINE_HEIGHT = 36
@@ -111,6 +114,11 @@ function valueOrMissing(value: number | undefined, formatter: (value: number) =>
     return value === undefined ? '–' : formatter(value)
 }
 
+/**
+ * The data needed to render the tooltip's content, captured at mouse-over time and read back out
+ * during render. Replaces the old version's immediate SVG DOM manipulation -- content is now
+ * declarative React, driven by this piece of state.
+ */
 interface RasterTooltipContent {
     seriesName: string
     spikeTime: number
@@ -124,10 +132,15 @@ interface RasterTooltipContent {
 }
 
 /**
- * Adds tooltip content that shows the series name and the (time, value) of the selected point.
+ * Adds tooltip content that shows the series name, the (time, value) of the selected spike, the
+ * statistics of the series' spikes in the window of data the chart holds (their count, the mean
+ * and standard deviation of their values, and the mean time between them), and a sparkline of
+ * their values over the window.
  * ```
  * series name
  * time, value
+ * statistics
+ * sparkline
  * ```
  *
  * Registers the tooltip-content provider with the `ChartContext` so that when the plot's
@@ -303,11 +316,13 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
 }
 
 /**
- * Captures the data needed to render the tooltip content, and computes its viewport-fixed
- * position. Replaces the old version, which measured and positioned SVG `<text>` elements
- * directly via `getBBox()`.
+ * Captures the data needed to render the tooltip content, and where it's anchored (horizontally,
+ * the mouse; vertically, the spike's row -- the tooltip is placed once it's rendered, see
+ * {@link useTooltipPlacement}). Replaces the old version, which measured and positioned SVG
+ * `<text>` elements directly via `getBBox()`.
  * @param seriesName The name of the series (i.e. the neuron ID)
- * @param selected The selected datum (time, value)
+ * @param selected The selected datum (time, value), or `undefined` (in which case the tooltip is cleared)
+ * @param spikes All the series' spikes in the window (for the statistics and the sparkline), when known
  * @param mouseCoords The coordinates of the mouse when the event was fired, in canvas-local coordinates
  * @param canvas The chart's canvas element
  * @param margin The plot margins

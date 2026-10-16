@@ -29,9 +29,16 @@ import {AxisInterval} from "../axes/AxisInterval";
 import {warnAboutIgnoredAutoScale} from "../axes/autoScale";
 import {FastShiftArray} from "fast-shift-array";
 
+// an iterate as the plot draws it: f[n](x), f[n+1](x), the iterate's time, and its index in its series
 type IteratePoint = { n: number, n_1: number, time: number, index: number }
 type IteratePointSeries = FastShiftArray<IteratePoint>
 
+/**
+ * Creates an axis range (with its original range the same as its current range) from each axis'
+ * current domain
+ * @param axes The axes (continuous numeric ones), by their IDs
+ * @return The axes' ranges, by their IDs
+ */
 function generateAxisRangeMap(axes: Map<string, BaseAxis>): Map<string, ContinuousAxisRange> {
     return new Map(
         Array.from(axes.entries()).map(([id, axis]) => {
@@ -61,6 +68,9 @@ export interface PoincarePlotZoomState {
     ranges: Record<string, [start: number, end: number]>
 }
 
+/**
+ * The properties of the {@link PoincarePlot}
+ */
 export interface Props {
     /**
      * The line interpolation curve factory. See the d3 documentation for curves at
@@ -68,7 +78,7 @@ export interface Props {
      */
     interpolation?: d3.CurveFactory
     /**
-     * When set to `true` plots the data points as well as the line.
+     * When set to `true` (the default) plots the data points as well as the line.
      */
     showPoints?: boolean
     /**
@@ -123,6 +133,8 @@ export interface Props {
      * then setting the cadence period too small will result in poor update performance. Generally
      * at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time
      * to the current time.
+     *
+     * Note: the Poincaré plot accepts this, but doesn't (yet) use it -- its axes don't follow time.
      */
     withCadenceOf?: number
     /**
@@ -133,8 +145,8 @@ export interface Props {
 }
 
 /**
- * Renders a streaming Poincare (iterates) plot for the series in the initial data and those sourced by the
- * observable specified as a property in the {@link Chart}. This component uses the {@link useChart}
+ * Renders a streaming Poincare (iterates) plot for the series held by the {@link StreamingDataSource}
+ * handed to the {@link Chart} (its `dataSource` prop). This component uses the {@link useChart}
  * hook, and therefore must be a child of the {@link Chart} in order to be plugged in to the
  * chart ecosystem (axes, tracker, tooltip).
  *
@@ -147,14 +159,13 @@ export interface Props {
  * "is this point hovered, or a neighbor of the hovered point" and renders the highlight/label
  * inline, driven by a `hoveredPointRef` updated on `mousemove`.
  *
- * @param props The properties associated with the scatter plot
+ * @param props The properties associated with the Poincaré plot
+ * @return `null` (the plot draws onto the chart's canvas)
  * @example
  * ```typescript
- *  <ScatterPlot
+ *  <PoincarePlot
  *      interpolation={interpolation}
- *      axisAssignments={new Map([
- *          ['test2', assignAxes("x-axis-2", "y-axis-2")],
- *      ])}
+ *      showPoints={true}
  *      panEnabled={true}
  *      zoomEnabled={true}
  *      zoomKeyModifiersRequired={true}
@@ -230,16 +241,17 @@ export function PoincarePlot(props: Props): null {
     // why do "dataRef" and "seriesRef" both hold on to the same underlying data? for performance.
     //
     // the "dataRef" and "seriesRef" both point to the same underlying data, a collection
-    // of series. The series in "dataRef" are read by the canvas draw function. The "seriesRef" series
-    // are the ones that are updated as new data is streamed in.
+    // of series (held, and updated as new data is streamed in, by the data source). The series in
+    // "dataRef" are read by the canvas draw function, and the "seriesRef" map is for looking a
+    // series up by its name.
     //
     // the "dataRef" object holds on to a copy of the initial data (which is an array of
-    // time-series, e.i. an array of BaseSeries<OrdinalDatum> objects). The slice just creates a copy of
+    // iterate series, e.i. an array of BaseSeries<IterateDatum> objects). The slice just creates a copy of
     // the array, but the references to the BaseSeries objects are the same and still point to the same
     // data as the "initialData" array.
     //
-    // the "seriesRef" object is a reference to a map (series_name -> BaseSeries<OrdinalDatum>) which is
-    // used to update the data in the series. When new data enters, it is appended to one or more series.
+    // the "seriesRef" object is a reference to a map (series_name -> BaseSeries<IterateDatum>), used
+    // to find the series under the mouse (for the tooltip).
     //
     // the series in the "dataRef" object are the ones read by the next redraw, so as these are
     // updated, the next canvas repaint picks up the new data.
@@ -548,7 +560,7 @@ export function PoincarePlot(props: Props): null {
 
     // todo find better way
     // when the initial data changes, then reset the plot. note that the initial data doesn't change
-    // during the normal course of updates from the observable, only when the plot is restarted.
+    // during the normal course of updates from the data source, only when the data source is replaced.
     useEffect(
         () => {
             dataRef.current = initialData.slice()
@@ -561,8 +573,9 @@ export function PoincarePlot(props: Props): null {
     )
 
     /**
-     * When the axes bounds have changed, we need to reset the range references so that
-     * the new axis ranges are used
+     * When the axes bounds have changed (from outside, e.g. a different iterate function), resets
+     * the range references so that the new axis ranges are used -- as the axes' new original
+     * (un-zoomed) domains -- resets the zoom, and reports the (reset) zoom state
      * @param updates The updates to the axes
      */
     const updatedBoundsHandler = useCallback(
@@ -617,13 +630,13 @@ export function PoincarePlot(props: Props): null {
     );
 
     /**
-     * Adjusts the time-range and updates the plot when the plot is dragged to the left or right
-     * @param x The amount that the plot is dragged
+     * Adjusts the x- and y-axes' ranges when the plot is dragged (the caller redraws the plot)
+     * @param x The amount that the plot is dragged in x
      * @param y The amount that the plot is dragged in y
      * @param plotDimensions The dimensions of the plot
      * @param series An array of series names
-     * @param xRanges A map holding the axis ID and its associated time range
-     * @param yRanges A map holding the axis ID and its associated time range
+     * @param xRanges A map holding the x-axis ID and its associated range
+     * @param yRanges A map holding the y-axis ID and its associated range
      */
     const onPan = useCallback(
         (
@@ -676,8 +689,8 @@ export function PoincarePlot(props: Props): null {
      * @param x The x-position of the mouse when the scroll wheel or gesture is used
      * @param y The y-position of the mouse when the scroll wheel or gesture is used
      * @param plotDimensions The dimensions of the plot
-     * @param xRanges A map holding the axis ID and its associated time-range
-     * @param yRanges A map holding the axis ID and its associated time-range
+     * @param xRanges A map holding the x-axis ID and its associated range
+     * @param yRanges A map holding the y-axis ID and its associated range
      */
     const onZoom = useCallback(
         (
@@ -982,10 +995,12 @@ export function PoincarePlot(props: Props): null {
 }
 
 /**
- * Attempts to locate the x- and y-axes for the specified series. If no axis is found for the
- * series name, then uses the default returned by the useChart() hook
+ * Locates the plot's x- and y-axes: always the default (first) ones, since every series of a
+ * Poincaré plot shares the same axes
  * @param xAxisFor The function that accepts an axis ID and returns the corresponding x-axis
  * @param yAxisFor The function that accepts an axis ID and returns the corresponding y-axis
+ * @return The x- and y-axes (either is actually `undefined` when it isn't found, despite the type)
+ * @throws Error when either axis isn't a continuous numeric axis
  */
 function axesFor(
     xAxisFor: (id: string) => BaseAxis | undefined,
@@ -1034,6 +1049,12 @@ function handleMouseEnterPoint(
     }
 }
 
+/**
+ * Calls the mouse-leave-series handler registered for this series (the highlight is cleared by
+ * the draw function, once the hovered point is cleared)
+ * @param seriesName The name of the series
+ * @param mouseLeaverHandlerFor Registered handler for the series when the mouse leaves
+ */
 function handleMouseLeavePoint(
     seriesName: string,
     mouseLeaverHandlerFor: ((seriesName: string) => void) | undefined,

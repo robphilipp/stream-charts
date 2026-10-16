@@ -11,6 +11,19 @@ import {
 import {map} from "rxjs/operators";
 import {datumOf} from "../../charts/series/timeSeries.ts";
 
+/**
+ * Creates the observable of outlier data for a single series: every update period, emits one datum,
+ * calculated by the base function at the current time (the start time plus the wall-clock time
+ * elapsed since subscribing)
+ * @param seriesName The name of the series
+ * @param baseFunction Calculates the datum (its value, and its bounds for each measure) at a time
+ * @param measures The measures (e.g. the probabilities) of the bounds
+ * @param [sigmaNoise=1] The amount of noise, handed to the base function
+ * @param [updatePeriod=25] The time (ms) between data
+ * @param [startTime=0] The time from which the data's times continue (e.g. the latest existing time)
+ * @return The observable of outlier chart data
+ * @template M The type of the measures (a tuple of numbers)
+ */
 export function randomOutlierDataObservable<M extends readonly number[]>(
     seriesName: string,
     baseFunction: (x: number, sigma: number, measures: M) => OutlierDatum<M>,
@@ -40,6 +53,15 @@ export function randomOutlierDataObservable<M extends readonly number[]>(
  * time-steps. Useful for pre-populating a chart so users see data before any streaming starts.
  * The generated points line up with what {@link randomOutlierDataObservable} would emit, so a
  * streaming run starting at `numPoints * updatePeriod` continues the series seamlessly.
+ * @param seriesName The name of the series
+ * @param baseFunction Calculates the datum (its value, and its bounds for each measure) at a time
+ * @param measures The measures (e.g. the probabilities) of the bounds
+ * @param sigmaNoise The amount of noise, handed to the base function
+ * @param updatePeriod The time (ms) between data (the first is at one update period)
+ * @param numPoints The number of data
+ * @param [measureDescriptions] The descriptions of the measures
+ * @return The initial data: a single outlier series
+ * @template M The type of the measures (a tuple of numbers)
  */
 export function initialOutlierData<M extends readonly number[]>(
     seriesName: string,
@@ -58,6 +80,17 @@ export function initialOutlierData<M extends readonly number[]>(
     return [outlierSeriesFrom(seriesName, data, measures, measureDescriptions)]
 }
 
+/**
+ * Higher-order function that returns the outlier example's base function: a model value that's
+ * the sum of several cosines (each with an amplitude of `magnitude`, about 32), plus random noise
+ * (occasionally, much larger noise -- the outliers), with a band around the model value for each
+ * measure, each wider than the one before
+ * @param periods The (period, phase offset) of each cosine
+ * @param magnitude The amplitude of each cosine (which also scales the noise and the bands)
+ * @return The base function: given a time, the amount of noise, and the measures, returns the
+ * datum at that time
+ * @template M The type of the measures (a tuple of numbers)
+ */
 export function periodicWithSeveralBandsFn<M extends readonly number[]>(
     periods: Array<[period: number, offset: number]>,
     magnitude: number
@@ -92,6 +125,11 @@ export function periodicWithSeveralBandsFn<M extends readonly number[]>(
     }
 }
 
+/**
+ * Casts an array of bounds to the tuple type that holds one bound per measure
+ * @param args The bounds
+ * @return The bounds, as a tuple
+ */
 function toTuple<T extends readonly OutlierBounds[], M extends readonly number[]>(...args: T): { readonly [K in keyof M]: OutlierBounds} {
     return args as { readonly [K in keyof M]: OutlierBounds}
 }

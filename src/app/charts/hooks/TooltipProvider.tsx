@@ -6,13 +6,14 @@ type Props = {
 }
 
 /**
- * The tooltip context provider allows registering and retrieving tooltip content providers. When
- * a tooltip content provider is registered with a provider ID, then it must be retrieved with that
- * same provider ID. This allows a chart to have multiple tooltip content providers, depending on
- * the context or types of objects being moused over. When a tooltip content provider is registered
- * without a provider ID, then the default provider ID is used.
+ * The tooltip context provider allows registering and retrieving the chart's tooltip content
+ * provider (there's one at a time: registering another replaces it -- a content provider that
+ * handles several kinds of elements is handed the provider ID of the element under the mouse
+ * instead), and holds whether the tooltip is visible.
  * @param props The properties holding the children
  * @return A JSX element containing the children
+ * @template D The type of the data object for the series
+ * @template M The type of the metadata object for the series
  */
 export default function TooltipProvider<D, M>(props: Props): JSX.Element {
     const {children} = props

@@ -34,6 +34,9 @@ import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 import {AxisInterval} from "../axes/AxisInterval";
 import {FastShiftArray} from "fast-shift-array";
 
+/**
+ * The properties of the {@link RasterPlot}
+ */
 export interface Props {
     /**
      * Holds the mapping between a series and the axis it uses (is assigned). The
@@ -95,9 +98,11 @@ export interface Props {
  * draw function with the chart's {@link CanvasContext} that redraws every series' spikes from
  * scratch each time the canvas repaints. Mouse hover (for the tooltip) is handled by hit-testing
  * the mouse position against the last-drawn spike geometry -- as *disjoint* segments, since unlike
- * a scatter series, consecutive spikes are not connected by a line (see `hitTesting.ts`).
+ * a scatter series, consecutive spikes are not connected by a line (see `hitTesting.ts`). When
+ * the data source is paused, hovering over a spike shows the tooltip (when there's one).
  *
  * @param props The properties associated with the raster plot
+ * @return `null` (the plot draws onto the chart's canvas)
  * @example
  <RasterPlot
      axisAssignments={new Map([
@@ -160,16 +165,17 @@ export function RasterPlot(props: Props): null {
     // why do "dataRef" and "seriesRef" both hold on to the same underlying data? for performance.
     //
     // the "dataRef" and "seriesRef" both point to the same underlying data, a collection
-    // of series. The series in "dataRef" are read by the canvas draw function. The "seriesRef"
-    // series are the ones that are updated as new data is streamed in.
+    // of series (held, and updated as new data is streamed in, by the data source). The series in
+    // "dataRef" are read by the canvas draw function, and the "seriesRef" map is for looking a
+    // series up by its name.
     //
     // the "dataRef" object holds on to a copy of the initial data (which is an array of
-    // time-series, e.i. an array of BaseSeries<OrdinalDatum> objects). The slice just creates a copy of
+    // time-series, e.i. an array of BaseSeries<Datum> objects). The slice just creates a copy of
     // the array, but the references to the BaseSeries objects are the same and still point to the same
     // data as the "initialData" array.
     //
-    // the "seriesRef" object is a reference to a map (series_name -> BaseSeries<OrdinalDatum>) which is
-    // used to update the data in the series. When new data enters, it is appended to one or more series.
+    // the "seriesRef" object is a reference to a map (series_name -> BaseSeries<Datum>), used to find
+    // the series under the mouse (for the tooltip).
     //
     // the series in the "dataRef" object are the ones read by the next redraw, so as these are
     // updated, the next canvas repaint picks up the new data.
@@ -404,8 +410,8 @@ export function RasterPlot(props: Props): null {
     // `initialAxisIntervalsRef` for the full explanation: the axis object has no "original"
     // concept of its own once a zoom has directly mutated `scale.domain()`, so for a
     // statically-domained axis (like this one), nothing else restores the scale on reset. This
-    // must be a ref populated by `resetPlotForInitialData` below (mount, and every subsequent
-    // Run), rather than a `useMemo` keyed on `axesRanges` -- `axesRanges` is a fresh closure on
+    // must be a ref populated by `resetPlotForInitialData` below (on mount, and whenever the data
+    // source is replaced), rather than a `useMemo` keyed on `axesRanges` -- `axesRanges` is a fresh closure on
     // every render of `AxesProvider` (never memoized there), so such a memo recomputes on
     // essentially every render, re-sampling `.original` while it's being continuously shifted
     // forward by ordinary auto-scroll.
@@ -439,7 +445,7 @@ export function RasterPlot(props: Props): null {
     )
 
     // when the initial data changes, then reset the plot. note that the initial data doesn't change
-    // during the normal course of updates from the observable, only when the plot is restarted. the
+    // during the normal course of updates from the data source, only when the data source is replaced. the
     // reset itself should always use the current xAxesState/axisAssignments/updateTimingAndPlot, not
     // whatever they were when this effect last ran -- that's exactly what an effect event gives us,
     // without having to (falsely) declare them as dependencies that would re-trigger the reset.
@@ -523,6 +529,15 @@ export function RasterPlot(props: Props): null {
         [axesForSeries, margin, setAxisIntervalFor, xAxesState]
     )
 
+    /**
+     * Called when the user uses the scroll wheel (or scroll gesture) to zoom in or out.
+     * @param zoomFactor The *incremental* zoom scale factor for this event (see ScatterPlot's
+     * `lastZoomKRef` for how d3-zoom's cumulative `k` is converted to it)
+     * @param pivotDomainValueFor Given an axis ID and its axis, returns the domain value to pivot
+     * that axis's zoom around (see `zoomPivotFor`, below)
+     * @param plotDimensions The dimensions of the plot
+     * @param ranges A map holding the axis ID and its associated time-range
+     */
     const onZoom = useCallback(
         (
             zoomFactor: number,
@@ -830,8 +845,8 @@ export function RasterPlot(props: Props): null {
 }
 
 /**
- * Attempts to locate the x- and y-axes for the specified series. If no axis is found for the
- * series name, then uses the default returned by the useChart() hook.
+ * Attempts to locate the x- and y-axes for the specified series. If the series has no axis
+ * assignment, then uses the default (first) x- and y-axes.
  * @param seriesName Name of the series for which to retrieve the axis
  * @param axisAssignments A map holding the series name and the associated x- and y-axes assigned
  * to that series. Note that the series in the axis-assignment map is merely a subset of the set
@@ -839,7 +854,8 @@ export function RasterPlot(props: Props): null {
  * @param xAxisFor The function that accepts an axis ID and returns the corresponding x-axis
  * @param yAxisFor The function that accepts an axis ID and returns the corresponding y-axis
  * @return A 2d tuple holding the linear x-axis as its first element and the category y-axis as
- * the second element.
+ * the second element (either is actually `undefined` when it isn't found, despite the type).
+ * @throws Error when the x-axis isn't a continuous numeric axis, or the y-axis isn't a category axis
  */
 function axesFor(
     seriesName: string,
@@ -862,7 +878,7 @@ function axesFor(
 }
 
 /**
- * Reports a tooltip showing the neuron, spike time, and the spike strength when the mouse hovers over a spike.
+ * Reports a tooltip showing the neuron, spike time, and the spike's value when the mouse hovers over a spike.
  * Replaces the old version, which mutated the hovered SVG `<line>`'s stroke directly; highlighting is now
  * handled by the draw function reading `hoveredSeriesName` from chart state rather than by touching an
  * element here.

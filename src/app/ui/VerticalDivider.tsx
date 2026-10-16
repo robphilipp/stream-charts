@@ -8,6 +8,11 @@ type Props = {
     className?: string;
 }
 
+/**
+ * A vertical divider (a separator)
+ * @param props The divider's height (default 100%), color, thickness (default 1px), and CSS class
+ * @return The divider
+ */
 export function VerticalDivider(props: Props): JSX.Element {
     const {
         height = '100%', // Fallback default values

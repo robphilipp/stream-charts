@@ -123,8 +123,8 @@ export const useScatterChartStore: UseBoundStore<StoreApi<ScatterChartStore>> = 
         setX1axisRange: (range: Range) => set({x1axisRange: range}),
         setX2axisRange: (range: Range) => set({x2axisRange: range}),
 
-        // the compiled regex is updated alongside its string representation so that the
-        // regex reference only changes when the filter value actually changes
+        // the compiled regex is derived from this in the component, so its reference only
+        // changes when the filter value actually changes
         setFilterValue: filterValue => set({filterValue}),
 
         // holds status of the visibility for tooltip, tracker, markers, legend

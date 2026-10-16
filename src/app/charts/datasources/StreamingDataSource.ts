@@ -16,8 +16,8 @@ export type DataGenerator<CD extends ChartData, S> = (currentSeries: Array<S>) =
  *
  * A data source is deliberately *not* tied to any React component. The application creates it
  * (e.g. in a store), starts and stops it (Run/Pause), and hands it to a {@link Chart}. Plots only
- * ever *read* from it -- its `series`, and its `chartDataUpdatesObservable` notifications, which a plot subscribes
- * to for exactly as long as it is mounted. That split is what lets data keep accumulating while a
+ * ever *read* from it -- its `series`, and its `chartDataUpdatesObservable` notifications, which a
+ * plot subscribes to for exactly as long as it is mounted. That split is what lets data keep accumulating while a
  * chart is unmounted (e.g. the user navigated to another page) without any subscription bound to
  * an unmounted plot instance being kept alive, adopted, or torn down later on.
  *
@@ -106,18 +106,36 @@ export abstract class BaseStreamingDataSource<CD extends ChartData, D, S extends
         this.generator = generator
     }
 
+    /**
+     * The live series, keyed by series name, in insertion order (see {@link StreamingDataSource.series})
+     * @return The series map (mutated in place as data arrives)
+     */
     get series(): ReadonlyMap<string, S> {
         return this.seriesMap
     }
 
+    /**
+     * Whether the source is currently subscribed to its generator
+     * @return `true` while the source is running; `false` otherwise
+     */
     get running(): boolean {
         return this.runningSubject.value
     }
 
+    /**
+     * @return The series, as an array, in insertion order
+     */
     seriesList(): Array<S> {
         return Array.from(this.seriesMap.values())
     }
 
+    /**
+     * Subscribes to the generator, handing it the current series, so that a restarted source
+     * resumes from the data accumulated so far. Each chunk of data the generator emits is ingested
+     * into the series, and then emitted through {@link chartDataUpdatesObservable}. When the
+     * generator fails or completes, the source stops. A no-op when the source is already running,
+     * or has been disposed.
+     */
     start(): void {
         if (this.disposed || this.subscription !== undefined) return
 
@@ -141,12 +159,22 @@ export abstract class BaseStreamingDataSource<CD extends ChartData, D, S extends
         }
     }
 
+    /**
+     * Unsubscribes from the generator (a no-op when not running). Nothing keeps generating data
+     * in the background once this returns.
+     */
     stop(): void {
         if (this.subscription === undefined) return
         this.subscription.unsubscribe()
         this.markStopped()
     }
 
+    /**
+     * Replaces the generator, e.g. when the data-update period changes. The new generator is used
+     * by the next {@link start}.
+     * @param generator The new generator
+     * @throws Error when the source is running (the generator can only be replaced while stopped)
+     */
     setGenerator(generator: DataGenerator<CD, S>): void {
         if (this.subscription !== undefined) {
             throw new Error("The data source's generator can only be replaced while the source is stopped")
@@ -154,6 +182,9 @@ export abstract class BaseStreamingDataSource<CD extends ChartData, D, S extends
         this.generator = generator
     }
 
+    /**
+     * Stops the source and completes its observables. A disposed source can't be started again.
+     */
     dispose(): void {
         this.stop()
         this.disposed = true
@@ -161,6 +192,10 @@ export abstract class BaseStreamingDataSource<CD extends ChartData, D, S extends
         this.runningSubject.complete()
     }
 
+    /**
+     * @return The latest time of any datum in any series (the stream's "ground truth" time), or
+     * `-Infinity` when there is no data
+     */
     abstract latestTime(): number
 
     /**
@@ -169,6 +204,9 @@ export abstract class BaseStreamingDataSource<CD extends ChartData, D, S extends
      */
     protected abstract ingest(data: CD): void
 
+    /**
+     * Forgets the generator subscription, and reports that the source stopped (when it was running)
+     */
     private markStopped(): void {
         this.subscription = undefined
         if (this.runningSubject.value) this.runningSubject.next(false)

@@ -71,8 +71,13 @@ const X_AXIS_ID = 'x-axis-1'
 const Y_DOMAIN: [number, number] = [0, 250]
 const Y_AUTO_SCALE_DOMAIN: [number, number] = [80, 160]
 const Y_AUTO_SCALE_LIMITS: [number, number] = [0, 250]
-const INITIAL_POINT_COUNT = 400  // 100 * 25ms = 2500ms, fills the default x-axis window
+const INITIAL_POINT_COUNT = 400  // 400 * 25ms = 10 s of data
 
+/**
+ * Creates the example's default initial data: a single series of the example's base function
+ * (see `baseDataFnFactory`), 400 points, one update period apart
+ * @return The initial data
+ */
 function defaultInitialOutlierData(): Array<OutlierSeries<Measures>> {
     return initialOutlierData<Measures>(
         SERIES_NAME,
@@ -97,19 +102,35 @@ const filterFrom = (filterValue: string): RegExp => regexFilter(filterValue).get
  * Builds a fresh array of {@link OutlierSeries} from the given template. The data source appends
  * to `series.data` in place, so it needs its own copy of the data arrays -- otherwise the pristine
  * seed gets mutated and "Clear" silently becomes a no-op.
+ * @param template The series to copy
+ * @return The copies (with copies of their data)
  */
 function freshCopyOf(template: Array<OutlierSeries<Measures>>): Array<OutlierSeries<Measures>> {
     return template.map(series => outlierSeriesFrom(series.name, series.data.slice(), series.measures, series.measureDescriptions))
 }
 
+/**
+ * The properties of the outlier example
+ */
 interface Props {
+    // the theme (defaults to the light theme)
     theme?: Theme
+    // (unused)
     timeWindow?: number
+    // the initial data (defaults to the example's default initial data)
     initialData?: Array<OutlierSeries<Measures>>
+    // (unused)
     plotHeight?: number
+    // (unused)
     plotWidth?: number
 }
 
+/**
+ * The outlier-chart example: its control bar (run/pause, reset, and the settings), and an outlier
+ * chart of a noisy periodic series, with its confidence bands, streamed from the store's data source
+ * @param props The theme and the initial data
+ * @return The example
+ */
 export function StreamingOutlierChart(props: Props): JSX.Element {
     const {
         theme = lightTheme,

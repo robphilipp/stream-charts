@@ -6,6 +6,13 @@ import {BaseAxisRange} from "./BaseAxisRange";
  */
 export class ContinuousAxisRange extends BaseAxisRange {
 
+    /**
+     * Use {@link ContinuousAxisRange.from} to create an instance
+     * @param start The start of the axis-range
+     * @param end The end of the axis-range
+     * @param [originalStart=start] The original start of the axis-range
+     * @param [originalEnd=end] The original end of the axis-range
+     */
     private constructor(start: number, end: number, originalStart: number = start, originalEnd: number = end) {
         super(start, end, originalStart, originalEnd)
     }
@@ -67,14 +74,16 @@ export class ContinuousAxisRange extends BaseAxisRange {
     }
 
     /**
-     * Translates the axis-range by the specified amount
+     * Translates the axis-range by the specified amount, unless that would take it outside the
+     * constraint interval (when both ends of the constraint are infinite, there's no constraint)
      * @param amount The amount by which to translate the axis-range
      * @param [constraint=[-Infinity, Infinity]] Optional constraint interval in which the axis range must be within
-     * @return An updated {@link ContinuousAxisRange} that has been translated by the specified amount
+     * @return An updated {@link ContinuousAxisRange} that has been translated by the specified amount (or an
+     * unchanged copy, when the translation would leave the constraint interval)
      */
     translate(amount: number, constraint: [start: number, end: number] = [-Infinity, Infinity]): ContinuousAxisRange {
         const [cs, ce] = constraint
-        // when either of the constraints is infinite, or the pan keeps the new axis range
+        // when both of the constraints are infinite, or the pan keeps the new axis range
         // within the origin axis range (i.e. zoomed in and the panned), then allow the pan,
         // otherwise don't update
         if ((!isFinite(cs) && !isFinite(ce)) || (this.current.start + amount >= cs && this.current.end + amount <= ce)) {

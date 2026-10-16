@@ -2,14 +2,31 @@ import {failureResult, type Result, successResult} from "result-fn";
 import {FastShiftArray} from "fast-shift-array";
 
 /**
- * A spike series holding an array of spike (time, value) datum, the name and supplemental information
- * needed by the `RasterChart`
+ * A named series of data, the basis of every chart's series. Its data is held in a
+ * `FastShiftArray`, so that the oldest data can be dropped from its head cheaply as new data
+ * streams in.
+ * @template D The type of the series' datum
  */
 export interface BaseSeries<D> {
+    /**
+     * The name of the series (unique within a chart)
+     */
     readonly name: string;
+    /**
+     * The series' data, ordered by time
+     */
     data: FastShiftArray<D>;
+    /**
+     * @return The last datum, or a failure when the series is empty
+     */
     readonly last: () => Result<D, string>;
+    /**
+     * @return The number of data in the series
+     */
     readonly length: () => number;
+    /**
+     * @return `true` when the series has no data; `false` otherwise
+     */
     readonly isEmpty: () => boolean;
 }
 
@@ -47,7 +64,7 @@ export const DEFAULT_COMPACTING_SIZE = 10_000
  * compacted (see {@link DEFAULT_COMPACTING_SIZE}). Only applies when `data` is a plain array (and
  * so a new `FastShiftArray` is created for it) -- ignored when `data` is already a `FastShiftArray`,
  * since compaction size is fixed at that instance's own construction time.
- * @return A {@link BaseSeries} for object that can be used by in {@link Chart}s
+ * @return A {@link BaseSeries} that can be used in {@link Chart}s
  * @see seriesFromTuples
  * @see emptySeries
  */

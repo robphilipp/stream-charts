@@ -11,7 +11,7 @@ export interface IterateDatum {
 }
 
 /**
- * Creates an empty iterate datum
+ * An empty iterate datum (its time and iterates are all `NaN`)
  */
 export const emptyIterateDatum: IterateDatum = {time: NaN, iterateN: NaN, iterateN_1: NaN}
 
@@ -29,10 +29,10 @@ export const iterateDatumOf = (time: number, iterateN: number, iterateN_1: numbe
 })
 
 /**
- * Returns whether the iterate datum is considered empty. An iterate datum is considered
- * empty when the time, `f[n](x)`, `f[n+1](x)` values are all `NaN`
+ * Returns whether the iterate datum is non-empty. An iterate datum is considered empty when any
+ * of its time, `f[n](x)`, and `f[n+1](x)` values is `NaN`
  * @param datum The iterate datum to test
- * @return `true` if the iterate datum is empty; `false` otherwise
+ * @return `true` if the iterate datum is non-empty (none of its values is `NaN`); `false` otherwise
  */
 export const nonEmptyIterateDatum = (datum: IterateDatum): boolean =>
     !isNaN(datum.time) && !isNaN(datum.iterateN) && !isNaN(datum.iterateN_1)
@@ -43,10 +43,10 @@ export const nonEmptyIterateDatum = (datum: IterateDatum): boolean =>
 export type IterateSeries = BaseSeries<IterateDatum>
 
 /**
- * Creates a series from the name and the optional array of (x, y) pairs (tuples)
+ * Creates a series from the name and the optional array of (time, f[n](x), f[n+1](x)) tuples
  * @param name The name of the series
- * @param data The optional array of (x, y) pairs (tuples)
- * @return A `Series` for object that can be used by the `PoincarePlot`
+ * @param data The optional array of (time, f[n](x), f[n+1](x)) tuples
+ * @return An {@link IterateSeries} that can be used by the `PoincarePlot`
  * @see seriesFrom
  * @see emptySeries
  */

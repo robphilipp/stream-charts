@@ -23,7 +23,7 @@ export interface OrdinalDatum {
 
 
 /**
- * Creates an empty ordinal datum
+ * An empty ordinal datum (`NaN` time and value, and an empty ordinal)
  */
 export const emptyOrdinalDatum: OrdinalDatum = {
     time: NaN,
@@ -31,6 +31,11 @@ export const emptyOrdinalDatum: OrdinalDatum = {
     value: NaN,
 }
 
+/**
+ * Copies an ordinal datum
+ * @param datum The datum to copy
+ * @return The copy
+ */
 export const copyOrdinalDatum = (datum: OrdinalDatum): OrdinalDatum => ({
     time: datum.time,
     ordinal: datum.ordinal,
@@ -38,11 +43,11 @@ export const copyOrdinalDatum = (datum: OrdinalDatum): OrdinalDatum => ({
 })
 
 /**
- * Creates an iterate datum
+ * Creates an ordinal datum
  * @param time The datum time, which is mostly informational
  * @param ordinal The category name or identifier
  * @param value The value
- * @return An iterate datum
+ * @return An ordinal datum
  */
 export const ordinalDatumOf = (time: number, ordinal: string, value: number): OrdinalDatum => ({
     time,
@@ -52,11 +57,10 @@ export const ordinalDatumOf = (time: number, ordinal: string, value: number): Or
 
 
 /**
- * Returns whether the ordinal datum is empty. An ordinal datum is considered empty
- * when the time is NaN, the ordinal is blank (empty or only whitespace), and the value
- * is NaN.
- * @param datum The iterate datum to test
- * @return `true` if the iterate datum is empty; `false` otherwise
+ * Returns whether the ordinal datum is non-empty. An ordinal datum is considered empty when its
+ * time is NaN, its ordinal is blank (empty or only whitespace), or its value is NaN.
+ * @param datum The ordinal datum to test
+ * @return `true` if the ordinal datum is non-empty; `false` otherwise
  */
 export const nonEmptyOrdinalDatum = (datum: OrdinalDatum): boolean =>
     !isNaN(datum.time) && datum.ordinal.replace(/\s/g, "").length > 0 && !isNaN(datum.value)
@@ -85,9 +89,10 @@ export function ordinateSeriesFromTuples(
 }
 
 /**
- * Creates an empty chart data object with all the values set to 0
- * @param seriesList The list of series names (identifiers) to update
- * @return An empty chart data object
+ * Creates the ordinal chart data for the specified series: their names, the stats calculated over
+ * their data (see {@link calculateOrdinalStats}), and copies of all their data as the new points
+ * @param seriesList The series
+ * @return The ordinal chart data for the series
  */
 export function initialOrdinalChartData(seriesList: Array<OrdinalSeries>): OrdinalChartData {
     return {
@@ -105,6 +110,14 @@ export function initialOrdinalChartData(seriesList: Array<OrdinalSeries>): Ordin
     }
 }
 
+/**
+ * Calculates the stats of the specified series: the data with the min and max time, and with the
+ * min and max value, over all the series, and each series' value stats (its min, max, count, sum,
+ * sum of squares, and mean)
+ * @param seriesList The series
+ * @return The stats (when there's no data, the extremes are the initial ones that searches start
+ * from -- see e.g. {@link initialMinTimeDatum})
+ */
 export function calculateOrdinalStats(seriesList: Array<OrdinalSeries>): OrdinalStats {
     const ordinalValueStats = new Map<string, OrdinalValueStats>(seriesList.map(
         (series: OrdinalSeries) => {

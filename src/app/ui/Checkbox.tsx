@@ -22,9 +22,8 @@ interface Props {
 
 /**
  * Simple checkbox because native HTML checkbox doesn't allow any style changes
- * @param {Props} props The properties from the parent
- * @return {JSX.Element} The checkbox component
- * @constructor
+ * @param props The properties from the parent
+ * @return The checkbox component
  */
 export default function Checkbox(props: Props): JSX.Element {
 

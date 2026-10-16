@@ -6,6 +6,11 @@ type Props = {
     children: JSX.Element | Array<JSX.Element>
 }
 
+/**
+ * The controls specific to a chart, in a column (shown when the control bar is expanded)
+ * @param props The control bar's type (unused), and the controls
+ * @return The controls
+ */
 export function ChartControls(props: Props): JSX.Element {
     return (
         <div style={{

@@ -13,9 +13,9 @@ export interface TooltipData<D, M> {
 }
 
 /**
- * A higher-order function that returns a function that provides the tooltip content or
- * `undefined` if no tooltip content is available.
- * @return The tooltip content, or `undefined` if no tooltip content is available.
+ * A function that provides (renders) the tooltip content for the element under the mouse, and
+ * returns the content's dimensions
+ * @return The dimensions of the tooltip content
  * @param seriesName The name of the series for which the tooltip content is being provided
  * @param time The time (x-value) for which the tooltip content is being provided
  * @param tooltipData The tooltip data
@@ -66,8 +66,12 @@ export type UseTooltipValues<D, M> = {
 export const TooltipContext = createContext<unknown>(undefined)
 
 /**
- * React hook that sets up the React context for the mouse values.
+ * React hook for registering, and retrieving, the chart's tooltip content provider, and for the
+ * tooltip's visibility. Must be used within a {@link TooltipProvider} (i.e. within a `<Chart>`).
  * @return The {@link UseTooltipValues} held in the React context.
+ * @throws Error when used outside a `<TooltipProvider>`
+ * @template D The type of the data object for the series
+ * @template M The type of the metadata object for the series
  */
 export function useTooltip<D, M>(): UseTooltipValues<D, M> {
     const context = useContext(TooltipContext)

@@ -10,7 +10,7 @@ import {Optional} from "result-fn";
 import {AxesContext, type UseAxesValues} from "./useAxes";
 
 export type Props = {
-    /**y
+    /**
      * Callback when axes bounds change.
      * @param ranges The ranges (start, end) for each axis in the plot
      */
@@ -37,8 +37,8 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
     const axesRangeRef = useRef<Map<string, AR>>(new Map())
 
     /**
-     * Retrieves the x-axis and y-axis assignments for the specified series. If the axis does not have
-     * an assignment, then we assume it is using the default x- and y-axes.
+     * Retrieves the x-axis and y-axis assignments for the specified series. If the series does not
+     * have an assignment, then we assume it is using the default x- and y-axes.
      * @param seriesName The name of the series for which to retrieve the axes assignments
      * @return An {@link AxesAssignment} for the specified axes.
      */
@@ -52,8 +52,9 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
     )
 
     /**
-     * Called when the domain/range is updated on one or more of the chart's axes (generally x-axes). In turn,
-     * dispatches the update to all the internal domain/range update handlers.
+     * Called when the domain/range is updated on one or more of the chart's axes (generally x-axes). Stores
+     * the updated ranges, and in turn, dispatches the update to all the registered domain/range update
+     * handlers (e.g. the axes, which redraw themselves with their new domain).
      * @param updates A map holding the axis ID to the updated axis time-range (i.e., map(axis_id, axis_time_range))
      */
     const updateAxisRanges = useCallback(
@@ -70,7 +71,7 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
     )
 
     /**
-     * Sets the axis ranges specified in the input map
+     * Sets the axis ranges specified in the input map (without dispatching them to the update handlers)
      * @param ranges The ranges to set
      */
     const setAxesRanges = useCallback(
@@ -83,7 +84,7 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
     )
 
     /**
-     * Sets the axis range for the specified axis ID
+     * Sets the axis range for the specified axis ID (without dispatching it to the update handlers)
      * @param axisId The axis ID
      * @param range The range to set
      */
@@ -95,8 +96,9 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
     )
 
     /**
-     * Sets the axis bounds for the specified axis ID. Note that this does not
-     * change the original axis interval
+     * Sets the axis bounds (the current range) for the specified axis ID. Note that this does not
+     * change the original axis interval, doesn't dispatch the change to the update handlers, and
+     * does nothing when the axis has no range yet.
      * @param axisId The axis ID
      * @param interval The interval
      */
@@ -110,7 +112,7 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
     )
 
     /**
-     * Sets the original axis interval for the axis range
+     * Sets the original axis interval for the axis range (does nothing when the axis has no range yet)
      * @param axisId The axis ID
      * @param interval The interval to which to set the origin interval
      */
@@ -124,7 +126,9 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
     )
 
     /**
-     * Resets the bounds for the specified axis to the original range
+     * Re-applies the specified axis' stored range: dispatches it, unchanged, to the update handlers
+     * (so that the axis redraws with it). Note that this does *not* restore the axis' original
+     * range. Does nothing when the axis has no range.
      * @param axisId The ID of the axis
      */
     const resetAxisIntervalFor = useCallback(
@@ -138,8 +142,9 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
     )
 
     /**
-     * Resets the bounds of all the axes to their original value or to the values specified
-     * in the optional bounds map.
+     * Sets the ranges of the axes in the specified map, and dispatches them to the update handlers
+     * (the same as {@link updateAxisRanges}). Axes that aren't in the map are left as they are, so
+     * the default (empty) map changes nothing.
      * @param [axesRanges=new Map()] An optional map holds bounds for specified axes. The map
      * associates an axis ID with the new bounds.
      */
@@ -155,6 +160,7 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
      * @param handlerId the unique ID of the handler
      * @param handler The handler function that accepts a map of updates and a plot dimension
      * @return A map with all the handlers
+     * @throws Error when a handler with the same ID is already registered
      */
     const addAxesRangesUpdateHandler = useCallback(
         (
@@ -173,11 +179,22 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
         []
     )
 
+    /**
+     * Removes the axis-update handler with the specified ID
+     * @param handlerId The ID of the handler to remove
+     * @return `true` when the handler was registered (and has been removed); `false` otherwise
+     */
     const removeAxesRangesUpdateHandler = useCallback(
         (handlerId: string): boolean => axesBoundsUpdateHandlersRef.current.delete(handlerId),
         []
     )
 
+    /**
+     * Adds an x-axis to the x-axes state (a new state object, so dependents re-render)
+     * @param axis The axis to add
+     * @param id The ID of the axis to add
+     * @param [range] The initial axis range (when given, it's stored as the axis' range)
+     */
     const addXAxis = useCallback(
         (axis: A, id: string, range?: AR): void => {
             setXAxesState(xAxesState.addAxis(axis, id))
@@ -188,6 +205,12 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
         [xAxesState]
     )
 
+    /**
+     * Adds a y-axis to the y-axes state (a new state object, so dependents re-render)
+     * @param axis The axis to add
+     * @param id The ID of the axis to add
+     * @param [range] The initial axis range (when given, it's stored as the axis' range)
+     */
     const addYAxis = useCallback(
         (axis: A, id: string, range?: AR): void => {
             setYAxesState(yAxesState.addAxis(axis, id))
@@ -198,6 +221,10 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
         [yAxesState]
     )
 
+    /**
+     * Sets the axes assigned to each series (replacing any earlier assignments)
+     * @param assignments The assignment of the series to their axes
+     */
     const setAxisAssignments = useCallback(
         (assignments: Map<string, AxesAssignment>): void => {
             axisAssignmentsRef.current = assignments
@@ -205,11 +232,19 @@ export default function AxesProvider<AR extends BaseAxisRange, A extends BaseAxi
         []
     )
 
+    /**
+     * @return A copy of the map of the axes' current ranges, by axis ID
+     */
     const axesRanges = useCallback(
         (): Map<string, AR> => new Map<string, AR>(axesRangeRef.current),
         []
     )
 
+    /**
+     * Retrieves the current axis range for the specified axis ID
+     * @param axisId The ID of the axis
+     * @return The axis' range, or an empty `Optional` when the axis has no range
+     */
     const axisRangeFor = useCallback(
         (axisId: string) => Optional.ofNullable(axesRangeRef.current.get(axisId)),
         []

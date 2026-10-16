@@ -78,6 +78,11 @@ type IterateFunctionInfo = {
     range: [start: number, end: number]
 }
 
+/**
+ * The style of an iterate function's parameter fields: the theme's colors
+ * @param theme The theme
+ * @return The text field's style
+ */
 const inputStyleFor = (theme: Theme): CSSProperties => ({
     backgroundColor: theme.backgroundColor,
     outlineStyle: 'none',
@@ -125,11 +130,19 @@ const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
 /**
  * The properties
  */
+/**
+ * The properties of the Poincaré example
+ */
 interface Props {
+    // the theme (defaults to the light theme)
     theme?: Theme
+    // (unused)
     timeWindow?: number
+    // the seeds (initial values) of the iterates
     initialData: Array<BaseSeries<Datum>>
+    // (unused)
     plotHeight?: number
+    // (unused)
     plotWidth?: number
 }
 
@@ -138,7 +151,7 @@ interface Props {
  * I've added a few iterate functions: tent-map, logistic-map, and Gauss-map, with parameter inputs so that
  * you can play with the functions interactively.
  * @param props The props
- * @constructor
+ * @return The example
  */
 export function StreamingPoincareChart(props: Props): JSX.Element {
     const {
@@ -574,6 +587,12 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
 }
 
 
+/**
+ * The tent map's parameter field (µ, initially 1.8), which hands the tent-map function for the
+ * entered µ to the callback (when it mounts, and whenever µ changes)
+ * @param props The callback for the iterate function, and the theme
+ * @return The labeled parameter field
+ */
 function TentMapGenerator(props: { onFunctionChange: (fn: IterateFunction) => void, theme?: Theme }): JSX.Element {
     const {theme = lightTheme, onFunctionChange} = props
 
@@ -595,6 +614,12 @@ function TentMapGenerator(props: { onFunctionChange: (fn: IterateFunction) => vo
     )
 }
 
+/**
+ * The logistic map's parameter field (r, initially 4.0), which hands the logistic-map function for
+ * the entered r to the callback (when it mounts, and whenever r changes)
+ * @param props The callback for the iterate function, and the theme
+ * @return The labeled parameter field
+ */
 function LogisticMapGenerator(props: { onFunctionChange: (fn: IterateFunction) => void, theme?: Theme }): JSX.Element {
     const {theme = lightTheme, onFunctionChange} = props
 
@@ -616,6 +641,13 @@ function LogisticMapGenerator(props: { onFunctionChange: (fn: IterateFunction) =
     )
 }
 
+/**
+ * The Gauss map's parameter fields (α, initially 4.90, and β, initially -0.52), which hand the
+ * Gauss-map function for the entered α and β to the callback (when it mounts, and whenever either
+ * changes)
+ * @param props The callback for the iterate function, and the theme
+ * @return The labeled parameter fields
+ */
 function GaussMapGenerator(props: { onFunctionChange: (fn: IterateFunction) => void, theme?: Theme }): JSX.Element {
     const {theme = lightTheme, onFunctionChange} = props
 

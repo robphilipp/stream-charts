@@ -2,6 +2,12 @@ import {type CSSProperties, type JSX, useState} from "react";
 import Checkbox from "../../ui/Checkbox.tsx";
 import type {Theme} from "../../ui/Themes.ts";
 
+/**
+ * The style of the text field: the theme's colors (the disabled ones, when it's disabled)
+ * @param theme The theme
+ * @param disabled Whether the field is disabled
+ * @return The text field's style
+ */
 const inputStyle = (theme: Theme, disabled: boolean): CSSProperties => ({
     backgroundColor: disabled ? theme.disabledBackgroundColor : theme.backgroundColor,
     outlineStyle: 'none',
@@ -34,6 +40,9 @@ type Props = {
  * defaulting to 25; when unchecked, the label reverts to "Cadence", the field is hidden, and the
  * cadence is disabled (`0`). Only meant to be changed while the chart isn't running (see the
  * `disabled` prop).
+ * @param props The theme, the cadence period (`0` when disabled), the handler for a new cadence
+ * period, and whether the control is disabled
+ * @return The checkbox, and (when checked) the text field
  */
 export function CadenceControl(props: Props): JSX.Element {
     const {theme, cadence, handleCadenceChange, disabled} = props

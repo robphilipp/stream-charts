@@ -29,7 +29,8 @@ export interface UseObservableValues {
 export const DataObservableContext = createContext<UseObservableValues | undefined>(undefined)
 
 /**
- * React hook that sets up the React context for the chart's streaming settings and callbacks.
+ * React hook for the chart's streaming settings and callbacks. Must be used within a
+ * {@link DataObservableProvider} (i.e. within a `<Chart>`).
  * @return The {@link UseObservableValues} held in the React context.
  * @throws Error when this hook is used outside of its provider
  */

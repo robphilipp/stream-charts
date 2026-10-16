@@ -74,11 +74,19 @@ import {SPIKE_MEAN_VALUE, SPIKE_VALUE_SPREAD, useRasterChartStore} from "./appst
 /**
  * The properties
  */
+/**
+ * The properties of the raster example
+ */
 interface Props {
+    // the theme (defaults to the light theme)
     theme?: Theme
+    // (unused)
     timeWindow?: number;
+    // the initial data (the default number of series, see routeData.ts)
     initialData: Array<TimeSeries>;
+    // (unused)
     seriesHeight?: number;
+    // (unused)
     plotWidth?: number;
 }
 
@@ -123,8 +131,8 @@ const filterFrom = (filterValue: string): RegExp => regexFilter(filterValue).get
  * app's store: Run/Pause start and stop the data source, which keeps ingesting even while this
  * chart is unmounted (e.g. on another page). The {@link Chart} updates itself with the new data
  * without causing React to re-render the component.
- * @param {Props} props The properties passed down from the parent
- * @return {Element} The streaming raster chart
+ * @param props The properties passed down from the parent
+ * @return The streaming raster chart
  * @constructor
  */
 export function StreamingRasterChart(props: Props): JSX.Element {
@@ -241,7 +249,7 @@ export function StreamingRasterChart(props: Props): JSX.Element {
      * @param updatedFilter The updated the filter
      */
     function handleUpdateFilterValue(updatedFilter: string): void {
-        // the store compiles the regex from the filter value
+        // the component compiles the regex from the filter value (see `filterFrom`)
         setFilterValue(updatedFilter)
     }
 
@@ -615,6 +623,14 @@ export function StreamingRasterChart(props: Props): JSX.Element {
     );
 }
 
+/**
+ * The color of a series: from d3's red-blue color scale, by the series' index (from the
+ * scale's lighter middle for the dark theme)
+ * @param index The index of the series
+ * @param numSeries The number of series
+ * @param themeName The name of the theme ("light" or "dark")
+ * @return The series' color
+ */
 function colorFor(index: number, numSeries: number, themeName: string): string {
     const ratio = index / numSeries / 2
     return themeName === 'light' ?
@@ -622,6 +638,12 @@ function colorFor(index: number, numSeries: number, themeName: string): string {
         d3.interpolateRdBu(ratio + 0.25)
 }
 
+/**
+ * The line width of a series' spikes: 1 px (a series named "test2" or "test3" would get 3 px,
+ * but the example's series are all named "HC n")
+ * @param name The name of the series
+ * @return The series' line width (px)
+ */
 function linewidthFor(name: string): number {
     if (name === 'test1') return 1
     if (name === 'test2' || name === 'test3') return 3
@@ -629,6 +651,12 @@ function linewidthFor(name: string): number {
     return 1
 }
 
+/**
+ * The line width of a series' spikes when it's highlighted (hovered): 2 px wider than its normal
+ * width (see {@link linewidthFor})
+ * @param name The name of the series
+ * @return The series' highlighted line width (px)
+ */
 function highlightLinewidthFor(name: string): number {
     if (name === 'test1') return 3
     if (name === 'test2' || name === 'test3') return 5

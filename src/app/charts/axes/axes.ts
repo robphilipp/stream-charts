@@ -32,6 +32,7 @@ export type AxisTickStyle = {
 /**
  * Factory function to create a default AxisTickStyle with the default font,
  * no rotation, and no autorotation.
+ * @return The default axis tick style
  */
 export function defaultAxisTickStyle(): AxisTickStyle {
     return {
@@ -54,6 +55,7 @@ export interface AxesFont {
 /**
  * Factory function to create a default AxesFont with the default font size, color,
  * family, and weight.
+ * @return The default axes font
  */
 export function defaultAxesFont(): AxesFont {
     return {
@@ -84,6 +86,7 @@ export interface SeriesLineStyle extends SeriesStyle {
 /**
  * Factory function to create a default SeriesLineStyle with the default color, line width,
  * highlight color, and highlight width.
+ * @return The default series line style
  */
 export function defaultLineStyle(): SeriesLineStyle {
     return {
@@ -135,7 +138,8 @@ export interface BaseAxis {
 
 /**
  * Represents a continuous numeric axis. Draws itself by registering a draw function with the
- * chart's {@link CanvasContext} (see `create*`, below) rather than owning an SVG element.
+ * chart's {@link CanvasContext} (see {@link addContinuousNumericXAxis} and
+ * {@link addContinuousNumericYAxis}, below) rather than owning an SVG element.
  */
 export interface ContinuousNumericAxis extends BaseAxis {
     /**
@@ -203,9 +207,10 @@ export interface OrdinalStringAxis extends BaseAxis {
      */
     update: (categories: Array<string>, range: AxisInterval, originalRange: AxisInterval, plotDimensions: Dimensions, margin: Margin) => number
     /**
-     * Updates the font used for the axis label without recreating the axis. Tick label color is
-     * intentionally not touched by this -- it stays fixed at whatever the tick style's font was
-     * set to when the axis was created.
+     * Updates the font used for the axis label without recreating the axis. The font's color is
+     * also the color of the axis line, the ticks, and the tick labels; the tick labels' size,
+     * family, and weight, though, stay fixed at whatever the tick style's font was set to when
+     * the axis was created.
      */
     updateFont: (font: AxesFont) => void
     /**
@@ -247,8 +252,7 @@ export type AxisLocation = (typeof AxisLocation)[keyof typeof AxisLocation];
  * @param cc The canvas context to register the axis' draw function with
  * @param axisId A unique ID for the axis
  * @param location The location of the axis
- * @param categories The category names (fixed for the lifetime of this axis -- changing categories
- * requires recreating the axis)
+ * @param categories The category names (the axis' `update` function can replace them later)
  * @param axisLabel The axis label
  * @param axesLabelFont The font for the axis label
  * @param axisTickStyle Styling information for the ticks (font, rotation, etc.)
@@ -288,12 +292,28 @@ export function addOrdinalStringAxis(
 }
 
 /**
+ * Adds a category x-axis (top or bottom), registering its draw function with the canvas context.
+ * See {@link addOrdinalStringAxis}.
+ *
  * NOTE ON FIDELITY: the original SVG version rotated tick labels using each label's own
  * `getBBox()` to compute a per-label rotation origin, which let long labels pivot around their own
  * visual center/corner. Canvas `measureText` has no bbox-offset equivalent, so this version rotates
  * every label about its anchor point at the tick instead. At `rotation: 0` (the common case) this
  * produces the same centered layout as before; at non-zero rotations the labels will be close but
  * not pixel-identical to the old SVG output -- worth a visual check if you use tick rotation.
+ * @param cc The canvas context to register the axis' draw function with
+ * @param axisId A unique ID for the axis
+ * @param location The location of the axis (top or bottom)
+ * @param categories The category names (the axis' `update` function can replace them later)
+ * @param axisLabel The axis label
+ * @param axesLabelFont The font for the axis label (its color is also the color of the axis line,
+ * ticks, and tick labels)
+ * @param axisTickStyle Styling information for the ticks (font, rotation, etc.)
+ * @param plotDimensions The dimensions of the plot
+ * @param margin The plot margin
+ * @param setAxisRangeFor Callback that sets the axis range for the specified axis
+ * @param setOriginalAxisRangeFor Callback that sets the original axis range for the specified axis
+ * @return An {@link OrdinalStringAxis}
  */
 function addOrdinalStringXAxis(
     cc: CanvasContext,
@@ -407,15 +427,31 @@ function addOrdinalStringXAxis(
             cc.requestRedraw()
         },
         updateFont: (font) => {
-            // matches the original SVG version: only the axis *label's* fill was ever updated
-            // dynamically (via svg.select('#label').attr('fill', color)); tick color stays fixed
-            // at whatever axisTickStyle.font was set to at creation
+            // the font's color is used for the label, the axis line, the ticks, and the tick
+            // labels; the tick labels' size, family, and weight stay at axisTickStyle.font's
             currentFont = font
             cc.requestRedraw()
         }
     }
 }
 
+/**
+ * Adds a category y-axis (left or right), registering its draw function with the canvas context.
+ * See {@link addOrdinalStringAxis}.
+ * @param cc The canvas context to register the axis' draw function with
+ * @param axisId A unique ID for the axis
+ * @param location The location of the axis (left or right)
+ * @param categories The category names (the axis' `update` function can replace them later)
+ * @param axisLabel The axis label
+ * @param axesLabelFont The font for the axis label (its color is also the color of the axis line,
+ * ticks, and tick labels)
+ * @param axisTickStyle Styling information for the ticks (font, rotation, etc.)
+ * @param plotDimensions The dimensions of the plot
+ * @param margin The plot margin
+ * @param setAxisRangeFor Callback that sets the axis range for the specified axis
+ * @param setOriginalAxisRangeFor Callback that sets the original axis range for the specified axis
+ * @return An {@link OrdinalStringAxis}
+ */
 function addOrdinalStringYAxis(
     cc: CanvasContext,
     axisId: string,
@@ -542,22 +578,42 @@ function addOrdinalStringYAxis(
             cc.requestRedraw()
         },
         updateFont: (font) => {
-            // matches the original SVG version: only the axis *label's* fill was ever updated
-            // dynamically; tick color stays fixed at whatever axisTickStyle.font was at creation
+            // the font's color is used for the label, the axis line, the ticks, and the tick
+            // labels; the tick labels' size, family, and weight stay at axisTickStyle.font's
             currentFont = font
             cc.requestRedraw()
         }
     }
 }
 
+/**
+ * Removes a category x-axis' draw function from the canvas context (e.g. when the axis unmounts)
+ * @param cc The canvas context the axis' draw function is registered with
+ * @param axisId The ID of the axis
+ */
 export function removeOrdinalXAxis(cc: CanvasContext, axisId: string): void {
     cc.unregister(`x-axis-ordinal-${cc.chartId}-${axisId}`)
 }
 
+/**
+ * Removes a category y-axis' draw function from the canvas context (e.g. when the axis unmounts)
+ * @param cc The canvas context the axis' draw function is registered with
+ * @param axisId The ID of the axis
+ */
 export function removeOrdinalYAxis(cc: CanvasContext, axisId: string): void {
     cc.unregister(`y-axis-ordinal-${cc.chartId}-${axisId}`)
 }
 
+/**
+ * The x-coordinate (in canvas pixels, from the canvas' left edge) of a category axis' label: the
+ * label's font size in from the canvas' left or right edge for a y-axis, or the canvas' center for
+ * an x-axis
+ * @param location The location of the axis
+ * @param plotDimensions The dimensions of the plot
+ * @param margin The plot margin
+ * @param axesLabelFont The font for the axis label
+ * @return The x-coordinate of the axis label
+ */
 function ordinalLabelXTranslation(
     location: AxisLocation,
     plotDimensions: Dimensions,
@@ -576,6 +632,14 @@ function ordinalLabelXTranslation(
     }
 }
 
+/**
+ * The y-coordinate (in canvas pixels, from the canvas' top edge) of a category axis' label: the
+ * canvas' middle for a y-axis, or the canvas' top or bottom edge for an x-axis
+ * @param location The location of the axis
+ * @param plotDimensions The dimensions of the plot
+ * @param margin The plot margin
+ * @return The y-coordinate of the axis label
+ */
 function ordinalLabelYTranslation(
     location: AxisLocation,
     plotDimensions: Dimensions,
@@ -604,12 +668,12 @@ function ordinalLabelYTranslation(
  * @param axisId The ID of the axis
  * @param plotDimensions The dimensions of the plot
  * @param location The location of the axis
- * @param scaleGenerator The d3 scale to use for the axis
- * @param margin The plot margins for the border of main SVG group
- * @param setAxisRangeFor A callback used to set the axis range
- * @param color The color of the axis line
- * @param domain The axis range (start, end)
- * @return A {@link ContinuousNumericAxis} based on the arguments to this function
+ * @param scaleGenerator The d3 scale to use for the axis (its domain and range get overwritten)
+ * @param margin The plot margins
+ * @param setAxisRangeFor A callback used to report the axis' domain when it's updated
+ * @param color The color of the axis line (the axis' `updateFont` updates it with the font's color)
+ * @param [domain=[0, 1]] The axis' initial domain (min, max)
+ * @return A {@link ContinuousNumericAxis} (marked `isEmpty`) based on the arguments to this function
  */
 export function addEmptyXAxis(
     canvasContext: CanvasContext,
@@ -690,12 +754,12 @@ export function addEmptyXAxis(
  * @param axisId The ID of the axis
  * @param plotDimensions The dimensions of the plot
  * @param location The location of the axis
- * @param scaleGenerator The d3 scale to use for the axis
- * @param margin The plot margins for the border of main SVG group
- * @param setAxisRangeFor A callback used to set the axis range
- * @param color The color of the axis line
- * @param domain The axis range (start, end)
- * @return A {@link ContinuousNumericAxis} based on the arguments to this function
+ * @param scaleGenerator The d3 scale to use for the axis (its domain and range get overwritten)
+ * @param margin The plot margins
+ * @param setAxisRangeFor A callback used to report the axis' domain when it's updated
+ * @param color The color of the axis line (the axis' `updateFont` updates it with the font's color)
+ * @param [domain=[0, 1]] The axis' initial domain (min, max)
+ * @return A {@link ContinuousNumericAxis} (marked `isEmpty`) based on the arguments to this function
  */
 export function addEmptyYAxis(
     cc: CanvasContext,
@@ -770,11 +834,11 @@ export function addEmptyYAxis(
  * @param plotDimensions The dimensions of the plot
  * @param location The location of the axis (top or bottom)
  * @param scaleGenerator The d3 scale to use for the axis (its domain/range get overwritten)
- * @param domain The axis range (start, end)
+ * @param domain The axis' initial domain (min, max)
  * @param axesLabelFont The font for the axis label and ticks
  * @param margin The plot margins
  * @param axisLabel The label for the axis
- * @param setAxisRangeFor Callback used to report the axis' current range
+ * @param setAxisRangeFor Callback used to report the axis' domain when it's updated
  * @return A {@link ContinuousNumericAxis}
  */
 export function addContinuousNumericXAxis(
@@ -884,11 +948,11 @@ export function addContinuousNumericXAxis(
  * @param plotDimensions The dimensions of the plot
  * @param location The location of the axis (left or right)
  * @param scaleGenerator The d3 scale to use for the axis (its domain/range get overwritten)
- * @param domain The axis range (start, end)
+ * @param domain The axis' initial domain (min, max)
  * @param axesLabelFont The font for the axis label and ticks
  * @param margin The plot margins
  * @param axisLabel The label for the axis
- * @param setAxisRangeFor Callback used to report the axis' current range
+ * @param setAxisRangeFor Callback used to report the axis' domain when it's updated
  * @return A {@link ContinuousNumericAxis}
  */
 export function addContinuousNumericYAxis(
@@ -997,13 +1061,21 @@ export function addContinuousNumericYAxis(
 }
 
 /**
- * Removes an axis' draw function from the canvas context (called on "unmount" to avoid leaking a
- * draw registration for an axis that's no longer part of the chart).
+ * Removes a continuous x-axis' draw function from the canvas context (called on "unmount" to avoid
+ * leaking a draw registration for an axis that's no longer part of the chart).
+ * @param cc The canvas context the axis' draw function is registered with
+ * @param axisId The ID of the axis
  */
 export function removeContinuousXAxis(cc: CanvasContext, axisId: string): void {
     cc.unregister(`x-axis-${cc.chartId}-${axisId}`)
 }
 
+/**
+ * Removes a continuous y-axis' draw function from the canvas context (called on "unmount" to avoid
+ * leaking a draw registration for an axis that's no longer part of the chart).
+ * @param cc The canvas context the axis' draw function is registered with
+ * @param axisId The ID of the axis
+ */
 export function removeContinuousYAxis(cc: CanvasContext, axisId: string): void {
     cc.unregister(`y-axis-${cc.chartId}-${axisId}`)
 }
@@ -1012,20 +1084,53 @@ export function removeContinuousYAxis(cc: CanvasContext, axisId: string): void {
     common axis functions
  */
 
+/**
+ * The x-coordinate (in canvas pixels) of a y-axis' line: the plot's left edge for a left axis, or
+ * its right edge for a right axis
+ * @param location The location of the axis
+ * @param plotDimensions The dimensions of the plot
+ * @param margin The plot margin
+ * @return The x-coordinate of the axis line
+ */
 function xTranslation(location: typeof AxisLocation.Left | typeof AxisLocation.Right, plotDimensions: Dimensions, margin: Margin): number {
     return location === AxisLocation.Left ? margin.left : margin.left + plotDimensions.width
 }
 
+/**
+ * The y-coordinate (in canvas pixels) of an x-axis' line: the plot's bottom edge for a bottom
+ * axis, or its top edge for a top axis
+ * @param location The location of the axis
+ * @param plotDimensions The dimensions of the plot
+ * @param margin The plot margin
+ * @return The y-coordinate of the axis line
+ */
 function yTranslation(location: typeof AxisLocation.Bottom | typeof AxisLocation.Top, plotDimensions: Dimensions, margin: Margin): number {
     return location === AxisLocation.Bottom ?
         plotDimensions.height + margin.top :
         margin.top
 }
 
+/**
+ * The y-coordinate (in canvas pixels) of a continuous x-axis' label: the canvas' bottom edge for
+ * a bottom axis, or its top edge for a top axis
+ * @param location The location of the axis
+ * @param plotDimensions The dimensions of the plot
+ * @param margin The plot margin
+ * @return The y-coordinate of the axis label
+ */
 function continuousLabelYTranslation(location: typeof AxisLocation.Bottom | typeof AxisLocation.Top, plotDimensions: Dimensions, margin: Margin): number {
     return location === AxisLocation.Bottom ? plotDimensions.height + margin.top + margin.bottom : 0
 }
 
+/**
+ * The x-coordinate (in canvas pixels) of a continuous y-axis' label: the label's font size in from
+ * the canvas' left edge for a left axis, or from its right edge for a right axis
+ * @param location The location of the axis
+ * @param plotDimensions The dimensions of the plot
+ * @param margin The plot margin
+ * @param axesLabelFont The font for the axis label
+ * @return The x-coordinate of the axis label
+ */
 function continuousLabelXTranslation(location: typeof AxisLocation.Left | typeof AxisLocation.Right, plotDimensions: Dimensions, margin: Margin, axesLabelFont: AxesFont): number {
     return location === AxisLocation.Left ?
         axesLabelFont.size :
@@ -1076,9 +1181,10 @@ export function calculateConstrainedZoomFor(
 /**
  * Calculates the zoom for an ordinal axis. Unlike {@link calculateConstrainedZoomFor}'s continuous
  * axis, `zoomFactor` here is *cumulative* (d3-zoom's own `event.transform.k`, passed through
- * unmodified) -- see {@link OrdinalAxisRange.scaledCumulative} for why an ordinal axis's bounded
- * domain requires scaling from `.original` by the cumulative factor, rather than incrementally
- * from `.current` the way a continuous axis does.
+ * unmodified) -- see {@link OrdinalAxisRange.scaledCumulative} for why: the range is scaled from
+ * `.current` by the incremental step the cumulative factor implies, except that a factor of
+ * exactly 1 snaps it back to `.original`, so that zooming all the way out always shows every
+ * category, whatever pivots were used along the way.
  * @param zoomFactor The cumulative zoom scale factor for this event
  * @param x The x-position of the mouse when the scroll wheel or gesture is used
  * @param range The current range for the axis being zoomed
@@ -1101,13 +1207,14 @@ export function calculateOrdinalConstrainedZoomFor(
  */
 
 /**
- * Adjusts the range and updates the plot when the plot is dragged to the left or right
- * (x-axis) or up or down (y-axis).
- * @param delta The amount that the plot is dragged
- * @param axis The axis being zoomed
- * @param range The current range for the axis being zoomed
+ * Calculates the axis range after the plot is dragged to the left or right (x-axis) or up or down
+ * (y-axis).
+ * @param delta The amount (in pixels) that the plot is dragged
+ * @param axis The axis being panned
+ * @param range The current range for the axis being panned
  * @param [constrainToOriginalRange=false] When set to `true` then the pan requires that the axis
- * range remains a subset of the origin axis range; when `false` the pan allows and range
+ * range remains a subset of the original axis range (a pan that would leave it isn't made); when
+ * `false` the pan allows any range
  * @return The updated range
  */
 export function calculatePanFor(
@@ -1116,8 +1223,6 @@ export function calculatePanFor(
     range: ContinuousAxisRange,
     constrainToOriginalRange: boolean = false
 ): ContinuousAxisRange {
-    // was: axis.generator.scale<ScaleLinear<number, number>>() -- see note in
-    // calculateConstrainedZoomFor above
     const scale = axis.scale as ScaleLinear<number, number>
     const value = scale(range.current.start)
     if (value !== undefined) {
@@ -1131,8 +1236,10 @@ export function calculatePanFor(
 }
 
 /**
- * Adjusts the ordinal axis range when the plot is dragged to the left or right (x-axis) or up or down (y-axis).
- * @param delta The amount to pan the axis by.
+ * Calculates the ordinal axis range after the plot is dragged to the left or right (x-axis) or up
+ * or down (y-axis). A pan that would leave part of the plot without categories (i.e. take the
+ * range's start past 0, or its end short of the plot's width or height) isn't made.
+ * @param delta The amount (in pixels) to pan the axis by.
  * @param range The current axis range.
  * @param plotDimensions The dimensions of the plot.
  * @param location The location of the axis.
@@ -1163,12 +1270,13 @@ export function calculateOrdinalPanFor(
 
 /**
  * Accepts the series, the assignment of the series to axes, and the current x-axes state, and
- * returns an array of the distinct axis IDs that cover all the series in the plot.
+ * returns an array of the distinct x-axis IDs that cover all the series in the plot (a series
+ * without an x-axis assignment uses the default x-axis).
  *
  * @param series The array of series
  * @param axisAssignments A map association a series name with its axis assignments
- * @param axesState The current axis state
- * @return an array of the distinct axes that cover all the series in the plot
+ * @param axesState The current x-axes state
+ * @return an array of the distinct x-axis IDs that cover all the series in the plot
  */
 export function axesForSeriesGen<D, A extends BaseAxis>(
     series: Array<BaseSeries<D>>,
@@ -1460,6 +1568,21 @@ function calcZoomAndUpdate(
     })
 }
 
+/**
+ * Calculates the zoom for the specified ordinal axis and updates the axis and the axis ranges (the
+ * original range is reset to the plot's width or height)
+ * @param value The pixel position to pivot the zoom around (e.g. the mouse position)
+ * @param axisId The id of the axis to zoom
+ * @param margin The plot margin
+ * @param setRangeFor Function for setting the new range for a specific axis
+ * @param setOriginalRangeFor Function for setting the new original range for a specific axis
+ * @param axesState The current state of the x- or y-axes
+ * @param ranges A map associating axis IDs with axis ranges (updated with the zoomed range)
+ * @param scaleExtent The smallest and largest scale factors allowed
+ * @param zoomFactor The *cumulative* zoom scale factor for this event -- see
+ * {@link calculateOrdinalConstrainedZoomFor}
+ * @param plotDimensions The dimensions of the plot
+ */
 function calcOrdinalZoomAndUpdate(
     value: number,
     axisId: string,
@@ -1515,8 +1638,8 @@ function calcOrdinalZoomAndUpdate(
  * @param margin The plot margin
  * @param setRangeFor Function for setting the new time-range for a specific axis
  * @param axesState The current state of the x- or y-axes
- * @param scaleExtent The minimum and maximum allowed scale factors
- * @return A handler function for pan events
+ * @param [scaleExtent=[0, Infinity]] The minimum and maximum allowed scale factors
+ * @return A handler function for zoom events
  */
 export function continuousAxisZoomHandler(
     axesForSeries: Array<string>,
@@ -1569,8 +1692,8 @@ export function continuousAxisZoomHandler(
  * @param setRangeFor Function for setting the new time-range for a specific axis
  * @param setOriginalRangeFor Function for setting the new original range for a specific axis
  * @param axesState The current state of the x- or y-axes
- * @param scaleExtent The minimum and maximum allowed scale factors
- * @return A handler function for pan events
+ * @param [scaleExtent=[0, Infinity]] The minimum and maximum allowed scale factors
+ * @return A handler function for zoom events
  */
 export function ordinalAxisZoomHandler(
     axesForSeries: Array<string>,
@@ -1622,7 +1745,7 @@ export function ordinalAxisZoomHandler(
  * @param xAxesState The current state of the x-axes
  * @param yAxesState The current state of the y-axes
  * @param scaleExtent The smallest and largest scale factors allowed
- * @return A handler function for pan events
+ * @return A handler function for zoom events
  */
 export function axesZoomHandler(
     xAxesForSeries: Array<string>,
@@ -1671,7 +1794,8 @@ export function axesZoomHandler(
 }
 
 /**
- * Calculates the axis-ranges for each of the continuous numeric axes in the map
+ * Calculates the axis-ranges for each of the continuous numeric axes in the map, from each axis'
+ * current domain (see {@link continuousRange})
  * @param axes The map containing the axes and their associated IDs
  * @return a map associating the axis IDs with their continuous axis-range
  */
@@ -1690,9 +1814,9 @@ export function ordinalAxisRanges(axes: Map<string, OrdinalStringAxis>): Map<str
 }
 
 /**
- * Calculates the axis interval (start, end) for each of the axis
- * @param axes The axes representing the time
- * @return A map associating each axis with a (start, end) interval
+ * Calculates the axis interval (start, end) of each axis' current domain
+ * @param axes The axes, by their IDs
+ * @return A map associating each axis ID with its domain's (start, end) interval
  */
 export function continuousAxisIntervals(axes: Map<string, ContinuousNumericAxis>): Map<string, AxisInterval> {
     return new Map(Array.from(axes.entries())
@@ -1703,9 +1827,10 @@ export function continuousAxisIntervals(axes: Map<string, ContinuousNumericAxis>
 }
 
 /**
- * Calculates the axis interval (start, end) for each of the axis
- * @param axes The axes representing the time
- * @return A map associating each axis with a (start, end) interval
+ * Calculates the pixel interval (start, end) of each ordinal axis' current range, along with its
+ * categories
+ * @param axes The axes, by their IDs
+ * @return A map associating each axis ID with its range's (start, end) interval and its categories
  */
 export function ordinalAxisIntervals(axes: Map<string, OrdinalStringAxis>): Map<string, {interval: AxisInterval, categories: Array<string>}> {
     return new Map(Array.from(axes.entries())
@@ -1716,7 +1841,8 @@ export function ordinalAxisIntervals(axes: Map<string, OrdinalStringAxis>): Map<
 }
 
 /**
- * Returns the bounds on the specified continuous numeric axes
+ * Returns the bounds on the specified continuous numeric axes: a new axis range (with its original
+ * range the same as its current range) from each axis' current domain
  * @param axes A map associating an axis ID with a {@link ContinuousNumericAxis}
  * @return A map associating each specified axis ID with the interval covered (bounds) by the axis
  */

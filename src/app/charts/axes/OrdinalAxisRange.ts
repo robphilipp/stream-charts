@@ -6,6 +6,13 @@ import {BaseAxisRange} from "./BaseAxisRange";
  */
 export class OrdinalAxisRange extends BaseAxisRange {
 
+    /**
+     * Use {@link OrdinalAxisRange.from} to create an instance
+     * @param start The start of the axis-range
+     * @param end The end of the axis-range
+     * @param [originalStart=start] The original start of the axis-range
+     * @param [originalEnd=end] The original end of the axis-range
+     */
     private constructor(start: number, end: number, originalStart: number = start, originalEnd: number = end) {
         super(start, end, originalStart, originalEnd)
     }
@@ -18,7 +25,7 @@ export class OrdinalAxisRange extends BaseAxisRange {
      * Defaults to the start value if not specified.)
      * @param [originalEnd=end] The optional original end of the axis-range (e.g. before any zooming or panning.
      * Defaults to the end value if not specified.)
-     * @return A new continuous-axis range instance.
+     * @return A new ordinal-axis range instance.
      */
     static from(start: number, end: number, originalStart: number = start, originalEnd: number = end): OrdinalAxisRange {
         return new OrdinalAxisRange(start, end, originalStart, originalEnd)
@@ -83,7 +90,7 @@ export class OrdinalAxisRange extends BaseAxisRange {
      * modify the original range.
      * @param factor The cumulative scale factor
      * @param value The value from which to scale the interval
-     * @return A new continuous-axis range with updated values
+     * @return A new ordinal-axis range with updated values
      */
     scale(factor: number, value: number): OrdinalAxisRange {
         const scaledInterval = this.scaledCumulative(factor, value)
@@ -108,7 +115,7 @@ export class OrdinalAxisRange extends BaseAxisRange {
      * @param factor The cumulative scale factor
      * @param value The value from which to scale the interval
      * @param constraint The minimum and maximum values that range bounds can be
-     * @return A new continuous-axis range with updated values
+     * @return A new ordinal-axis range with updated values
      */
     constrainedScale(factor: number, value: number, constraint: [min: number, max: number]): OrdinalAxisRange {
         const scaledInterval = this.scaledCumulative(factor, value)
@@ -121,14 +128,16 @@ export class OrdinalAxisRange extends BaseAxisRange {
         )
     }
     /**
-     * Translates the axis-range by the specified amount
+     * Translates the axis-range by the specified amount, unless that would take it outside the
+     * constraint interval (when both ends of the constraint are infinite, there's no constraint)
      * @param amount The amount by which to translate the axis-range
      * @param [constraint=[-Infinity, Infinity]] Optional constraint interval in which the axis range must be within
-     * @return An updated {@link OrdinalAxisRange} that has been translated by the specified amount
+     * @return An updated {@link OrdinalAxisRange} that has been translated by the specified amount (or an
+     * unchanged copy, when the translation would leave the constraint interval)
      */
     translate(amount: number, constraint: [start: number, end: number] = [-Infinity, Infinity]): OrdinalAxisRange {
         const [cs, ce] = constraint
-        // when either of the constraints is infinite, or the pan keeps the new axis range
+        // when both of the constraints are infinite, or the pan keeps the new axis range
         // within the origin axis range (i.e. zoomed in and the panned), then allow the pan,
         // otherwise don't update
         if ((!isFinite(cs) && !isFinite(ce)) || (this.current.start + amount >= cs && this.current.end + amount <= ce)) {

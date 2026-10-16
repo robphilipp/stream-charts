@@ -48,7 +48,7 @@ export interface Props {
      */
     interpolation?: d3.CurveFactory
     /**
-     * Whether to enable panning and zooming. Defaults to false.
+     * Whether to enable panning. Defaults to false.
      */
     panEnabled?: boolean
     /**
@@ -60,7 +60,8 @@ export interface Props {
      */
     zoomKeyModifiersRequired?: boolean
     /**
-     * Behavior for time windowing. Defaults to TimeWindowBehavior.FIXED.
+     * Behavior for time windowing (see {@link TimeWindowBehavior}). Defaults to `SCROLL`. Ignored
+     * when `withCadenceOf` is set.
      */
     timeWindowBehavior?: TimeWindowBehavior
     /**
@@ -75,15 +76,16 @@ export interface Props {
     withCadenceOf?: number
     /**
      * Base fill-opacity for the outermost (widest) outlier band. Inner (narrower / more
-     * confident) bands are rendered with progressively higher opacity, capped at 1.
+     * confident) bands are rendered with progressively higher opacity, capped at 1. Defaults to 0.15.
      */
     bandOpacity?: number
     /**
-     * Optional per-band opacity step added for each more-confident (lower-index) band.
+     * Optional per-band opacity step added for each more-confident (lower-index) band. Defaults to 0.12.
      */
     bandOpacityStep?: number
     /**
-     * Radius (px) of the circle marker drawn at each datum on the central line. Defaults to 4.
+     * Radius (px) of the circle marker drawn at each datum on the central line, while the data
+     * source is paused. When omitted, no markers are drawn.
      */
     markerRadius?: number
     /**
@@ -161,6 +163,11 @@ interface BandHitRegion<M extends readonly number[]> {
  * series' bands, line, and markers from scratch each time the canvas repaints. Band hover uses
  * `ctx.isPointInPath` against the band's actual filled path (captured each draw); outlier-marker
  * hover uses the shared point-hit-testing in `hitTesting.ts`, same as {@link ScatterPlot}'s markers.
+ * When the data source is paused, hovering over a band shows the tooltip (when there's one); a
+ * y-axis with `autoScale` set grows to fit the data on screen (bands included).
+ * @param props The properties associated with the outlier plot
+ * @return `null` (the plot draws onto the chart's canvas)
+ * @template M The type of the measures (a tuple of numbers)
  */
 export function OutlierPlot<M extends readonly number[] = readonly number[]>(props: Props): null {
     const {
@@ -231,7 +238,8 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
     // captures "the current un-zoomed baseline, right now" instead of "the bounds this run
     // started at" -- so clicking Reset after zooming out would snap the axis to that narrow,
     // very-current baseline instead of the true starting view, looking like Reset "zooms in".
-    // Capturing these once per reset (mount, and every subsequent Run) sidesteps that entirely.
+    // Capturing these once per reset (on mount, and whenever the data source is replaced) sidesteps
+    // that entirely.
     const initialTimesRef = useRef<Map<string, number>>(new Map())
     const initialAxisIntervalsRef = useRef<Map<string, [start: number, end: number]>>(new Map())
 
@@ -263,6 +271,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
      * runs on every data tick (each `windowingTime` interval), and recreating/reattaching a
      * `d3.drag()`/`d3.zoom()` behavior that often is pure overhead unrelated to drawing the new
      * data.
+     * @param cc The canvas context to register the draw function with
      */
     const updatePlot = useCallback(
         (cc: CanvasContext) => {
@@ -506,7 +515,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
     }, [canvasContext])
 
     // when the initial data changes, then reset the plot. note that the initial data doesn't change
-    // during the normal course of updates from the observable, only when the plot is restarted. the
+    // during the normal course of updates from the data source, only when the data source is replaced. the
     // reset itself should always use the current xAxesState/axisAssignments/updateTimingAndPlot, not
     // whatever they were when this effect last ran -- that's exactly what an effect event gives us,
     // without having to (falsely) declare them as dependencies that would re-trigger the reset.
@@ -576,12 +585,27 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
         [highlightAxesOnMouseOver, hoveredSeriesName, axisAssignments, xAxesState, yAxesState, seriesStyles]
     )
 
+    /**
+     * Adjusts the time-range when the plot is dragged to the left or right (the caller redraws the plot)
+     * @param x The amount that the plot is dragged
+     * @param dim The dimensions of the plot
+     * @param ranges A map holding the axis ID and its associated time range
+     */
     const onPan = useCallback(
         (x: number, dim: Dimensions, ranges: Map<string, ContinuousAxisRange>) =>
             panHandler(axesForSeries, margin, setAxisIntervalFor, xAxesState)(x, dim, ranges),
         [axesForSeries, margin, setAxisIntervalFor, xAxesState]
     )
 
+    /**
+     * Called when the user uses the scroll wheel (or scroll gesture) to zoom in or out.
+     * @param zoomFactor The *incremental* zoom scale factor for this event (see ScatterPlot's
+     * `lastZoomKRef` for how d3-zoom's cumulative `k` is converted to it)
+     * @param pivotDomainValueFor Given an axis ID and its axis, returns the domain value to pivot
+     * that axis's zoom around
+     * @param dim The dimensions of the plot
+     * @param ranges A map holding the axis ID and its associated time-range
+     */
     const onZoom = useCallback(
         (zoomFactor: number, pivotDomainValueFor: (axisId: string, axis: ContinuousNumericAxis) => number, dim: Dimensions, ranges: Map<string, ContinuousAxisRange>) =>
             continuousAxisZoomHandler(axesForSeries, margin, setAxisIntervalFor, xAxesState)(zoomFactor, pivotDomainValueFor, dim, ranges),
@@ -903,6 +927,12 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
  * Finds the topmost (narrowest, most-confident) band whose fill path contains `(localX, localY)`.
  * `bands` is in draw order (widest first, narrowest/topmost last), so this iterates backwards to
  * check the topmost band first, matching visual stacking.
+ * @param bands The bands' fill regions, as last drawn, in draw order
+ * @param context The canvas 2D context (for `isPointInPath`)
+ * @param localX The mouse's x-coordinate, in the coordinates `isPointInPath` tests against (see
+ * the caller for why that's the plot-area position scaled by the device-pixel ratio)
+ * @param localY The mouse's y-coordinate, in the same coordinates
+ * @return The hovered band's series and index, or `undefined` when the mouse isn't over a band
  */
 function findHoveredBand<M extends readonly number[]>(
     bands: Array<BandHitRegion<M>>,
@@ -923,6 +953,8 @@ function findHoveredBand<M extends readonly number[]>(
  * Returns the index of the largest bound the datum's y-value is outside of, or -1 if the value
  * is inside every bound. Bounds are expected to be ordered from tightest (index 0) to widest
  * (highest index), so the highest-index match identifies the most severe outlier tier.
+ * @param datum The datum
+ * @return The index of the largest bound the datum is outside of, or -1
  */
 function largestExceededBoundIndex<M extends readonly number[]>(datum: OutlierDatum<M>): number {
     for (let i = datum.bounds.length - 1; i >= 0; i--) {
@@ -933,6 +965,17 @@ function largestExceededBoundIndex<M extends readonly number[]>(datum: OutlierDa
     return -1
 }
 
+/**
+ * Attempts to locate the x- and y-axes for the specified series. If the series has no axis
+ * assignment, then uses the default (first) x- and y-axes.
+ * @param seriesName Name of the series for which to retrieve the axis
+ * @param axisAssignments A map holding the series name and the associated x- and y-axes assigned
+ * to that series
+ * @param xAxisFor The function that accepts an axis ID and returns the corresponding x-axis
+ * @param yAxisFor The function that accepts an axis ID and returns the corresponding y-axis
+ * @return The x- and y-axes (`undefined` when not found)
+ * @throws Error when either axis isn't a continuous numeric axis
+ */
 function axesFor(
     seriesName: string,
     axisAssignments: Map<string, AxesAssignment>,

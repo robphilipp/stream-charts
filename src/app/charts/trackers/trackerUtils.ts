@@ -5,6 +5,9 @@ import {canvasLocalPoint} from "../plots/hitTesting";
 import {AxisLocation, type ContinuousNumericAxis} from "../axes/axes";
 import {type TrackerAxisInfo, type TrackerAxisUpdate} from "./Tracker";
 
+/**
+ * The font of the tracker's labels
+ */
 export interface TrackerLabelFont {
     size: number
     color: string
@@ -12,6 +15,9 @@ export interface TrackerLabelFont {
     weight: number
 }
 
+/**
+ * The default font of the tracker's labels
+ */
 export const defaultTrackerLabelFont: TrackerLabelFont = {
     size: 12,
     color: '#d2933f',
@@ -19,12 +25,18 @@ export const defaultTrackerLabelFont: TrackerLabelFont = {
     family: 'sans-serif'
 }
 
+/**
+ * The style of the tracker's line (and whether it's shown)
+ */
 export interface TrackerStyle {
     visible: boolean;
     color: string,
     lineWidth: number,
 }
 
+/**
+ * The default tracker style (hidden)
+ */
 export const defaultTrackerStyle: TrackerStyle = {
     visible: false,
     color: '#d2933f',
@@ -63,8 +75,8 @@ const LABEL_BACKGROUND_RADIUS = 5
  * @param margin The margins around the plot
  * @param style The tracker style
  * @param labelFont The font used for the axis labels
- * @param label A function that returns the tracker label string for a given x-value
- * @param labelStyle The location style for the tracker (i.e. on the axes, next to the mouse, none shown)
+ * @param label A map associating each axis with the function that formats the tracker's label for that axis' value
+ * @param labelStyle Where the tracker's labels are shown (by the axes, or nowhere)
  * @param onTrackerUpdate A callback function that accepts the current tracker's axis information
  * @param [axisLocation = AxisLocation.Bottom] The optional location of the axis for which the tracker is to
  * be shown. Default is bottom.
@@ -98,8 +110,22 @@ export function trackerControlInstance(
 }
 
 /**
- * Registers a vertical tracker line (for x-axes) with the canvas context.
+ * Registers a vertical tracker line (for x-axes) with the canvas context: the line follows the
+ * mouse across the plot area, with a label by each x-axis showing that axis' value at the mouse
+ * (see {@link trackerControlInstance}).
+ * @param cc The canvas context to register the tracker's draw function with
+ * @param chartId The ID of the chart
+ * @param plotDimensions The dimensions of the plot
+ * @param margin The margins around the plot
+ * @param style The tracker style
+ * @param labelFont The font used for the axis labels
+ * @param label A map associating each axis with the function that formats the tracker's label for that axis' value
+ * @param labelStyle Where the tracker's labels are shown (by the axes, or nowhere)
+ * @param onTrackerUpdate A callback function that accepts the current tracker's axis information
+ * @param backgroundColor The background color of the tracker label
+ * @return A cleanup function that unregisters the tracker's draw function and removes its mouse listeners
  */
+
 function verticalTrackerControlInstance(
     cc: CanvasContext,
     chartId: number,
@@ -210,8 +236,22 @@ function verticalTrackerControlInstance(
 }
 
 /**
- * Registers a horizontal tracker line (for y-axes) with the canvas context.
+ * Registers a horizontal tracker line (for y-axes) with the canvas context: the line follows the
+ * mouse up and down the plot area, with a label by each y-axis showing that axis' value at the
+ * mouse (see {@link trackerControlInstance}).
+ * @param cc The canvas context to register the tracker's draw function with
+ * @param chartId The ID of the chart
+ * @param plotDimensions The dimensions of the plot
+ * @param margin The margins around the plot
+ * @param style The tracker style
+ * @param labelFont The font used for the axis labels
+ * @param label A map associating each axis with the function that formats the tracker's label for that axis' value
+ * @param labelStyle Where the tracker's labels are shown (by the axes, or nowhere)
+ * @param onTrackerUpdate A callback function that accepts the current tracker's axis information
+ * @param backgroundColor The background color of the tracker label
+ * @return A cleanup function that unregisters the tracker's draw function and removes its mouse listeners
  */
+
 function horizontalTrackerControlInstance(
     cc: CanvasContext,
     chartId: number,

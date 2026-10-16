@@ -88,11 +88,19 @@ import {useBarChartStore} from "./appstate/barChartStore.ts";
 /**
  * The properties
  */
+/**
+ * The properties of the bar example
+ */
 interface Props {
+    // the theme (defaults to the light theme)
     theme?: Theme
+    // (unused)
     timeWindow?: number
+    // the initial data (the default number of series, see routeData.ts)
     initialData: Array<BaseSeries<Datum>>
+    // (unused)
     seriesHeight?: number
+    // (unused)
     plotWidth?: number
 }
 
@@ -153,8 +161,8 @@ const filterFrom = (filterValue: string): RegExp => regexFilter(filterValue).get
  * app's store: Run/Pause start and stop the data source, which keeps ingesting even while this
  * chart is unmounted (e.g. on another page). The {@link Chart} updates itself with the new data
  * without causing React to re-render the component.
- * @param {Props} props The properties passed down from the parent
- * @return {Element} The streaming raster chart
+ * @param props The properties passed down from the parent
+ * @return The streaming bar chart
  * @constructor
  */
 export function StreamingBarChart(props: Props): JSX.Element {

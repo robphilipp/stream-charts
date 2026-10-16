@@ -1,10 +1,16 @@
 import type {Visibility} from "../../options/visibility.ts";
 import type {StateCreator} from "zustand";
 
+/**
+ * The visibility state of a chart's optional elements (tooltip, tracker, markers, legend, ...)
+ */
 export type VisibilityStateSlice = {
     visibility: Visibility
 }
 
+/**
+ * The actions that change the visibility state: replacing all of it, or changing one element's
+ */
 export type VisibilityActionSlice = {
     setVisibility: (visibility: Visibility) => void
     setTooltipVisibility: (visibility: boolean) => void
@@ -15,6 +21,11 @@ export type VisibilityActionSlice = {
 
 export type VisibilitySlice = VisibilityStateSlice & VisibilityActionSlice
 
+/**
+ * Creates the visibility slice of a store
+ * @param initialState The initial visibility
+ * @return The slice's state creator (for zustand's `create`)
+ */
 export function visibilitySliceStateCreator(initialState: VisibilityStateSlice): StateCreator<VisibilitySlice, [], [], VisibilitySlice> {
     return (set, get) => ({
         visibility: initialState.visibility,

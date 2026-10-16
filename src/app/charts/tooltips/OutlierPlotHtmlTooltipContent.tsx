@@ -29,6 +29,10 @@ export type {
     OutlierTooltipContextValue
 }
 
+/**
+ * The properties of the {@link OutlierPlotHtmlTooltipContent}: its style, its (optional) custom
+ * content, and the formatters for the default content
+ */
 export type Props = {
     /**
      * Style overrides for the tooltip.
@@ -51,6 +55,8 @@ export type Props = {
  * Must be rendered as a child of a {@link Tooltip} inside a {@link Chart} that contains an
  * {@link OutlierPlot}. Showing is triggered by the parent {@link Tooltip} via
  * {@link registerTooltipContentProvider}; hiding is triggered by the mouse-leave event.
+ * @param props The properties describing the tooltip content
+ * @return The tooltip's portal, or `null` when no band is being hovered
  */
 export function OutlierPlotHtmlTooltipContent(props: Props): React.ReactElement | null {
     const {
@@ -162,6 +168,16 @@ export function OutlierPlotHtmlTooltipContent(props: Props): React.ReactElement 
     )
 }
 
+/**
+ * Captures the data needed to render the tooltip content, and where it's anchored (the mouse --
+ * the tooltip is placed next to it once it's rendered, see {@link useTooltipPlacement})
+ * @param seriesName The name of the series
+ * @param metadata The band metadata
+ * @param mouseCoords The coordinates of the mouse when the event was fired, in canvas-local coordinates
+ * @param canvas The chart's canvas element
+ * @param setTooltipContent Setter that stashes the captured content for the component to render
+ * @return Off-screen {@link TooltipDimensions}, so the parent <Tooltip>'s own background stays invisible
+ */
 function buildTooltipContent(
     seriesName: string,
     metadata: OutlierBandTooltipMetadata,

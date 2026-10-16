@@ -11,6 +11,9 @@ import {BaseStreamingDataSource, type DataGenerator} from "./StreamingDataSource
  */
 export type TimeGroupFor = (seriesName: string) => string
 
+/**
+ * The default time grouping: one group, holding all the series
+ */
 const SINGLE_TIME_GROUP: TimeGroupFor = () => ""
 
 /**
@@ -65,6 +68,10 @@ export class TimeSeriesDataSource extends BaseStreamingDataSource<TimeSeriesChar
     private readonly timeGroupFor: TimeGroupFor
     private readonly onUpdateData: ((seriesName: string, data: Array<Datum>) => void) | undefined
 
+    /**
+     * Creates a time-series data source (stopped: call {@link start} to start it)
+     * @param options The initial data, the generator, and the data-retention settings
+     */
     constructor(options: TimeSeriesDataSourceOptions) {
         super(options.initialData, options.generator)
         this.dropDataAfter = options.dropDataAfter ?? Infinity
@@ -80,6 +87,10 @@ export class TimeSeriesDataSource extends BaseStreamingDataSource<TimeSeriesChar
         this.dropDataAfter = dropDataAfter
     }
 
+    /**
+     * @return The latest time (the `x` of the last datum) over all the series, or
+     * `-Infinity` when there is no data
+     */
     latestTime(): number {
         return this.seriesList().reduce(
             (tMax, series) => Math.max(tMax, series.last().map(datum => datum.x).getOrElse(tMax)),
@@ -87,6 +98,14 @@ export class TimeSeriesDataSource extends BaseStreamingDataSource<TimeSeriesChar
         )
     }
 
+    /**
+     * Adds each series' new points to it, and drops the points that are older than
+     * `dropDataAfter` relative to the current time of the series' time group (see
+     * {@link currentTimesByGroup}). New points for a series that isn't in the source are ignored
+     * (time-series charts have a fixed set of series). Calls `onUpdateData` with each series' new
+     * points.
+     * @param data The chunk of chart data emitted by the generator
+     */
     protected ingest(data: TimeSeriesChartData): void {
         const groupTimes = currentTimesByGroup(data, this.timeGroupFor)
 

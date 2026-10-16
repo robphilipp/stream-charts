@@ -48,6 +48,10 @@ export class IteratesDataSource extends BaseStreamingDataSource<IterateChartData
     private dropDataAfter: number
     private readonly onUpdateData: ((seriesName: string, data: Array<IterateDatum>) => void) | undefined
 
+    /**
+     * Creates a iterates data source (stopped: call {@link start} to start it)
+     * @param options The initial data, the generator, and the data-retention settings
+     */
     constructor(options: IteratesDataSourceOptions) {
         super(options.initialData, options.generator)
         this.dropDataAfter = options.dropDataAfter ?? Infinity
@@ -62,6 +66,10 @@ export class IteratesDataSource extends BaseStreamingDataSource<IterateChartData
         this.dropDataAfter = dropDataAfter
     }
 
+    /**
+     * @return The latest time (the `time` of the last datum) over all the series, or
+     * `-Infinity` when there is no data
+     */
     latestTime(): number {
         return this.seriesList().reduce(
             (tMax, series) => Math.max(tMax, series.last().map(datum => datum.time).getOrElse(tMax)),
@@ -69,6 +77,13 @@ export class IteratesDataSource extends BaseStreamingDataSource<IterateChartData
         )
     }
 
+    /**
+     * Adds each series' new points to it, and drops the points that are older than
+     * `dropDataAfter` relative to the chunk's current time (see {@link iteratesCurrentTime}). New
+     * points for a series that isn't in the source are ignored. Calls `onUpdateData` with each
+     * series' new points.
+     * @param data The chunk of chart data emitted by the generator
+     */
     protected ingest(data: IterateChartData): void {
         const currentTime = iteratesCurrentTime(data)
         data.newPoints.forEach((newData, seriesName) => {

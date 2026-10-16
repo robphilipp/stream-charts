@@ -5,6 +5,8 @@ import {useOutlierTooltip} from "./useOutlierTooltip.tsx"
  * Default tooltip content for {@link OutlierPlotHtmlTooltipContent}. Reads tooltip data and
  * formatters from context via {@link useOutlierTooltip}. Used automatically when no custom
  * children are provided to {@link OutlierPlotHtmlTooltipContent}.
+ * @return The series' name, the datum, the band, its measure, and the number of points in the
+ * band (or nothing, when there's no tooltip content)
  */
 export function DefaultOutlierHtmlTooltipContent(): JSX.Element {
     const {

@@ -14,6 +14,13 @@ type Props = {
     children: JSX.Element | Array<JSX.Element>
 }
 
+/**
+ * The run/pause and reset buttons (the reset button is disabled while the chart is running),
+ * followed by the children
+ * @param props The control bar's type (unused), the theme, whether the chart is running, the
+ * handlers for the run/pause and reset buttons, and the children
+ * @return The buttons, and the children
+ */
 export function CommonExecutionControls(props: Props): JSX.Element {
     const {
         theme,

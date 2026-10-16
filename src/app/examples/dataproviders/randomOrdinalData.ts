@@ -40,10 +40,11 @@ export function initialBarDanceData(
 }
 
 /**
- * Creates a time-series chart data object based on the values from the time-series
- * @param seriesList The list of series names (identifiers) to update
+ * Creates the time-series chart data to start the dancing bars' stream from: each series' last
+ * datum, as a (time, value) point, and the latest times
+ * @param seriesList The series
  * @param [currentTime=0] The current time
- * @return An empty chart data object
+ * @return The chart data (a series without data gets a (0, 0) point, and a max time of 0)
  */
 export function initialOrdinalChartData(seriesList: Array<BaseSeries<OrdinalDatum>>, currentTime: number = 0): TimeSeriesChartData {
     const maxTime = seriesList.reduce(
@@ -66,7 +67,7 @@ export function initialOrdinalChartData(seriesList: Array<BaseSeries<OrdinalDatu
  * Creates random set of time-series data, designed to make the bar chart dance. Only *new* data is
  * emitted -- the specified series are the starting point (their latest values and times), not part of
  * the stream -- so that resuming from a chart's accumulated data doesn't re-emit (and duplicate) it.
- * @param series The number of time-series for which to generate data (i.e. one for each neuron)
+ * @param series The series for which to generate data (i.e. one for each neuron)
  * @param [updatePeriod=25] The time-interval between the generation of subsequent data points
  * @param [min=-1] The minimum allowed value
  * @param [max=1] The maximum allowed value
@@ -103,13 +104,14 @@ export function barDanceDataObservable(
 }
 
 /**
- * *Side effect*
- * Updates the specified `accum` parameter.
- * @param accum The "position" in the random walk
- * @param incoming The changes in position
+ * Merges each series' incoming points into a copy of the accumulated map (rather than updating
+ * `accum`): each incoming series' points replace its accumulated ones, with the first point's
+ * value limited to the min and max
+ * @param accum The accumulated points, by series name
+ * @param incoming The incoming points, by series name
  * @param min The minimum allowed value
  * @param max The maximum allowed value
- * @return The merged map holding the new random walk segments
+ * @return The merged map
  */
 function mergeOrdinalSeries(
     accum: Map<string, Array<Datum>>,

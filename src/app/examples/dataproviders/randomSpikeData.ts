@@ -53,13 +53,16 @@ export function initialRandomSpikeData(
 }
 
 /**
- * Creates a random spike for each series and within (time - update_period, time)
- * @param sequenceTime The current time
+ * Creates a random spike, with the specified probability, for each series: at the current time
+ * (the elapsed time plus the latest of the series' initial max times), with a value uniformly
+ * random within the spread around the mean
+ * @param sequenceTime The time elapsed since the stream started
  * @param series The list of series (identifiers) to update
- * @param seriesMaxTimes A map holding the series name and its associated max time
- * @param spikeProbability The probability threshold for a spike in the tine interval
+ * @param seriesMaxTimes A map holding the series name and its associated max time (when the stream started)
+ * @param spikeProbability The probability that a series spikes in this time step
  * @param meanValue The mean of the spikes' values
  * @param valueSpread How far (at most) a spike's value is from the mean
+ * @param compactingSize The number of shifts each new-points array accumulates before it's compacted
  * @return A random chart data
  */
 function randomSpikeData(

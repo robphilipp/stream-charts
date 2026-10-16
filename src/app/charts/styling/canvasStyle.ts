@@ -11,20 +11,38 @@
 
 import * as d3 from "d3"
 
+/**
+ * The style of a stroke (a line, or a shape's outline)
+ */
 export interface CanvasStrokeStyle {
     readonly color: string
     readonly width: number
     readonly opacity: number
 }
 
+/**
+ * @param current The stroke style
+ * @param color The new color
+ * @return A copy of the stroke style with the new color
+ */
 export function updateStrokeColor(current: CanvasStrokeStyle, color: string): CanvasStrokeStyle {
     return {...current, color}
 }
 
+/**
+ * @param current The stroke style
+ * @param width The new width (in pixels)
+ * @return A copy of the stroke style with the new width
+ */
 export function updateStrokeWidth(current: CanvasStrokeStyle, width: number): CanvasStrokeStyle {
     return {...current, width}
 }
 
+/**
+ * @param current The stroke style
+ * @param opacity The new opacity, from 0 (transparent) to 1 (opaque)
+ * @return A copy of the stroke style with the new opacity
+ */
 export function updateStrokeOpacity(current: CanvasStrokeStyle, opacity: number): CanvasStrokeStyle {
     return {...current, opacity}
 }
@@ -43,15 +61,28 @@ export function applyStrokeStyle(context: CanvasRenderingContext2D, style: Parti
     return context
 }
 
+/**
+ * The style of a (shape's) fill
+ */
 export interface CanvasFillStyle {
     readonly color: string
     readonly opacity: number
 }
 
+/**
+ * @param current The fill style
+ * @param color The new color
+ * @return A copy of the fill style with the new color
+ */
 export function updateFillColor(current: CanvasFillStyle, color: string): CanvasFillStyle {
     return {...current, color}
 }
 
+/**
+ * @param current The fill style
+ * @param opacity The new opacity, from 0 (transparent) to 1 (opaque)
+ * @return A copy of the fill style with the new opacity
+ */
 export function updateFillOpacity(current: CanvasFillStyle, opacity: number): CanvasFillStyle {
     return {...current, opacity}
 }

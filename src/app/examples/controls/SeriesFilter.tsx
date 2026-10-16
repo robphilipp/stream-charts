@@ -1,6 +1,11 @@
 import {type CSSProperties, type JSX} from "react";
 import type {Theme} from "../../ui/Themes.ts";
 
+/**
+ * The style of the text field: the theme's colors
+ * @param theme The theme
+ * @return The text field's style
+ */
 const inputStyle = (theme: Theme): CSSProperties => ({
     backgroundColor: theme.backgroundColor,
     outlineStyle: 'none',
@@ -20,6 +25,11 @@ type Props = {
     handleFilterUpdate: (value: string) => void
 }
 
+/**
+ * Text field for the regular expression that filters which series the chart shows
+ * @param props The theme, the filter's text, and the handler for new text
+ * @return The text field
+ */
 export function SeriesFilter(props: Props): JSX.Element {
     const {theme, filterValue, handleFilterUpdate} = props;
     return (

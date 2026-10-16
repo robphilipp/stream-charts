@@ -59,6 +59,10 @@ export interface BarPlotZoomState {
 }
 
 // typescript doesn't support enums with computed string values, even though they are all constants...
+/**
+ * An ID (e.g. a tooltip provider ID) for each of the five kinds of element the bar plot draws for
+ * each series
+ */
 export type BarChartElementId = {
     readonly currentValue: string
     readonly meanValue: string
@@ -67,6 +71,9 @@ export type BarChartElementId = {
     readonly windowedMinMax: string
 }
 
+/**
+ * The properties of the {@link BarPlot}
+ */
 export interface Props {
     /**
      * Holds the mapping between a series and the axis it uses (is assigned). The
@@ -74,10 +81,25 @@ export interface Props {
      * object holding the ID of the assigned x-axis and y-axis.
      */
     axisAssignments?: Map<string, AxesAssignment>
+    /**
+     * Whether to show each series' lifetime min/max bar (default is true)
+     */
     showMinMaxBars?: boolean
+    /**
+     * Whether to show each series' windowed min/max bar (default is true)
+     */
     showWindowedMinMaxBars?: boolean
+    /**
+     * Whether to show each series' current-value line (default is true)
+     */
     showValueLines?: boolean
+    /**
+     * Whether to show each series' lifetime mean-value line (default is true)
+     */
     showMeanValueLines?: boolean
+    /**
+     * Whether to show each series' windowed mean-value line (default is true)
+     */
     showWindowedMeanValueLines?: boolean
     /**
      * Enables panning (default is false)
@@ -93,8 +115,9 @@ export interface Props {
      */
     zoomKeyModifiersRequired?: boolean
     /**
-     * The (optional, default = 2 pixels) top and bottom margin (in pixels) for the spike lines in the plot.
-     * Margins on individual series can also be set through the {@link Chart.seriesStyles} property.
+     * The (optional, default = 2 pixels) left and right margin (in pixels) between each category's
+     * edges and its lines. Margins on individual series can also be set through the
+     * {@link Chart.seriesStyles} property.
      */
     barMargin?: number
     /**
@@ -132,8 +155,22 @@ export interface Props {
 }
 
 /**
- * Renders a streaming bar plot for the series in the initial data and those sourced by the
- * observable specified as a property in the {@link Chart}. This component uses the {@link useChart}
+ * Maps the short element-type keys used internally for hit-testing geometry (`minMax`,
+ * `windowedMinMax`, `meanValue`, `windowedMeanValue`, `currentValue`) to the actual provider IDs
+ * (`BAR_CHART_TOOLTIP_PROVIDER_IDS`) that `mouseOverHandlerFor`/`mouseLeaveHandlerFor` expect.
+ */
+const PROVIDER_ID_FOR_ELEMENT_TYPE: Record<string, string> = {
+    minMax: BAR_CHART_TOOLTIP_PROVIDER_IDS.minMax,
+    windowedMinMax: BAR_CHART_TOOLTIP_PROVIDER_IDS.windowedMinMax,
+    meanValue: BAR_CHART_TOOLTIP_PROVIDER_IDS.meanValue,
+    windowedMeanValue: BAR_CHART_TOOLTIP_PROVIDER_IDS.windowedMeanValue,
+    currentValue: BAR_CHART_TOOLTIP_PROVIDER_IDS.currentValue,
+}
+
+/**
+ * Renders a streaming bar plot for the series held by the {@link StreamingDataSource} handed to the
+ * {@link Chart} (its `dataSource` prop) -- along with each series' lifetime and windowed stats,
+ * which an {@link OrdinalDataSource} keeps. This component uses the {@link useChart}
  * hook, and therefore must be a child of the {@link Chart} to be plugged in to the
  * chart ecosystem (axes, tracker, tooltip).
  *
@@ -149,6 +186,7 @@ export interface Props {
  * <a href="https://github.com/robphilipp/stream-charts-examples">`StreamingBarChart` example</a>
  *
  * @param props The properties associated with the bar plot
+ * @return `null` (the plot draws onto the chart's canvas)
  * @example
  * ```typescript
  * <BarPlot
@@ -156,7 +194,6 @@ export interface Props {
  *     panEnabled={true}
  *     zoomEnabled={true}
  *     zoomKeyModifiersRequired={true}
- *     withCadenceOf={50}
  *
  *     showMinMaxBars={true}
  *     showValueLines={true}
@@ -166,19 +203,6 @@ export interface Props {
  * />
  * ```
  */
-/**
- * Maps the short element-type keys used internally for hit-testing geometry (`minMax`,
- * `windowedMinMax`, `meanValue`, `windowedMeanValue`, `currentValue`) to the actual provider IDs
- * (`BAR_CHART_TOOLTIP_PROVIDER_IDS`) that `mouseOverHandlerFor`/`mouseLeaveHandlerFor` expect.
- */
-const PROVIDER_ID_FOR_ELEMENT_TYPE: Record<string, string> = {
-    minMax: BAR_CHART_TOOLTIP_PROVIDER_IDS.minMax,
-    windowedMinMax: BAR_CHART_TOOLTIP_PROVIDER_IDS.windowedMinMax,
-    meanValue: BAR_CHART_TOOLTIP_PROVIDER_IDS.meanValue,
-    windowedMeanValue: BAR_CHART_TOOLTIP_PROVIDER_IDS.windowedMeanValue,
-    currentValue: BAR_CHART_TOOLTIP_PROVIDER_IDS.currentValue,
-}
-
 export function BarPlot(props: Props): null {
     const {
         chartId,
@@ -237,16 +261,17 @@ export function BarPlot(props: Props): null {
     // why do "dataRef" and "seriesRef" both hold on to the same underlying data? for performance.
     //
     // the "dataRef" and "seriesRef" both point to the same underlying data, a collection
-    // of series. The series in "dataRef" are read by the canvas draw function. The "seriesRef" series
-    // are the ones that are updated as new data is streamed in.
+    // of series (held, and updated as new data is streamed in, by the data source). The series in
+    // "dataRef" are read by the canvas draw function, and the "seriesRef" map is for looking a
+    // series up by its name.
     //
     // the "dataRef" object holds on to a copy of the initial data (which is an array of
     // time-series, e.i. an array of BaseSeries<OrdinalDatum> objects). The slice just creates a copy of
     // the array, but the references to the BaseSeries objects are the same and still point to the same
     // data as the "initialData" array.
     //
-    // the "seriesRef" object is a reference to a map (series_name -> BaseSeries<OrdinalDatum>) which is
-    // used to update the data in the series. When new data enters, it is appended to one or more series.
+    // the "seriesRef" object is a reference to a map (series_name -> BaseSeries<OrdinalDatum>), used
+    // to find the series under the mouse (for the tooltip).
     //
     // the series in the "dataRef" object are the ones read by the next redraw, so as these are
     // updated, the next canvas repaint picks up the new data.
@@ -562,7 +587,7 @@ export function BarPlot(props: Props): null {
     )
 
     // when the initial data changes, then reset the plot. note that the initial data doesn't change
-    // during the normal course of updates from the observable, only when the plot is restarted.
+    // during the normal course of updates from the data source, only when the data source is replaced.
     useEffect(
         () => {
             dataRef.current = initialData.slice()
@@ -574,11 +599,12 @@ export function BarPlot(props: Props): null {
     )
 
     /**
-     * Adjusts the time-range and updates the plot when the plot is dragged to the left or right
+     * Adjusts the ordinal x-axes' ranges when the plot is dragged to the left or right (the caller
+     * redraws the plot)
      * @param x The amount that the plot is dragged
      * @param plotDimensions The dimensions of the plot
      * @param series An array of series names
-     * @param ranges A map holding the axis ID and its associated time range
+     * @param ranges A map holding the axis ID and its associated range
      */
     const onPan = useCallback(
         (x: number,
@@ -594,11 +620,11 @@ export function BarPlot(props: Props): null {
      * at the location of the mouse when the scroll wheel or gesture was applied.
      * @param zoomFactor The *cumulative* zoom scale factor for this event -- d3-zoom's own
      * `event.transform.k`, passed through unmodified. See {@link OrdinalAxisRange.scaledCumulative}
-     * for why the ordinal x-axis needs this cumulative factor (scaled from `.original`) rather than
-     * an incremental one relative to `.current`.
+     * for why the ordinal x-axis needs this cumulative factor (from which it derives the
+     * incremental step itself, and which it snaps back to `.original` at exactly 1).
      * @param x The x-position of the mouse when the scroll wheel or gesture is used
      * @param plotDimensions The dimensions of the plot
-     * @param ranges A map holding the axis ID and its associated time-range
+     * @param ranges A map holding the axis ID and its associated range
      */
     const onZoom = useCallback(
         (
@@ -998,6 +1024,12 @@ type BarDimensions = {
     height: number
 }
 
+/**
+ * The bar style, made fully transparent when the bar isn't shown
+ * @param isVisible Whether the bar is shown
+ * @param style The bar's style
+ * @return The style (with its fill and stroke opacities 0 when the bar isn't shown)
+ */
 function barStyleFor(isVisible: boolean, style: BarStyle): BarStyle {
     return {
         ...style,
@@ -1006,6 +1038,12 @@ function barStyleFor(isVisible: boolean, style: BarStyle): BarStyle {
     }
 }
 
+/**
+ * The fill or stroke style, made fully transparent when its element isn't shown
+ * @param isVisible Whether the element is shown
+ * @param style The fill or stroke style
+ * @return The style (with an opacity of 0 when the element isn't shown)
+ */
 function updateOpacityFor<S extends SvgFillStyle | SvgStrokeStyle>(isVisible: boolean, style: S): S {
     return {
         ...style,
@@ -1113,16 +1151,17 @@ type CategoryBounds = {
 }
 
 /**
- * Attempts to locate the x- and y-axes for the specified series. If no axis is found for the
- * series name, then uses the default returned by the useChart() hook.
+ * Attempts to locate the x- and y-axes for the specified series. If the series has no axis
+ * assignment, then uses the default (first) x- and y-axes.
  * @param seriesName Name of the series for which to retrieve the axis
  * @param axisAssignments A map holding the series name and the associated x- and y-axes assigned
  * to that series. Note that the series in the axis-assignment map is merely a subset of the set
  * of series names.
  * @param xAxisFor The function that accepts an axis ID and returns the corresponding x-axis
  * @param yAxisFor The function that accepts an axis ID and returns the corresponding y-axis
- * @return A 2d tuple holding the linear x-axis as its first element and the category y-axis as
- * the second element.
+ * @return A 2d tuple holding the category x-axis as its first element and the linear y-axis as
+ * the second element (either is actually `undefined` when it isn't found, despite the type).
+ * @throws Error when the x-axis isn't a category axis, or the y-axis isn't a continuous numeric axis
  */
 function axesFor(
     seriesName: string,
@@ -1145,12 +1184,14 @@ function axesFor(
 }
 
 /**
- * Calculates the upper and lower coordinate for the category
- * @param categorySize The size of the category (i.e. plot_height / num_series)
+ * Calculates the lower (left) and upper (right) x-coordinates of a category's lines, inside its
+ * margins
+ * @param categorySize The size of the category (i.e. plot_width / num_series)
  * @param lineWidth The width of the series line
- * @param margin The margin applied to the top and bottom of the spike line (vertical spacing)
- * @return An object with two functions, that when handed a y-coordinate, return the location
- * for the start (yUpper) or end (yLower) of the spikes line.
+ * @param margin The margin applied to the left and right of the category's lines (horizontal spacing)
+ * @return An object with two functions, that when handed the category's (left) x-coordinate,
+ * return the location of the start (lower) or end (upper) of its lines (when the category is no
+ * wider than the margin, the lines are just the line width long)
  */
 function xAxisCategoryBoundsFn(categorySize: number, lineWidth: number, margin: number): CategoryBounds {
     if (categorySize <= margin) return {
@@ -1164,7 +1205,7 @@ function xAxisCategoryBoundsFn(categorySize: number, lineWidth: number, margin: 
 }
 
 /**
- * Reports a tooltip showing for the bar in the bar chart (see {@link BarPlotTooltipContent}).
+ * Reports a tooltip for the hovered element of a series in the bar chart (see {@link BarPlotTooltipContent}).
  * Replaces the old version, which also mutated the hovered SVG element's stroke directly for the
  * two element types that support a highlight (`currentValue`, `windowedMeanValue`); that highlight
  * is now handled by the draw function checking the hover state (see `updatePlot`'s `draw`) rather

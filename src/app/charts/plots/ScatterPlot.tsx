@@ -44,6 +44,16 @@ import {AxisInterval} from "../axes/AxisInterval";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import type {FastShiftArray} from "fast-shift-array";
 
+// how close (in pixels) the mouse must be to a data point to be over that point (rather than over a
+// line segment) -- at least this, or a little more than the markers' radius when they're larger
+const MIN_POINT_HOVER_RADIUS = 6
+// the radii of the highlights on the points the tooltip shows: the hovered point, and the others
+const TOOLTIP_POINT_RADIUS = 5
+const TOOLTIP_NEIGHBOR_RADIUS = 3.5
+
+/**
+ * The properties of the {@link ScatterPlot}
+ */
 export interface Props {
     /**
      * Holds the mapping between a series and the axis it uses (is assigned). The
@@ -142,7 +152,11 @@ export interface Props {
  * hit-testing the mouse position against the last-drawn series geometry (see `hitTesting.ts`) on a
  * `mousemove` listener attached directly to the canvas, since canvas has no per-shape events.
  *
+ * When the data source is paused, hovering over a series shows the tooltip (when there's one),
+ * and highlights the points it shows; a y-axis with `autoScale` set grows to fit the data on screen.
+ *
  * @param props The properties associated with the scatter plot
+ * @return `null` (the plot draws onto the chart's canvas)
  * @example
  *  <ScatterPlot
  *      interpolation={interpolation}
@@ -154,13 +168,6 @@ export interface Props {
  *      zoomKeyModifiersRequired={true}
  *  />
  */
-// how close (in pixels) the mouse must be to a data point to be over that point (rather than over a
-// line segment) -- at least this, or a little more than the markers' radius when they're larger
-const MIN_POINT_HOVER_RADIUS = 6
-// the radii of the highlights on the points the tooltip shows: the hovered point, and the others
-const TOOLTIP_POINT_RADIUS = 5
-const TOOLTIP_NEIGHBOR_RADIUS = 3.5
-
 export function ScatterPlot(props: Props): null {
     const {
         chartId,
@@ -216,7 +223,8 @@ export function ScatterPlot(props: Props): null {
 
     // the axes' true original (un-zoomed) [start, end] bounds, and each axis' pinned start time
     // for SQUEEZE mode -- see OutlierPlot's identical refs for the full explanation: these must be
-    // refs populated by `resetPlotForInitialData` below (mount, and every subsequent Run), rather
+    // refs populated by `resetPlotForInitialData` below (on mount, and whenever the data source is
+    // replaced), rather
     // than a `useMemo` keyed on `axesRanges`. `axesRanges` is a fresh closure on every render of
     // `AxesProvider` (never memoized there), so such a memo recomputes on essentially every
     // render, re-sampling `.original` while it's being continuously shifted forward by ordinary
@@ -231,16 +239,17 @@ export function ScatterPlot(props: Props): null {
     // why do "dataRef" and "seriesRef" both hold on to the same underlying data? for performance.
     //
     // the "dataRef" and "seriesRef" both point to the same underlying data, a collection
-    // of series. The series in "dataRef" are bound to the DOM elements through d3. The "seriesRef"
-    // series are the ones that are updated as new data is streamed in.
+    // of series (held, and updated as new data is streamed in, by the data source). The "dataRef"
+    // array is what the draw function iterates over, and the "seriesRef" map is for looking a
+    // series up by its name.
     //
     // the "dataRef" object holds on to a copy of the initial data (which is an array of
     // time-series, e.i. an array of BaseSeries<Datum> objects). The slice just creates a copy of
     // the array, but the references to the BaseSeries objects are the same and still point to the same
     // data as the "initialData" array.
     //
-    // the "seriesRef" object is a reference to a map (series_name -> BaseSeries<OrdinalDatum>) which is
-    // used to update the data in the series. When new data enters, it is appended to one or more series.
+    // the "seriesRef" object is a reference to a map (series_name -> BaseSeries<Datum>), used to find
+    // the series under the mouse (for the tooltip).
     //
     // the series in the "dataRef" object are the ones read by the canvas draw function, and so as
     // these are updated, the new data is picked up the next time the canvas redraws.
@@ -631,7 +640,8 @@ export function ScatterPlot(props: Props): null {
     )
 
     // when the initial data changes, then reset the plot. note that the initial data doesn't change
-    // during the normal course of updates from the observable, only when the plot is restarted. the
+    // during the normal course of updates from the data source, only when the data source is
+    // replaced (e.g. on a reset, or a change to the number of series). the
     // reset itself should always use the current xAxesState/axisAssignments/updateTimingAndPlot, not
     // whatever they were when this effect last ran
     const resetPlotForInitialData = useEffectEvent(() => {
@@ -1092,14 +1102,16 @@ export function ScatterPlot(props: Props): null {
 }
 
 /**
- * Attempts to locate the x- and y-axes for the specified series. If no axis is found for the
- * series name, then uses the default returned by the useChart() hook
+ * Attempts to locate the x- and y-axes for the specified series. If the series has no axis
+ * assignment, then uses the default (first) x- and y-axes.
  * @param seriesName Name of the series for which to retrieve the axis
  * @param axisAssignments A map holding the series name and the associated x- and y-axes assigned
  * to that series. Note that the series in the axis-assignment map is merely a subset of the set
  * of series names.
  * @param xAxisFor The function that accepts an axis ID and returns the corresponding x-axis
  * @param yAxisFor The function that accepts an axis ID and returns the corresponding y-axis
+ * @return The x- and y-axes (either is actually `undefined` when it isn't found, despite the type)
+ * @throws Error when either axis isn't a continuous numeric axis
  */
 function axesFor(
     seriesName: string,

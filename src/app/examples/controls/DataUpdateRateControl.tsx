@@ -1,6 +1,12 @@
 import {type CSSProperties, type JSX, useState} from "react";
 import type {Theme} from "../../ui/Themes.ts";
 
+/**
+ * The style of the text field: the theme's colors (the disabled ones, when it's disabled)
+ * @param theme The theme
+ * @param disabled Whether the field is disabled
+ * @return The text field's style
+ */
 const inputStyle = (theme: Theme, disabled: boolean): CSSProperties => ({
     backgroundColor: disabled ? theme.disabledBackgroundColor : theme.backgroundColor,
     outlineStyle: 'none',
@@ -23,10 +29,13 @@ type Props = {
 }
 
 /**
- * Text field for setting the underlying RxJS observable's data-generation rate -- how often
+ * Text field for setting the data generator's (RxJS observable's) data-generation rate -- how often
  * (in milliseconds) the streaming source produces a new data point per series, independent of
  * how often the chart buffers/redraws that data. Only meant to be changed while the chart isn't
  * running (see the `disabled` prop).
+ * @param props The theme, the data-update period, the handler for a new (valid) period, and
+ * whether the field is disabled
+ * @return The labeled text field
  */
 export function DataUpdateRateControl(props: Props): JSX.Element {
     const {theme, dataUpdatePeriod, handleDataUpdatePeriodChange, disabled} = props

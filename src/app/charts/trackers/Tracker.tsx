@@ -13,21 +13,39 @@ import {useEffect, useMemo, useRef} from "react";
 import {AxisLocation, type BaseAxis, type ContinuousNumericAxis} from "../axes/axes";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 
+/**
+ * What the tracker reports for an axis: the axis' value at the mouse, and where the axis is
+ */
 export interface TrackerAxisInfo {
+    /** the axis' value at the mouse (for a y-axis too, despite the name) */
     x: number
+    /** the location of the axis */
     axisLocation: AxisLocation
 }
 
 // map(axis_id -> tracker_axis_info)
 export type TrackerAxisUpdate = Map<string, TrackerAxisInfo>
 
+/**
+ * The properties of the {@link Tracker}
+ */
 export interface Props {
+    /** whether the tracker is shown */
     visible: boolean
+    /**
+     * the axes the tracker reports the values of: top or bottom for a vertical line that tracks
+     * the x-axes (the default), left or right for a horizontal line that tracks the y-axes
+     */
     trackerAxis?: AxisLocation
+    /** where the tracker's labels are shown (by the axes, the default, or nowhere) */
     labelLocation?: TrackerLabelLocation
+    /** formats an axis' value for its label (defaults to a whole number, with thousands separators) */
     labelFormatter?: (value: number) => string
+    /** the style of the tracker's line */
     style?: Partial<TrackerStyle>,
+    /** the font of the tracker's labels */
     font?: Partial<TrackerLabelFont>,
+    /** called with each (non-empty) axis' value at the mouse, as the mouse moves over the plot */
     onTrackerUpdate?: (update: TrackerAxisUpdate) => void
 }
 

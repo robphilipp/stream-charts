@@ -221,26 +221,46 @@ function ThemeChangeScope({ref, children}: { ref: Ref<HTMLDivElement>, children:
     Route components for the charts. Each reads the theme from context and passes the same
     props the charts received previously in App.tsx.
  */
+/**
+ * The route for the scatter example: the example, in the current theme, with `initialScatterData`
+ * @return The scatter example
+ */
 export function ScatterRoute(): JSX.Element {
     const {theme} = useThemeStore()
     return <StreamingScatterChart theme={theme} timeWindow={1000} initialData={initialScatterData}/>
 }
 
+/**
+ * The route for the raster example: the example, in the current theme, with `initialSpikeData`
+ * @return The raster example
+ */
 export function RasterRoute(): JSX.Element {
     const {theme} = useThemeStore()
     return <StreamingRasterChart theme={theme} timeWindow={1000} initialData={initialSpikeData} seriesHeight={20} plotWidth={900}/>
 }
 
+/**
+ * The route for the Poincaré example: the example, in the current theme, with `initialIterateData` (the seeds)
+ * @return The Poincaré example
+ */
 export function PoincareRoute(): JSX.Element {
     const {theme} = useThemeStore()
     return <StreamingPoincareChart theme={theme} timeWindow={1000} initialData={initialIterateData}/>
 }
 
+/**
+ * The route for the bar example: the example, in the current theme, with `initialBarData`
+ * @return The bar example
+ */
 export function BarRoute(): JSX.Element {
     const {theme} = useThemeStore()
     return <StreamingBarChart theme={theme} timeWindow={100} initialData={initialBarData} seriesHeight={20} plotWidth={900}/>
 }
 
+/**
+ * The route for the outlier example: the example, in the current theme, with its own default initial data
+ * @return The outlier example
+ */
 export function OutlierRoute(): JSX.Element {
     const {theme} = useThemeStore()
     return <StreamingOutlierChart theme={theme} timeWindow={2500}/>

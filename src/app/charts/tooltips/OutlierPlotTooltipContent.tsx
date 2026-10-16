@@ -12,7 +12,11 @@ import type {TooltipData} from "../hooks/useTooltip"
 import type {OutlierBandTooltipMetadata} from "../plots/OutlierPlot"
 import type {OutlierDatum} from "../series/outlierSeries"
 
+/**
+ * The properties of the {@link OutlierPlotTooltipContent}
+ */
 export interface Props {
+    /** the style of the tooltip */
     style?: Partial<TooltipStyle>
     /**
      * Formatter for the datum
@@ -22,9 +26,10 @@ export interface Props {
      */
     datumFormatter?: (x: number, y: number) => string
     /**
-     * Formatter for the measure
-     * @param lower Lower bound of the band
-     * @param upper Upper bound of the band
+     * Formatter for the band (it's handed the band's measures, not its bounds)
+     * @param lower The measure of the band's inner edge (the measure of the next tighter band, or
+     * 0 for the tightest band)
+     * @param upper The measure of the band's outer edge (the hovered band's own measure)
      * @return a human-readable description of the band
      */
     bandFormatter?: (lower: number, upper: number) => string
@@ -32,7 +37,7 @@ export interface Props {
      * Formatter for the measure description. Returns one plain string per rendered line (this
      * component's `explanationLines.map((line, index) => <div key={index}>{line}</div>)` below);
      * matches this component's own `datumFormatter`/`bandFormatter` above, both plain `string`
-     * (no JSX) since this is the SVG-flavored tooltip. Contrast with the HTML-flavored sibling
+     * (no JSX) since this is the plain-text-flavored tooltip (it was the SVG-flavored one). Contrast with the HTML-flavored sibling
      * {@link useOutlierTooltip}'s own, differently-shaped `measureFormatter`
      * (`(innerProb, outerProb) => string | JSX.Element`, rendered as a single flowing blob) --
      * that's a separate component never composed with this one. The two `measureFormatter`s share
@@ -73,6 +78,8 @@ interface OutlierTooltipContentState {
  * {@link Tooltip}'s own background element stays invisible -- this component renders its own,
  * independent portal instead (see {@link OutlierPlotHtmlTooltipContent} for the established
  * pattern this follows).
+ * @param props The properties describing the tooltip content
+ * @return The tooltip's portal, or `null` when no band is being hovered
  */
 export function OutlierPlotTooltipContent(props: Props): ReactElement | null {
     const {
@@ -188,15 +195,15 @@ export function OutlierPlotTooltipContent(props: Props): ReactElement | null {
 }
 
 /**
- * Captures the data needed to render the tooltip content, and computes its viewport-fixed
- * position. Replaces the old version, which appended and hand-positioned one SVG `<text>` element
+ * Captures the data needed to render the tooltip content, and where it's anchored (the mouse --
+ * the tooltip is placed next to it once it's rendered, see {@link useTooltipPlacement}). Replaces the old version, which appended and hand-positioned one SVG `<text>` element
  * per line via `getBBox()`.
  * @param seriesName The name of the series
  * @param metadata The band metadata
  * @param mouseCoords The coordinates of the mouse when the event was fired, in canvas-local coordinates
  * @param canvas The chart's canvas element
  * @param datumFormatter Formatter for the hovered datum
- * @param bandFormatter Formatter for the band's bounds
+ * @param bandFormatter Formatter for the band (its measures)
  * @param measureFormatter Formatter for the band's inside/outside probabilities
  * @param setTooltipContent Setter that stashes the captured content for the component to render
  * @return Off-screen {@link TooltipDimensions}, so the parent <Tooltip>'s own background stays invisible

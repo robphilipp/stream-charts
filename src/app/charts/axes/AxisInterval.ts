@@ -1,12 +1,18 @@
 /**
- * The range of an axis is the physical (start, end) pixels on the screen for the axis.
- * This is the pixel-space of the axis (where as the domain is the data-space of the axis,
- * for example, the tick values).
+ * An immutable (start, end) interval, with `start <= end`, used both for an axis' domain (its
+ * data-space, for example, the range of the tick values) and for an axis' range (its pixel-space,
+ * the physical start and end pixels on the screen). An interval whose start or end is `NaN` is
+ * empty.
  */
 export class AxisInterval {
     readonly start: number
     readonly end: number
 
+    /**
+     * Use {@link from}, {@link as}, or {@link empty} to create an axis interval
+     * @param start The interval's start
+     * @param end The interval's end
+     */
     private constructor(start: number, end: number) {
         this.start = start
         this.end = end
@@ -72,7 +78,11 @@ export class AxisInterval {
     }
 
     /**
-     * @return `true` if the specified axis interval is equal to this one, `false` otherwise
+     * Determines whether this axis interval's start and end are the specified ones (two empty
+     * intervals are equal)
+     * @param start The start to compare to
+     * @param end The end to compare to
+     * @return `true` if this axis interval's start and end are the specified ones, `false` otherwise
      */
     equalsInterval(start: number, end: number): boolean {
         return (this.start === start && this.end === end) || (this.isEmpty() && isNaN(start) && isNaN(end))
@@ -88,8 +98,8 @@ export class AxisInterval {
     }
 
     /**
-     * Creates a copy of the specified axis interval
-     * @return A copy of the specified axis interval
+     * Creates a copy of this axis interval
+     * @return A copy of this axis interval
      */
     copy(): AxisInterval {
         return AxisInterval.from(this.start, this.end)
@@ -104,9 +114,10 @@ export class AxisInterval {
     }
 
     /**
-     * Applies the specified function to the axis interval and returns the result
-     * @param fn The function to apply to the axis interval
-     * @return The result of the function application
+     * Applies the specified function to this axis interval's start and end, and returns the
+     * resulting interval
+     * @param fn The function to apply to the axis interval's start and end
+     * @return A new axis interval holding the function's result
      */
     map(fn: (start: number, end: number) => [start: number, end: number]): AxisInterval {
         const [start, end] = fn(this.start, this.end)
@@ -114,36 +125,37 @@ export class AxisInterval {
     }
 
     /**
-     * Calculates the measure (end - start) of the specified axis interval.
+     * Calculates the measure (end - start) of this axis interval.
      * The measure of an empty axis interval is 0.
-     * @return The measure (end - start) of the specified axis interval
+     * @return The measure (end - start) of this axis interval
      */
     measure(): number {
         return this.isNotEmpty() ? this.end - this.start : 0
     }
 
     /**
-     * Updates the start value of the specified axis interval
-     * @param delta The amount by which to update the start value
-     * @return A new axis interval
+     * Creates an axis interval whose start is moved by the specified amount (and whose end isn't)
+     * @param delta The amount by which to move the start
+     * @return A new axis interval (empty when this one is)
      */
     translateStart(delta: number): AxisInterval {
         return this.isNotEmpty() ? AxisInterval.from(this.start + delta, this.end) : AxisInterval.empty()
     }
 
     /**
-     * Updates the end value of the specified axis interval
-     * @param delta The amount by which to update the end value
-     * @return The new axis interval
+     * Creates an axis interval whose end is moved by the specified amount (and whose start isn't)
+     * @param delta The amount by which to move the end
+     * @return A new axis interval (empty when this one is)
      */
     translateEnd(delta: number): AxisInterval {
         return this.isNotEmpty() ? AxisInterval.from(this.start, this.end + delta) : AxisInterval.empty()
     }
 
     /**
-     * Translates the specified axis interval by the specified delta.
+     * Creates an axis interval that's this one translated (both its start and its end moved) by the
+     * specified amount
      * @param delta The amount by which to translate the axis interval
-     * @return The new axis interval
+     * @return A new axis interval (empty when this one is)
      */
     translate(delta: number): AxisInterval {
         return this.isNotEmpty() ? AxisInterval.from(this.start + delta, this.end + delta) : AxisInterval.empty()

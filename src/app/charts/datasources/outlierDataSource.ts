@@ -33,6 +33,10 @@ export class OutlierDataSource<M extends readonly number[]>
     private dropDataAfter: number
     private readonly onUpdateData: ((seriesName: string, data: Array<OutlierDatum<M>>) => void) | undefined
 
+    /**
+     * Creates a outlier data source (stopped: call {@link start} to start it)
+     * @param options The initial data, the generator, and the data-retention settings
+     */
     constructor(options: OutlierDataSourceOptions<M>) {
         super(options.initialData, options.generator)
         this.dropDataAfter = options.dropDataAfter ?? Infinity
@@ -47,6 +51,10 @@ export class OutlierDataSource<M extends readonly number[]>
         this.dropDataAfter = dropDataAfter
     }
 
+    /**
+     * @return The latest time (the `datum.x` of the last datum) over all the series, or
+     * `-Infinity` when there is no data
+     */
     latestTime(): number {
         return this.seriesList().reduce(
             (tMax, series) => Math.max(tMax, series.last().map(datum => datum.datum.x).getOrElse(tMax)),
@@ -54,6 +62,12 @@ export class OutlierDataSource<M extends readonly number[]>
         )
     }
 
+    /**
+     * Adds each series' new points to it (adding the series itself the first time it appears),
+     * and drops the points that are older than `dropDataAfter` relative to the newest of the
+     * series' new points. Calls `onUpdateData` with each series' new points.
+     * @param data The chunk of chart data emitted by the generator
+     */
     protected ingest(data: OutlierChartData<M>): void {
         data.newPoints.forEach((newData, name) => {
             // register a series the first time it shows up in the stream

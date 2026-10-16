@@ -2,6 +2,10 @@ import {type CSSProperties, type JSX, useLayoutEffect, useRef, useState} from "r
 import {CollapsedIcon, ExpandedIcon} from "./Icons.tsx";
 import {Button} from "./Button.tsx";
 
+/**
+ * Where a child of the {@link ExpandableControlBar} goes: in its header (always shown), or among
+ * its controls (shown when the bar is expanded)
+ */
 export type ControlBarType = 'header' | 'controls'
 
 type Props = {
@@ -18,6 +22,16 @@ type Props = {
     children: JSX.Element | Array<JSX.Element>
 }
 
+/**
+ * A control bar with a header row (an expand/collapse button, followed by the child whose `type`
+ * is `'header'`) and the controls below it (the other child), which slide open when the bar is
+ * expanded. By default, the bar expands when the mouse enters it, and collapses a moment
+ * (`autoCollapseDelay`, 500 ms) after the mouse leaves it. Like the docs' floating navigation bar,
+ * it lies flat (with a border) until the mouse is over it, and is lifted (with a drop shadow) while it is.
+ * @param props The bar's colors, border radius, and size; whether it starts out expanded; whether
+ * (and how soon) it expands and collapses as the mouse enters and leaves it; and its header and controls
+ * @return The control bar
+ */
 export function ExpandableControlBar(props: Props): JSX.Element {
     const {
         backgroundColor,
@@ -168,6 +182,12 @@ export function ExpandableControlBar(props: Props): JSX.Element {
 
 type CategorizedChildren = { header: JSX.Element, content: JSX.Element }
 
+/**
+ * Sorts the control bar's children into its header (the child whose `type` prop is `'header'`) and
+ * its content (the other child -- when there are several, the last). A single child is the content.
+ * @param children The control bar's children
+ * @return The header and the content (each an empty fragment when there's none)
+ */
 function categorizeChildren(children: JSX.Element | Array<JSX.Element>): CategorizedChildren {
     if (!Array.isArray(children)) {
         return {header: <></>, content: children}
