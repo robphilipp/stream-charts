@@ -48,8 +48,8 @@ import {CadenceControl} from "./controls/CadenceControl.tsx";
 import {BufferingControl} from "./controls/BufferingControl.tsx";
 import {DataUpdateRateControl} from "./controls/DataUpdateRateControl.tsx";
 import {NumberOfSeriesControl} from "./controls/NumberOfSeriesControl.tsx";
-import {initialRandomWeightData} from "./dataproviders/randomWeightData.ts";
-import {useRasterChartStore} from "./appstate/rasterChartStore.ts";
+import {initialRandomSpikeData} from "./dataproviders/randomSpikeData.ts";
+import {SPIKE_MEAN_VALUE, SPIKE_VALUE_SPREAD, useRasterChartStore} from "./appstate/rasterChartStore.ts";
 // import {
 //     AxisLocation,
 //     CategoryAxis,
@@ -88,12 +88,12 @@ const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
 const X_AXIS_ID = 'x-axis-1'
 
 // generation parameters matching the initial data generated in routeData.ts, so that changing
-// the number of series produces data consistent with the app's default initial data
+// the number of series produces data consistent with the app's default initial data (the spikes'
+// values come from the same constants as the streamed spikes', SPIKE_MEAN_VALUE and
+// SPIKE_VALUE_SPREAD)
 const SERIES_INITIAL_TIME = 10
-const SERIES_INITIAL_VALUE = 500
 const SERIES_UPDATE_PERIOD = 200
-const SERIES_DELTA = 20
-const SERIES_NUM_POINTS = 10
+const SERIES_NUM_SPIKES = 10
 
 /**
  * Generates the initial (static) data for the specified number of series, named "HC 1" through
@@ -103,8 +103,8 @@ const SERIES_NUM_POINTS = 10
  */
 function initialDataForSeriesCount(numberOfSeries: number): Array<TimeSeries> {
     const seriesNames = Array.from({length: numberOfSeries}, (_, index) => `HC ${index + 1}`)
-    return initialRandomWeightData(
-        seriesNames, SERIES_INITIAL_TIME, SERIES_INITIAL_VALUE, SERIES_UPDATE_PERIOD, SERIES_DELTA, SERIES_NUM_POINTS
+    return initialRandomSpikeData(
+        seriesNames, SERIES_INITIAL_TIME, SERIES_UPDATE_PERIOD, SERIES_NUM_SPIKES, SPIKE_MEAN_VALUE, SPIKE_VALUE_SPREAD
     )
 }
 

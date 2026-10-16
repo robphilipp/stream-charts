@@ -5,6 +5,7 @@ import {initialTimeSeriesChartData, type TimeSeriesChartData} from "../../charts
 import {seriesFrom} from "../../charts/series/baseSeries.ts";
 import {type OrdinalDatum, ordinalDatumOf} from "../../charts/series/ordinalSeries.ts";
 import {barDanceDataObservable} from "./randomOrdinalData.ts";
+import {initialRandomSpikeData, randomSpikeDataObservable} from "./randomSpikeData.ts";
 
 describe('when creating random data from an initial series', () => {
     const initialData = [
@@ -74,6 +75,60 @@ describe('dancing-bar data (barDanceDataObservable)', () => {
             expect(data.maxTimes.get('a')).toBe(data.newPoints.get('a')!.at(-1)!.x)
             expect(data.maxTimes.get('b')).toBe(data.newPoints.get('b')!.at(-1)!.x)
             expect(data.maxTime).toBe(data.newPoints.get('a')!.at(-1)!.x)
+        })
+    })
+})
+
+describe('random spike data', () => {
+    afterEach(() => jest.useRealTimers())
+
+    // every value in the chart data's new points
+    const valuesOf = (emitted: Array<TimeSeriesChartData>): Array<number> =>
+        emitted.flatMap(data => Array.from(data.newPoints.values()).flatMap(points => Array.from(points).map(datum => datum.y)))
+
+    it('creates initial spikes, one in each update period, with values within the spread around the mean', () => {
+        const data = initialRandomSpikeData(['n1', 'n2'], 10, 200, 10, 55, 5)
+        expect(data.map(series => series.name)).toEqual(['n1', 'n2'])
+        data.forEach(series => {
+            expect(series.data).toHaveLength(10)
+            Array.from(series.data).forEach((spike, index) => {
+                // within the index'th update period
+                expect(spike.x).toBeGreaterThan(10 + index * 200)
+                expect(spike.x).toBeLessThanOrEqual(10 + (index + 1) * 200)
+                expect(spike.y).toBeGreaterThanOrEqual(50)
+                expect(spike.y).toBeLessThanOrEqual(60)
+            })
+        })
+    })
+
+    it('streams spikes with values within the spread around the mean', () => {
+        jest.useFakeTimers()
+        const initial = initialRandomSpikeData(['n1', 'n2', 'n3'], 10, 200, 3, 55, 5)
+        const emitted: Array<TimeSeriesChartData> = []
+        // (a spike probability of 1, so every series spikes on every tick)
+        const subscription = randomSpikeDataObservable(initial, 50, 1, 55, 5).subscribe(data => emitted.push(data))
+        jest.advanceTimersByTime(1000)
+        subscription.unsubscribe()
+
+        const values = valuesOf(emitted)
+        expect(values.length).toBe(20 * 3)
+        values.forEach(value => {
+            expect(value).toBeGreaterThanOrEqual(50)
+            expect(value).toBeLessThanOrEqual(60)
+        })
+    })
+
+    it('streams values between 0 and 1 by default', () => {
+        jest.useFakeTimers()
+        const initial = initialRandomSpikeData(['n1'], 10, 200, 3)
+        const emitted: Array<TimeSeriesChartData> = []
+        const subscription = randomSpikeDataObservable(initial, 50, 1).subscribe(data => emitted.push(data))
+        jest.advanceTimersByTime(500)
+        subscription.unsubscribe()
+
+        valuesOf(emitted).forEach(value => {
+            expect(value).toBeGreaterThanOrEqual(0)
+            expect(value).toBeLessThan(1)
         })
     })
 })

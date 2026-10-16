@@ -6,7 +6,7 @@ The raster chart is the one to reach for when *when* something happened matters 
 
 #### what you're looking at
 
-The example has fifty neurons, named "HC 1" through "HC 50", one per row. Every time new data is generated, each neuron fires with a 50% chance, and each spike carries a random value (shown in the tooltip, in mV). So what you see is a lot of random firing – no deep neuroscience here, sorry.
+The example has fifty neurons, named "HC 1" through "HC 50", one per row. Every time new data is generated (every 50 ms, to start with), each neuron fires with a 10% chance, and each spike carries a random value of around 55 mV (somewhere between 50 and 60 mV, shown in the tooltip). So what you see is a lot of random firing – no deep neuroscience here, sorry.
 
 The chart's x-axis is time, and the y-axis is an *ordinal* (category) axis – one category per neuron. The top and right sides of the chart use empty axes (`<EmptyAxis>`), which draw the chart's border without any ticks or labels.
 

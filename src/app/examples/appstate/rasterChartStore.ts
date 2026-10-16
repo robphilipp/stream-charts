@@ -21,6 +21,10 @@ export type Range = [start: number, end: number]
  */
 const SPIKE_PROBABILITY = 0.1
 const DEFAULT_DATA_UPDATE_PERIOD = 50
+// the spikes' values (mV): uniformly random within the spread around the mean -- shared with the
+// initial data (see routeData.ts and StreamingRasterChart.tsx), so the initial and streamed spikes match
+export const SPIKE_MEAN_VALUE = 55
+export const SPIKE_VALUE_SPREAD = 5
 
 /**
  * Creates the random-spike data generator for the specified update period. The data source calls
@@ -30,7 +34,7 @@ const DEFAULT_DATA_UPDATE_PERIOD = 50
  * @return The data generator
  */
 const randomData = (updatePeriod: number): DataGenerator<TimeSeriesChartData, TimeSeries> =>
-    currentSeries => randomSpikeDataObservable(currentSeries, updatePeriod, SPIKE_PROBABILITY)
+    currentSeries => randomSpikeDataObservable(currentSeries, updatePeriod, SPIKE_PROBABILITY, SPIKE_MEAN_VALUE, SPIKE_VALUE_SPREAD)
 
 /**
  * Creates the chart's data source

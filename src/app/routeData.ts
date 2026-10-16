@@ -1,6 +1,8 @@
 // pure data/config for the routes -- no components here, so react-refresh's
 // "only export components" rule (see routeComponents.tsx) doesn't apply to this file
 import {initialRandomWeightData} from "./examples/dataproviders/randomWeightData.ts";
+import {initialRandomSpikeData} from "./examples/dataproviders/randomSpikeData.ts";
+import {SPIKE_MEAN_VALUE, SPIKE_VALUE_SPREAD} from "./examples/appstate/rasterChartStore.ts";
 import {initialTentMapData} from "./examples/dataproviders/randomIterateData.ts";
 import {initialSineFnData} from "./examples/dataproviders/randomOrdinalData.ts";
 
@@ -20,7 +22,7 @@ const spikeSeriesNames: Array<string> = []
 for (let i = 0; i < 50; ++i) {
     spikeSeriesNames.push(`HC ${i + 1}`)
 }
-export const initialSpikeData = initialRandomWeightData(spikeSeriesNames, 10, 500, 200, 20, 10)
+export const initialSpikeData = initialRandomSpikeData(spikeSeriesNames, 10, 200, 10, SPIKE_MEAN_VALUE, SPIKE_VALUE_SPREAD)
 export const initialBarData = initialSineFnData(spikeSeriesNames.slice(), 1000, 4)
 
 /*
