@@ -141,7 +141,7 @@ interface ScatterTooltipContent {
  * y-label     y_tb      y_ta       y_ta - y_tb
  * ```
  *
- * When the mouse is directly over a data point, that point (emphasized), and the points before and
+ * When the mouse is directly over a data point, that point (in bold), and the points before and
  * after it:
  * ```
  * series name
@@ -263,7 +263,7 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
     const rowLabelStyle: CSSProperties = {...cellStyle, textAlign: 'left', paddingLeft: 0}
     // the point under the mouse stands out (as it does on the plot)
     const cellStyleFor = (column: number): CSSProperties => column === tooltipContent.emphasizedColumn ?
-        {...cellStyle, fontWeight: tooltipStyle.fontWeight + 650, textDecoration: 'underline'} :
+        {...cellStyle, fontWeight: tooltipStyle.fontWeight + 650} :
         cellStyle
 
     return createPortal(
