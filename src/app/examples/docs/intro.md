@@ -8,7 +8,7 @@ For managing a chart's memory usage, the data have a configurable time-to-live, 
 
 #### what sets stream-charts apart
 
-Plenty of charting libraries can draw a line. What [stream-charts](https://www.npmjs.com/package/stream-charts) adds is everything that comes with data that never stops arriving:
+Plenty of charting libraries handle static data beautifully. Some charting libraries also have support for real-time data. What [stream-charts](https://www.npmjs.com/package/stream-charts) adds is everything to handle large amounts of high-frequency data that never stop arriving:
 
 - **Data that keeps streaming, even when the chart isn't on screen.** A chart's data lives in a *data source* that your application owns, rather than in the chart itself. So the data keeps coming in while the chart is hidden (say, on another tab), and the chart picks up right where it left off when it comes back.
 - **Buffering that keeps up.** Incoming data is batched before each redraw, and you choose the batch size. And an optional *cadence* keeps the time axis scrolling smoothly between batches.
