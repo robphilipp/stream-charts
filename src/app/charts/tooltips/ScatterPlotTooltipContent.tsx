@@ -346,8 +346,10 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
                 </tbody>
             </table>
             {/* the series' points over the window (the data the chart holds) */}
+            {/* (sized to its content, rather than the app's default full-width tables, so that the
+                values sit next to their labels) */}
             {tooltipContent.statistics.count > 0 &&
-                <table style={{fontSize: tooltipStyle.fontSize, borderCollapse: 'collapse', border: 'none', marginTop: 6}}>
+                <table style={{fontSize: tooltipStyle.fontSize, borderCollapse: 'collapse', border: 'none', marginTop: 6, width: 'auto'}}>
                     <tbody>
                     {[
                         ['Points', formatNumber(tooltipContent.statistics.count, " ,.0f")],
