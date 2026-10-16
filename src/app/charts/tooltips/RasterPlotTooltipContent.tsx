@@ -260,7 +260,9 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
             </div>
             {/* the series' spikes over the window (the data the chart holds) */}
             {tooltipContent.statistics !== undefined && tooltipContent.statistics.count > 0 &&
-                <table style={{fontSize: tooltipStyle.fontSize, borderCollapse: 'collapse', border: 'none', marginTop: 6}}>
+                // (sized to its content, rather than the app's default full-width tables, so that
+                // the values sit next to their labels)
+                <table style={{fontSize: tooltipStyle.fontSize, borderCollapse: 'collapse', border: 'none', marginTop: 6, width: 'auto'}}>
                     <tbody>
                     {[
                         ['Spikes', formatNumber(tooltipContent.statistics.count, " ,.0f")],
