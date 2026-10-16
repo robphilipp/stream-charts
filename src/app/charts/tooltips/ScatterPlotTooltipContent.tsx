@@ -145,10 +145,8 @@ const SPARKLINE_HEIGHT = 48
 // the space around the sparkline's line, within its plot area
 const SPARKLINE_PADDING = 2
 // the space around the sparkline's plot area for the axes: their ticks and labels (the y-axis'
-// on the left; the x-axis' below, along with its "lag" caption)
-const AXES_MARGIN = {left: 24, right: 6, top: 4, bottom: 26}
-// the height of the row of x-axis tick labels, below the plot area (the caption is below them)
-const LAG_LABELS_HEIGHT = 14
+// on the left; the x-axis' below, with its "lag" caption to the right of its end)
+const AXES_MARGIN = {left: 24, right: 22, top: 4, bottom: 14}
 // the length of the axes' ticks
 const TICK_LENGTH = 3
 // the (most) ticks on the x-axis (the lags)
@@ -202,7 +200,7 @@ interface ScatterTooltipContent {
  * between consecutive points. And below that, a sparkline of the autocorrelation of their values,
  * by lag (in points, from 0 on the left), drawn from -1 (bottom) to 1 (top): with a y-axis (ticks
  * at -1, 0, and 1), and an x-axis along the (dashed) zero line, with ticks at round lags, captioned
- * "lag".
+ * "lag" (just to the right of the axis' end).
  *
  * Registers the tooltip-content provider with the `ChartContext` so that when the plot's
  * mousemove hit-test finds the mouse over a series, this component's content is shown. On
@@ -502,7 +500,7 @@ type AutocorrelationSparkline = {sparkline: Sparkline, maxLag: number}
 /**
  * The autocorrelation's sparkline, with its axes: a y-axis on the left, with ticks (and labels) at
  * -1, 0, and 1; and an x-axis along the dashed zero line, with ticks at round lags (labelled below
- * the plot, out of the line's way), captioned "lag"
+ * the plot, out of the line's way), captioned "lag" just to the right of its end
  * @param props The autocorrelation's sparkline (and largest lag), the color of the line and the
  * axes, and the font size of the axes' labels
  * @return The sparkline, with its axes
@@ -563,7 +561,7 @@ function AutocorrelationChart(props: {
                             {...axisStyle}
                         />
                         <text
-                            x={xOf(lag)} y={SPARKLINE_HEIGHT + LAG_LABELS_HEIGHT - 3}
+                            x={xOf(lag)} y={SPARKLINE_HEIGHT + AXES_MARGIN.bottom - 3}
                             textAnchor="middle"
                             {...labelStyle}
                         >
@@ -571,10 +569,10 @@ function AutocorrelationChart(props: {
                         </text>
                     </g>
                 ))}
-                {/* the x-axis' caption, centered below its tick labels */}
+                {/* the x-axis' caption, just to the right of its end */}
                 <text
-                    x={(xOf(0) + xOf(maxLag)) / 2} y={SPARKLINE_HEIGHT + AXES_MARGIN.bottom - 2}
-                    textAnchor="middle"
+                    x={xOf(maxLag) + TICK_LENGTH} y={yOf(0)}
+                    textAnchor="start" dominantBaseline="middle"
                     {...labelStyle}
                 >
                     lag
