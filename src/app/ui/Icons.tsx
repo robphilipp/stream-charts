@@ -1,4 +1,5 @@
-import {type JSX} from "react";
+import {type JSX, useId} from "react";
+import {lineColorScale} from "../charts/plots/colorizedLine.ts";
 
 /**
  * A chevron pointing right (forward)
@@ -685,6 +686,43 @@ export function AutoScaleIcon(props: { color: string }): JSX.Element {
             <line x1={10} y1={3.5} x2={10} y2={11.5} stroke={color} strokeWidth={1.5}/>
             <path d="M7 4.5 L10 0.5 L13 4.5 Z" fill={color} stroke={color} strokeWidth={0.5} strokeLinejoin="round"/>
             <path d="M7 10.5 L10 14.5 L13 10.5 Z" fill={color} stroke={color} strokeWidth={0.5} strokeLinejoin="round"/>
+        </svg>
+    )
+}
+
+/**
+ * A zigzag line: the lines connecting a chart's points are colorized. When the start and end
+ * colors are given, the line is drawn with them, sweeping the spectrum in between (as the
+ * colorized lines are, see `lineColorScale`); otherwise, in the icon's color.
+ * @param props The icon's color, and (optionally) the colorized lines' start and end colors
+ * @return The icon
+ */
+export function ColorizedLinesIcon(props: { color: string, startColor?: string, endColor?: string }): JSX.Element {
+    const {color, startColor, endColor} = props
+    // (a gradient's ID must be unique on the page)
+    const gradientId = `colorized-lines-${useId()}`
+    const colorAt = startColor !== undefined && endColor !== undefined ?
+        lineColorScale(startColor, endColor) :
+        undefined
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            {colorAt !== undefined &&
+                <defs>
+                    <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+                        {[0, 0.25, 0.5, 0.75, 1].map(offset => (
+                            <stop key={offset} offset={offset} stopColor={colorAt(offset)}/>
+                        ))}
+                    </linearGradient>
+                </defs>
+            }
+            <polyline
+                points="1.5,12 5,4 8.5,11 12,3 14,6"
+                fill="none"
+                stroke={colorAt !== undefined ? `url(#${gradientId})` : color}
+                strokeWidth={2}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+            />
         </svg>
     )
 }

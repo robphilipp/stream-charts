@@ -28,6 +28,7 @@ import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 import {AxisInterval} from "../axes/AxisInterval";
 import {warnAboutIgnoredAutoScale} from "../axes/autoScale";
 import {FastShiftArray} from "fast-shift-array";
+import {DEFAULT_LINE_END_COLOR, DEFAULT_LINE_START_COLOR, lineColorScale, strokeColorizedLine} from "./colorizedLine";
 
 // an iterate as the plot draws it: f[n](x), f[n+1](x), the iterate's time, and its index in its series
 type IteratePoint = { n: number, n_1: number, time: number, index: number }
@@ -81,6 +82,24 @@ export interface Props {
      * When set to `true` (the default) plots the data points as well as the line.
      */
     showPoints?: boolean
+    /**
+     * When `true`, the lines connecting the points change color along their length: from
+     * `lineStartColor` at each series' oldest point to `lineEndColor` at its newest, sweeping the
+     * colors of the spectrum in between (the long way around the hue circle -- e.g. from blue,
+     * through cyan, green, and yellow, to red), so that the path's direction, and its age, can be
+     * seen. When `false` (the default), the lines are drawn in the series' own color.
+     */
+    colorizeLines?: boolean
+    /**
+     * The color of the colorized lines' start (each series' oldest point). Defaults to a blue
+     * ({@link DEFAULT_LINE_START_COLOR}). Only used when `colorizeLines` is `true`.
+     */
+    lineStartColor?: string
+    /**
+     * The color of the colorized lines' end (each series' newest point). Defaults to a red
+     * ({@link DEFAULT_LINE_END_COLOR}). Only used when `colorizeLines` is `true`.
+     */
+    lineEndColor?: string
     /**
      * Enables panning (default is false)
      */
@@ -233,6 +252,9 @@ export function PoincarePlot(props: Props): null {
         zoomMinScaleFactor = 0,
         zoomMaxScaleFactor = 1,
         highlightAxesOnMouseOver = false,
+        colorizeLines = false,
+        lineStartColor = DEFAULT_LINE_START_COLOR,
+        lineEndColor = DEFAULT_LINE_END_COLOR,
         zoomState = undefined,
         onZoomStateChange = noop,
         onZoomReset = noop,
@@ -298,6 +320,9 @@ export function PoincarePlot(props: Props): null {
          */
         (cc: CanvasContext) => {
             onUpdateChartTime(currentTimeRef.current)
+
+            // the colorized lines' color, by the fraction of the way along a line (see `colorizeLines`)
+            const lineColorAt = lineColorScale(lineStartColor, lineEndColor)
 
             const draw = (context: CanvasContext) => {
                 const {context2D} = context
@@ -377,9 +402,18 @@ export function PoincarePlot(props: Props): null {
                             .y(d => yAxis.scale(d.n_1 || 0))
                             .curve(interpolation)
 
-                        context2D.strokeStyle = seriesLineStyle.color
                         context2D.lineWidth = seriesLineStyle.lineWidth
-                        context2D.stroke(new Path2D(pathGenerator(Array.from(plotData)) ?? ""))
+                        if (colorizeLines) {
+                            // the line's color changes along it, from its oldest point to its newest
+                            strokeColorizedLine(
+                                context2D, Array.from(plotData),
+                                d => xAxis.scale(d.n || 0), d => yAxis.scale(d.n_1 || 0),
+                                interpolation, lineColorAt
+                            )
+                        } else {
+                            context2D.strokeStyle = seriesLineStyle.color
+                            context2D.stroke(new Path2D(pathGenerator(Array.from(plotData)) ?? ""))
+                        }
                     }
 
                     // when specified, show a circle for the actual data point
@@ -460,6 +494,7 @@ export function PoincarePlot(props: Props): null {
             xAxesState, yAxesState,
             seriesStyles, seriesFilter, showPoints,
             interpolation, backgroundColor,
+            colorizeLines, lineStartColor, lineEndColor,
         ]
     )
 

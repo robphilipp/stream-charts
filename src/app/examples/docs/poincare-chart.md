@@ -22,6 +22,7 @@ The chart has a tracker on *both* axes, so with the tracker on, you get a crossh
 - **iterate-function drop-down** – Selects the Tent, Logistic, or Gauss map. Selecting a different function clears the chart, since the old points have nothing to do with the new function. Disabled while the chart is running.
 - **function parameters** – The fields next to the drop-down (`µ`, `r`, or `α` and `β`) set the selected function's parameters.
 - **interpolation drop-down** – How the line gets from one point to the next, just like the scatter chart's. "No Line" leaves only the points, which shows the structure most clearly.
+- **colorize lines** – Colors the line by age: it starts (at the oldest point) in the **from** color and sweeps through the colors of the spectrum to the **to** color (at the newest point), so you can follow the orbit's path – and see where it's been lately. Pick the two colors with the swatches beside the checkbox. Its header icon shows the line in your colors when it's on. *Wired to:* the plot's `colorizeLines`, `lineStartColor`, and `lineEndColor` properties.
 
 The function, its parameters, and the lag are all picked up when you click **Run** – the example hands the data source a new generator for them each time it starts. So pause, change them, and run again. The iteration carries on from where it left off, using the new settings.
 

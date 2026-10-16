@@ -37,7 +37,17 @@ import {interpolationFactoryFor} from "./options/interpolations.ts";
 import {iteratesGenerator, type IterateFunction, usePoincareChartStore} from "./appstate/poincareChartStore.ts";
 import {ExpandableControlBar} from "../ui/ExpandableControlBar.tsx";
 import {CommonExecutionControls} from "./controls/CommonExecutionControls.tsx";
-import {GaussMapIcon, HighlightAxesIcon, LagIcon, LogisticMapIcon, TentMapIcon, TooltipIcon, TrackerIcon} from "../ui/Icons.tsx";
+import {
+    ColorizedLinesIcon,
+    GaussMapIcon,
+    HighlightAxesIcon,
+    LagIcon,
+    LogisticMapIcon,
+    TentMapIcon,
+    TooltipIcon,
+    TrackerIcon
+} from "../ui/Icons.tsx";
+import {LineColorsControl} from "./controls/LineColorsControl.tsx";
 import {CommonControls} from "./controls/CommonControls.tsx";
 import {LagDisplay} from "./controls/LagDisplay.tsx";
 import {Divider} from "../ui/Divider.tsx";
@@ -181,6 +191,13 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
     const setVisibility = usePoincareChartStore(state => state.setVisibility)
     const highlightAxes = usePoincareChartStore(state => state.highlightAxes)
     const setHighlightAxes = usePoincareChartStore(state => state.setHighlightAxes)
+    // whether the lines connecting the points are colorized, and their start and end colors
+    const colorizeLines = usePoincareChartStore(state => state.colorizeLines)
+    const setColorizeLines = usePoincareChartStore(state => state.setColorizeLines)
+    const lineStartColor = usePoincareChartStore(state => state.lineStartColor)
+    const setLineStartColor = usePoincareChartStore(state => state.setLineStartColor)
+    const lineEndColor = usePoincareChartStore(state => state.lineEndColor)
+    const setLineEndColor = usePoincareChartStore(state => state.setLineEndColor)
 
     const selectedInterpolationName = usePoincareChartStore(state => state.selectedInterpolationName)
     const setSelectedInterpolationName = usePoincareChartStore(state => state.setSelectedInterpolationName)
@@ -393,6 +410,10 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
                             <TooltipIcon color={visibility.tooltip ? theme.color : theme.disabledBackgroundColor}/>
                             <TrackerIcon color={visibility.tracker ? theme.color : theme.disabledBackgroundColor}/>
                             <HighlightAxesIcon color={highlightAxes ? theme.color : theme.disabledBackgroundColor}/>
+                            {colorizeLines ?
+                                <ColorizedLinesIcon color={theme.color} startColor={lineStartColor} endColor={lineEndColor}/> :
+                                <ColorizedLinesIcon color={theme.disabledBackgroundColor}/>
+                            }
                             {selectedIterateIcon()}
                         </CommonExecutionControls>
                         <CommonControls>
@@ -440,6 +461,15 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
                                 theme={theme}
                                 selectedInterpolationName={selectedInterpolationName}
                                 handleInterpolationChange={handleInterpolationChange}
+                            />
+                            <LineColorsControl
+                                theme={theme}
+                                colorizeLines={colorizeLines}
+                                setColorizeLines={setColorizeLines}
+                                startColor={lineStartColor}
+                                setStartColor={setLineStartColor}
+                                endColor={lineEndColor}
+                                setEndColor={setLineEndColor}
                             />
                             <Divider theme={theme}/>
                             <DropDown
@@ -576,6 +606,9 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
                         zoomKeyModifiersRequired={true}
                         // withCadenceOf={30}
                         highlightAxesOnMouseOver={highlightAxes}
+                        colorizeLines={colorizeLines}
+                        lineStartColor={lineStartColor}
+                        lineEndColor={lineEndColor}
                         zoomState={zoomState}
                         onZoomStateChange={setZoomState}
                         onZoomReset={handleZoomReset}
