@@ -3,8 +3,11 @@ import {useEffect, useMemo, useState, useRef} from "react";
 import {createPortal} from "react-dom";
 import {type Series} from "../plots/plot";
 import {
+    autocorrelation,
     boundingPoints,
     defaultTooltipStyle,
+    type Sparkline,
+    sparklineFor,
     type SeriesStatistics,
     seriesStatistics,
     valueOrMissing,
@@ -135,6 +138,12 @@ export interface Props {
  * hack) -- an actual HTML `<table>` handles column alignment natively, so no equivalent hack is
  * needed here.
  */
+// the size of the tooltip's sparkline (of the autocorrelation)
+const SPARKLINE_WIDTH = 180
+const SPARKLINE_HEIGHT = 36
+// the space around the sparkline's line (so the zero line sits at the sparkline's middle)
+const SPARKLINE_PADDING = 2
+
 interface ScatterTooltipContent {
     seriesName: string
     // the column headers (e.g. before, after, and the change between them)
@@ -147,6 +156,9 @@ interface ScatterTooltipContent {
     emphasizedColumn?: number
     // statistics of the series' points in the window (the data the chart holds)
     statistics: SeriesStatistics
+    // the autocorrelation of the series' values over the window (by lag, in points), when there
+    // are enough points to calculate it
+    autocorrelation: Sparkline | undefined
     // where the tooltip is anchored (the mouse)
     anchor: TooltipAnchor
 }
@@ -177,7 +189,8 @@ interface ScatterTooltipContent {
  *
  * Below the table, the statistics of the series' points in the window of data the chart holds:
  * their count, the mean and (sample) standard deviation of their values, and the mean time
- * between consecutive points.
+ * between consecutive points. And below that, a sparkline of the autocorrelation of their values,
+ * by lag (in points, from 0 on the left), drawn from -1 (bottom) to 1 (top), over a faint zero line.
  *
  * Registers the tooltip-content provider with the `ChartContext` so that when the plot's
  * mousemove hit-test finds the mouse over a series, this component's content is shown. On
@@ -341,6 +354,37 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
                     </tbody>
                 </table>
             }
+            {/* the autocorrelation of the series' values, by lag, over a (faint) zero line */}
+            {tooltipContent.autocorrelation !== undefined && <>
+                <div style={{fontSize: tooltipStyle.fontSize, marginTop: 8}}>
+                    Autocorrelation
+                </div>
+                <svg
+                    width={SPARKLINE_WIDTH}
+                    height={SPARKLINE_HEIGHT}
+                    style={{display: 'block', marginTop: 2}}
+                    aria-hidden="true"
+                >
+                    <line
+                        x1={SPARKLINE_PADDING}
+                        y1={SPARKLINE_HEIGHT / 2}
+                        x2={SPARKLINE_WIDTH - SPARKLINE_PADDING}
+                        y2={SPARKLINE_HEIGHT / 2}
+                        stroke={tooltipStyle.fontColor}
+                        strokeOpacity={0.35}
+                        strokeWidth={1}
+                        strokeDasharray="2 2"
+                    />
+                    <path
+                        d={tooltipContent.autocorrelation.path}
+                        fill="none"
+                        stroke={tooltipStyle.fontColor}
+                        strokeWidth={1.25}
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                    />
+                </svg>
+            </>}
         </div>,
         document.body
     )
@@ -393,6 +437,7 @@ function captureTooltipContent(
         xLabel: labels.x,
         yLabel: labels.y,
         statistics: seriesStatistics(series),
+        autocorrelation: autocorrelationSparkline(series),
         anchor: tooltipAnchorFor(mouseCoords, canvas),
         ...(shown.kind === 'point' ?
             // directly over a point: the point before it, the point, and the point after it
@@ -435,4 +480,21 @@ function segmentAround(series: Series<Datum>, time: number): ScatterTooltipPoint
     const [before, after] = boundingPoints(series, time, value => value.x, () => emptyDatum())
     const orUndefined = (datum: Datum) => isNaN(datum.x) ? undefined : datum
     return {kind: 'segment', before: orUndefined(before), after: orUndefined(after)}
+}
+
+/**
+ * The sparkline of the autocorrelation of a series' values (see {@link autocorrelation}): the lags
+ * run left to right across the width, and the correlations from -1 (at the bottom) to 1 (at the
+ * top), so that the zero line is at the middle
+ * @param series The series' data
+ * @return The sparkline, or `undefined` when there are too few points (or
+ * the values don't vary)
+ */
+function autocorrelationSparkline(series: Series<Datum>): Sparkline | undefined {
+    const correlations = autocorrelation(series)
+    if (correlations === undefined) return undefined
+    return sparklineFor(
+        correlations.map((value, lag) => ({time: lag, value})),
+        SPARKLINE_WIDTH, SPARKLINE_HEIGHT, SPARKLINE_PADDING, [-1, 1]
+    )
 }

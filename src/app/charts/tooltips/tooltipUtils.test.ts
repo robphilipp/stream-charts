@@ -6,6 +6,7 @@ import {
     scatterTooltipPointList,
     scatterTooltipPoints,
     sparklineFor,
+    autocorrelation,
     seriesStatistics,
     tooltipX,
     tooltipY
@@ -284,5 +285,49 @@ describe('seriesStatistics', () => {
 
     it("skips spikes whose value or time isn't finite", () => {
         expect(seriesStatistics(spikes([0, 1], [10, NaN], [20, 3])).meanValue).toBe(2)
+    })
+})
+
+describe('sparklineFor, with a fixed value range', () => {
+    it('spans the range rather than the values, and draws values outside it at its edge', () => {
+        const data = [{time: 0, value: 0}, {time: 10, value: 0.5}, {time: 20, value: 2}]
+        expect(sparklineFor(data, 100, 20, 0, [-1, 1])?.path).toBe('M0,10 L50,5 L100,0')
+    })
+})
+
+describe('autocorrelation', () => {
+    const points = (...values: Array<number>) => values.map((y, index) => ({x: index * 10, y}))
+
+    it('is 1 at lag 0', () => {
+        expect(autocorrelation(points(1, 3, 2, 5, 4, 6, 5, 8))![0]).toBe(1)
+    })
+
+    it('calculates the sample autocorrelation at each lag', () => {
+        // values 1..4: mean 2.5, deviations -1.5, -0.5, 0.5, 1.5, sum of squares 5
+        // lag 1: (-1.5)(-0.5) + (-0.5)(0.5) + (0.5)(1.5) = 1.25 -> 0.25
+        // lag 2: (-1.5)(0.5) + (-0.5)(1.5) = -1.5 -> -0.3
+        const correlations = autocorrelation(points(1, 2, 3, 4), 2)!
+        expect(correlations[1]).toBeCloseTo(0.25)
+        expect(correlations[2]).toBeCloseTo(-0.3)
+    })
+
+    it('alternates for an alternating series', () => {
+        const correlations = autocorrelation(points(1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1), 2)!
+        expect(correlations[1]).toBeLessThan(-0.8)
+        expect(correlations[2]).toBeGreaterThan(0.8)
+    })
+
+    it('goes up to a quarter of the points, by default, but no further than lag 50', () => {
+        expect(autocorrelation(points(...Array.from({length: 40}, (_, i) => Math.sin(i))))).toHaveLength(11)
+        expect(autocorrelation(points(...Array.from({length: 400}, (_, i) => Math.sin(i))))).toHaveLength(51)
+    })
+
+    it('is undefined when there are too few points, or the values are all the same', () => {
+        expect(autocorrelation(points(1, 2, 3))).toBeUndefined()
+        expect(autocorrelation(points(5, 5, 5, 5, 5, 5, 5, 5))).toBeUndefined()
+    })
+
+    it('skips points whose value is not a number', () => {
+        expect(autocorrelation(points(1, 2, NaN, 3, 4), 2)).toEqual(autocorrelation(points(1, 2, 3, 4), 2))
     })
 })

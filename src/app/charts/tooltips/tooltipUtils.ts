@@ -392,13 +392,16 @@ export interface Sparkline {
  * @param width The sparkline's width (in pixels)
  * @param height The sparkline's height (in pixels)
  * @param padding The space (in pixels) to leave around the line, within the width and height
+ * @param valueRange The (fixed) range of values the height spans (values outside it are drawn at
+ * its edge) -- by default, the range of the values themselves
  * @return The sparkline, or `undefined` when there are fewer than two values to draw
  */
 export function sparklineFor(
     data: { length: number, [index: number]: { time: number, value: number } },
     width: number,
     height: number,
-    padding: number = 2
+    padding: number = 2,
+    valueRange?: [min: number, max: number]
 ): Sparkline | undefined {
     const points: Array<{ time: number, value: number }> = []
     for (let i = 0; i < data.length; i++) {
@@ -410,15 +413,21 @@ export function sparklineFor(
     const timeSpan = points[points.length - 1].time - startTime
     let minValue = Infinity
     let maxValue = -Infinity
-    points.forEach(({value}) => {
-        minValue = Math.min(minValue, value)
-        maxValue = Math.max(maxValue, value)
-    })
+    if (valueRange !== undefined) {
+        [minValue, maxValue] = valueRange
+    } else {
+        points.forEach(({value}) => {
+            minValue = Math.min(minValue, value)
+            maxValue = Math.max(maxValue, value)
+        })
+    }
     const innerWidth = width - 2 * padding
     const innerHeight = height - 2 * padding
     const xOf = (time: number) => padding + (timeSpan > 0 ? (time - startTime) / timeSpan * innerWidth : innerWidth / 2)
     // (a flat line sits in the middle)
-    const yOf = (value: number) => padding + (maxValue > minValue ? (maxValue - value) / (maxValue - minValue) * innerHeight : innerHeight / 2)
+    const yOf = (value: number) => padding + (maxValue > minValue ?
+        (maxValue - Math.min(maxValue, Math.max(minValue, value))) / (maxValue - minValue) * innerHeight :
+        innerHeight / 2)
 
     // each pixel column's first, lowest, highest, and last values, in the order they occurred
     const reduced: Array<{ time: number, value: number }> = []
@@ -511,4 +520,46 @@ export function seriesStatistics(spikes: { length: number, [index: number]: Datu
  */
 export function valueOrMissing(value: number | undefined, formatter: (value: number) => string): string {
     return value === undefined ? '–' : formatter(value)
+}
+
+// the largest lag (in points) for which the autocorrelation is calculated by default
+const MAX_AUTOCORRELATION_LAG = 50
+
+/**
+ * Calculates the (sample) autocorrelation of a series' values, by lag: for each lag `k` (in
+ * points, not time -- a series' points needn't be evenly spaced in time), the correlation between
+ * the values and the values `k` points later,
+ * <p>`r[k] = sum[t](x[t] - mean) * (x[t+k] - mean) / sum[t](x[t] - mean)^2`</p>
+ * so `r[0]` is 1, and the values are between -1 and 1. Points whose value or time isn't finite are
+ * skipped.
+ * @param points The series' points, ordered by time
+ * @param maxLag The largest lag -- by default, a quarter of the number of points (the usual rule
+ * of thumb, since the estimates for larger lags rest on too few pairs of points), but no more than 50
+ * @return The autocorrelation for each lag, from 0 to the largest lag, or `undefined` when there
+ * are fewer than four points (so no lag beyond 0), or the values don't vary
+ */
+export function autocorrelation(
+    points: { length: number, [index: number]: Datum },
+    maxLag?: number
+): Array<number> | undefined {
+    const values: Array<number> = []
+    for (let i = 0; i < points.length; i++) {
+        if (Number.isFinite(points[i].x) && Number.isFinite(points[i].y)) values.push(points[i].y)
+    }
+    const count = values.length
+    const largestLag = Math.min(count - 1, maxLag ?? Math.min(MAX_AUTOCORRELATION_LAG, Math.floor(count / 4)))
+    if (largestLag < 1) return undefined
+
+    const mean = values.reduce((sum, value) => sum + value, 0) / count
+    const deviations = values.map(value => value - mean)
+    const variance = deviations.reduce((sum, deviation) => sum + deviation * deviation, 0)
+    if (variance === 0) return undefined
+
+    const correlations: Array<number> = []
+    for (let lag = 0; lag <= largestLag; lag++) {
+        let sum = 0
+        for (let t = 0; t + lag < count; t++) sum += deviations[t] * deviations[t + lag]
+        correlations.push(sum / variance)
+    }
+    return correlations
 }
