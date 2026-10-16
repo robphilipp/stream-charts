@@ -1,6 +1,7 @@
 import type {CSSProperties, ReactElement} from "react";
 import {useEffect, useMemo, useState, useRef} from "react";
 import {createPortal} from "react-dom";
+import * as d3 from "d3";
 import {type Series} from "../plots/plot";
 import {
     autocorrelation,
@@ -138,11 +139,18 @@ export interface Props {
  * hack) -- an actual HTML `<table>` handles column alignment natively, so no equivalent hack is
  * needed here.
  */
-// the size of the tooltip's sparkline (of the autocorrelation)
+// the size of the autocorrelation's sparkline (its plot area, without the axes' labels)
 const SPARKLINE_WIDTH = 180
-const SPARKLINE_HEIGHT = 36
-// the space around the sparkline's line (so the zero line sits at the sparkline's middle)
+const SPARKLINE_HEIGHT = 48
+// the space around the sparkline's line, within its plot area
 const SPARKLINE_PADDING = 2
+// the space around the sparkline's plot area for the axes: their ticks and labels (the y-axis'
+// on the left, the x-axis' below)
+const AXES_MARGIN = {left: 24, right: 6, top: 4, bottom: 14}
+// the length of the axes' ticks
+const TICK_LENGTH = 3
+// the (most) ticks on the x-axis (the lags)
+const LAG_TICK_COUNT = 5
 
 interface ScatterTooltipContent {
     seriesName: string
@@ -158,7 +166,7 @@ interface ScatterTooltipContent {
     statistics: SeriesStatistics
     // the autocorrelation of the series' values over the window (by lag, in points), when there
     // are enough points to calculate it
-    autocorrelation: Sparkline | undefined
+    autocorrelation: AutocorrelationSparkline | undefined
     // where the tooltip is anchored (the mouse)
     anchor: TooltipAnchor
 }
@@ -190,7 +198,8 @@ interface ScatterTooltipContent {
  * Below the table, the statistics of the series' points in the window of data the chart holds:
  * their count, the mean and (sample) standard deviation of their values, and the mean time
  * between consecutive points. And below that, a sparkline of the autocorrelation of their values,
- * by lag (in points, from 0 on the left), drawn from -1 (bottom) to 1 (top), over a faint zero line.
+ * by lag (in points, from 0 on the left), drawn from -1 (bottom) to 1 (top): with a y-axis (ticks
+ * at -1, 0, and 1), and an x-axis along the (dashed) zero line, with ticks at round lags.
  *
  * Registers the tooltip-content provider with the `ChartContext` so that when the plot's
  * mousemove hit-test finds the mouse over a series, this component's content is shown. On
@@ -354,36 +363,16 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
                     </tbody>
                 </table>
             }
-            {/* the autocorrelation of the series' values, by lag, over a (faint) zero line */}
+            {/* the autocorrelation of the series' values, by lag */}
             {tooltipContent.autocorrelation !== undefined && <>
                 <div style={{fontSize: tooltipStyle.fontSize, marginTop: 8}}>
                     Autocorrelation
                 </div>
-                <svg
-                    width={SPARKLINE_WIDTH}
-                    height={SPARKLINE_HEIGHT}
-                    style={{display: 'block', marginTop: 2}}
-                    aria-hidden="true"
-                >
-                    <line
-                        x1={SPARKLINE_PADDING}
-                        y1={SPARKLINE_HEIGHT / 2}
-                        x2={SPARKLINE_WIDTH - SPARKLINE_PADDING}
-                        y2={SPARKLINE_HEIGHT / 2}
-                        stroke={tooltipStyle.fontColor}
-                        strokeOpacity={0.35}
-                        strokeWidth={1}
-                        strokeDasharray="2 2"
-                    />
-                    <path
-                        d={tooltipContent.autocorrelation.path}
-                        fill="none"
-                        stroke={tooltipStyle.fontColor}
-                        strokeWidth={1.25}
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                    />
-                </svg>
+                <AutocorrelationChart
+                    autocorrelation={tooltipContent.autocorrelation}
+                    color={tooltipStyle.fontColor}
+                    fontSize={tooltipStyle.fontSize - 3}
+                />
             </>}
         </div>,
         document.body
@@ -490,11 +479,102 @@ function segmentAround(series: Series<Datum>, time: number): ScatterTooltipPoint
  * @return The sparkline, or `undefined` when there are too few points (or
  * the values don't vary)
  */
-function autocorrelationSparkline(series: Series<Datum>): Sparkline | undefined {
+function autocorrelationSparkline(series: Series<Datum>): AutocorrelationSparkline | undefined {
     const correlations = autocorrelation(series)
     if (correlations === undefined) return undefined
-    return sparklineFor(
+    const sparkline = sparklineFor(
         correlations.map((value, lag) => ({time: lag, value})),
         SPARKLINE_WIDTH, SPARKLINE_HEIGHT, SPARKLINE_PADDING, [-1, 1]
+    )
+    return sparkline === undefined ? undefined : {sparkline, maxLag: correlations.length - 1}
+}
+
+/**
+ * The autocorrelation's sparkline, and its largest lag (for the x-axis' ticks)
+ */
+type AutocorrelationSparkline = {sparkline: Sparkline, maxLag: number}
+
+/**
+ * The autocorrelation's sparkline, with its axes: a y-axis on the left, with ticks (and labels) at
+ * -1, 0, and 1; and an x-axis along the dashed zero line, with ticks at round lags (labelled below
+ * the plot, out of the line's way)
+ * @param props The autocorrelation's sparkline (and largest lag), the color of the line and the
+ * axes, and the font size of the axes' labels
+ * @return The sparkline, with its axes
+ */
+function AutocorrelationChart(props: {
+    autocorrelation: AutocorrelationSparkline,
+    color: string,
+    fontSize: number
+}): ReactElement {
+    const {autocorrelation: {sparkline, maxLag}, color, fontSize} = props
+    // where a lag, and a correlation, are within the plot area (as `sparklineFor` places them)
+    const innerWidth = SPARKLINE_WIDTH - 2 * SPARKLINE_PADDING
+    const innerHeight = SPARKLINE_HEIGHT - 2 * SPARKLINE_PADDING
+    const xOf = (lag: number) => SPARKLINE_PADDING + lag / maxLag * innerWidth
+    const yOf = (correlation: number) => SPARKLINE_PADDING + (1 - correlation) / 2 * innerHeight
+    // (the y-axis sits just left of lag 0, so it doesn't cover the line's start)
+    const yAxisX = SPARKLINE_PADDING - TICK_LENGTH
+    const lagTicks = d3.ticks(0, maxLag, Math.min(LAG_TICK_COUNT, maxLag)).filter(Number.isInteger)
+    const axisStyle = {stroke: color, strokeOpacity: 0.6, strokeWidth: 1}
+    const labelStyle = {fill: color, fillOpacity: 0.8, fontSize}
+
+    return (
+        <svg
+            width={AXES_MARGIN.left + SPARKLINE_WIDTH + AXES_MARGIN.right}
+            height={AXES_MARGIN.top + SPARKLINE_HEIGHT + AXES_MARGIN.bottom}
+            style={{display: 'block', marginTop: 2}}
+            aria-hidden="true"
+        >
+            <g transform={`translate(${AXES_MARGIN.left}, ${AXES_MARGIN.top})`}>
+                {/* the y-axis: -1 (bottom) to 1 (top) */}
+                <line x1={yAxisX} y1={yOf(1)} x2={yAxisX} y2={yOf(-1)} {...axisStyle}/>
+                {[-1, 0, 1].map(correlation => (
+                    <g key={correlation}>
+                        <line
+                            x1={yAxisX - TICK_LENGTH} y1={yOf(correlation)}
+                            x2={yAxisX} y2={yOf(correlation)}
+                            {...axisStyle}
+                        />
+                        <text
+                            x={yAxisX - TICK_LENGTH - 2} y={yOf(correlation)}
+                            textAnchor="end" dominantBaseline="middle"
+                            {...labelStyle}
+                        >
+                            {correlation}
+                        </text>
+                    </g>
+                ))}
+                {/* the x-axis: the (dashed) zero line, with ticks at round lags */}
+                <line
+                    x1={yAxisX} y1={yOf(0)} x2={xOf(maxLag)} y2={yOf(0)}
+                    {...axisStyle} strokeOpacity={0.35} strokeDasharray="2 2"
+                />
+                {lagTicks.map(lag => (
+                    <g key={lag}>
+                        <line
+                            x1={xOf(lag)} y1={yOf(0) - TICK_LENGTH / 2}
+                            x2={xOf(lag)} y2={yOf(0) + TICK_LENGTH / 2}
+                            {...axisStyle}
+                        />
+                        <text
+                            x={xOf(lag)} y={SPARKLINE_HEIGHT + AXES_MARGIN.bottom - 3}
+                            textAnchor="middle"
+                            {...labelStyle}
+                        >
+                            {lag}
+                        </text>
+                    </g>
+                ))}
+                <path
+                    d={sparkline.path}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={1.25}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                />
+            </g>
+        </svg>
     )
 }
