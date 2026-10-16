@@ -217,30 +217,6 @@ export function BarPlotTooltipContent(props: Props): ReactElement | null {
             <div style={{fontSize: tooltipStyle.fontSize + 2, fontWeight: tooltipStyle.fontWeight + 150, marginBottom: 6}}>
                 {tooltipContent.valueLine}
             </div>
-            {/* the value over time, ending in the current value (the dot) */}
-            {tooltipContent.sparkline !== undefined &&
-                <svg
-                    width={SPARKLINE_WIDTH}
-                    height={SPARKLINE_HEIGHT}
-                    style={{display: 'block', marginBottom: 6}}
-                    aria-hidden="true"
-                >
-                    <path
-                        d={tooltipContent.sparkline.path}
-                        fill="none"
-                        stroke={tooltipStyle.fontColor}
-                        strokeWidth={1.25}
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                    />
-                    <circle
-                        cx={tooltipContent.sparkline.end[0]}
-                        cy={tooltipContent.sparkline.end[1]}
-                        r={2.5}
-                        fill={tooltipStyle.fontColor}
-                    />
-                </svg>
-            }
             <table style={{fontSize: tooltipStyle.fontSize, borderCollapse: 'collapse', border: 'none'}}>
                 <thead>
                 <tr>
@@ -259,6 +235,30 @@ export function BarPlotTooltipContent(props: Props): ReactElement | null {
                 ))}
                 </tbody>
             </table>
+            {/* the value over time, ending in the current value (the dot) */}
+            {tooltipContent.sparkline !== undefined &&
+                <svg
+                    width={SPARKLINE_WIDTH}
+                    height={SPARKLINE_HEIGHT}
+                    style={{display: 'block', marginTop: 8}}
+                    aria-hidden="true"
+                >
+                    <path
+                        d={tooltipContent.sparkline.path}
+                        fill="none"
+                        stroke={tooltipStyle.fontColor}
+                        strokeWidth={1.25}
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                    />
+                    <circle
+                        cx={tooltipContent.sparkline.end[0]}
+                        cy={tooltipContent.sparkline.end[1]}
+                        r={2.5}
+                        fill={tooltipStyle.fontColor}
+                    />
+                </svg>
+            }
         </div>,
         document.body
     )
