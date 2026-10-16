@@ -5,6 +5,9 @@ import {type Series} from "../plots/plot";
 import {
     boundingPoints,
     defaultTooltipStyle,
+    type SeriesStatistics,
+    seriesStatistics,
+    valueOrMissing,
     type ScatterTooltipMetadata,
     type ScatterTooltipPoints,
     type TooltipDimensions,
@@ -12,7 +15,7 @@ import {
 } from "./tooltipUtils";
 import {tooltipAnchorFor, type TooltipAnchor, useTooltipPlacement} from "./useTooltipPlacement"
 import {withAlpha} from "../styling/canvasStyle";
-import {formatTime, formatTimeChange, formatValue, formatValueChange} from "../utils";
+import {formatNumber, formatTime, formatTimeChange, formatValue, formatValueChange} from "../utils";
 import {useChart} from "../hooks/useChart";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import type {ContinuousNumericAxis, SeriesLineStyle} from "../axes/axes";
@@ -142,6 +145,8 @@ interface ScatterTooltipContent {
     yValues: Array<string>
     // the column to emphasize (the point under the mouse), if any
     emphasizedColumn?: number
+    // statistics of the series' points in the window (the data the chart holds)
+    statistics: SeriesStatistics
     // where the tooltip is anchored (the mouse)
     anchor: TooltipAnchor
 }
@@ -169,6 +174,10 @@ interface ScatterTooltipContent {
  * y-label     y_b        y_p       y_a
  * ```
  * A point that doesn't exist (e.g. before the series' first point) shows a dash.
+ *
+ * Below the table, the statistics of the series' points in the window of data the chart holds:
+ * their count, the mean and (sample) standard deviation of their values, and the mean time
+ * between consecutive points.
  *
  * Registers the tooltip-content provider with the `ChartContext` so that when the plot's
  * mousemove hit-test finds the mouse over a series, this component's content is shown. On
@@ -314,6 +323,24 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
                 </tr>
                 </tbody>
             </table>
+            {/* the series' points over the window (the data the chart holds) */}
+            {tooltipContent.statistics.count > 0 &&
+                <table style={{fontSize: tooltipStyle.fontSize, borderCollapse: 'collapse', border: 'none', marginTop: 6}}>
+                    <tbody>
+                    {[
+                        ['Points', formatNumber(tooltipContent.statistics.count, " ,.0f")],
+                        ['Mean value', valueOrMissing(tooltipContent.statistics.meanValue, yValueFormatter)],
+                        ['Std. deviation', valueOrMissing(tooltipContent.statistics.valueStandardDeviation, yValueFormatter)],
+                        ['Mean interval', valueOrMissing(tooltipContent.statistics.meanInterval, xValueFormatter)],
+                    ].map(([label, value]) => (
+                        <tr key={label}>
+                            <td style={{padding: '1px 12px 1px 0', textAlign: 'left', border: 'none'}}>{label}</td>
+                            <td style={{padding: '1px 0', textAlign: 'right', border: 'none'}}>{value}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            }
         </div>,
         document.body
     )
@@ -327,7 +354,7 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
  * component above) handles all of that alignment natively.
  * @param seriesName The name of the series (i.e. the neuron ID)
  * @param time The time (x-coordinate value) corresponding to the mouse location
- * @param series The series' data
+ * @param series The series' data (the window of data the chart holds -- for the statistics too)
  * @param points The points to show, as the plot determined them (see {@link scatterTooltipPoints});
  * when `undefined`, the points on either side of the mouse's time are shown
  * @param mouseCoords The coordinates of the mouse when the event was fired, in canvas-local coordinates
@@ -365,6 +392,7 @@ function captureTooltipContent(
         seriesName,
         xLabel: labels.x,
         yLabel: labels.y,
+        statistics: seriesStatistics(series),
         anchor: tooltipAnchorFor(mouseCoords, canvas),
         ...(shown.kind === 'point' ?
             // directly over a point: the point before it, the point, and the point after it

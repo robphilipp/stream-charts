@@ -7,10 +7,11 @@ import {
     type RasterTooltipMetadata,
     type Sparkline,
     sparklineFor,
-    type SpikeStatistics,
-    spikeStatistics,
+    type SeriesStatistics,
+    seriesStatistics,
     type TooltipDimensions,
-    type TooltipStyle
+    type TooltipStyle,
+    valueOrMissing
 } from "./tooltipUtils";
 import {tooltipAnchorFor, type TooltipAnchor, useTooltipPlacement} from "./useTooltipPlacement"
 import {withAlpha} from "../styling/canvasStyle";
@@ -104,17 +105,6 @@ const SPARKLINE_WIDTH = 180
 const SPARKLINE_HEIGHT = 36
 
 /**
- * Formats a value, or shows a dash when there isn't one (e.g. the standard deviation of a single
- * spike)
- * @param value The value, if there is one
- * @param formatter Formats the value
- * @return The formatted value, or a dash
- */
-function valueOrMissing(value: number | undefined, formatter: (value: number) => string): string {
-    return value === undefined ? '–' : formatter(value)
-}
-
-/**
  * The data needed to render the tooltip's content, captured at mouse-over time and read back out
  * during render. Replaces the old version's immediate SVG DOM manipulation -- content is now
  * declarative React, driven by this piece of state.
@@ -124,7 +114,7 @@ interface RasterTooltipContent {
     spikeTime: number
     value: number
     // statistics of the series' spikes in the window (the data the chart holds)
-    statistics: SpikeStatistics | undefined
+    statistics: SeriesStatistics | undefined
     // the spikes' values over the window, when there are enough of them to draw
     sparkline: Sparkline | undefined
     // where the tooltip is anchored (the mouse, and the spike's row)
@@ -365,7 +355,7 @@ function captureTooltipContent(
         seriesName,
         spikeTime,
         value: y,
-        statistics: spikes !== undefined ? spikeStatistics(spikes) : undefined,
+        statistics: spikes !== undefined ? seriesStatistics(spikes) : undefined,
         sparkline: sparklineFor(spikeValues, SPARKLINE_WIDTH, SPARKLINE_HEIGHT),
         // (vertically, the tooltip is centered on the spike's row, rather than placed below the mouse)
         anchor: tooltipAnchorFor(

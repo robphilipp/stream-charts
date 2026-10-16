@@ -459,28 +459,29 @@ export interface RasterTooltipMetadata {
 }
 
 /**
- * Statistics of a series of spikes (events with a value), e.g. over the window of data that a
- * raster chart holds. Those that need at least two spikes are undefined when there's only one.
+ * Statistics of a series' (time, value) points -- e.g. a raster chart's spikes, or a scatter
+ * chart's points -- over the window of data that the chart holds. Those that need at least two
+ * points are undefined when there's only one.
  */
-export interface SpikeStatistics {
-    // the number of spikes
+export interface SeriesStatistics {
+    // the number of points
     count: number
-    // the mean of the spikes' values
+    // the mean of the points' values
     meanValue: number | undefined
-    // the (sample) standard deviation of the spikes' values
+    // the (sample) standard deviation of the points' values
     valueStandardDeviation: number | undefined
-    // the mean time between consecutive spikes
+    // the mean time between consecutive points
     meanInterval: number | undefined
 }
 
 /**
- * Calculates the statistics of a series of spikes: their count, the mean and the (sample)
- * standard deviation of their values, and the mean time between consecutive spikes. Spikes whose
- * value or time isn't finite are skipped.
- * @param spikes The spikes, ordered by time
+ * Calculates the statistics of a series' (time, value) points: their count, the mean and the
+ * (sample) standard deviation of their values, and the mean time between consecutive points.
+ * Points whose value or time isn't finite are skipped.
+ * @param spikes The points (e.g. spikes), ordered by time
  * @return The statistics
  */
-export function spikeStatistics(spikes: { length: number, [index: number]: Datum }): SpikeStatistics {
+export function seriesStatistics(spikes: { length: number, [index: number]: Datum }): SeriesStatistics {
     const valid: Array<Datum> = []
     for (let i = 0; i < spikes.length; i++) {
         if (Number.isFinite(spikes[i].x) && Number.isFinite(spikes[i].y)) valid.push(spikes[i])
@@ -499,4 +500,15 @@ export function spikeStatistics(spikes: { length: number, [index: number]: Datum
         // the intervals between consecutive spikes sum to the span from the first to the last
         meanInterval: (valid[count - 1].x - valid[0].x) / (count - 1),
     }
+}
+
+/**
+ * Formats a value, or shows a dash when there isn't one (e.g. the standard deviation of a single
+ * point)
+ * @param value The value, if there is one
+ * @param formatter Formats the value
+ * @return The formatted value, or a dash
+ */
+export function valueOrMissing(value: number | undefined, formatter: (value: number) => string): string {
+    return value === undefined ? '–' : formatter(value)
 }
