@@ -235,6 +235,13 @@ describe('sparklineFor', () => {
         expect(sparklineFor(series(NaN, 3), 100, 20)).toBeUndefined()
     })
 
+    it('marks the point at the marked time, when there is one', () => {
+        // times 0..20 -> x 0..100; values 0..10 -> y 20..0
+        expect(sparklineFor(series(0, 10, 5), 100, 20, 0, undefined, 10)?.mark).toEqual([50, 0])
+        expect(sparklineFor(series(0, 10, 5), 100, 20, 0, undefined, 15)?.mark).toBeUndefined()
+        expect(sparklineFor(series(0, 10, 5), 100, 20, 0)?.mark).toBeUndefined()
+    })
+
     it('skips values that are not finite', () => {
         expect(sparklineFor(series(0, NaN, 10), 100, 20, 0)?.path).toBe('M0,20 L100,0')
     })

@@ -4,6 +4,8 @@ import {createPortal} from "react-dom";
 import {
     defaultTooltipStyle,
     findPointAndNeighbors,
+    type Sparkline,
+    sparklineFor,
     type TooltipDimensions,
     type TooltipStyle,
 } from "./tooltipUtils";
@@ -109,19 +111,30 @@ interface PoincareTooltipContent {
     yPrev: string
     yCurrent: string
     yNext: string
+    // the series' values (each point's `f[n+1](x)`) over time, with the hovered point marked,
+    // when there are enough of them to draw
+    sparkline: Sparkline | undefined
     // where the tooltip is anchored (the mouse)
     anchor: TooltipAnchor
 }
 
+// the size of the tooltip's sparkline (of the series' values over time)
+const SPARKLINE_WIDTH = 180
+const SPARKLINE_HEIGHT = 36
+
 /**
  * Adds tooltip content as a table. The columns of the table are the previous, current, and next
  * iterate (relative to the hovered point). The rows of the table are the time values for the
- * first row, and the iterate values (each point's `f[n+1](x)`) for the second row.
+ * first row, and the iterate values (each point's `f[n+1](x)`) for the second row. Below the
+ * table, a sparkline of the series' values over time (the data the chart holds), with the
+ * hovered point marked.
  * ```
  * series name
  *            f[n-1](x)     f[n](x)      f[n+1](x)
  * t (ms)       t_p            t_c          t_n
  * value        v_p            v_c          v_n
+ * value over time
+ * sparkline
  * ```
  *
  * Registers the tooltip-content provider with the `ChartContext` so that when the plot's
@@ -264,6 +277,35 @@ export function PoincarePlotTooltipContent(props: Props): ReactElement | null {
                 </tr>
                 </tbody>
             </table>
+            {/* the series' values over time, with the hovered point marked (the dot) */}
+            {tooltipContent.sparkline !== undefined && <>
+                <div style={{fontSize: tooltipStyle.fontSize, marginTop: 8}}>
+                    {tooltipContent.yLabel} over time
+                </div>
+                <svg
+                    width={SPARKLINE_WIDTH}
+                    height={SPARKLINE_HEIGHT}
+                    style={{display: 'block', marginTop: 4}}
+                    aria-hidden="true"
+                >
+                    <path
+                        d={tooltipContent.sparkline.path}
+                        fill="none"
+                        stroke={tooltipStyle.fontColor}
+                        strokeWidth={1}
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                    />
+                    {tooltipContent.sparkline.mark !== undefined &&
+                        <circle
+                            cx={tooltipContent.sparkline.mark[0]}
+                            cy={tooltipContent.sparkline.mark[1]}
+                            r={2.5}
+                            fill={tooltipStyle.fontColor}
+                        />
+                    }
+                </svg>
+            </>}
         </div>,
         document.body
     )
@@ -278,10 +320,11 @@ interface CaptureOptions {
 }
 
 /**
- * Captures the data needed to render the tooltip's table content (the hovered point -- the first
- * point within 0.1 of the mouse's time -- and its neighbors), and where it's anchored (the mouse --
- * the tooltip is placed next to it once it's rendered, see {@link useTooltipPlacement}). Replaces the old version, which built and positioned an SVG table via `svg-table`'s
- * `createTable`.
+ * Captures the data needed to render the tooltip's content -- the table (the hovered point, the
+ * first point within 0.1 of the mouse's time, and its neighbors), and the sparkline of the series'
+ * values over time, with the hovered point marked -- and where it's anchored (the mouse -- the
+ * tooltip is placed next to it once it's rendered, see {@link useTooltipPlacement}). Replaces the
+ * old version, which built and positioned an SVG table via `svg-table`'s `createTable`.
  * @param seriesName The name of the series (i.e. the neuron ID)
  * @param time The time (x-coordinate value) corresponding to the mouse location
  * @param tooltipData The series data and metadata
@@ -321,6 +364,10 @@ function captureTooltipContent(
         yPrev: yValueFormatter(lower.iterateN_1),
         yCurrent: yValueFormatter(point.iterateN_1),
         yNext: yValueFormatter(upper.iterateN_1),
+        sparkline: sparklineFor(
+            series.map(datum => ({time: datum.time, value: datum.iterateN_1})),
+            SPARKLINE_WIDTH, SPARKLINE_HEIGHT, 2, undefined, point.time
+        ),
         anchor: tooltipAnchorFor(mouseCoords, canvas),
     })
 

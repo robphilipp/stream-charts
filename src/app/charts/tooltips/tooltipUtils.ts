@@ -378,6 +378,8 @@ export interface Sparkline {
     path: string
     // where the line ends (the latest value)
     end: [x: number, y: number]
+    // where the marked point is (see `sparklineFor`'s `markedTime`), when one was asked for, and found
+    mark?: [x: number, y: number]
 }
 
 /**
@@ -394,6 +396,8 @@ export interface Sparkline {
  * @param padding The space (in pixels) to leave around the line, within the width and height
  * @param valueRange The (fixed) range of values the height spans (values outside it are drawn at
  * its edge) -- by default, the range of the values themselves
+ * @param markedTime The time of a point to mark (e.g. the hovered point), whose position is
+ * returned as the sparkline's `mark` -- by default, none
  * @return The sparkline, or `undefined` when there are fewer than two values to draw
  */
 export function sparklineFor(
@@ -401,7 +405,8 @@ export function sparklineFor(
     width: number,
     height: number,
     padding: number = 2,
-    valueRange?: [min: number, max: number]
+    valueRange?: [min: number, max: number],
+    markedTime?: number
 ): Sparkline | undefined {
     const points: Array<{ time: number, value: number }> = []
     for (let i = 0; i < data.length; i++) {
@@ -453,9 +458,11 @@ export function sparklineFor(
 
     const coordinates = reduced.map(({time, value}) => [xOf(time), yOf(value)] as [number, number])
     const round = (value: number) => Math.round(value * 100) / 100
+    const marked = markedTime === undefined ? undefined : points.find(point => point.time === markedTime)
     return {
         path: coordinates.map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${round(x)},${round(y)}`).join(' '),
         end: coordinates[coordinates.length - 1],
+        ...(marked !== undefined ? {mark: [xOf(marked.time), yOf(marked.value)] as [number, number]} : {}),
     }
 }
 
