@@ -1,5 +1,5 @@
 import type {Theme} from "../../ui/Themes.ts";
-import {type ComponentProps, type CSSProperties, type JSX, useLayoutEffect, useMemo, useRef, useState} from "react";
+import {type ComponentProps, type CSSProperties, type JSX, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
 import {getRouteApi, useElementScrollRestoration, useNavigate} from "@tanstack/react-router";
 import {Button} from "../../ui/Button.tsx"
 import intro_page from "./intro.md?raw"
@@ -26,6 +26,8 @@ import {useGridCell} from "react-resizable-grid-layout";
 import {FloatingBar} from "../../ui/FloatingBar.tsx";
 import {
     BackIcon,
+    CheckIcon,
+    CopyIcon,
     FirstIcon,
     ForwardIcon,
     LastIcon,
@@ -372,9 +374,13 @@ function MarkdownLink(props: ComponentProps<'a'> & ExtraProps): JSX.Element {
     )
 }
 
+// how long (ms) the copy button shows that the code was copied (or couldn't be)
+const COPIED_DURATION_MS = 1500
+
 /**
  * A code block: scrolls sideways when its lines are wider than the page (rather than being cut
- * off), on a background tinted slightly toward the text color. Its code's tokens are colored by
+ * off), on a background tinted slightly toward the text color, with a button in its top-right
+ * corner that copies its code to the clipboard. Its code's tokens are colored by
  * rehype-highlight's classes, in the theme's colors (see `codeHighlighting.css`).
  * @param props The code block's properties (from the markdown)
  * @return The code block
@@ -382,23 +388,77 @@ function MarkdownLink(props: ComponentProps<'a'> & ExtraProps): JSX.Element {
 function MarkdownPre(props: ComponentProps<'pre'> & ExtraProps): JSX.Element {
     const {style, children} = props
     const {theme} = useThemeStore()
+    const preRef = useRef<HTMLPreElement>(null)
+
+    // whether the code was just copied ('copied'), just failed to copy ('failed'), or neither
+    const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
+    const [hovered, setHovered] = useState<boolean>(false)
+    // after a copy, goes back to showing the copy icon (cancelled if the block goes away first)
+    useEffect(
+        () => {
+            if (copyState === 'idle') return
+            const timeout = setTimeout(() => setCopyState('idle'), COPIED_DURATION_MS)
+            return () => clearTimeout(timeout)
+        },
+        [copyState]
+    )
+
+    function handleCopy(): void {
+        // (the code's text, without the highlighting's markup)
+        const code = preRef.current?.textContent ?? ''
+        navigator.clipboard.writeText(code).then(
+            () => setCopyState('copied'),
+            () => setCopyState('failed')
+        )
+    }
+
+    const label = copyState === 'copied' ? 'copied' : copyState === 'failed' ? "couldn't copy" : 'copy code'
     return (
-        <pre
-            className="markdown-code"
-            data-theme={theme.name}
-            style={{
-                ...style,
-                overflowX: 'auto',
-                scrollbarWidth: 'thin',
-                padding: '10px 14px',
-                borderRadius: 4,
-                backgroundColor: interpolateColor(theme.backgroundColor, theme.color, 6),
-                fontSize: INTRO_FONT_SIZE - 2,
-                lineHeight: 1.4,
-            }}
-        >
-            {children}
-        </pre>
+        <div style={{position: 'relative'}}>
+            <pre
+                ref={preRef}
+                className="markdown-code"
+                data-theme={theme.name}
+                style={{
+                    ...style,
+                    overflowX: 'auto',
+                    scrollbarWidth: 'thin',
+                    padding: '10px 14px',
+                    borderRadius: 4,
+                    backgroundColor: interpolateColor(theme.backgroundColor, theme.color, 6),
+                    fontSize: INTRO_FONT_SIZE - 2,
+                    lineHeight: 1.4,
+                }}
+            >
+                {children}
+            </pre>
+            <button
+                onClick={handleCopy}
+                onMouseOver={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
+                title={label}
+                aria-label={label}
+                style={{
+                    ...buttonStyle(theme),
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '3px 5px',
+                    borderStyle: 'solid',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    fontSize: INTRO_FONT_SIZE - 3,
+                    cursor: 'pointer',
+                    opacity: hovered || copyState !== 'idle' ? 1 : 0.6,
+                }}
+            >
+                {copyState === 'copied' ? <CheckIcon color={theme.color}/> : <CopyIcon color={theme.color}/>}
+                {copyState !== 'idle' && <span>{label}</span>}
+            </button>
+        </div>
     )
 }
 

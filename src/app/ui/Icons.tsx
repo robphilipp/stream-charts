@@ -726,3 +726,46 @@ export function ColorizedLinesIcon(props: { color: string, startColor?: string, 
         </svg>
     )
 }
+
+/**
+ * Two overlapping pages (copy)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function CopyIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <rect x="5" y="5" width="8" height="8.5" rx="1.5" stroke={color} fill="none" strokeWidth={1.5}/>
+            <path
+                d="M10 2.5 L3.5 2.5 Q2 2.5 2 4 L2 10.5"
+                stroke={color}
+                fill="none"
+                strokeWidth={1.5}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+            />
+        </svg>
+    )
+}
+
+/**
+ * A check mark (done)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function CheckIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <path
+                d="M2.5 8 L6 11.5 L12.5 4"
+                stroke={color}
+                fill="none"
+                strokeWidth={2}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+            />
+        </svg>
+    )
+}
