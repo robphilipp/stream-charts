@@ -1,14 +1,15 @@
 import {type JSX} from "react"
-import {useOutlierTooltip} from "./useOutlierTooltip.tsx"
+import {useOutlierTooltip} from "../charts/tooltips/useOutlierTooltip.tsx"
 
 /**
- * Default tooltip content for {@link OutlierPlotHtmlTooltipContent}. Reads tooltip data and
- * formatters from context via {@link useOutlierTooltip}. Used automatically when no custom
- * children are provided to {@link OutlierPlotHtmlTooltipContent}.
- * @return The series' name, the datum, the band, its measure, and the number of points in the
- * band (or nothing, when there's no tooltip content)
+ * Note: this is unused but serves as an additional example of a custom tooltip. To use
+ * this tooltip, uncomment its usage in the {@link StreamingOutlierChart}.
+ * <br/>
+ * Custom content for the {@link OutlierPlotTooltipContent} (put it inside one): reads what the
+ * tooltip shows, and the formatters, from {@link useOutlierTooltip}.
+ * @return The custom tooltip content
  */
-export function DefaultOutlierHtmlTooltipContent(): JSX.Element {
+export function MyOutlierTooltipContent(): JSX.Element {
     const {
         tooltipContent,
         tooltipStyle,
@@ -16,8 +17,6 @@ export function DefaultOutlierHtmlTooltipContent(): JSX.Element {
         bandFormatter,
         measureFormatter,
     } = useOutlierTooltip()
-
-    if (tooltipContent === null) return <></>
 
     const {
         seriesName,
@@ -32,12 +31,14 @@ export function DefaultOutlierHtmlTooltipContent(): JSX.Element {
 
     return (
         <>
-            <div style={{fontWeight: tooltipStyle.fontWeight + 500, fontSize: tooltipStyle.fontSize + 2}}>Series: {seriesName}</div>
+            <div style={{fontWeight: tooltipStyle.fontWeight + 500, fontSize: tooltipStyle.fontSize + 2}}>My Series: {seriesName}</div>
             <hr/>
             {datum && <div>{datumFormatter(datum.datum.x, datum.datum.y)}</div>}
             <div>{bandFormatter(lowerMeasure, upperMeasure)}</div>
             <div>{measureFormatter(innerProb, outerProb)}</div>
             <div>Points in band: {pointsInBand}</div>
+            <hr/>
+            <div>(custom HTML tooltip)</div>
         </>
     )
 }

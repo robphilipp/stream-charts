@@ -27,8 +27,6 @@ import {buttonStyle} from "../ui/utils"
 import {defaultMargin} from "../charts/hooks/defaultPlotDimensions"
 import {AxisInterval} from "../charts/axes/AxisInterval"
 import {regexFilter} from "../charts/filters/regexFilter"
-import {OutlierPlotHtmlTooltipContent} from "../charts/tooltips/OutlierPlotHtmlTooltipContent.tsx";
-import {Toggle, ToggleStatus} from "../ui/Toggle.tsx";
 import {INTERPOLATIONS} from "./options/interpolations.ts";
 import {InterpolationControl} from "./controls/InterpolationControl.tsx";
 import {ExpandableControlBar} from "../ui/ExpandableControlBar.tsx";
@@ -40,7 +38,6 @@ import {LagDisplay} from "./controls/LagDisplay.tsx";
 import {Divider} from "../ui/Divider.tsx";
 import {SeriesFilter} from "./controls/SeriesFilter.tsx";
 import {DROP_AFTER_100_SEC, dropDataOptionForMs} from "./options/dropDataAfter.ts";
-import {VerticalDivider} from "../ui/VerticalDivider.tsx";
 import {CadenceControl} from "./controls/CadenceControl.tsx";
 import {BufferingControl} from "./controls/BufferingControl.tsx";
 import {DataUpdateRateControl} from "./controls/DataUpdateRateControl.tsx";
@@ -177,8 +174,6 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
     const setShowMarkers = useOutlierChartStore(state => state.setShowMarkers)
     const showTooltip = useOutlierChartStore(state => state.showTooltip)
     const setShowTooltip = useOutlierChartStore(state => state.setShowTooltip)
-    const tooltipType = useOutlierChartStore(state => state.tooltipType)
-    const setTooltipType = useOutlierChartStore(state => state.setTooltipType)
     const highlightAxes = useOutlierChartStore(state => state.highlightAxes)
     const setHighlightAxes = useOutlierChartStore(state => state.setHighlightAxes)
     const autoScaleYAxis = useOutlierChartStore(state => state.autoScaleYAxis)
@@ -217,14 +212,6 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
     const handleZoomReset = useCallback((resetZoom: () => void): void => {
         resetZoomRef.current = resetZoom
     }, [])
-
-    function handleToggleTooltipType(status: ToggleStatus): void {
-        if (status === ToggleStatus.OFF) {
-            setTooltipType('html')
-        } else {
-            setTooltipType('svg')
-        }
-    }
 
     function handleUpdateRegex(updatedFilter: string): void {
         // the filter's regex is compiled from the filter value (see `filter` above)
@@ -397,25 +384,6 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
                                     labelColor={theme.color}
                                     onChange={() => setShowTooltip(!showTooltip)}
                                 />
-                                <span style={{paddingLeft: 10}}/>
-                                <VerticalDivider color={theme.disabledColor} height={20}/>
-                                <span style={{paddingLeft: 10}}/>
-                                <Toggle
-                                    leftLabel="html"
-                                    rightLabel="svg"
-                                    onToggle={handleToggleTooltipType}
-                                    toggleOffColor={theme.color}
-                                    toggleOffBackgroundColor={theme.backgroundColor}
-                                    toggleOnColor={theme.color}
-                                    toggleOnBackgroundColor={theme.backgroundColor}
-                                    toggleBorderColor={theme.color}
-                                    labelFontColor={theme.color}
-                                    toggleHeight={15}
-                                    disabled={!showTooltip || running}
-                                    disabledColor={theme.disabledColor}
-                                    disabledBackgroundColor={theme.disabledBackgroundColor}
-                                    disabledBorderColor={theme.disabledColor}
-                                />
                             </div>
                             {/*<Checkbox*/}
                             {/*    key={2}*/}
@@ -528,22 +496,15 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
                             borderOpacity: 0.5,
                         }}
                     >
-                        {tooltipType === 'svg' ?
-                            <OutlierPlotTooltipContent
-                                datumFormatter={(x, y) => `(${x.toFixed(0)} ms, ${y.toFixed(2)} USD)`}
-                                bandFormatter={(lower, upper) => `Band: [${lower}, ${upper})`}
-                                measureFormatter={svgMeasureDescription}
-                            /> :
-                            <OutlierPlotHtmlTooltipContent
-                                datumFormatter={(x, y) =>
-                                    <div>Index: <b>{y.toFixed(2)} USD</b> (<em>@ {x.toFixed(0)} ms</em>)</div>}
-                                bandFormatter={(lower, upper) => <div>Band: [{lower}, {upper})</div>}
-                                measureFormatter={htmlMeasureDescription}
-                            >
-                                {/* You can uncomment the MyOutlierHtmlTooltipContent below to use a custom tooltip */}
-                                {/*<MyOutlierHtmlTooltipContent/>*/}
-                            </OutlierPlotHtmlTooltipContent>
-                        }
+                        <OutlierPlotTooltipContent
+                            datumFormatter={(x, y) =>
+                                <div>Index: <b>{y.toFixed(2)} USD</b> (<em>@ {x.toFixed(0)} ms</em>)</div>}
+                            bandFormatter={(lower, upper) => <div>Band: [{lower}, {upper})</div>}
+                            measureFormatter={measureDescription}
+                        >
+                            {/* You can uncomment the MyOutlierTooltipContent below to use a custom tooltip */}
+                            {/*<MyOutlierTooltipContent/>*/}
+                        </OutlierPlotTooltipContent>
                     </Tooltip>
                 </Chart>
             </GridItem>
@@ -556,22 +517,7 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
  * @param innerProb The probability of points being within the outlier band.
  * @param outerProb The probability of points being outside the outlier band.
  */
-function svgMeasureDescription(innerProb: number, outerProb: number): Array<string> {
-    if (Math.abs(outerProb) < 1e-4) {
-        return [`Points have a ${(innerProb * 100).toFixed(1)}% probability of being in this band.`]
-    }
-    return [
-        `Points have a ${(innerProb * 100).toFixed(1)}% probability of being in this band,`,
-        `and a ${(outerProb * 100).toFixed(1)}% probability of being outside this band.`
-    ]
-}
-
-/**
- * Creates the JSX element that describes the probability of points being in or outside the outlier band.
- * @param innerProb The probability of points being within the outlier band.
- * @param outerProb The probability of points being outside the outlier band.
- */
-function htmlMeasureDescription(innerProb: number, outerProb: number): JSX.Element {
+function measureDescription(innerProb: number, outerProb: number): JSX.Element {
     if (Math.abs(outerProb) < 1e-4) {
         return <div>
             <hr/>

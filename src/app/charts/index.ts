@@ -79,13 +79,20 @@ export {withAlpha} from "./styling/canvasStyle"
  | TOOLTIPS
  */
 export {Tooltip, type Props as TooltipProps} from "./tooltips/Tooltip"
+export {TooltipContent, type TooltipCapture, type TooltipContentProps} from "./tooltips/TooltipContent"
+export {useTooltipStyle} from "./tooltips/useTooltipStyle"
 export {ScatterPlotTooltipContent, type Props as ScatterPlotTooltipContentProps} from "./tooltips/ScatterPlotTooltipContent"
 export {RasterPlotTooltipContent, type Props as RasterPlotTooltipContentProps} from "./tooltips/RasterPlotTooltipContent"
 export {PoincarePlotTooltipContent, type Props as PoincarePlotTooltipContentProps} from "./tooltips/PoincarePlotTooltipContent"
 export {BarPlotTooltipContent, type Props as BarPlotTooltipContentProps} from "./tooltips/BarPlotTooltipContent"
 export {OutlierPlotTooltipContent, type Props as OutlierPlotTooltipContentProps} from "./tooltips/OutlierPlotTooltipContent"
-export {OutlierPlotHtmlTooltipContent, type Props as OutlierPlotHtmlTooltipContentProps} from "./tooltips/OutlierPlotHtmlTooltipContent"
-export {useOutlierTooltip, type OutlierTooltipContentFormatters} from "./tooltips/useOutlierTooltip"
+export {DefaultOutlierTooltipContent} from "./tooltips/DefaultOutlierTooltipContent"
+export {
+    useOutlierTooltip,
+    type OutlierTooltipContentFormatters,
+    type OutlierTooltipContextValue,
+    type OutlierTooltipData,
+} from "./tooltips/useOutlierTooltip"
 export type {TooltipData, TooltipContentProvider} from "./hooks/useTooltip"
 export {tooltipAnchorFor, useTooltipPlacement, type TooltipAnchor} from "./tooltips/useTooltipPlacement"
 export {
@@ -95,7 +102,6 @@ export {
     type ScatterTooltipMetadata,
     type ScatterTooltipPoints,
     type Sparkline,
-    type TooltipDimensions,
     type TooltipStyle,
 } from "./tooltips/tooltipUtils"
 

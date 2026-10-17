@@ -2,7 +2,7 @@
 
 The tooltips page showed the tooltips that come with the library, and the formatters that tweak them. This tutorial goes further: we'll write tooltips from scratch, one for each of the five chart types. Along the way, you'll see exactly what each plot tells a tooltip about the thing under the mouse – which is most of what you need to know to show whatever you like.
 
-As in the previous tutorial, the code is written as if it lives in `src/app/examples`. Every piece of it was tried out in place of the examples' own tooltips.
+As in the previous tutorial, the code is written as if it lives in `src/app/examples`, so it imports the library from `../charts`. Every piece of it was tried out in place of the examples' own tooltips.
 
 #### how a tooltip works
 
@@ -24,120 +24,29 @@ The content provider is handed five things:
 
 When the mouse leaves the element, the chart calls the *mouse-leave handlers* that are registered with it, and the tooltip hides.
 
-#### step 1: a reusable tooltip
+#### step 1: the library's `<TooltipContent>`
 
-All five tooltips need the same plumbing: register a content provider, hide on mouse-leave, and draw a box next to the mouse. So let's write that once. `CustomTooltip` takes a `capture` function, which turns what the plot hands over into your own *content* (any object you like), and a function that renders that content:
+All tooltips need the same plumbing: register a content provider, hide on mouse-leave, and draw a box next to the mouse. The library does all of that in one component, `<TooltipContent>` – the same one the library's own tooltips are built on. You hand it two functions:
+
+- **`capture`** turns what the plot hands over (the `seriesName`, `time`, `tooltipData`, and `providerId` from the table above) into your own *content* – any object you like. Return `undefined` to show nothing.
+- **its children** – a function that renders that content (and is handed the tooltip's style, too).
 
 ```tsx
-import {type CSSProperties, type ReactElement, type ReactNode, useEffect, useMemo, useRef, useState} from "react";
-import {createPortal} from "react-dom";
-import {useChart} from "../charts/hooks/useChart";
-import {usePlotDimensions} from "../charts/hooks/usePlotDimensions";
-import type {TooltipData} from "../charts/hooks/useTooltip";
-import {defaultTooltipStyle, type TooltipStyle} from "../charts/tooltips/tooltipUtils";
-import {tooltipAnchorFor, type TooltipAnchor, useTooltipPlacement} from "../charts/tooltips/useTooltipPlacement";
-import {withAlpha} from "../charts/styling/canvasStyle";
-import type {BaseAxis, SeriesStyle} from "../charts/axes/axes";
-import type {BaseAxisRange} from "../charts/axes/BaseAxisRange";
-
-/**
- * Turns what the plot hands the tooltip into the content to show (or `undefined` to show nothing)
- */
-export type TooltipCapture<D, M, C> = (
-    seriesName: string,
-    time: number,
-    tooltipData: TooltipData<D, M>,
-    providerId?: string
-) => C | undefined
-
-type Props<D, M, C> = {
-    // turns the hovered element's data into the tooltip's content
-    capture: TooltipCapture<D, M, C>
-    // the tooltip's style (the <Tooltip> passes its own style along)
-    style?: Partial<TooltipStyle>
-    // renders the content
-    children: (content: C, style: TooltipStyle) => ReactNode
-}
-
-// what the provider returns to the <Tooltip>, so that its own box stays hidden (we draw our own)
-const OFF_SCREEN = {x: -99999, y: -99999, contentWidth: 0, contentHeight: 0}
-
-export function CustomTooltip<D, M, C>(props: Props<D, M, C>): ReactElement | null {
-    const {capture, style, children} = props
-    const {chartId, canvas, tooltip, mouse} = useChart<D, SeriesStyle, M, BaseAxisRange, BaseAxis>()
-    const {registerTooltipContentProvider} = tooltip
-    const {registerMouseLeaveHandler, unregisterMouseLeaveHandler} = mouse
-    const {margin, plotDimensions} = usePlotDimensions()
-    const tooltipStyle = useMemo(() => ({...defaultTooltipStyle, ...style}), [style])
-
-    // what's shown, and where (null when nothing is hovered)
-    const [shown, setShown] = useState<{content: C, anchor: TooltipAnchor} | null>(null)
-    const tooltipRef = useRef<HTMLDivElement>(null)
-
-    // the latest capture function, so the registered provider always uses the current one
-    const captureRef = useRef(capture)
-    useEffect(() => {
-        captureRef.current = capture
-    })
-
-    // 1. register the content provider: the plot calls it whenever the mouse is over an element
-    useEffect(
-        () => {
-            if (canvas === null) return
-            registerTooltipContentProvider((seriesName, time, tooltipData, mouseCoords, providerId) => {
-                const content = captureRef.current(seriesName, time, tooltipData, providerId)
-                setShown(content === undefined ? null : {content, anchor: tooltipAnchorFor(mouseCoords, canvas)})
-                return OFF_SCREEN
-            })
-        },
-        [canvas, registerTooltipContentProvider]
-    )
-
-    // 2. hide the tooltip when the mouse leaves the element
-    useEffect(
-        () => {
-            const handlerId = `custom-tooltip-leave-${chartId}`
-            registerMouseLeaveHandler(handlerId, () => setShown(null))
-            return () => unregisterMouseLeaveHandler(handlerId)
-        },
-        [chartId, registerMouseLeaveHandler, unregisterMouseLeaveHandler]
-    )
-
-    // 3. place the tooltip next to the mouse, once it's rendered (and so its size is known)
-    useTooltipPlacement(tooltipRef, shown?.anchor ?? null, plotDimensions, margin, tooltipStyle)
-
-    if (shown === null) return null
-
-    const boxStyle: CSSProperties = {
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        backgroundColor: withAlpha(tooltipStyle.backgroundColor, tooltipStyle.backgroundOpacity),
-        border: `${tooltipStyle.borderWidth}px solid ${withAlpha(tooltipStyle.borderColor, tooltipStyle.borderOpacity)}`,
-        borderRadius: tooltipStyle.borderRadius,
-        padding: `${tooltipStyle.paddingTop}px ${tooltipStyle.paddingRight}px ${tooltipStyle.paddingBottom}px ${tooltipStyle.paddingLeft}px`,
-        fontFamily: tooltipStyle.fontFamily,
-        fontSize: tooltipStyle.fontSize,
-        color: tooltipStyle.fontColor,
-        pointerEvents: 'none',
-        zIndex: 9999,
-    }
-    return createPortal(
-        <div ref={tooltipRef} style={boxStyle}>{children(shown.content, tooltipStyle)}</div>,
-        document.body
-    )
-}
+<TooltipContent<Datum, ScatterTooltipMetadata, {seriesName: string, count: number}>
+    capture={(seriesName, _time, {series}) => ({seriesName, count: series.length})}
+>
+    {({seriesName, count}) => <div>{seriesName}: {count} points</div>}
+</TooltipContent>
 ```
 
-Here's what it does:
+The three type parameters are the series' datum, the plot's metadata, and your content. Here's what `<TooltipContent>` does for you:
 
-- **It registers the content provider** (with `useChart().tooltip.registerTooltipContentProvider`). The provider calls your `capture`, and stores the content, along with where the mouse is, in state. There's one content provider per chart, so registering replaces whatever was there before. The provider calls `capture` through a ref, so it always uses the latest one, however often the component re-renders.
-- **It returns off-screen dimensions.** The `<Tooltip>` can draw a box of its own, sized by what the provider returns. Returning a box far off the screen keeps it hidden, because we draw our own.
-- **It hides on mouse-leave** (with `useChart().mouse.registerMouseLeaveHandler`).
-- **It draws the box in a [React portal](https://react.dev/reference/react-dom/createPortal)** on the page's `body`, and `useTooltipPlacement` puts it next to the mouse. The placement happens after the box has rendered, when its size is known, so a tooltip near the right edge flips to the left of the mouse instead of running off the chart.
-- **It uses the tooltip's style.** The `<Tooltip>` passes its own properties – including its `style` – on to the component inside it. So a tooltip component that takes a `style` property gets the colors and fonts you gave the `<Tooltip>` (and follows the theme) without any more wiring.
+- **It registers the content provider.** The provider calls your `capture`, and keeps the content, along with where the mouse is. There's one content provider per chart, so registering replaces whatever was there before. It always calls your latest `capture`, however often your component re-renders.
+- **It hides on mouse-leave.**
+- **It draws the box in a [React portal](https://react.dev/reference/react-dom/createPortal)** on the page's `body`, and places it next to the mouse. The placement happens after the box has rendered, when its size is known, so a tooltip near the right edge flips to the left of the mouse instead of running off the chart. (For a tooltip that belongs somewhere else, its `topFor` property says where its top goes – the raster tooltip uses it to center itself on the spike's row.)
+- **It uses the tooltip's style.** The box gets the colors, border, and font of the enclosing `<Tooltip>` (so it follows the theme, too). Its `style` property overrides parts of that, and `useTooltipStyle()` hands the style to any component inside.
 
-With that in place, each chart's tooltip is a `capture` function and a bit of JSX. To use one, put it inside the `<Tooltip>`, in place of the library's content:
+So each chart's tooltip is a `capture` function and a bit of JSX. To use one, put it inside the `<Tooltip>`, in place of the library's content:
 
 ```tsx
 <Tooltip visible={visibility.tooltip} style={{fontColor: theme.color, backgroundColor: theme.backgroundColor, borderColor: theme.color}}>
@@ -157,9 +66,7 @@ Our scatter tooltip shows the point (or the two points around the mouse), and th
 
 ```tsx
 import type {ReactElement} from "react";
-import {CustomTooltip} from "./CustomTooltip";
-import type {Datum} from "../charts/series/timeSeries";
-import type {ScatterTooltipMetadata, ScatterTooltipPoints, TooltipStyle} from "../charts/tooltips/tooltipUtils";
+import {TooltipContent, type Datum, type ScatterTooltipMetadata, type ScatterTooltipPoints} from "../charts";
 
 type ScatterContent = {
     seriesName: string
@@ -170,10 +77,9 @@ type ScatterContent = {
 
 const format = (datum: Datum | undefined) => datum === undefined ? '–' : `${datum.x.toFixed(0)} ms, ${datum.y.toFixed(1)}`
 
-export function MyScatterTooltip(props: {style?: Partial<TooltipStyle>}): ReactElement | null {
+export function MyScatterTooltip(): ReactElement {
     return (
-        <CustomTooltip<Datum, ScatterTooltipMetadata, ScatterContent>
-            style={props.style}
+        <TooltipContent<Datum, ScatterTooltipMetadata, ScatterContent>
             capture={(seriesName, _time, {series, metadata}) => {
                 let min = Infinity
                 let max = -Infinity
@@ -194,7 +100,7 @@ export function MyScatterTooltip(props: {style?: Partial<TooltipStyle>}): ReactE
                     <div>range: {range[0].toFixed(1)} to {range[1].toFixed(1)}</div>
                 </>
             )}
-        </CustomTooltip>
+        </TooltipContent>
     )
 }
 ```
@@ -211,9 +117,7 @@ Our raster tooltip shows when the spike happened, and how many spikes the neuron
 
 ```tsx
 import type {ReactElement} from "react";
-import {CustomTooltip} from "./CustomTooltip";
-import type {Datum} from "../charts/series/timeSeries";
-import type {RasterTooltipMetadata, TooltipStyle} from "../charts/tooltips/tooltipUtils";
+import {TooltipContent, type Datum, type RasterTooltipMetadata} from "../charts";
 
 type RasterContent = {
     neuron: string
@@ -222,10 +126,9 @@ type RasterContent = {
     spikesInLastSecond: number
 }
 
-export function MyRasterTooltip(props: {style?: Partial<TooltipStyle>}): ReactElement | null {
+export function MyRasterTooltip(): ReactElement {
     return (
-        <CustomTooltip<Datum, RasterTooltipMetadata, RasterContent>
-            style={props.style}
+        <TooltipContent<Datum, RasterTooltipMetadata, RasterContent>
             capture={(neuron, _time, {series, metadata}) => {
                 const spike = series[0]
                 if (spike === undefined) return undefined
@@ -244,7 +147,7 @@ export function MyRasterTooltip(props: {style?: Partial<TooltipStyle>}): ReactEl
                     <div>{spikesInLastSecond} spikes in the second before</div>
                 </>
             )}
-        </CustomTooltip>
+        </TooltipContent>
     )
 }
 ```
@@ -261,10 +164,7 @@ Our Poincaré tooltip shows which iterate the point is, its values, and how far 
 
 ```tsx
 import type {ReactElement} from "react";
-import {CustomTooltip} from "./CustomTooltip";
-import type {IterateDatum} from "../charts/series/iterateSeries";
-import type {NoTooltipMetadata} from "../charts/hooks/useChart";
-import type {TooltipStyle} from "../charts/tooltips/tooltipUtils";
+import {TooltipContent, type IterateDatum, type NoTooltipMetadata} from "../charts";
 
 type PoincareContent = {
     seriesName: string
@@ -272,10 +172,9 @@ type PoincareContent = {
     point: IterateDatum
 }
 
-export function MyPoincareTooltip(props: {style?: Partial<TooltipStyle>}): ReactElement | null {
+export function MyPoincareTooltip(): ReactElement {
     return (
-        <CustomTooltip<IterateDatum, NoTooltipMetadata, PoincareContent>
-            style={props.style}
+        <TooltipContent<IterateDatum, NoTooltipMetadata, PoincareContent>
             capture={(seriesName, time, {series}) => {
                 // the hovered point is the one at the time the plot handed us
                 const n = series.findIndex(point => point.time === time)
@@ -291,7 +190,7 @@ export function MyPoincareTooltip(props: {style?: Partial<TooltipStyle>}): React
                         by {Math.abs(point.iterateN_1 - point.iterateN).toFixed(4)}</div>
                 </>
             )}
-        </CustomTooltip>
+        </TooltipContent>
     )
 }
 ```
@@ -309,12 +208,7 @@ Our bar tooltip says which element you're over, and shows the current value and 
 
 ```tsx
 import type {ReactElement} from "react";
-import {CustomTooltip} from "./CustomTooltip";
-import type {OrdinalDatum} from "../charts/series/ordinalSeries";
-import type {WindowedOrdinalStats} from "../charts/datasources/ordinalDataSource";
-import type {OrdinalValueStats} from "../charts/observables/ordinals";
-import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "../charts/plots/constants";
-import type {TooltipStyle} from "../charts/tooltips/tooltipUtils";
+import {BAR_CHART_TOOLTIP_PROVIDER_IDS, TooltipContent, type OrdinalDatum, type OrdinalValueStats, type WindowedOrdinalStats} from "../charts";
 
 // what each of the bar's elements is called, by its provider ID
 const ELEMENT_NAMES = new Map<string, string>([
@@ -333,10 +227,9 @@ type BarContent = {
     windowed: OrdinalValueStats | undefined
 }
 
-export function MyBarTooltip(props: {style?: Partial<TooltipStyle>}): ReactElement | null {
+export function MyBarTooltip(): ReactElement {
     return (
-        <CustomTooltip<OrdinalDatum, WindowedOrdinalStats, BarContent>
-            style={props.style}
+        <TooltipContent<OrdinalDatum, WindowedOrdinalStats, BarContent>
             capture={(category, _value, {series, metadata}, providerId) => ({
                 category,
                 element: ELEMENT_NAMES.get(providerId ?? '') ?? 'bar',
@@ -353,7 +246,7 @@ export function MyBarTooltip(props: {style?: Partial<TooltipStyle>}): ReactEleme
                     {windowed && <div>window: {windowed.min.value.toFixed(1)} to {windowed.max.value.toFixed(1)}, mean {windowed.mean.toFixed(1)}</div>}
                 </>
             )}
-        </CustomTooltip>
+        </TooltipContent>
     )
 }
 ```
@@ -372,20 +265,16 @@ Our outlier tooltip tells you which band you're in, and, for an outlier, where i
 
 ```tsx
 import type {ReactElement} from "react";
-import {CustomTooltip} from "./CustomTooltip";
-import type {OutlierDatum} from "../charts/series/outlierSeries";
-import type {OutlierBandTooltipMetadata} from "../charts/plots/OutlierPlot";
-import type {TooltipStyle} from "../charts/tooltips/tooltipUtils";
+import {TooltipContent, type OutlierBandTooltipMetadata, type OutlierDatum} from "../charts";
 
 type OutlierContent = {
     seriesName: string
     metadata: OutlierBandTooltipMetadata
 }
 
-export function MyOutlierTooltip(props: {style?: Partial<TooltipStyle>}): ReactElement | null {
+export function MyOutlierTooltip(): ReactElement {
     return (
-        <CustomTooltip<OutlierDatum<readonly number[]>, OutlierBandTooltipMetadata, OutlierContent>
-            style={props.style}
+        <TooltipContent<OutlierDatum<readonly number[]>, OutlierBandTooltipMetadata, OutlierContent>
             capture={(seriesName, _time, {metadata}) => ({seriesName, metadata})}
         >
             {({seriesName, metadata: {datum, upperMeasure, pointsInBand}}) => (
@@ -397,12 +286,12 @@ export function MyOutlierTooltip(props: {style?: Partial<TooltipStyle>}): ReactE
                     <div>{pointsInBand} points in this band</div>
                 </>
             )}
-        </CustomTooltip>
+        </TooltipContent>
     )
 }
 ```
 
-The outlier chart also has a shortcut, which the tooltips page mentioned. `<OutlierPlotHtmlTooltipContent>` does the plumbing for you, and renders whatever you put inside it. Your component gets the content from the `useOutlierTooltip()` hook (see `MyOutlierHtmlTooltipContent` in `src/app/examples`).
+The outlier chart also has a shortcut, which the tooltips page mentioned: put your own component inside the library's `<OutlierPlotTooltipContent>`, and it renders that instead of its own content. Your component gets what the tooltip shows, and the formatters, from the `useOutlierTooltip()` hook (see `MyOutlierTooltipContent` in `src/app/examples`).
 
 #### things to know
 
@@ -410,5 +299,4 @@ The outlier chart also has a shortcut, which the tooltips page mentioned. `<Outl
 - **The capture function runs on every mouse move.** Keep it quick. The series can hold thousands of points, so a loop over them is fine, but anything slower adds up.
 - **Copy what you need out of the series.** The series is the data source's live data, which keeps changing as data arrives (and gets dropped). That's why the tooltips above pull out the values they show, rather than keeping the series around.
 - **One tooltip per chart.** A chart has one content provider at a time, so put one tooltip component inside the `<Tooltip>`. When you need different content for different elements, switch on `providerId` (or on the metadata), as the bar and outlier tooltips do.
-- **Don't give your tooltip component a `children` property.** The `<Tooltip>` passes its own properties to the component inside it, and that includes `children`.
 - **The highlighting is the plot's job.** The hovered line, spike, or point is highlighted by the plot, whatever the tooltip shows.

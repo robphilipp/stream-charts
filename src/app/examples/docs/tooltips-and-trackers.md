@@ -10,8 +10,8 @@ Hover over a series (or a point, a spike, a bar, or a band) with the tooltip on,
 
 In the library, a tooltip comes in two parts:
 
-1. `<Tooltip>` – the box itself. It handles showing, hiding, and positioning the tooltip, and its look (colors, border, opacity) is set through its `style` property.
-2. The *content* – what goes in the box. The library has content for each chart type: `<ScatterPlotTooltipContent>`, `<RasterPlotTooltipContent>`, `<PoincarePlotTooltipContent>`, `<BarPlotTooltipContent>`, and for the outlier chart, `<OutlierPlotTooltipContent>` (drawn in SVG) and `<OutlierPlotHtmlTooltipContent>` (plain HTML).
+1. `<Tooltip>` – the tooltip itself. It decides whether the tooltip shows, and its look (colors, border, opacity, and font) is set through its `style` property.
+2. The *content* – what goes in the box. The library has content for each chart type: `<ScatterPlotTooltipContent>`, `<RasterPlotTooltipContent>`, `<PoincarePlotTooltipContent>`, `<BarPlotTooltipContent>`, and `<OutlierPlotTooltipContent>`. The content draws the box, next to the mouse, in the tooltip's style.
 
 You put the content inside the tooltip, and the tooltip inside the chart:
 
@@ -30,7 +30,7 @@ You put the content inside the tooltip, and the tooltip inside the chart:
 
 Most of the content components take *formatters* – functions that turn the values into text – so you can control the units, the number of decimal places, and the wording without writing a whole tooltip. Each example sets its own (have a look for `Formatter` in the example's code).
 
-And when the formatters aren't enough, you can write the content yourself. The HTML tooltip is the easiest place to start, since it's just React. The outlier example comes with a custom tooltip, `MyOutlierHtmlTooltipContent` (in `src/app/examples`), that you can switch on in `StreamingOutlierChart.tsx`: uncomment the `<MyOutlierHtmlTooltipContent/>` line (inside the `<OutlierPlotHtmlTooltipContent>`), and import it. It gets the tooltip's data from the library's `useOutlierTooltip()` hook, and then lays it out however it likes. And for the whole story – a tooltip of your own for each chart type – see the tutorial at the end of these pages.
+And when the formatters aren't enough, you can write the content yourself. It's just React: the library's own content is built on a component called `<TooltipContent>`, and yours can be too – the tutorial at the end of these pages writes one for each chart type. The outlier chart has a shortcut, as well: put your own component inside the `<OutlierPlotTooltipContent>`, and it shows yours instead of its own. The outlier example comes with one, `MyOutlierTooltipContent` (in `src/app/examples`), that you can switch on in `StreamingOutlierChart.tsx`: uncomment the `<MyOutlierTooltipContent/>` line, and import it. It gets the tooltip's data from the library's `useOutlierTooltip()` hook, and then lays it out however it likes.
 
 #### trackers
 

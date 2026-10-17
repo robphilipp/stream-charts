@@ -1,5 +1,4 @@
 import type {Series} from "../plots/plot";
-import type {TooltipDimensions} from "../tooltips/tooltipUtils";
 import {createContext, useContext} from "react";
 
 /**
@@ -13,9 +12,8 @@ export interface TooltipData<D, M> {
 }
 
 /**
- * A function that provides (renders) the tooltip content for the element under the mouse, and
- * returns the content's dimensions
- * @return The dimensions of the tooltip content
+ * A function that provides (shows) the tooltip content for the element under the mouse (see
+ * {@link TooltipContent}, which registers one)
  * @param seriesName The name of the series for which the tooltip content is being provided
  * @param time The time (x-value) for which the tooltip content is being provided
  * @param tooltipData The tooltip data
@@ -25,7 +23,7 @@ export interface TooltipData<D, M> {
  * @template M The type of the metadata object for the series
  */
 export type TooltipContentProvider<D, M> =
-    (seriesName: string, time: number, tooltipData: TooltipData<D, M>, mouseCoords: [x: number, y: number], providerId?: string) => TooltipDimensions
+    (seriesName: string, time: number, tooltipData: TooltipData<D, M>, mouseCoords: [x: number, y: number], providerId?: string) => void
 
 /**
  * The functions and values exposed through the {@link useTooltip} react hook

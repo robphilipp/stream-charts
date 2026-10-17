@@ -77,33 +77,6 @@ export const defaultTooltipStyle: TooltipStyle = {
 };
 
 /**
- * Where a tooltip's box goes (the x and y of its top left corner, relative to the chart), and the
- * size of its content (without the padding)
- */
-export interface TooltipDimensions {
-    x: number,
-    y: number,
-    contentWidth: number,
-    contentHeight: number
-}
-
-/**
- * Removes the tooltip when the mouse has moved away from the data point. Tooltips are now always
- * plain HTML overlay elements (see `Tooltip.tsx`) rather than SVG elements appended to the chart's
- * SVG root, so this no longer needs to special-case SVG vs. HTML removal the way the old version did.
- *
- * `scope` is required (no default falling back to `document`) so a caller can't accidentally
- * remove every `.tooltip` element on the page -- pass the specific chart instance's own overlay
- * container (`canvas.parentElement`, see `Tooltip.tsx`) so this only ever touches that chart's own
- * tooltip, never another chart instance's, or an unrelated host-app element that happens to also
- * use the `tooltip` class.
- * @param scope The DOM node to search within (e.g. this chart instance's overlay container)
- */
-export function removeTooltip(scope: ParentNode): void {
-    scope.querySelectorAll('.tooltip').forEach(element => element.remove())
-}
-
-/**
  * Calculates the x-coordinate of the left side of the tooltip. The tooltip goes to the right of the
  * mouse, unless it would run past the right edge of the plot, in which case it goes to the left of
  * the mouse (and never past the left edge of the chart).

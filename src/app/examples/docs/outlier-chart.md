@@ -16,7 +16,7 @@ Hover over a band (with the tooltip on) and the tooltip describes the band – f
 
 #### controls just for this chart
 
-- **html/svg toggle** – Next to the tooltip checkbox. The library has two kinds of tooltip content for this chart: one drawn in SVG, and one in plain HTML. Toggle between them to see both. The HTML version is the easier one to style – it's just React. (There's even a commented-out custom tooltip, `MyOutlierHtmlTooltipContent`, in the example's code, if you want to see how to roll your own.) Tooltips get their own page later on.
+- **tooltip** – Shows the tooltip when you hover over a band or an outlier. Its formatters lay out the outlier, the band, and the probabilities with a little HTML. (There's also a commented-out custom tooltip, `MyOutlierTooltipContent`, in the example's code, if you want to see how to roll your own.) Tooltips get their own page later on.
 - **markers** – Draws a marker on every data point, not just the outliers. Like the scatter chart's markers, they only show while the chart is paused (the outlier markers show all the time). Disabled while running.
 - **interpolation drop-down** – How the line gets from one point to the next, just like the scatter chart's.
 - **auto-scale y-axis** – Lets the y-axis grow to fit the data, just like the scatter chart's: when it's on, the axis starts out narrower (80 to 160), and grows to fit the index *and its bands* on screen – but never past 0 to 250. Like the scatter chart's, the axis only ever grows, keeps its growth when you switch tabs, and starts over when the data is replaced (**Reset**). *Wired to:* the y-axis' `autoScale`, `autoScaleMin`, `autoScaleMax`, `autoScaledDomain`, and `onAutoScale` properties.
@@ -29,8 +29,8 @@ The example (yours to copy, change, or ignore):
 - `src/app/examples/StreamingOutlierChart.tsx` – the control bar, and the chart itself
 - `src/app/examples/appstate/outlierChartStore.ts` – the example's state, its data source, and the model's bounds
 - `src/app/examples/dataproviders/randomOutlierData.ts` – the noisy periodic data generator
-- `src/app/examples/MyOutlierHtmlTooltipContent.tsx` – an example of a custom tooltip
+- `src/app/examples/MyOutlierTooltipContent.tsx` – an example of a custom tooltip
 
 The library (what you'd use in your own application):
-- `<Chart>`, `<ContinuousAxis>`, `<OutlierPlot>`, `<Tooltip>` with `<OutlierPlotTooltipContent>` (SVG) or `<OutlierPlotHtmlTooltipContent>` (HTML)
+- `<Chart>`, `<ContinuousAxis>`, `<OutlierPlot>`, `<Tooltip>` with `<OutlierPlotTooltipContent>`
 - `OutlierDataSource` – holds the series, along with its bounds

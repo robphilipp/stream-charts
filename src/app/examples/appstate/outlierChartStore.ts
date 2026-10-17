@@ -84,7 +84,6 @@ type OutlierChartState = {
     selectedInterpolationName: string
     showMarkers: boolean
     showTooltip: boolean
-    tooltipType: 'html' | 'svg'
     highlightAxes: boolean
     // whether the y-axis auto-scales (grows to fit the data)
     autoScaleYAxis: boolean
@@ -104,7 +103,6 @@ const initialState: OutlierChartState = {
     selectedInterpolationName: 'curveLinear',
     showMarkers: true,
     showTooltip: true,
-    tooltipType: 'html',
     highlightAxes: false,
     autoScaleYAxis: false,
     yAutoScaledDomain: undefined,
@@ -120,7 +118,6 @@ type OutlierChartActions = {
     setSelectedInterpolationName: (name: string) => void
     setShowMarkers: (show: boolean) => void
     setShowTooltip: (show: boolean) => void
-    setTooltipType: (tooltipType: 'html' | 'svg') => void
     setHighlightAxes: (highlight: boolean) => void
     setAutoScaleYAxis: (autoScaleYAxis: boolean) => void
     setYAutoScaledDomain: (domain: Range) => void
@@ -169,7 +166,6 @@ export const useOutlierChartStore: UseBoundStore<StoreApi<OutlierChartStore>> = 
         setSelectedInterpolationName: (selectedInterpolationName: string) => set({selectedInterpolationName}),
         setShowMarkers: (showMarkers: boolean) => set({showMarkers}),
         setShowTooltip: (showTooltip: boolean) => set({showTooltip}),
-        setTooltipType: (tooltipType: 'html' | 'svg') => set({tooltipType}),
         setHighlightAxes: (highlightAxes: boolean) => set({highlightAxes}),
         // (turning auto-scaling on, or off, starts the axis afresh)
         setAutoScaleYAxis: (autoScaleYAxis: boolean) => set({autoScaleYAxis, yAutoScaledDomain: undefined}),

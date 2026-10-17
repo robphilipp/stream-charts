@@ -20,7 +20,6 @@ import {AxisLocation, defaultLineStyle} from '../charts/axes/axes';
 import {ContinuousAxis} from "../charts/axes/ContinuousAxis";
 import {Tracker} from "../charts/trackers/Tracker";
 import {Tooltip} from "../charts/tooltips/Tooltip";
-import {defaultTooltipStyle} from "../charts/tooltips/tooltipUtils";
 import {PoincarePlotTooltipContent} from "../charts/tooltips/PoincarePlotTooltipContent";
 import {formatNumber, noop} from '../charts/utils';
 import {PoincarePlot} from "../charts/plots/PoincarePlot";
@@ -596,11 +595,6 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
                             xLabel="t (ms)"
                             yLabel="f(x)"
                             yValueFormatter={value => formatNumber(value, " ,.4f")}
-                            style={{
-                                ...defaultTooltipStyle,
-                                fontColor: theme.color,
-                                fontWeight: 650
-                            }}
                         />
                     </Tooltip>
                     <PoincarePlot

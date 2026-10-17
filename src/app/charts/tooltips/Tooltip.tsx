@@ -1,61 +1,38 @@
-import {cloneElement, type JSX, useEffect, useMemo} from "react";
-import {defaultTooltipStyle, removeTooltip, type TooltipStyle} from "./tooltipUtils";
+import {type JSX, useEffect, useMemo} from "react";
+import {defaultTooltipStyle, type TooltipStyle} from "./tooltipUtils";
 import {useChart} from "../hooks/useChart";
-import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import type {BaseAxis, SeriesStyle} from "../axes/axes";
 import type {TooltipData} from "../hooks/useTooltip";
 import {BaseAxisRange} from "../axes/BaseAxisRange";
-import {withAlpha} from "../styling/canvasStyle";
+import {TooltipStyleContext} from "./useTooltipStyle";
 
 /**
  * The properties of the {@link Tooltip}
  */
 export interface Props {
-    /** whether the tooltip is shown when the mouse is over a series */
+    /** whether the tooltip is shown when the mouse is over one of the plot's elements */
     visible: boolean
-    /** the style of the tooltip's box */
+    /** the style of the tooltip (its box and text); its content can override parts of it */
     style?: Partial<TooltipStyle>
-    /** the tooltip content (e.g. a `<ScatterPlotTooltipContent>`) */
+    /** the tooltip's content (e.g. a `<ScatterPlotTooltipContent>`, or your own, built on `<TooltipContent>`) */
     children: JSX.Element
 }
 
 /**
- * Tooltip component triggered by mouse-over-series events. When mounted, the tooltip component
- * registers a mouse-over handler with the {@link useMouse} hook using the
- * {@link UseMouseValues.registerMouseOverHandler} function. The handler renders the tooltip
- * by adding it as an absolutely-positioned HTML overlay on top of the chart's canvas. However,
- * to remain general, this {@link Tooltip} also uses the {@link useTooltip}'s
- * {@link UseTooltipValues.tooltipContentProvider} to render the actual content of the tooltip.
- * The content provider is given the series' name on which the mouse-over event occurred, the plot
- * time associated with mouse-over event, the tooltip data (the series, and the plot's metadata
- * about the element under the mouse), the mouse coordinates, and the ID of the content provider
- * for the kind of element under the mouse (when the plot has several). The plot (for example {@link ScatterPlot}) is responsible for rendering the
- * tooltip, and it registers this tooltip-content provider with the {@link useTooltip} hook.
+ * Shows a tooltip when the mouse is over one of the plot's elements (a series, a point, a spike, a
+ * bar, a band, and so on), while `visible` is `true`. What the tooltip shows is up to its content
+ * (its child -- for example, a `<ScatterPlotTooltipContent>`), which is built on
+ * {@link TooltipContent}.
  *
- * The {@link useChart} hook allows the plots and this tooltip to register methods needed by their siblings.
+ * The plot hit-tests the mouse against what it drew, and calls the mouse-over handler this
+ * component registers (see {@link useMouse}), which hands what the plot knows about the element
+ * under the mouse to the content's tooltip-content provider (see {@link useTooltip}). The content
+ * shows itself, and hides itself again when the mouse leaves the element.
  *
- * ## on mount
- * 1. The plot (for example {@link ScatterPlot}) hit-tests the mouse position against its drawn
- *    geometry on `mousemove` (canvas has no per-shape events), and when the mouse is over a
- *    series, calls the mouse-over event handler registered by the {@link Tooltip} via the
- *    {@link useMouse} hook.
- * 2. The plot (for example {@link ScatterPlot}) registers the tooltip-content provider with the {@link useTooltip}
- *    hook using the {@link UseTooltipValues.registerTooltipContentProvider} function.
- * 3. {@link Tooltip} registers the handler for mouse-over events. The handler accepts the series
- *    name, plot time, and time-series associated with the mouse-over event, and returns the tooltip
- *    dimensions. In order to create/render the tooltip, it uses the {@link UseTooltipValues.tooltipContentProvider}
- *    function that was registered via the {@link useTooltip} hook.
- *
- * ## on mouse-over event
- * When the plot's (for example {@link ScatterPlot}) `mousemove` hit-test finds a hovered series, the plot calls
- * this {@link Tooltip}'s mouse-over handler, which creates the tooltip's HTML background element, and calls the
- * {@link UseTooltipValues.tooltipContentProvider} registered by the plot to render the tooltip content, and get
- * the tooltip size. Content-provider components append their own HTML content as siblings of the background
- * element, within the same overlay wrapper (`canvas.parentElement`, set up by {@link Chart}), positioned using
- * the same coordinates.
- *
- * @param props The properties of the tooltip (i.e. visibility and style)
- * @return The tooltip content (the child), cloned with the tooltip's properties
+ * The content gets this tooltip's style (its `style` over the default tooltip style) through
+ * {@link useTooltipStyle}, and can override parts of it.
+ * @param props Whether the tooltip is shown, its style, and its content
+ * @return The content, while the tooltip is shown
  * @template D The type of the series' datum
  * @template S The type of the series style
  * @template TM The type of the tooltip metadata
@@ -63,124 +40,43 @@ export interface Props {
  * @template A The type of the axis
  */
 export function Tooltip<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A extends BaseAxis>(props: Props): JSX.Element {
-    const {
-        chartId,
-        canvas,
-        tooltip,
-        mouse
-    } = useChart<D, S, TM, AR, A>()
+    const {visible, style, children} = props
 
-    const {
-        tooltipContentProvider,
-        setVisibilityState,
-    } = tooltip
+    const {chartId, tooltip, mouse} = useChart<D, S, TM, AR, A>()
+    const {tooltipContentProvider, setVisibilityState} = tooltip
+    const {registerMouseOverHandler, unregisterMouseOverHandler} = mouse
 
-    const {margin, plotDimensions} = usePlotDimensions()
-
-    const {
-        visible,
-        style,
-        children
-    } = props
-
-    const {
-        registerMouseOverHandler,
-        unregisterMouseOverHandler,
-        registerMouseLeaveHandler,
-        unregisterMouseLeaveHandler
-    } = mouse
-
-    const tooltipStyle = useMemo(() => ({...defaultTooltipStyle, ...style}), [style])
+    const tooltipStyle = useMemo<TooltipStyle>(() => ({...defaultTooltipStyle, ...style}), [style])
 
     useEffect(
         () => {
             // let the tooltip context know whether the tooltip is visible
             setVisibilityState(visible)
+            if (!visible) return
 
+            // hands the element under the mouse to the content's provider (looked up on each call,
+            // so it's always the one the content registered most recently)
             const handlerId = `tooltip-${chartId}`
-            // the overlay div Chart.tsx wraps the <canvas> in -- the tooltip background and its
-            // content are appended here as absolutely-positioned HTML, replacing the old SVG
-            // <rect>/<text> elements appended directly to the <svg> root
-            const overlayContainer = canvas?.parentElement ?? null
-
-            if (visible && overlayContainer) {
-                const contentProvider = tooltipContentProvider()
-                if (contentProvider) {
-                    // register this tooltip's mouse-over event handler with the useCharts hook
-                    // so that the plots can call it when mouse-enter events are triggered (for
-                    // example, a mouse-over a time-series in the plot).
-                    registerMouseOverHandler(
-                        handlerId,
-                        (
-                            (
-                                seriesName: string,
-                                time: number,
-                                tooltipData: TooltipData<D, TM>,
-                                mouseCoords: [x: number, y: number],
-                                providerId?: string
-                            ) => {
-                                // this handler fires on every mousemove over a hovered series (not
-                                // just once on entry), so the tooltip keeps tracking the mouse as
-                                // it moves -- remove the previous background element first so
-                                // repeated calls update a single element instead of stacking a new
-                                // one on the page every time.
-                                removeTooltip(overlayContainer)
-
-                                // create the rounded-rectangle background for the tooltip. This
-                                // replaces the old SVG <rect>; border-radius/background/border are
-                                // now plain CSS instead of SVG attributes. Background and border
-                                // opacity are baked into their colors via `withAlpha` since CSS
-                                // (unlike SVG's independent fill-opacity/stroke-opacity) has only
-                                // one `opacity` for a whole element, which would also fade the
-                                // content appended inside it.
-                                const rect = document.createElement('div')
-                                rect.id = `r${time}-${seriesName}-${chartId}`
-                                rect.className = 'tooltip'
-                                rect.style.position = 'absolute'
-                                rect.style.pointerEvents = 'none'
-                                rect.style.boxSizing = 'border-box'
-                                rect.style.borderRadius = `${tooltipStyle.borderRadius}px`
-                                rect.style.backgroundColor = withAlpha(tooltipStyle.backgroundColor, tooltipStyle.backgroundOpacity)
-                                rect.style.border = `${tooltipStyle.borderWidth}px solid ${withAlpha(tooltipStyle.borderColor, tooltipStyle.borderOpacity)}`
-                                overlayContainer.appendChild(rect)
-
-                                // call the callback to add the content
-                                const {
-                                    x,
-                                    y,
-                                    contentWidth,
-                                    contentHeight
-                                } = contentProvider(seriesName, time, tooltipData, mouseCoords, providerId)
-
-                                // set the position, width, and height of the tooltip rect based on the content's width and height and the padding
-                                rect.style.left = `${x}px`
-                                rect.style.top = `${y}px`
-                                rect.style.width = `${contentWidth + tooltipStyle.paddingLeft + tooltipStyle.paddingRight}px`
-                                rect.style.height = `${contentHeight + tooltipStyle.paddingTop + tooltipStyle.paddingBottom}px`
-                            }
-                        )
-                    )
-
-                    registerMouseLeaveHandler(handlerId, () => removeTooltip(overlayContainer))
-                }
-            }
-            return () => {
-                unregisterMouseOverHandler(handlerId)
-                unregisterMouseLeaveHandler(handlerId)
-                // overlayContainer may be null here if canvas became unavailable before this
-                // cleanup ran (e.g. during unmount) -- fall back to document so a tooltip this
-                // instance created still gets removed even in that edge case (matches H10's
-                // "always clean up on unmount" guarantee); every other call site above always has
-                // a real, non-null overlayContainer, so this is the only place this fallback fires
-                removeTooltip(overlayContainer ?? document)
-            }
+            registerMouseOverHandler(
+                handlerId,
+                (
+                    seriesName: string,
+                    time: number,
+                    tooltipData: TooltipData<D, TM>,
+                    mouseCoords: [x: number, y: number],
+                    providerId?: string
+                ) => tooltipContentProvider()?.(seriesName, time, tooltipData, mouseCoords, providerId)
+            )
+            return () => unregisterMouseOverHandler(handlerId)
         },
-        [
-            chartId, canvas, margin, plotDimensions, registerMouseOverHandler,
-            tooltipContentProvider, tooltipStyle, unregisterMouseOverHandler, visible,
-            registerMouseLeaveHandler, unregisterMouseLeaveHandler, setVisibilityState
-        ]
+        [chartId, visible, tooltipContentProvider, setVisibilityState, registerMouseOverHandler, unregisterMouseOverHandler]
     )
 
-    return <>{cloneElement(children, props)}</>
+    // (the content is only mounted while the tooltip is visible, so hiding the tooltip also hides
+    // any content that's showing)
+    return (
+        <TooltipStyleContext.Provider value={tooltipStyle}>
+            {visible ? children : null}
+        </TooltipStyleContext.Provider>
+    )
 }
