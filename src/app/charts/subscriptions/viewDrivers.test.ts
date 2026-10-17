@@ -3,15 +3,16 @@ import {Subject} from "rxjs";
 import {
     iteratesViewDriverFor,
     ordinalViewDriverFor,
-    outlierViewDriverFor,
-    timeSeriesViewDriverFor,
-    timeSeriesWithCadenceViewDriverFor,
+    outlierAxisTimes,
+    timeAxisViewDriverFor,
+    timeSeriesAxisTimes,
     TimeWindowBehavior,
+    type ViewDriverSource,
 } from "./viewDrivers";
 import {AxesState} from "../axes/AxesState";
 import {AxisLocation, AxisType, type ContinuousNumericAxis} from "../axes/axes";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
-import {assignAxes} from "../plots/plot";
+import {type AxesAssignment, assignAxes} from "../plots/plot";
 import {datumOf, type Datum, type TimeSeries} from "../series/timeSeries";
 import {seriesFrom} from "../series/baseSeries";
 import type {TimeSeriesChartData} from "../series/timeSeriesChartData";
@@ -113,6 +114,60 @@ function uninstallGlobalStubs(): void {
     delete g.cancelAnimationFrame
 }
 
+/*
+    The time-axis driver (see `timeAxisViewDriverFor`) for time-series and outlier data, with and
+    without cadence
+ */
+type RangesHandler = (ranges: Map<string, ContinuousAxisRange>) => void
+type CurrentTimeHandler = (axisId: string, end: number) => void
+
+function timeSeriesDriver(
+    source: ViewDriverSource<TimeSeriesChartData>,
+    windowingTime: number,
+    axisAssignments: Map<string, AxesAssignment>,
+    xAxesState: AxesState<ContinuousNumericAxis>,
+    updateTimingAndPlot: RangesHandler,
+    setCurrentTime: CurrentTimeHandler,
+    timeWindowBehavior?: TimeWindowBehavior,
+    initialTimes?: Map<string, number>,
+    dataUpdatePeriod?: number,
+) {
+    return timeAxisViewDriverFor(
+        source, xAxesState, timeSeriesAxisTimes(axisAssignments, xAxesState), updateTimingAndPlot, setCurrentTime,
+        {windowingTime, timeWindowBehavior, initialTimes, dataUpdatePeriod}
+    )
+}
+
+function timeSeriesCadenceDriver(
+    source: ViewDriverSource<TimeSeriesChartData>,
+    windowingTime: number,
+    axisAssignments: Map<string, AxesAssignment>,
+    xAxesState: AxesState<ContinuousNumericAxis>,
+    updateTimingAndPlot: RangesHandler,
+    setCurrentTime: CurrentTimeHandler,
+    cadencePeriod: number,
+) {
+    return timeAxisViewDriverFor(
+        source, xAxesState, timeSeriesAxisTimes(axisAssignments, xAxesState), updateTimingAndPlot, setCurrentTime,
+        {windowingTime, cadencePeriod}
+    )
+}
+
+function outlierDriver(
+    source: ViewDriverSource<OutlierChartData<readonly [number]>>,
+    windowingTime: number,
+    axisAssignments: Map<string, AxesAssignment>,
+    xAxesState: AxesState<ContinuousNumericAxis>,
+    updateTimingAndPlot: RangesHandler,
+    setCurrentTime: CurrentTimeHandler,
+    cadencePeriod?: number,
+) {
+    return timeAxisViewDriverFor(
+        source, xAxesState, outlierAxisTimes<readonly [number]>(axisAssignments, xAxesState), updateTimingAndPlot, setCurrentTime,
+        {windowingTime, cadencePeriod}
+    )
+}
+
 let liveSubscriptions: Array<{unsubscribe: () => void}> = []
 afterEach(() => {
     liveSubscriptions.forEach(subscription => subscription.unsubscribe())
@@ -126,14 +181,14 @@ const track = <T extends {unsubscribe: () => void}>(subscription: T): T => {
     return subscription
 }
 
-describe('timeSeriesViewDriverFor', () => {
+describe('timeAxisViewDriverFor, for time series', () => {
     beforeEach(() => jest.useFakeTimers())
 
     it('advances the (SCROLL) window to cover new data and reports the current time', () => {
         const source = fakeSource<TimeSeriesChartData>()
         const updateTimingAndPlot = jest.fn()
         const setCurrentTime = jest.fn()
-        track(timeSeriesViewDriverFor(source, 100, new Map(), axesStateWith('x-axis-1'), updateTimingAndPlot, setCurrentTime))
+        track(timeSeriesDriver(source, 100, new Map(), axesStateWith('x-axis-1'), updateTimingAndPlot, setCurrentTime))
 
         source.chartDataUpdatesObservable.next(chartDataFor(new Map([['series-a', [datumOf(1500, 42)]]]), 1500))
         jest.advanceTimersByTime(100)
@@ -146,7 +201,7 @@ describe('timeSeriesViewDriverFor', () => {
         const source = fakeSource<TimeSeriesChartData>()
         const updateTimingAndPlot = jest.fn()
         const setCurrentTime = jest.fn()
-        track(timeSeriesViewDriverFor(source, 100, new Map(), axesStateWith('x-axis-1'), updateTimingAndPlot, setCurrentTime))
+        track(timeSeriesDriver(source, 100, new Map(), axesStateWith('x-axis-1'), updateTimingAndPlot, setCurrentTime))
 
         source.chartDataUpdatesObservable.next(chartDataFor(new Map([['series-a', [datumOf(400, 42)]]]), 400))
         jest.advanceTimersByTime(100)
@@ -159,7 +214,7 @@ describe('timeSeriesViewDriverFor', () => {
     it('SQUEEZE mode pins the window start at initialStart and widens instead of sliding', () => {
         const source = fakeSource<TimeSeriesChartData>()
         const updateTimingAndPlot = jest.fn()
-        track(timeSeriesViewDriverFor(
+        track(timeSeriesDriver(
             source, 100, new Map(), axesStateWith('x-axis-1'), updateTimingAndPlot, jest.fn(),
             TimeWindowBehavior.SQUEEZE, new Map([['x-axis-1', 0]]),
         ))
@@ -178,7 +233,7 @@ describe('timeSeriesViewDriverFor', () => {
         ]))
         const axisAssignments = new Map([['series-b', assignAxes('x-axis-2', 'y-axis-1')]])
         const updateTimingAndPlot = jest.fn()
-        track(timeSeriesViewDriverFor(source, 100, axisAssignments, xAxesState, updateTimingAndPlot, jest.fn()))
+        track(timeSeriesDriver(source, 100, axisAssignments, xAxesState, updateTimingAndPlot, jest.fn()))
 
         source.chartDataUpdatesObservable.next(chartDataFor(new Map([['series-a', [datumOf(1500, 1)]], ['series-b', [datumOf(1800, 2)]]]), 1800))
         jest.advanceTimersByTime(100)
@@ -191,7 +246,7 @@ describe('timeSeriesViewDriverFor', () => {
         const source = fakeSource<TimeSeriesChartData>()
         const updateTimingAndPlot = jest.fn()
         // windowingTime 100 / dataUpdatePeriod 50 => flush every 2 updates, regardless of time
-        track(timeSeriesViewDriverFor(
+        track(timeSeriesDriver(
             source, 100, new Map(), axesStateWith('x-axis-1'), updateTimingAndPlot, jest.fn(),
             TimeWindowBehavior.SCROLL, new Map(), 50,
         ))
@@ -209,7 +264,7 @@ describe('timeSeriesViewDriverFor', () => {
             generator: () => generator,
         })
         dataSource.start()
-        const driver = timeSeriesViewDriverFor(dataSource, 100, new Map(), axesStateWith('x-axis-1'), jest.fn(), jest.fn())
+        const driver = timeSeriesDriver(dataSource, 100, new Map(), axesStateWith('x-axis-1'), jest.fn(), jest.fn())
 
         driver.unsubscribe()
         generator.next(chartDataFor(new Map([['series-a', [datumOf(10, 1)]]]), 10))
@@ -220,7 +275,7 @@ describe('timeSeriesViewDriverFor', () => {
     })
 })
 
-describe('timeSeriesWithCadenceViewDriverFor', () => {
+describe('timeAxisViewDriverFor, for time series, with cadence', () => {
     beforeEach(() => {
         jest.useFakeTimers()
         installRafPolyfill()
@@ -230,7 +285,7 @@ describe('timeSeriesWithCadenceViewDriverFor', () => {
         updateTimingAndPlot?: jest.Mock,
         setCurrentTime?: jest.Mock,
     } = {}) {
-        return track(timeSeriesWithCadenceViewDriverFor(
+        return track(timeSeriesCadenceDriver(
             source, 100, new Map(), axesStateWith('x-axis-1'),
             options.updateTimingAndPlot ?? jest.fn(), options.setCurrentTime ?? jest.fn(), 50,
         ))
@@ -285,6 +340,19 @@ describe('timeSeriesWithCadenceViewDriverFor', () => {
         expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBeGreaterThan(50_000)
     })
 
+    it('treats real data that carries a current time as data, not as a cadence tick', () => {
+        const source = fakeSource<TimeSeriesChartData>()
+        const updateTimingAndPlot = jest.fn()
+        drive(source, {updateTimingAndPlot})
+
+        source.chartDataUpdatesObservable.next({
+            ...chartDataFor(new Map([['series-a', [datumOf(20_000, 1)]]]), 20_000),
+            currentTime: 0,
+        })
+        jest.advanceTimersByTime(100)
+        expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBeGreaterThanOrEqual(20_000)
+    })
+
     it('resyncs the axis to the data source\'s latest time when the page becomes visible again', () => {
         const {getVisibilityChangeListener, setVisible} = installDocumentStub()
         const source = fakeSource<TimeSeriesChartData>()
@@ -331,13 +399,13 @@ describe('timeSeriesWithCadenceViewDriverFor', () => {
     })
 })
 
-describe('outlierViewDriverFor', () => {
+describe('timeAxisViewDriverFor, for outliers', () => {
     beforeEach(() => jest.useFakeTimers())
 
     it('advances the window to cover the newest datum in the chunk', () => {
         const source = fakeSource<OutlierChartData<readonly [number]>>()
         const updateTimingAndPlot = jest.fn()
-        track(outlierViewDriverFor(source, 100, new Map(), axesStateWith('x-axis-1'), updateTimingAndPlot, jest.fn()))
+        track(outlierDriver(source, 100, new Map(), axesStateWith('x-axis-1'), updateTimingAndPlot, jest.fn()))
 
         const datum = (x: number): OutlierDatum<readonly [number]> => ({datum: {x, y: 1}, bounds: [{lower: 0, upper: 1}]})
         source.chartDataUpdatesObservable.next({seriesNames: new Set(['a']), newPoints: new Map([['a', [datum(1200), datum(1500)]]])})
@@ -349,13 +417,43 @@ describe('outlierViewDriverFor', () => {
     it('reports the current time even before the data reaches the end of the window', () => {
         const source = fakeSource<OutlierChartData<readonly [number]>>()
         const setCurrentTime = jest.fn()
-        track(outlierViewDriverFor(source, 100, new Map(), axesStateWith('x-axis-1'), jest.fn(), setCurrentTime))
+        track(outlierDriver(source, 100, new Map(), axesStateWith('x-axis-1'), jest.fn(), setCurrentTime))
 
         const datum = (x: number): OutlierDatum<readonly [number]> => ({datum: {x, y: 1}, bounds: [{lower: 0, upper: 1}]})
         source.chartDataUpdatesObservable.next({seriesNames: new Set(['a']), newPoints: new Map([['a', [datum(300), datum(450)]]])})
         jest.advanceTimersByTime(100)
 
         expect(setCurrentTime).toHaveBeenCalledWith('x-axis-1', 450)
+    })
+
+    it("takes an axis's time from the newest datum of all the series assigned to it", () => {
+        const source = fakeSource<OutlierChartData<readonly [number]>>()
+        const setCurrentTime = jest.fn()
+        track(outlierDriver(source, 100, new Map(), axesStateWith('x-axis-1'), jest.fn(), setCurrentTime))
+
+        const datum = (x: number): OutlierDatum<readonly [number]> => ({datum: {x, y: 1}, bounds: [{lower: 0, upper: 1}]})
+        source.chartDataUpdatesObservable.next({
+            seriesNames: new Set(['a', 'b']),
+            newPoints: new Map([['a', [datum(1700)]], ['b', [datum(1200)]]])
+        })
+        jest.advanceTimersByTime(100)
+
+        expect(setCurrentTime.mock.calls).toEqual([['x-axis-1', 1700]])
+    })
+
+    it('advances the window on cadence ticks, and re-syncs it to the newest datum', () => {
+        installRafPolyfill()
+        const source = fakeSource<OutlierChartData<readonly [number]>>(1000)
+        const updateTimingAndPlot = jest.fn()
+        track(outlierDriver(source, 100, new Map(), axesStateWith('x-axis-1'), updateTimingAndPlot, jest.fn(), 50))
+
+        jest.advanceTimersByTime(200)
+        expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBeGreaterThanOrEqual(1150)
+
+        const datum = (x: number): OutlierDatum<readonly [number]> => ({datum: {x, y: 1}, bounds: [{lower: 0, upper: 1}]})
+        source.chartDataUpdatesObservable.next({seriesNames: new Set(['a']), newPoints: new Map([['a', [datum(9000)]]])})
+        jest.advanceTimersByTime(100)
+        expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBeGreaterThanOrEqual(9000)
     })
 })
 
