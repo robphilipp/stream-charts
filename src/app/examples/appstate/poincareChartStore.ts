@@ -109,8 +109,8 @@ const initialState: PoincareChartState = {
     colorizeLines: false,
     lineStartColor: DEFAULT_LINE_START_COLOR,
     lineEndColor: DEFAULT_LINE_END_COLOR,
-    // (a slow sweep: at the example's 20 iterates a second, 100,000 steps take well over an hour)
-    lineColorSteps: 100_000,
+    // (a slow sweep: at the example's 20 iterates a second, 1000 steps take well over an hour)
+    lineColorSteps: 1000,
     zoomState: undefined,
 }
 

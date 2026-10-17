@@ -95,8 +95,9 @@ export interface Props {
      * and so on, sweeping the colors of the spectrum in between (the long way around the hue
      * circle -- e.g. from blue, through cyan, green, and yellow, to red). A point keeps its color
      * as old points are dropped (with an {@link IteratesDataSource}, which counts them), so that
-     * the path's direction, and its age, can be seen. When `false` (the default), the lines are
-     * drawn in the series' own color.
+     * the path's direction, and its age, can be seen. The points are filled with the color of the
+     * line leaving them (except while hovered, when they're highlighted as usual). When `false`
+     * (the default), the lines and points are drawn in the series' own color.
      */
     colorizeLines?: boolean
     /**
@@ -414,6 +415,12 @@ export function PoincarePlot(props: Props): null {
 
                     // create the time-series path (when no interpolation is given, don't draw a
                     // connecting line at all -- matches the old version's `mainGElem.selectAll(...).remove()`)
+                    // when colorizing the lines, a point's overall sequence number in its series is
+                    // the number of points dropped from the series so far (when the data source
+                    // counts them) plus its index -- the line leaving a point, and the point itself,
+                    // are colored by it
+                    const dropped = colorizeLines ? droppedCountFor(dataSource, name) : 0
+
                     if (interpolation !== undefined) {
                         const pathGenerator = d3.line<IteratePoint>()
                             .x(d => xAxis.scale(d.n || 0))
@@ -422,10 +429,7 @@ export function PoincarePlot(props: Props): null {
 
                         context2D.lineWidth = seriesLineStyle.lineWidth
                         if (colorizeLines) {
-                            // the line's color changes along it, one step per point: a point's
-                            // overall sequence number is the number of points dropped from the
-                            // series so far (when the data source counts them) plus its index
-                            const dropped = droppedCountFor(dataSource, name)
+                            // the line's color changes along it, one step per point
                             const linePoints = Array.from(plotData)
                             strokeColorizedLine(
                                 context2D, linePoints,
@@ -491,8 +495,11 @@ export function PoincarePlot(props: Props): null {
                                 context2D.textBaseline = 'alphabetic'
                                 context2D.fillText(label, x - 8, y - circleRadius - circleStroke - padding)
                             } else {
-                                // normal, unhovered point
-                                context2D.fillStyle = seriesLineStyle.color
+                                // normal, unhovered point (in the color of the line leaving it, when
+                                // the lines are colorized)
+                                context2D.fillStyle = colorizeLines ?
+                                    lineColorOf(dropped + d.index) :
+                                    seriesLineStyle.color
                                 context2D.beginPath()
                                 context2D.arc(x, y, 2, 0, 2 * Math.PI)
                                 context2D.fill()
