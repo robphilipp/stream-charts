@@ -493,7 +493,9 @@ export function autocorrelation(
 ): Array<number> | undefined {
     const values: Array<number> = []
     for (let i = 0; i < points.length; i++) {
-        if (Number.isFinite(points[i].x) && Number.isFinite(points[i].y)) values.push(points[i].y)
+        if (Number.isFinite(points[i].x) && Number.isFinite(points[i].y)) {
+            values.push(points[i].y)
+        }
     }
     const count = values.length
     const largestLag = Math.min(count - 1, maxLag ?? Math.min(MAX_AUTOCORRELATION_LAG, Math.floor(count / 4)))
@@ -501,14 +503,20 @@ export function autocorrelation(
 
     const mean = values.reduce((sum, value) => sum + value, 0) / count
     const deviations = values.map(value => value - mean)
-    const variance = deviations.reduce((sum, deviation) => sum + deviation * deviation, 0)
+
+    // Variance divided by count (sample variance)
+    const variance = deviations.reduce((sum, deviation) => sum + deviation * deviation, 0) / count
     if (variance === 0) return undefined
 
     const correlations: Array<number> = []
     for (let lag = 0; lag <= largestLag; lag++) {
         let sum = 0
-        for (let t = 0; t + lag < count; t++) sum += deviations[t] * deviations[t + lag]
-        correlations.push(sum / variance)
+        const n = count - lag
+        for (let t = 0; t < n; t++) {
+            sum += deviations[t] * deviations[t + lag]
+        }
+        // Divide by the number of terms (n) and the variance to get proper scale [-1, 1]
+        correlations.push((sum / n) / variance)
     }
     return correlations
 }
