@@ -478,9 +478,10 @@ const MAX_AUTOCORRELATION_LAG = 50
  * Calculates the (sample) autocorrelation of a series' values, by lag: for each lag `k` (in
  * points, not time -- a series' points needn't be evenly spaced in time), the correlation between
  * the values and the values `k` points later,
- * <p>`r[k] = sum[t](x[t] - mean) * (x[t+k] - mean) / sum[t](x[t] - mean)^2`</p>
+ * <p>`r[k] = (sum[t](x[t] - mean) * (x[t+k] - mean) / (count - lag)) / variance`</p>
  * so `r[0]` is 1, and the values are between -1 and 1. Points whose value or time isn't finite are
  * skipped.
+ *
  * @param points The series' points, ordered by time
  * @param maxLag The largest lag -- by default, a quarter of the number of points (the usual rule
  * of thumb, since the estimates for larger lags rest on too few pairs of points), but no more than 50

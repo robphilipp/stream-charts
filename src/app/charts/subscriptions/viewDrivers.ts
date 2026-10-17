@@ -1,4 +1,4 @@
-import {interval, type MonoTypeOperatorFunction, type Observable, type OperatorFunction, Subscription} from "rxjs";
+import {interval, type Observable, type OperatorFunction, Subscription} from "rxjs";
 import {bufferCount, bufferTime, map, mergeAll, mergeWith} from "rxjs/operators";
 import {continuousAxisRanges, type ContinuousNumericAxis} from "../axes/axes";
 import {AxesState} from "../axes/AxesState";
@@ -151,27 +151,31 @@ function resyncOnVisible(
 }
 
 /**
- * The cadence ticks (wall-clock elapsed time, not a tick count, so throttled ticks don't make it
- * fall permanently behind) merged, unbuffered, with the batched data updates. Cadence ticks must
- * not go through the render batching, or each batch would deliver its cadence ticks in one burst,
- * collapsing the smooth per-tick scroll down to the batch rate.
+ * Marks a cadence tick in a view driver's stream of updates (rather than disguising the tick as an
+ * empty chunk of chart data)
+ */
+const CADENCE_TICK = Symbol('cadence-tick')
+type CadenceTick = typeof CADENCE_TICK
+
+/**
+ * The cadence ticks merged, unbuffered, with the batched data updates. Cadence ticks must not go
+ * through the render batching, or each batch would deliver its cadence ticks in one burst,
+ * collapsing the smooth per-tick scroll down to the batch rate. (The ticks carry no time: the
+ * driver projects the stream time from its own wall-clock anchor, so throttled ticks don't make it
+ * fall permanently behind.)
  * @param updates$ The data source's updates
  * @param windowingTime The time (ms) over which the data updates are batched
  * @param cadencePeriod The time (ms) between cadence ticks
- * @param cadenceTick Creates the (empty) chart data for a cadence tick, from the time (ms) elapsed
- * since the cadence started
  * @return The data updates (each batch flattened back into single updates), merged with the
  * cadence ticks
  */
-function withCadence<CD extends {currentTime?: number}>(
-    updates$: Observable<CD>,
-    windowingTime: number,
-    cadencePeriod: number,
-    cadenceTick: (elapsed: number) => CD,
-): Observable<CD> {
-    const cadenceStartTime = performance.now()
-    const cadence = interval(cadencePeriod).pipe(map(() => cadenceTick(performance.now() - cadenceStartTime)))
-    return updates$.pipe(bufferTime<CD>(windowingTime), mergeAll(), mergeWith(cadence) as MonoTypeOperatorFunction<CD>)
+function withCadence<CD>(updates$: Observable<CD>, windowingTime: number, cadencePeriod: number): Observable<CD | CadenceTick> {
+    const cadence = interval(cadencePeriod).pipe(map((): CadenceTick => CADENCE_TICK))
+    return updates$.pipe(
+        bufferTime<CD>(windowingTime),
+        mergeAll(),
+        mergeWith(cadence) as OperatorFunction<CD, CD | CadenceTick>
+    )
 }
 
 /**
@@ -201,125 +205,179 @@ function cadenceAnchor(seedTime: number) {
 }
 
 /**
- * The view driver for a time-series plot without cadence: advances each x-axis's window (SCROLL
- * or SQUEEZE) as new data arrives, and asks the plot to redraw.
- * @param dataSource The data source whose updates drive the view
- * @param windowingTime The time (ms) over which updates are batched before redrawing
- * @param axisAssignments The assignment of the series to their x- and y-axes
- * @param xAxesState The current state of the x-axes
- * @param updateTimingAndPlot Redraws the plot for the (advanced) time-windows
- * @param setCurrentTime Records the current time for an axis
- * @param timeWindowBehavior Whether the time axis scrolls or squeezes
- * @param initialTimes The pinned start time for each axis, for SQUEEZE
- * @param dataUpdatePeriod The period (ms) at which the source emits, when known (see {@link renderBatching})
- * @return The driver's subscription, to unsubscribe when the plot unmounts
+ * Gives the current time ("now") of each x-axis that a chunk of chart data has new points for
+ * @template CD The type of the chart data
  */
-export function timeSeriesViewDriverFor(
-    dataSource: ViewDriverSource<TimeSeriesChartData>,
-    windowingTime: number,
+export type AxisTimesFor<CD> = (data: CD) => Map<string, number>
+
+/**
+ * The x-axes' times for time-series chart data: each axis's time is the latest time of the
+ * series assigned to it (see {@link currentTimesByGroup}), falling back to the chunk's latest time
+ * @param axisAssignments The assignment of the series to their x- and y-axes
+ * @param xAxesState The current state of the x-axes (for the default x-axis)
+ * @return The x-axes' times for a chunk of chart data
+ */
+export function timeSeriesAxisTimes(
     axisAssignments: Map<string, AxesAssignment>,
     xAxesState: AxesState<ContinuousNumericAxis>,
+): AxisTimesFor<TimeSeriesChartData> {
+    const groupFor = xAxisGroupFor(axisAssignments, xAxesState)
+    return data => {
+        const groupTimes = currentTimesByGroup(data, groupFor)
+        const times = new Map<string, number>()
+        data.newPoints.forEach((_, name) => {
+            const axisId = groupFor(name)
+            times.set(axisId, groupTimes.get(axisId) || data.maxTime)
+        })
+        return times
+    }
+}
+
+/**
+ * The x-axes' times for outlier chart data: each axis's time is the time of the newest datum, of
+ * the series assigned to it, in the chunk
+ * @param axisAssignments The assignment of the series to their x- and y-axes
+ * @param xAxesState The current state of the x-axes (for the default x-axis)
+ * @return The x-axes' times for a chunk of chart data
+ * @template M The type of the outlier series' measures
+ */
+export function outlierAxisTimes<M extends readonly number[]>(
+    axisAssignments: Map<string, AxesAssignment>,
+    xAxesState: AxesState<ContinuousNumericAxis>,
+): AxisTimesFor<OutlierChartData<M>> {
+    const groupFor = xAxisGroupFor(axisAssignments, xAxesState)
+    return data => {
+        const times = new Map<string, number>()
+        data.newPoints.forEach((newData, name) => {
+            const axisId = groupFor(name)
+            let time = times.get(axisId) ?? -Infinity
+            for (const datum of newData) time = Math.max(time, datum.datum.x)
+            if (Number.isFinite(time)) times.set(axisId, time)
+        })
+        return times
+    }
+}
+
+/**
+ * The options of a time-axis view driver (see {@link timeAxisViewDriverFor})
+ */
+export interface TimeAxisViewDriverOptions {
+    /**
+     * The time (ms) over which updates are batched before redrawing
+     */
+    windowingTime: number
+    /**
+     * The period (ms) at which the source emits, when known (see {@link renderBatching}); not
+     * used with cadence
+     */
+    dataUpdatePeriod?: number
+    /**
+     * The time (ms) between cadence ticks, which advance the axes smoothly between data arrivals.
+     * Without one, the axes only advance as data arrives.
+     */
+    cadencePeriod?: number
+    /**
+     * Whether the time axes scroll or squeeze as data passes their ends (without cadence).
+     * Defaults to SCROLL.
+     */
+    timeWindowBehavior?: TimeWindowBehavior
+    /**
+     * The pinned start time for each axis, for SQUEEZE
+     */
+    initialTimes?: Map<string, number>
+}
+
+/**
+ * The view driver for a plot whose x-axes are time (the scatter, raster, and outlier plots): it
+ * advances each x-axis's window as the data's time passes its end, records each axis's current
+ * time, and asks the plot to redraw.
+ *
+ * Without cadence, each axis's window advances (SCROLL or SQUEEZE) as new data passes its end.
+ * With cadence, cadence ticks advance every axis's window smoothly between data arrivals, to the
+ * stream time projected from a wall-clock anchor; real data (treated as ground truth) re-syncs the
+ * axes, and corrects the anchor when cadence has fallen behind. The driver also catches the axes up
+ * to the data source's latest time when it starts (e.g. after a remount), and whenever the page
+ * becomes visible again.
+ * @param dataSource The data source whose updates drive the view
+ * @param xAxesState The current state of the x-axes
+ * @param axisTimesFor Gives the current time of each x-axis that a chunk of data has new points for
+ * (e.g. {@link timeSeriesAxisTimes} or {@link outlierAxisTimes})
+ * @param updateTimingAndPlot Redraws the plot for the (advanced) time-windows
+ * @param setCurrentTime Records the current time for an axis
+ * @param options The batching, cadence, and time-window behavior
+ * @return The driver's subscription, to unsubscribe when the plot unmounts
+ * @template CD The type of the chart data
+ */
+export function timeAxisViewDriverFor<CD extends ChartData>(
+    dataSource: ViewDriverSource<CD>,
+    xAxesState: AxesState<ContinuousNumericAxis>,
+    axisTimesFor: AxisTimesFor<CD>,
     updateTimingAndPlot: (ranges: Map<string, ContinuousAxisRange>) => void,
     setCurrentTime: (axisId: string, end: number) => void,
-    timeWindowBehavior: TimeWindowBehavior = TimeWindowBehavior.SCROLL,
-    initialTimes: Map<string, number> = new Map<string, number>(),
-    dataUpdatePeriod?: number,
+    options: TimeAxisViewDriverOptions,
 ): Subscription {
+    const {
+        windowingTime,
+        dataUpdatePeriod,
+        cadencePeriod,
+        timeWindowBehavior = TimeWindowBehavior.SCROLL,
+        initialTimes = new Map<string, number>(),
+    } = options
+
     // built ONCE, here, and advanced in place on every update: the plot hands this same map
     // back to its pan/zoom handlers (via `updateTimingAndPlot`), so their mutations land here too
     // rather than being discarded by a rebuild
     const timesWindows = continuousAxisRanges(xAxesState.axes)
-    const groupFor = xAxisGroupFor(axisAssignments, xAxesState)
 
-    return dataSource.chartDataUpdatesObservable
-        .pipe(renderBatching<TimeSeriesChartData>(windowingTime, dataUpdatePeriod))
-        .subscribe(dataList => dataList.forEach(data => {
-            const groupTimes = currentTimesByGroup(data, groupFor)
-            data.newPoints.forEach((_, name) => {
-                const axisId = groupFor(name)
-                const currentAxisTime = groupTimes.get(axisId) || data.maxTime
-                // record the axis' "now" on every update -- not only once the window starts
-                // scrolling -- since the plot's zoom pivots on it while streaming: before the data
-                // reaches the window's end, there would otherwise be no "now" to pivot on, and the
-                // zoom would pivot on the window's right edge, possibly leaving the data off-screen
-                setCurrentTime(axisId, currentAxisTime)
-                const range = timesWindows.get(axisId)
-                if (range !== undefined) {
-                    const [, endTime] = range.current.asTuple()
-                    if (endTime < currentAxisTime) {
+    if (cadencePeriod === undefined) {
+        return dataSource.chartDataUpdatesObservable
+            .pipe(renderBatching<CD>(windowingTime, dataUpdatePeriod))
+            .subscribe(dataList => dataList.forEach(data => {
+                axisTimesFor(data).forEach((currentAxisTime, axisId) => {
+                    // record the axis' "now" on every update -- not only once the window starts
+                    // scrolling -- since the plot's zoom pivots on it while streaming: before the
+                    // data reaches the window's end, there would otherwise be no "now" to pivot on,
+                    // and the zoom would pivot on the window's right edge, possibly leaving the
+                    // data off-screen
+                    setCurrentTime(axisId, currentAxisTime)
+                    const range = timesWindows.get(axisId)
+                    if (range !== undefined && range.current.end < currentAxisTime) {
                         timesWindows.set(axisId, scrollOrSqueezeRangeTo(range, currentAxisTime, timeWindowBehavior, initialTimes.get(axisId)))
                     }
-                }
-            })
-            updateTimingAndPlot(timesWindows)
-        }))
-}
+                })
+                updateTimingAndPlot(timesWindows)
+            }))
+    }
 
-/**
- * The view driver for a time-series plot with cadence: cadence ticks advance every x-axis's window
- * smoothly between data arrivals, and real data (treated as ground truth) re-syncs the axes and
- * corrects the cadence anchor when cadence has fallen behind.
- * @param dataSource The data source whose updates drive the view
- * @param windowingTime The time (ms) over which data updates are batched before redrawing
- * @param axisAssignments The assignment of the series to their x- and y-axes
- * @param xAxesState The current state of the x-axes
- * @param updateTimingAndPlot Redraws the plot for the (advanced) time-windows
- * @param setCurrentTime Records the current time for an axis
- * @param cadencePeriod The time (ms) between cadence ticks
- * @return The driver's subscription, to unsubscribe when the plot unmounts
- */
-export function timeSeriesWithCadenceViewDriverFor(
-    dataSource: ViewDriverSource<TimeSeriesChartData>,
-    windowingTime: number,
-    axisAssignments: Map<string, AxesAssignment>,
-    xAxesState: AxesState<ContinuousNumericAxis>,
-    updateTimingAndPlot: (ranges: Map<string, ContinuousAxisRange>) => void,
-    setCurrentTime: (axisId: string, end: number) => void,
-    cadencePeriod: number,
-): Subscription {
     const anchor = cadenceAnchor(dataSource.latestTime())
-    const timesWindows = continuousAxisRanges(xAxesState.axes)
-    const groupFor = xAxisGroupFor(axisAssignments, xAxesState)
-
-    // catch the axes up to the current stream time right away, rather than leaving them where they
-    // were restored to until the first tick arrives (which, right after a remount, can take a
-    // noticeable while and would show up as "pause, then jump")
-    if (anchor.isKnown()) {
+    const catchUp = (): void => {
+        if (!anchor.isKnown()) return
         xAxesState.axisIds().forEach(axisId => advanceAxisRangeInMapTo(timesWindows, axisId, anchor.now()))
         updateTimingAndPlot(timesWindows)
     }
 
-    const cadenceTick = (elapsed: number): TimeSeriesChartData => ({
-        seriesNames: new Set<string>(),
-        currentTime: elapsed,
-        maxTime: elapsed,
-        maxTimes: new Map(),
-        newPoints: new Map()
-    })
+    // catch the axes up to the current stream time right away, rather than leaving them where they
+    // were restored to until the first tick arrives (which, right after a remount, can take a
+    // noticeable while and would show up as "pause, then jump")
+    catchUp()
 
-    const subscription = withCadence(dataSource.chartDataUpdatesObservable, windowingTime, cadencePeriod, cadenceTick)
-        .subscribe(data => {
-            if (data.currentTime !== undefined) {
+    const subscription = withCadence(dataSource.chartDataUpdatesObservable, windowingTime, cadencePeriod)
+        .subscribe(update => {
+            if (update === CADENCE_TICK) {
                 // a cadence tick: advance every axis to the projected stream time
                 const cadenceTime = anchor.now()
                 xAxesState.axisIds().forEach(axisId => {
                     advanceAxisRangeInMapTo(timesWindows, axisId, cadenceTime)
                     setCurrentTime(axisId, cadenceTime)
                 })
-            }
-
-            if (data.newPoints.size > 0) {
-                // real data: re-sync each series' axis to the data's own time, and correct the
-                // cadence anchor if the data has overtaken it
-                const groupTimes = currentTimesByGroup(data, groupFor)
-                data.newPoints.forEach((_, name) => {
-                    const axisId = groupFor(name)
-                    const currentAxisTime = groupTimes.get(axisId) || data.maxTime
+            } else {
+                // real data: re-sync each axis to the data's own time, and correct the cadence
+                // anchor if the data has overtaken it
+                axisTimesFor(update).forEach((currentAxisTime, axisId) => {
                     advanceAxisRangeInMapTo(timesWindows, axisId, currentAxisTime)
                     anchor.correctTo(currentAxisTime)
                 })
             }
-
             updateTimingAndPlot(timesWindows)
         })
 
@@ -327,130 +385,7 @@ export function timeSeriesWithCadenceViewDriverFor(
 
     // one more catch-up on the next paint frame, narrowing the gap until the first real tick
     // (whose scheduling can lag right after a route change, while React commits the new tree)
-    const catchUpFrame = requestAnimationFrame(() => {
-        if (!anchor.isKnown()) return
-        xAxesState.axisIds().forEach(axisId => advanceAxisRangeInMapTo(timesWindows, axisId, anchor.now()))
-        updateTimingAndPlot(timesWindows)
-    })
-    subscription.add(() => cancelAnimationFrame(catchUpFrame))
-
-    return subscription
-}
-
-/**
- * The view driver for an outlier plot without cadence. Mirrors {@link timeSeriesViewDriverFor}
- * for outlier data, where each series' current time is the newest datum in the chunk.
- * @param dataSource The data source whose updates drive the view
- * @param windowingTime The time (ms) over which updates are batched before redrawing
- * @param axisAssignments The assignment of the series to their x- and y-axes
- * @param xAxesState The current state of the x-axes
- * @param updateTimingAndPlot Redraws the plot for the (advanced) time-windows
- * @param setCurrentTime Records the current time for an axis
- * @param [timeWindowBehavior=SCROLL] Whether the time axis scrolls or squeezes
- * @param [initialTimes] The pinned start time for each axis, for SQUEEZE
- * @param [dataUpdatePeriod] The period (ms) at which the source emits, when known (see {@link renderBatching})
- * @return The driver's subscription, to unsubscribe when the plot unmounts
- */
-export function outlierViewDriverFor<M extends readonly number[]>(
-    dataSource: ViewDriverSource<OutlierChartData<M>>,
-    windowingTime: number,
-    axisAssignments: Map<string, AxesAssignment>,
-    xAxesState: AxesState<ContinuousNumericAxis>,
-    updateTimingAndPlot: (ranges: Map<string, ContinuousAxisRange>) => void,
-    setCurrentTime: (axisId: string, end: number) => void,
-    timeWindowBehavior: TimeWindowBehavior = TimeWindowBehavior.SCROLL,
-    initialTimes: Map<string, number> = new Map<string, number>(),
-    dataUpdatePeriod?: number,
-): Subscription {
-    const timesWindows = continuousAxisRanges(xAxesState.axes)
-
-    return dataSource.chartDataUpdatesObservable
-        .pipe(renderBatching<OutlierChartData<M>>(windowingTime, dataUpdatePeriod))
-        .subscribe(dataList => dataList.forEach(data => {
-            data.newPoints.forEach((newData, name) => {
-                const axisId = axisAssignments.get(name)?.xAxis || xAxesState.axisDefaultId().getOrElse("")
-                const currentAxisTime = Math.max(...newData.map(datum => datum.datum.x), -Infinity)
-                if (!Number.isFinite(currentAxisTime)) return
-                // record the axis' "now" on every update -- see timeSeriesViewDriverFor's identical
-                // call for why (the zoom pivots on it while streaming)
-                setCurrentTime(axisId, currentAxisTime)
-                const range = timesWindows.get(axisId)
-                if (range !== undefined) {
-                    const [, endTime] = range.current.asTuple()
-                    if (endTime < currentAxisTime) {
-                        timesWindows.set(axisId, scrollOrSqueezeRangeTo(range, currentAxisTime, timeWindowBehavior, initialTimes.get(axisId)))
-                    }
-                }
-            })
-            updateTimingAndPlot(timesWindows)
-        }))
-}
-
-/**
- * The view driver for an outlier plot with cadence. Mirrors
- * {@link timeSeriesWithCadenceViewDriverFor}; outlier plots don't support per-series axis
- * assignments here, so all axes advance to the same time.
- * @param dataSource The data source whose updates drive the view
- * @param windowingTime The time (ms) over which data updates are batched before redrawing
- * @param xAxesState The current state of the x-axes
- * @param updateTimingAndPlot Redraws the plot for the (advanced) time-windows
- * @param setCurrentTime Records the current time for an axis
- * @param cadencePeriod The time (ms) between cadence ticks
- * @return The driver's subscription, to unsubscribe when the plot unmounts
- */
-export function outlierWithCadenceViewDriverFor<M extends readonly number[]>(
-    dataSource: ViewDriverSource<OutlierChartData<M>>,
-    windowingTime: number,
-    xAxesState: AxesState<ContinuousNumericAxis>,
-    updateTimingAndPlot: (ranges: Map<string, ContinuousAxisRange>) => void,
-    setCurrentTime: (axisId: string, end: number) => void,
-    cadencePeriod: number,
-): Subscription {
-    const anchor = cadenceAnchor(dataSource.latestTime())
-    const timesWindows = continuousAxisRanges(xAxesState.axes)
-
-    if (anchor.isKnown()) {
-        xAxesState.axisIds().forEach(axisId => advanceAxisRangeInMapTo(timesWindows, axisId, anchor.now()))
-        updateTimingAndPlot(timesWindows)
-    }
-
-    const cadenceTick = (elapsed: number): OutlierChartData<M> => ({
-        seriesNames: new Set<string>(),
-        newPoints: new Map(),
-        currentTime: elapsed,
-    })
-
-    const subscription = withCadence(dataSource.chartDataUpdatesObservable, windowingTime, cadencePeriod, cadenceTick)
-        .subscribe(data => {
-            if (data.currentTime !== undefined) {
-                const cadenceTime = anchor.now()
-                xAxesState.axisIds().forEach(axisId => {
-                    advanceAxisRangeInMapTo(timesWindows, axisId, cadenceTime)
-                    setCurrentTime(axisId, cadenceTime)
-                })
-            }
-
-            if (data.newPoints.size > 0) {
-                const maxRealTime = Array.from(data.newPoints.values()).reduce(
-                    (tMax, newData) => Math.max(tMax, ...newData.map(datum => datum.datum.x)),
-                    -Infinity
-                )
-                if (isFinite(maxRealTime)) {
-                    xAxesState.axisIds().forEach(axisId => advanceAxisRangeInMapTo(timesWindows, axisId, maxRealTime))
-                    anchor.correctTo(maxRealTime)
-                }
-            }
-
-            updateTimingAndPlot(timesWindows)
-        })
-
-    subscription.add(resyncOnVisible(dataSource, xAxesState, timesWindows, setCurrentTime, updateTimingAndPlot))
-
-    const catchUpFrame = requestAnimationFrame(() => {
-        if (!anchor.isKnown()) return
-        xAxesState.axisIds().forEach(axisId => advanceAxisRangeInMapTo(timesWindows, axisId, anchor.now()))
-        updateTimingAndPlot(timesWindows)
-    })
+    const catchUpFrame = requestAnimationFrame(catchUp)
     subscription.add(() => cancelAnimationFrame(catchUpFrame))
 
     return subscription

@@ -22,7 +22,7 @@ import {
 import type {CanvasContext} from "../d3types";
 import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
 import type {Dimensions, Margin} from "../styling/margins";
-import {timeSeriesViewDriverFor, timeSeriesWithCadenceViewDriverFor} from "../subscriptions/viewDrivers";
+import {timeAxisViewDriverFor, timeSeriesAxisTimes} from "../subscriptions/viewDrivers";
 import {useDataObservable} from "../hooks/useDataObservable";
 import {useDataSource, useDataSourceRunning} from "../hooks/useDataSource";
 import type {TimeSeriesChartData} from "../series/timeSeriesChartData";
@@ -791,14 +791,10 @@ export function RasterPlot(props: Props): null {
         (source: NonNullable<typeof dataSource>) => {
             const redraw = (ranges: Map<string, ContinuousAxisRange>) => updateTimingAndPlotRef.current(ranges)
             const setCurrentTime = (axisId: string, end: number) => currentTimeRef.current.set(axisId, end)
-            return withCadenceOf !== undefined ?
-                timeSeriesWithCadenceViewDriverFor(
-                    source, windowingTime, axisAssignments, xAxesState, redraw, setCurrentTime, withCadenceOf
-                ) :
-                timeSeriesViewDriverFor(
-                    source, windowingTime, axisAssignments, xAxesState, redraw, setCurrentTime,
-                    undefined, undefined, dataUpdatePeriod
-                )
+            return timeAxisViewDriverFor(
+                source, xAxesState, timeSeriesAxisTimes(axisAssignments, xAxesState), redraw, setCurrentTime,
+                {windowingTime, dataUpdatePeriod, cadencePeriod: withCadenceOf}
+            )
         }
     )
 

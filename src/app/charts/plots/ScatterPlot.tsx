@@ -27,11 +27,7 @@ import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
 import {firstIndexAtOrAfter, noop} from "../utils";
 import {NoCurveFactory} from "./constants";
 import type {Dimensions} from "../styling/margins";
-import {
-    timeSeriesViewDriverFor,
-    timeSeriesWithCadenceViewDriverFor,
-    TimeWindowBehavior
-} from "../subscriptions/viewDrivers";
+import {timeAxisViewDriverFor, timeSeriesAxisTimes, TimeWindowBehavior} from "../subscriptions/viewDrivers";
 import {useDataObservable} from "../hooks/useDataObservable";
 import {useDataSource, useDataSourceRunning} from "../hooks/useDataSource";
 import type {TimeSeriesChartData} from "../series/timeSeriesChartData";
@@ -1043,14 +1039,16 @@ export function ScatterPlot(props: Props): null {
         (source: NonNullable<typeof dataSource>) => {
             const redraw = (ranges: Map<string, ContinuousAxisRange>) => updateTimingAndPlotRef.current(ranges)
             const setCurrentTime = (axisId: string, end: number) => currentTimeRef.current.set(axisId, end)
-            return withCadenceOf !== undefined ?
-                timeSeriesWithCadenceViewDriverFor(
-                    source, windowingTime, axisAssignments, xAxesState, redraw, setCurrentTime, withCadenceOf
-                ) :
-                timeSeriesViewDriverFor(
-                    source, windowingTime, axisAssignments, xAxesState, redraw, setCurrentTime,
-                    timeWindowBehavior, initialTimesRef.current, dataUpdatePeriod
-                )
+            return timeAxisViewDriverFor(
+                source, xAxesState, timeSeriesAxisTimes(axisAssignments, xAxesState), redraw, setCurrentTime,
+                {
+                    windowingTime,
+                    dataUpdatePeriod,
+                    cadencePeriod: withCadenceOf,
+                    timeWindowBehavior,
+                    initialTimes: initialTimesRef.current,
+                }
+            )
         }
     )
 

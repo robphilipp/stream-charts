@@ -28,7 +28,7 @@ import {
     panHandler,
     type SeriesLineStyle
 } from "../axes/axes"
-import {outlierViewDriverFor, outlierWithCadenceViewDriverFor, TimeWindowBehavior} from "../subscriptions/viewDrivers"
+import {outlierAxisTimes, timeAxisViewDriverFor, TimeWindowBehavior} from "../subscriptions/viewDrivers"
 import type {OutlierChartData} from "../observables/outliers"
 import type {OutlierDatum, OutlierSeries} from "../series/outlierSeries"
 import {FastShiftArray} from "fast-shift-array";
@@ -881,12 +881,16 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
         (source: NonNullable<typeof dataSource>) => {
             const redraw = (ranges: Map<string, ContinuousAxisRange>) => updateTimingAndPlotRef.current(ranges)
             const setCurrentTime = (axisId: string, end: number) => currentTimeRef.current.set(axisId, end)
-            return withCadenceOf !== undefined ?
-                outlierWithCadenceViewDriverFor<M>(source, windowingTime, xAxesState, redraw, setCurrentTime, withCadenceOf) :
-                outlierViewDriverFor<M>(
-                    source, windowingTime, axisAssignments, xAxesState, redraw, setCurrentTime,
-                    timeWindowBehavior, initialTimesRef.current, dataUpdatePeriod
-                )
+            return timeAxisViewDriverFor(
+                source, xAxesState, outlierAxisTimes<M>(axisAssignments, xAxesState), redraw, setCurrentTime,
+                {
+                    windowingTime,
+                    dataUpdatePeriod,
+                    cadencePeriod: withCadenceOf,
+                    timeWindowBehavior,
+                    initialTimes: initialTimesRef.current,
+                }
+            )
         }
     )
 
