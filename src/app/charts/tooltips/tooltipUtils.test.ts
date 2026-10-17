@@ -263,12 +263,12 @@ describe('autocorrelation', () => {
     })
 
     it('calculates the sample autocorrelation at each lag', () => {
-        // values 1..4: mean 2.5, deviations -1.5, -0.5, 0.5, 1.5, variance 5 / 4 = 1.25
-        // lag 1: ((-1.5)(-0.5) + (-0.5)(0.5) + (0.5)(1.5)) / 3 = 1.25 / 3 -> (1.25 / 3) / 1.25 = 1/3
-        // lag 2: ((-1.5)(0.5) + (-0.5)(1.5)) / 2 = -0.75 -> -0.75 / 1.25 = -0.6
+        // values 1..4: mean 2.5, deviations -1.5, -0.5, 0.5, 1.5, sum of squares 5
+        // lag 1: (-1.5)(-0.5) + (-0.5)(0.5) + (0.5)(1.5) = 1.25 -> 0.25
+        // lag 2: (-1.5)(0.5) + (-0.5)(1.5) = -1.5 -> -0.3
         const correlations = autocorrelation(points(1, 2, 3, 4), 2)!
-        expect(correlations[1]).toBeCloseTo(1 / 3)
-        expect(correlations[2]).toBeCloseTo(-0.6)
+        expect(correlations[1]).toBeCloseTo(0.25)
+        expect(correlations[2]).toBeCloseTo(-0.3)
     })
 
     it('alternates for an alternating series', () => {

@@ -478,10 +478,9 @@ const MAX_AUTOCORRELATION_LAG = 50
  * Calculates the (sample) autocorrelation of a series' values, by lag: for each lag `k` (in
  * points, not time -- a series' points needn't be evenly spaced in time), the correlation between
  * the values and the values `k` points later,
- * <p>`r[k] = (sum[t](x[t] - mean) * (x[t+k] - mean) / (count - lag)) / variance`</p>
+ * <p>`r[k] = sum[t](x[t] - mean) * (x[t+k] - mean) / sum[t](x[t] - mean)^2`</p>
  * so `r[0]` is 1, and the values are between -1 and 1. Points whose value or time isn't finite are
  * skipped.
- *
  * @param points The series' points, ordered by time
  * @param maxLag The largest lag -- by default, a quarter of the number of points (the usual rule
  * of thumb, since the estimates for larger lags rest on too few pairs of points), but no more than 50
@@ -494,9 +493,7 @@ export function autocorrelation(
 ): Array<number> | undefined {
     const values: Array<number> = []
     for (let i = 0; i < points.length; i++) {
-        if (Number.isFinite(points[i].x) && Number.isFinite(points[i].y)) {
-            values.push(points[i].y)
-        }
+        if (Number.isFinite(points[i].x) && Number.isFinite(points[i].y)) values.push(points[i].y)
     }
     const count = values.length
     const largestLag = Math.min(count - 1, maxLag ?? Math.min(MAX_AUTOCORRELATION_LAG, Math.floor(count / 4)))
@@ -504,20 +501,14 @@ export function autocorrelation(
 
     const mean = values.reduce((sum, value) => sum + value, 0) / count
     const deviations = values.map(value => value - mean)
-
-    // Variance divided by count (sample variance)
-    const variance = deviations.reduce((sum, deviation) => sum + deviation * deviation, 0) / count
+    const variance = deviations.reduce((sum, deviation) => sum + deviation * deviation, 0)
     if (variance === 0) return undefined
 
     const correlations: Array<number> = []
     for (let lag = 0; lag <= largestLag; lag++) {
         let sum = 0
-        const n = count - lag
-        for (let t = 0; t < n; t++) {
-            sum += deviations[t] * deviations[t + lag]
-        }
-        // Divide by the number of terms (n) and the variance to get proper scale [-1, 1]
-        correlations.push((sum / n) / variance)
+        for (let t = 0; t + lag < count; t++) sum += deviations[t] * deviations[t + lag]
+        correlations.push(sum / variance)
     }
     return correlations
 }
