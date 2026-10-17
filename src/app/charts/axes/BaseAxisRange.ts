@@ -51,7 +51,7 @@ export abstract class BaseAxisRange {
      * relative to `.original`. d3-zoom's own `transform.k` is cumulative from wherever `__zoom` was
      * last reset to identity, so callers must first convert it to an incremental factor (this
      * event's `k` divided by the previously-applied `k`, tracked in a ref that survives across
-     * zoom events -- see e.g. `ScatterPlot`'s `lastZoomKRef`) before calling this. Scaling relative
+     * zoom events -- see `useCanvasZoomPan`) before calling this. Scaling relative
      * to `.current` this way means `.original` no longer needs to be preserved/shifted for the
      * zoom math to stay correct -- unlike the previous design, where `factor` was the *cumulative*
      * `transform.k` applied against `.original`, which broke the moment anything (e.g. a fresh

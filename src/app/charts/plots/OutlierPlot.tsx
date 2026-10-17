@@ -1,33 +1,26 @@
-import {useCallback, useEffect, useEffectEvent, useMemo, useRef} from 'react'
+import {useCallback, useEffect, useRef} from 'react'
+import {useStreamingTimeAxes} from "./useStreamingTimeAxes";
 import {useHoveredSeries} from "../hooks/useHoveredSeries";
 import * as d3 from "d3"
-import {Optional} from "result-fn"
 
 import {useChart} from "../hooks/useChart"
-import {useDataSource, useDataSourceRunning, useInitialData, useStreamingSettings} from "../hooks/useDataSource";
+import {useDataSource, useDataSourceRunning, useInitialData} from "../hooks/useDataSource";
 import {usePlotDimensions} from "../hooks/usePlotDimensions"
-import {type AxesAssignment, clipToArea, currentIntervalsFrom} from "./plot"
+import {type AxesAssignment, clipToArea} from "./plot"
 import type {CanvasContext} from "../d3types"
 import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting"
 import {noop} from "../utils"
-import type {Dimensions} from "../styling/margins"
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange"
-import {AxisInterval} from "../axes/AxisInterval"
 import {extentWith, visibleExtent} from "../axes/autoScale"
 import {growAutoScaledYAxes, useAutoScaleRestart} from "./autoScaleYAxes"
 import {
-    axesForSeriesGen,
     type BaseAxis,
     AxisType,
-    continuousAxisIntervals,
-    continuousAxisRanges,
-    continuousAxisZoomHandler,
     type ContinuousNumericAxis,
     defaultLineStyle,
-    panHandler,
     type SeriesLineStyle
 } from "../axes/axes"
-import {outlierAxisTimes, timeAxisViewDriverFor, TimeWindowBehavior} from "../subscriptions/viewDrivers"
+import {outlierAxisTimes, TimeWindowBehavior} from "../subscriptions/viewDrivers";
 import type {OutlierChartData} from "../observables/outliers"
 import type {OutlierDatum, OutlierSeries} from "../series/outlierSeries"
 import {FastShiftArray} from "fast-shift-array";
@@ -186,18 +179,11 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
     const {
         xAxesState,
         yAxesState,
-        setAxisIntervalFor,
         updateAxisRanges = noop,
         axisRangeFor,
-        onUpdateAxesInterval,
     } = axes
 
     const {plotDimensions, margin} = usePlotDimensions()
-
-    const {
-        windowingTime = 100,
-        dataUpdatePeriod,
-    } = useStreamingSettings()
 
     // the application-owned source of the data, and whether it's running (streaming)
     const dataSource = useDataSource<OutlierChartData<M>, OutlierDatum<M>, OutlierSeries<M>>()
@@ -219,28 +205,6 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
         onZoomReset = noop,
     } = props
 
-    // the axes' true original (un-zoomed) [start, end] bounds, and each axis' pinned start time
-    // for SQUEEZE mode -- needed because the axis object's own scale has no separate "original"
-    // concept of its own: once a zoom directly mutates `scale.domain()`, that mutated value
-    // becomes indistinguishable from the true original to anything that reads the scale fresh
-    // (e.g. `continuousAxisRanges`, which `resetPlotForInitialData` below relies on). For an axis
-    // whose `domain` prop is a static literal (as opposed to Scatter's store-backed, dynamic
-    // domain), that means nothing else ever restores the scale to its starting bounds after a
-    // zoom -- this is what `resetZoom` (see the pan/zoom effect below) uses to do that explicitly.
-    //
-    // These are refs, populated by `resetPlotForInitialData` below, rather than a `useMemo` keyed
-    // on `axesRanges` -- `axesRanges` is a fresh closure on every render of `AxesProvider` (it's
-    // never memoized there), so a `useMemo([axesRanges])` recomputes on essentially every render,
-    // not "once at mount" as its dependency array suggests. Since `.original` is continuously
-    // shifted forward by ordinary auto-scroll (see `advanceAxisRangeInMapTo`) while staying at its
-    // un-zoomed width even during an active zoom, a memo that keeps re-sampling it mid-zoom
-    // captures "the current un-zoomed baseline, right now" instead of "the bounds this run
-    // started at" -- so clicking Reset after zooming out would snap the axis to that narrow,
-    // very-current baseline instead of the true starting view, looking like Reset "zooms in".
-    // Capturing these once per reset (on mount, and whenever the data source is replaced) sidesteps
-    // that entirely.
-    const initialTimesRef = useRef<Map<string, number>>(new Map())
-    const initialAxisIntervalsRef = useRef<Map<string, [start: number, end: number]>>(new Map())
 
     // seriesRef is the single source of truth for what to render: the data source's own (live)
     // series map, which grows as series first appear in the stream. the draw function iterates this
@@ -248,7 +212,6 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
     const seriesRef = useRef<ReadonlyMap<string, OutlierSeries<M>>>(
         dataSource?.series ?? new Map(initialData.map(series => [series.name, series as OutlierSeries<M>]))
     )
-    const currentTimeRef = useRef<Map<string, number>>(new Map())
 
     // captured band fill-regions and outlier-marker geometry, in canvas coordinates, used for
     // hit-testing mouse hover on `mousemove` (see the effect below that wires up the listener)
@@ -431,327 +394,28 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
     // new data, new scale: restarts the auto-scaling y-axes when the data source is replaced
     useAutoScaleRestart(dataSource, {yAxes: yAxesState.axes, axisRangeFor, updateAxisRanges})
 
-    const updatePlotRef = useRef<(cc: CanvasContext) => void>(updatePlot)
-    useEffect(() => {
-        updatePlotRef.current = updatePlot
-    }, [updatePlot])
-
-    const onUpdateTimeRef = useRef(updateAxisRanges)
-    useEffect(() => {
-        onUpdateTimeRef.current = updateAxisRanges
-    }, [updateAxisRanges])
-
-    // reports the axes' intervals to the code using the chart. this is held in a reference for the
-    // same reason as the functions above -- the zoom and pan handlers are created inside the memoized
-    // `updatePlot` and would otherwise close over a stale callback.
-    //
-    // the notifications are coalesced into (at most) one per animation frame because zoom and pan
-    // fire many events per gesture, and the callback generally updates the application state, which
-    // in turn causes a render. note that coalescing loses nothing: the deferred notification reports
-    // the most recent ranges (see `pendingRangesRef`) when the frame runs, rather than those of the
-    // event that scheduled it.
-    const notifyIntervalsRef = useRef<(ranges: Map<string, ContinuousAxisRange>) => void>(noop)
-    const notifyFrameRef = useRef<number>(0)
-    // the ranges to report when the scheduled notification runs -- always the *latest* ranges
-    // handed to `notifyIntervalsRef`, not those of the call that scheduled it. The zoom/pan
-    // handlers mutate one map in place, but the plot also *replaces* its ranges map (e.g. on reset,
-    // or when a new view driver starts); reporting the scheduling call's map would then write
-    // stale intervals into the application state (e.g. undoing a Reset a frame later).
-    const pendingRangesRef = useRef<Map<string, ContinuousAxisRange>>(new Map())
-    useEffect(() => {
-        notifyIntervalsRef.current = onUpdateAxesInterval === undefined ?
-            noop :
-            ranges => {
-                pendingRangesRef.current = ranges
-                // a notification is already scheduled for the next frame, and it will report the latest
-                // ranges when it runs
-                if (notifyFrameRef.current !== 0) return
-                notifyFrameRef.current = requestAnimationFrame(() => {
-                    notifyFrameRef.current = 0
-                    onUpdateAxesInterval(currentIntervalsFrom(pendingRangesRef.current))
-                })
-            }
-    }, [onUpdateAxesInterval])
-
-    // don't leave a scheduled notification pointing at an unmounted plot
-    useEffect(() => () => {
-        if (notifyFrameRef.current !== 0) {
-            cancelAnimationFrame(notifyFrameRef.current)
-            notifyFrameRef.current = 0
-        }
-    }, [])
-
-    useEffect(
-        () => {
-            // clear to empty, not to a 0 for each axis -- see ScatterPlot's identical reset for why:
-            // 0 is a legitimate (non-nullish) map value, so `zoomPivotFor`'s `?? axis.scale.domain()[1]`
-            // fallback wouldn't kick in, and the next zoom would pivot on 0 until the first tick lands.
-            currentTimeRef.current = new Map()
+    // the time axes: their ranges, the view driver, panning and zooming, highlighting, and
+    // reporting the axes' intervals -- see `useStreamingTimeAxes`
+    useStreamingTimeAxes<OutlierChartData<M>, OutlierDatum<M>>({
+        canvasContext,
+        dataSource,
+        running,
+        initialData,
+        timeOf: datum => datum.datum.x,
+        axisTimesFor: outlierAxisTimes<M>(axisAssignments, xAxesState),
+        axisAssignments,
+        updatePlot,
+        onDataReset: () => {
+            seriesRef.current = dataSource?.series ?? new Map(initialData.map(series => [series.name, series as OutlierSeries<M>]))
         },
-        [xAxesState]
-    )
-
-    const axesForSeries = useMemo(
-        (): Array<string> => axesForSeriesGen<OutlierDatum<M>, ContinuousNumericAxis>(
-            initialData, axisAssignments, xAxesState
-        ),
-        [initialData, axisAssignments, xAxesState]
-    )
-
-    const updateTimingAndPlot = useCallback((ranges: Map<string, ContinuousAxisRange>): void => {
-        if (canvasContext !== null) {
-            onUpdateTimeRef.current(ranges)
-            // keep the single canonical ranges ref in sync, so the pan/zoom handlers (now set up
-            // once, in a separate effect, rather than inside updatePlot itself) always read the
-            // current ranges without updatePlot needing to be recreated whenever ranges change
-            timeRangesRef.current = ranges
-            updatePlotRef.current(canvasContext)
-            // the notification is deferred to the next animation frame (see `notifyIntervalsRef`),
-            // so that this doesn't update the application state synchronously from within the
-            // subscription's update
-            notifyIntervalsRef.current(ranges)
-        }
-    }, [canvasContext])
-
-    // when the initial data changes, then reset the plot. note that the initial data doesn't change
-    // during the normal course of updates from the data source, only when the data source is replaced. the
-    // reset itself should always use the current xAxesState/axisAssignments/updateTimingAndPlot, not
-    // whatever they were when this effect last ran -- that's exactly what an effect event gives us,
-    // without having to (falsely) declare them as dependencies that would re-trigger the reset.
-    const resetPlotForInitialData = useEffectEvent(() => {
-        seriesRef.current = dataSource?.series ?? new Map(initialData.map(series => [series.name, series as OutlierSeries<M>]))
-        // see the identical `currentTimeRef` reset above for why this is an empty map, not a 0 per axis
-        currentTimeRef.current = new Map()
-
-        const freshRanges = continuousAxisRanges(xAxesState.axes as Map<string, ContinuousNumericAxis>)
-
-        // capture the axes' true original bounds at this reset point, for `onZoomReset` (see the
-        // pan/zoom effect below) to restore to later -- see `initialAxisIntervalsRef`'s
-        // declaration above for why this must be captured here rather than via a `useMemo`
-        initialAxisIntervalsRef.current = new Map(
-            Array.from(freshRanges.entries()).map(([id, range]) => [id, range.original.asTuple()])
-        )
-        initialTimesRef.current = new Map(
-            Array.from(freshRanges.entries()).map(([id, range]) => [id, range.original.start])
-        )
-
-        updateTimingAndPlot(
-            new Map(
-                Array.from(freshRanges.entries())
-                    .map(([id, range]) => {
-                        const [start, end] = range.original.asTuple()
-                        const minTime = (initialData as Array<OutlierSeries<M>>)
-                            .filter(srs => axisAssignments.get(srs.name)?.xAxis === id)
-                            .reduce(
-                                (tMin, series) =>
-                                    Math.min(tMin, !series.isEmpty() ? series.data[0].datum.x : tMin),
-                                Infinity
-                            )
-                        const startTime = minTime === Infinity ? 0 : minTime
-                        return [id, ContinuousAxisRange.from(startTime, startTime + end - start)]
-                    })
-            )
-        )
+        panEnabled,
+        zoomEnabled,
+        zoomKeyModifiersRequired,
+        onZoomReset,
+        withCadenceOf,
+        timeWindowBehavior,
+        highlightAxesOnMouseOver,
     })
-
-    useEffect(
-        () => {
-            resetPlotForInitialData()
-        },
-        [initialData]
-    )
-
-    // highlights the x- and y-axes associated with the hovered series (in the series' own
-    // highlight color/width, matching the line highlight above), and un-highlights them again --
-    // via the effect's cleanup -- when the hover moves to a different series or ends
-    useEffect(
-        () => {
-            if (!highlightAxesOnMouseOver || hoveredSeriesName === null) return
-
-            const assignment = axisAssignments.get(hoveredSeriesName)
-            const xAxis = xAxesState.axisFor(assignment?.xAxis || "").getOrUndefined()
-            const yAxis = yAxesState.axisFor(assignment?.yAxis || "").getOrUndefined()
-            const {highlightColor, highlightWidth} = seriesStyles.get(hoveredSeriesName) || defaultLineStyle()
-
-            xAxis?.setHighlighted(true, highlightColor, highlightWidth)
-            yAxis?.setHighlighted(true, highlightColor, highlightWidth)
-
-            return () => {
-                xAxis?.setHighlighted(false)
-                yAxis?.setHighlighted(false)
-            }
-        },
-        [highlightAxesOnMouseOver, hoveredSeriesName, axisAssignments, xAxesState, yAxesState, seriesStyles]
-    )
-
-    /**
-     * Adjusts the time-range when the plot is dragged to the left or right (the caller redraws the plot)
-     * @param x The amount that the plot is dragged
-     * @param dim The dimensions of the plot
-     * @param ranges A map holding the axis ID and its associated time range
-     */
-    const onPan = useCallback(
-        (x: number, dim: Dimensions, ranges: Map<string, ContinuousAxisRange>) =>
-            panHandler(axesForSeries, margin, setAxisIntervalFor, xAxesState)(x, dim, ranges),
-        [axesForSeries, margin, setAxisIntervalFor, xAxesState]
-    )
-
-    /**
-     * Called when the user uses the scroll wheel (or scroll gesture) to zoom in or out.
-     * @param zoomFactor The *incremental* zoom scale factor for this event (see ScatterPlot's
-     * `lastZoomKRef` for how d3-zoom's cumulative `k` is converted to it)
-     * @param pivotDomainValueFor Given an axis ID and its axis, returns the domain value to pivot
-     * that axis's zoom around
-     * @param dim The dimensions of the plot
-     * @param ranges A map holding the axis ID and its associated time-range
-     */
-    const onZoom = useCallback(
-        (zoomFactor: number, pivotDomainValueFor: (axisId: string, axis: ContinuousNumericAxis) => number, dim: Dimensions, ranges: Map<string, ContinuousAxisRange>) =>
-            continuousAxisZoomHandler(axesForSeries, margin, setAxisIntervalFor, xAxesState)(zoomFactor, pivotDomainValueFor, dim, ranges),
-        [axesForSeries, margin, setAxisIntervalFor, xAxesState]
-    )
-
-    // The zoom pivot -- the domain value that stays fixed on screen while the window widens or
-    // narrows around it -- depends on whether the chart is actively streaming: while running,
-    // pivot on the axis's own "now" (`currentTimeRef`, updated by the view driver on every data
-    // update and cadence tick, regardless of zoom activity) instead of the mouse position, so "now" stays fixed on screen
-    // throughout the whole gesture -- see ScatterPlot's identical `zoomPivotFor` for the full
-    // explanation of why this replaced a previous design that pivoted on the mouse and then tried
-    // to correct the result back towards "now" after the fact. While paused, pivot on the mouse
-    // position as usual, since there's no "now" moving target to chase.
-    const zoomPivotFor = useCallback(
-        (offsetX: number): (axisId: string, axis: ContinuousNumericAxis) => number =>
-            running ?
-                (axisId, axis) => currentTimeRef.current.get(axisId) ?? axis.scale.domain()[1] :
-                (_axisId, axis) => axis.scale.invert(offsetX - margin.left),
-        [running, margin]
-    )
-
-    // the last d3-zoom `event.transform.k` this plot applied -- see ScatterPlot's identical
-    // `lastZoomKRef` for the full explanation: d3-zoom's `k` is cumulative, but the zoom math is
-    // incremental, so each event's `k` must be divided by this ref (then this ref updated to that
-    // `k`) before being passed to `onZoom`. Reset to 1 wherever d3-zoom's own transform is reset to
-    // identity (see `onZoomReset` below).
-    const lastZoomKRef = useRef<number>(1)
-
-    // sets up panning and zooming exactly once (and again only when something pan/zoom-relevant
-    // actually changes -- e.g. a resize), rather than on every data tick. This used to live inside
-    // `updatePlot`, which runs every `windowingTime` interval; recreating a `d3.drag()`/`d3.zoom()`
-    // behavior and reattaching it to the canvas that often was pure overhead unrelated to drawing
-    // the new data, and the constant allocation churn is a plausible contributor to the plot
-    // getting choppier the longer a stream runs.
-    useEffect(
-        () => {
-            if (!canvasContext) return
-            const cc = canvasContext
-            const canvasSelection = d3.select<HTMLCanvasElement, unknown>(cc.canvas)
-
-            if (panEnabled) {
-                const drag = d3.drag<HTMLCanvasElement, unknown>()
-                    .on("start", () => canvasSelection.style("cursor", "move"))
-                    .on("drag", event => {
-                        onPan(event.dx, plotDimensions, timeRangesRef.current)
-                        updatePlotRef.current(cc)
-                        notifyIntervalsRef.current(timeRangesRef.current)
-                    })
-                    .on("end", () => canvasSelection.style("cursor", "auto"))
-                canvasSelection.call(drag)
-            }
-
-            if (zoomEnabled) {
-                const zoom = d3.zoom<HTMLCanvasElement, unknown>()
-                    // restricted to wheel events -- see RasterPlot's identical `.filter()` for
-                    // the full explanation: without this, d3-zoom's own built-in mousedown-drag
-                    // handling (which it still has, separate from this app's dedicated pan
-                    // `d3.drag()`) would ALSO fire "zoom" events for a shift/ctrl-held drag,
-                    // double-handling the same gesture.
-                    .filter(event => event.type === 'wheel' && (!zoomKeyModifiersRequired || event.shiftKey || event.ctrlKey))
-                    .scaleExtent([0, 10])
-                    .translateExtent([[margin.left, margin.top], [plotDimensions.width, plotDimensions.height]])
-                    .on("zoom", event => {
-                        // a `null` sourceEvent means this "zoom" wasn't a real user gesture but a
-                        // programmatic `.transform(...)` call (see `resetZoom` below) -- there's no
-                        // real mouse position to anchor against, and no business logic to run here
-                        if (event.sourceEvent === null) return
-
-                        // convert d3-zoom's cumulative `k` to the incremental factor this event
-                        // represents -- see `lastZoomKRef`'s declaration above
-                        const zoomFactor = event.transform.k / lastZoomKRef.current
-                        lastZoomKRef.current = event.transform.k
-
-                        onZoom(
-                            zoomFactor,
-                            zoomPivotFor(event.sourceEvent.offsetX),
-                            plotDimensions,
-                            timeRangesRef.current,
-                        )
-                        updatePlotRef.current(cc)
-                        notifyIntervalsRef.current(timeRangesRef.current)
-                    })
-                canvasSelection.call(zoom)
-
-                // hands the caller a way to clear d3-zoom's own accumulated scale/pan state back
-                // to identity -- see ScatterPlot's identical `onZoomReset` usage for the base
-                // rationale. Also explicitly restores each axis's scale to its true original
-                // bounds (see `initialAxisIntervalsRef` above): the axis object has no "original"
-                // concept of its own once a zoom has directly mutated `scale.domain()`, so nothing
-                // else would otherwise put a statically-domained axis (like this one) back to its
-                // starting view on reset.
-                onZoomReset(() => {
-                    canvasSelection.call(zoom.transform, d3.zoomIdentity)
-                    // d3-zoom's own `k` is back at identity (1) -- see ScatterPlot's identical
-                    // reset for why `lastZoomKRef` must follow it back to 1
-                    lastZoomKRef.current = 1
-                    initialAxisIntervalsRef.current.forEach(([start, end], axisId) => {
-                        timeRangesRef.current.set(axisId, ContinuousAxisRange.from(start, end))
-                        xAxesState.axisFor(axisId).ifPresent(
-                            axis => axis.update(AxisInterval.from(start, end), plotDimensions, margin)
-                        )
-                    })
-                    // full sync (via `updateTimingAndPlot`) so AxesProvider's own separate ranges
-                    // ref also picks up the freshly-reset `.original` immediately -- see
-                    // ScatterPlot's identical call for the full explanation. Harmless here today
-                    // (this axis's `domain` prop is a static literal, so `ContinuousAxis` never
-                    // reads that ref's `.original` back out), but kept for defense-in-depth/
-                    // consistency in case that ever changes to a store-backed domain.
-                    updateTimingAndPlot(timeRangesRef.current)
-                })
-            }
-
-            return () => {
-                if (panEnabled) canvasSelection.on(".drag", null)
-                if (zoomEnabled) canvasSelection.on(".zoom", null)
-            }
-        },
-        [canvasContext, panEnabled, zoomEnabled, onPan, onZoom, plotDimensions, margin, zoomKeyModifiersRequired, zoomPivotFor, onZoomReset, xAxesState, updateTimingAndPlot]
-    )
-
-    // the single source of truth for the axes' ranges. the zoom and pan handlers, the subscription,
-    // and the effect below all read and update this same map (in place), so that each range's
-    // original (un-zoomed) interval survives the window scrolling as data streams in
-    const timeRangesRef = useRef<Map<string, ContinuousAxisRange>>(new Map())
-
-    useEffect(() => {
-        if (canvasContext) {
-            if (timeRangesRef.current.size === 0) {
-                // populate the map in place -- replacing it would orphan the copy already held by
-                // the subscription and by the zoom and pan handlers
-                continuousAxisRanges(xAxesState.axes as Map<string, ContinuousNumericAxis>)
-                    .forEach((range, id) => timeRangesRef.current.set(id, range))
-            } else {
-                const intervals = continuousAxisIntervals(xAxesState.axes)
-                timeRangesRef.current.forEach((range, id, m) => {
-                    const [start, end] = Optional.ofNullable(intervals.get(id))
-                        .map(interval => interval.asTuple())
-                        .getOrThrow(() => new Error(`Unable to retrieve interval for axis; axis_id: ${id}`))
-                    if (!isNaN(start) && !isNaN(end)) {
-                        m.set(id, range.update(start, end))
-                    }
-                })
-            }
-            updatePlot(canvasContext)
-        }
-    }, [chartId, canvasContext, plotDimensions, updatePlot, xAxesState])
 
     // wires up a single mousemove/mouseleave listener on the shared canvas to replace the old
     // per-element SVG mouseover/mouseleave handlers on the band paths and outlier-marker circles.
@@ -866,42 +530,6 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
         },
         [canvasContext, chartId, margin, seriesFilter, mouseOverHandlerFor, mouseLeaveHandlerFor]
     )
-
-    // the latest `updateTimingAndPlot`, for the view driver to call -- the driver is created once
-    // per run (see below), so it must not capture a stale one (e.g. bound to an older canvas)
-    const updateTimingAndPlotRef = useRef(updateTimingAndPlot)
-    useEffect(() => {
-        updateTimingAndPlotRef.current = updateTimingAndPlot
-    }, [updateTimingAndPlot])
-
-    // creates the view driver that keeps this plot's view in step with the data source, using the
-    // current settings -- see ScatterPlot's identical effect event
-    const createViewDriver = useEffectEvent(
-        (source: NonNullable<typeof dataSource>) => {
-            const redraw = (ranges: Map<string, ContinuousAxisRange>) => updateTimingAndPlotRef.current(ranges)
-            const setCurrentTime = (axisId: string, end: number) => currentTimeRef.current.set(axisId, end)
-            return timeAxisViewDriverFor(
-                source, xAxesState, outlierAxisTimes<M>(axisAssignments, xAxesState), redraw, setCurrentTime,
-                {
-                    windowingTime,
-                    dataUpdatePeriod,
-                    cadencePeriod: withCadenceOf,
-                    timeWindowBehavior,
-                    initialTimes: initialTimesRef.current,
-                }
-            )
-        }
-    )
-
-    // while the data source is running (and this plot has a canvas and its x-axes), drive the
-    // view from the data source's updates -- see ScatterPlot's identical effect. The driver
-    // belongs to this plot instance alone and is always torn down with it.
-    const hasXAxes = xAxesState.axes.size > 0
-    useEffect(() => {
-        if (dataSource === undefined || !running || canvasContext === null || !hasXAxes) return
-        const driver = createViewDriver(dataSource)
-        return () => driver.unsubscribe()
-    }, [dataSource, running, canvasContext, hasXAxes])
 
     // this plot needs a data source (see the `Chart`'s `dataSource` prop)
     useEffect(() => {

@@ -1,4 +1,5 @@
 import {type AxesAssignment, clipToArea} from "./plot";
+import {useCanvasZoomPan} from "./useCanvasZoomPan";
 import * as d3 from "d3";
 import {noop} from "../utils";
 import {useChart} from "../hooks/useChart";
@@ -660,6 +661,48 @@ export function BarPlot(props: Props): null {
         [onZoomStateChange, xAxesState]
     )
 
+    // panning (dragging) and zooming (the mouse wheel) -- see `useCanvasZoomPan`. The ordinal zoom
+    // takes d3-zoom's cumulative scale (`k`), rather than the incremental factor, so that it can
+    // snap back to the original range exactly when fully zoomed out (see `OrdinalAxisRange.scale`)
+    const {setZoomScale} = useCanvasZoomPan(canvasContext, {
+        panEnabled,
+        zoomEnabled,
+        keyModifiersRequired: zoomKeyModifiersRequired,
+        scaleExtent: [1, 10],
+        translateExtent: [[margin.left, margin.top], [plotDimensions.width, plotDimensions.height]],
+        // (tooltips are suppressed while panning, so that one isn't left behind)
+        onPanStart: () => {
+            allowTooltipRef.current = false
+        },
+        onPan: dx => {
+            if (canvasContext === null) return
+            onPan(dx, plotDimensions, dataRef.current.map(series => series.name), ordinalRangesRef.current)
+            updatePlotRef.current(canvasContext)
+        },
+        onPanEnd: () => {
+            allowTooltipRef.current = !(dataSource?.running ?? false)
+            if (canvasContext !== null) reportZoomState(canvasContext)
+        },
+        onZoom: ({k, x}) => {
+            if (canvasContext === null) return
+            onZoom(k, x - margin.left, plotDimensions, ordinalRangesRef.current)
+            updatePlotRef.current(canvasContext)
+            reportZoomState(canvasContext)
+        },
+        onZoomReset,
+        // restores each axis's range to its original
+        resetView: () => {
+            ordinalRangesRef.current.forEach((range, axisId) => {
+                xAxesState.axisFor(axisId).ifPresent(axis => {
+                    ordinalRangesRef.current.set(axisId, range.update(range.original.start, range.original.end))
+                    setAxisIntervalFor(axisId, range.original)
+                    axis.update(axis.scale.domain(), range.original, range.original, plotDimensions, margin)
+                })
+            })
+            if (canvasContext !== null) updatePlotRef.current(canvasContext)
+        },
+    })
+
     // the zoom state to restore, captured once at mount (see the `zoomState` prop); cleared once
     // it has been applied (see `restoreZoomState` below), so it's only ever applied once
     const pendingZoomStateRef = useRef<BarPlotZoomState | undefined>(zoomState)
@@ -673,7 +716,7 @@ export function BarPlot(props: Props): null {
     // very next wheel tick jump. Waits (leaving the state pending) until every axis in the
     // snapshot exists, since the axes register themselves with the chart asynchronously.
     const restoreZoomState = useCallback(
-        (cc: CanvasContext): void => {
+        (): void => {
             const pending = pendingZoomStateRef.current
             if (pending === undefined) return
             const axisIds = Object.keys(pending.ranges)
@@ -694,102 +737,13 @@ export function BarPlot(props: Props): null {
                 setAxisIntervalFor(axisId, current)
                 axis.update(axis.scale.domain(), current, range.original, plotDimensions, margin)
             })
-            // `__zoom` is where d3-zoom keeps an element's transform (`d3.zoomTransform` reads
-            // it); setting it directly, rather than through `zoom.transform`, avoids dispatching
-            // a synthetic "zoom" event (whose handler expects a real wheel `sourceEvent`)
-            d3.select(cc.canvas).property("__zoom", d3.zoomIdentity.scale(pending.k))
+            // (set directly, without dispatching a "zoom" event -- see `setZoomScale`)
+            setZoomScale(pending.k)
             pendingZoomStateRef.current = undefined
         },
-        [margin, plotDimensions, setAxisIntervalFor, xAxesState]
+        [margin, plotDimensions, setAxisIntervalFor, xAxesState, setZoomScale]
     )
 
-    // sets up panning and zooming exactly once (and again only when something pan/zoom-relevant
-    // actually changes -- e.g. a resize), rather than on every data tick. This used to live inside
-    // `updatePlot`, which runs every `windowingTime` interval; recreating a `d3.drag()`/`d3.zoom()`
-    // behavior and reattaching it to the canvas that often was pure overhead unrelated to drawing
-    // the new data, and the constant allocation churn is a plausible contributor to the plot
-    // getting choppier the longer a stream runs.
-    useEffect(
-        () => {
-            if (!canvasContext) return
-            const cc = canvasContext
-            const canvasSelection = d3.select<HTMLCanvasElement, unknown>(cc.canvas)
-
-            if (panEnabled) {
-                const drag = d3.drag<HTMLCanvasElement, unknown>()
-                    .on("start", () => {
-                        canvasSelection.style("cursor", "move")
-                        allowTooltipRef.current = false
-                    })
-                    .on("drag", event => {
-                        const names = dataRef.current.map(series => series.name)
-                        onPan(event.dx, plotDimensions, names, ordinalRangesRef.current)
-                        // need to update the plot with the new time-ranges
-                        updatePlotRef.current(cc)
-                    })
-                    .on("end", () => {
-                        canvasSelection.style("cursor", "auto")
-                        allowTooltipRef.current = !(dataSource?.running ?? false)
-                        reportZoomState(cc)
-                    })
-
-                canvasSelection.call(drag)
-            }
-
-            if (zoomEnabled) {
-                const zoom = d3.zoom<HTMLCanvasElement, unknown>()
-                    // restricted to wheel events -- see RasterPlot's identical `.filter()` for
-                    // the full explanation: without this, d3-zoom's own built-in mousedown-drag
-                    // handling (which it still has, separate from this app's dedicated pan
-                    // `d3.drag()`) would ALSO fire "zoom" events for a shift/ctrl-held drag,
-                    // double-handling the same gesture.
-                    .filter(event => event.type === 'wheel' && (!zoomKeyModifiersRequired || event.shiftKey || event.ctrlKey))
-                    .scaleExtent([1, 10])
-                    .translateExtent([[margin.left, margin.top], [plotDimensions.width, plotDimensions.height]])
-                    .on("zoom", event => {
-                            // a `null` sourceEvent means this "zoom" wasn't a real user gesture
-                            // but a programmatic `.transform(...)` call (see `resetZoom` below)
-                            if (event.sourceEvent === null) return
-
-                            onZoom(
-                                // d3-zoom's own cumulative `k`, passed through unmodified -- see
-                                // `onZoom`'s JSDoc above for why the ordinal x-axis needs this
-                                // cumulative factor rather than an incremental one.
-                                event.transform.k,
-                                event.sourceEvent.offsetX - margin.left,
-                                plotDimensions,
-                                ordinalRangesRef.current,
-                            )
-                            updatePlotRef.current(cc)
-                            reportZoomState(cc)
-                        }
-                    )
-                canvasSelection.call(zoom)
-
-                // hands the caller a way to clear d3-zoom's own accumulated scale back to identity
-                // -- see RasterPlot's identical `onZoomReset` usage. Both halves of the zoom state
-                // must be reset together (see `restoreZoomState` for why): d3's `k` back to 1, and
-                // each ordinal x-axis back to its original pixel range
-                onZoomReset(() => {
-                    canvasSelection.call(zoom.transform, d3.zoomIdentity)
-                    ordinalRangesRef.current.forEach((range, axisId) => {
-                        xAxesState.axisFor(axisId).ifPresent(axis => {
-                            ordinalRangesRef.current.set(axisId, range.update(range.original.start, range.original.end))
-                            setAxisIntervalFor(axisId, range.original)
-                            axis.update(axis.scale.domain(), range.original, range.original, plotDimensions, margin)
-                        })
-                    })
-                    updatePlotRef.current(cc)
-                })
-            }
-
-            return () => {
-                if (panEnabled) canvasSelection.on(".drag", null)
-                if (zoomEnabled) canvasSelection.on(".zoom", null)
-            }
-        },
-        [canvasContext, panEnabled, zoomEnabled, onPan, onZoom, plotDimensions, margin, zoomKeyModifiersRequired, reportZoomState, onZoomReset, xAxesState, setAxisIntervalFor, dataSource]
-    )
 
 
     useEffect(
@@ -829,7 +783,7 @@ export function BarPlot(props: Props): null {
                 }
                 // restore a zoom state handed in from a previous instance (only does anything the
                 // first time the axes are all available -- see `restoreZoomState`)
-                restoreZoomState(canvasContext)
+                restoreZoomState()
                 updatePlot(canvasContext)
             }
         },
@@ -959,7 +913,7 @@ export function BarPlot(props: Props): null {
     )
 
     // creates the view driver that keeps this plot's view in step with the data source, using the
-    // current settings -- see ScatterPlot's identical effect event
+    // current settings -- see `useStreamingTimeAxes`'s identical effect event
     const createViewDriver = useEffectEvent(
         (source: NonNullable<typeof dataSource>) => ordinalViewDriverFor(
             source,
@@ -970,7 +924,7 @@ export function BarPlot(props: Props): null {
     )
 
     // while the data source is running (and this plot has a canvas), drive the view from the
-    // data source's updates -- see ScatterPlot's identical effect. The driver belongs to this plot
+    // data source's updates -- see `useStreamingTimeAxes`'s identical effect. The driver belongs to this plot
     // instance alone and is always torn down with it.
     useEffect(
         () => {

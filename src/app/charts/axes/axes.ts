@@ -1159,8 +1159,8 @@ export interface ZoomResult<AR extends BaseAxisRange> {
  * `zoomFactor` is *incremental* (relative to the range's `.current`, not its `.original`) -- see
  * {@link BaseAxisRange.scaledRange}. d3-zoom's own `transform.k` is cumulative from wherever
  * `__zoom` was last reset to identity, so callers must convert it to an incremental factor (this
- * event's `k` divided by the previously-applied `k`) before calling this -- see e.g.
- * `ScatterPlot`'s `lastZoomKRef`.
+ * event's `k` divided by the previously-applied `k`) before calling this -- see
+ * `useCanvasZoomPan`.
  * @param zoomFactor The incremental zoom scale factor for this event
  * @param domainValue The domain value to zoom around (the pivot)
  * @param range The current range for the axis being zoomed

@@ -1,8 +1,8 @@
 import {useCallback, useEffect, useEffectEvent, useMemo, useRef} from 'react'
+import {useCanvasZoomPan} from "./useCanvasZoomPan";
 import {type NoTooltipMetadata, useChart} from "../hooks/useChart";
 import * as d3 from "d3";
 import {clipToArea} from "./plot";
-import {type Datum} from "../series/timeSeries";
 import {
     axesZoomHandler,
     type BaseAxis,
@@ -303,17 +303,6 @@ export function PoincarePlot(props: Props): null {
     // tooltips are only shown while the data source is paused (and not while panning)
     const allowTooltip = useRef<boolean>(!(dataSource?.running ?? false))
 
-    // so that we can reset the zoom when the axes-bounds change, we hold on to the zoom-behaviour
-    // and the zoom-selection so that we can reset the transform to the identity
-    const zoomRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, Datum>>(undefined)
-    const zoomSelectionRef = useRef<d3.Selection<HTMLCanvasElement, Datum, null, undefined>>(undefined)
-
-    // the last d3-zoom `event.transform.k` this plot applied -- see ScatterPlot's identical
-    // `lastZoomKRef` for the full explanation: d3-zoom's `k` is cumulative, but the zoom math is
-    // incremental, so each event's `k` must be divided by this ref (then this ref updated to that
-    // `k`) before being passed to `onZoom`. Reset to 1 wherever d3-zoom's own transform is reset to
-    // identity (see `updatedBoundsHandler` below).
-    const lastZoomKRef = useRef<number>(1)
 
     // the last-drawn geometry for each series' points, in canvas coordinates, used for
     // hit-testing mouse hover on `mousemove` (see the effect below that wires up the listener).
@@ -536,8 +525,8 @@ export function PoincarePlot(props: Props): null {
         [updatePlot]
     )
 
-    // hands the current zoom/pan state (d3-zoom's cumulative `k`, which `lastZoomKRef` tracks, and
-    // every axis' current domain) to the `onZoomStateChange` callback
+    // hands the current zoom/pan state (d3-zoom's cumulative `k`, and every axis' current domain) to
+    // the `onZoomStateChange` callback
     const onZoomStateChangeRef = useRef(onZoomStateChange)
     useEffect(
         () => {
@@ -550,10 +539,52 @@ export function PoincarePlot(props: Props): null {
             const ranges: Record<string, [number, number]> = {}
             xAxisRangesRef.current.forEach((range, axisId) => ranges[axisId] = range.current.asTuple())
             yAxisRangesRef.current.forEach((range, axisId) => ranges[axisId] = range.current.asTuple())
-            onZoomStateChangeRef.current({k: lastZoomKRef.current, ranges})
+            const k = canvasContext !== null ? d3.zoomTransform(canvasContext.canvas).k : 1
+            onZoomStateChangeRef.current({k, ranges})
         },
-        []
+        [canvasContext]
     )
+
+    // panning (dragging) and zooming (the mouse wheel) -- see `useCanvasZoomPan`. Fully zooming out
+    // (back to a scale of 1) snaps the axes back to their original ranges.
+    const {resetZoomTransform, setZoomScale} = useCanvasZoomPan(canvasContext, {
+        panEnabled,
+        zoomEnabled,
+        keyModifiersRequired: zoomKeyModifiersRequired,
+        scaleExtent: [zoomMinScaleFactor, zoomMaxScaleFactor],
+        translateExtent: [[margin.left, margin.top], [plotDimensions.width, plotDimensions.height]],
+        // (tooltips are suppressed while panning and zooming, so that one isn't left behind)
+        onPanStart: () => {
+            allowTooltip.current = false
+        },
+        onPan: (dx, dy) => {
+            if (canvasContext === null) return
+            onPan(dx, dy, plotDimensions, dataRef.current.map(series => series.name), xAxisRangesRef.current, yAxisRangesRef.current)
+            updatePlotRef.current(canvasContext)
+        },
+        onPanEnd: () => {
+            allowTooltip.current = !(dataSource?.running ?? false)
+            reportZoomState()
+        },
+        onZoom: ({factor, k, x, y}) => {
+            if (canvasContext === null) return
+            allowTooltip.current = false
+            if (k === 1) {
+                snapToOriginalRanges()
+            } else {
+                onZoom(factor, x - margin.left, y - margin.top, plotDimensions, xAxisRangesRef.current, yAxisRangesRef.current)
+            }
+            updatePlotRef.current(canvasContext)
+            reportZoomState()
+            allowTooltip.current = true
+        },
+        onZoomReset,
+        resetView: () => {
+            snapToOriginalRanges()
+            if (canvasContext !== null) updatePlotRef.current(canvasContext)
+            reportZoomState()
+        },
+    })
 
     // the zoom state to restore, captured once at mount (see the `zoomState` prop); cleared once
     // it has been applied (see `restoreZoomState` below), so it's only ever applied once
@@ -580,8 +611,7 @@ export function PoincarePlot(props: Props): null {
         })
         // `__zoom` is where d3-zoom keeps an element's transform; setting it directly (rather than
         // through `zoom.transform`) avoids dispatching a synthetic "zoom" event
-        d3.select(canvasContext.canvas).property("__zoom", d3.zoomIdentity.scale(pending.k))
-        lastZoomKRef.current = pending.k
+        setZoomScale(pending.k)
         pendingZoomStateRef.current = undefined
         updatePlotRef.current(canvasContext)
     })
@@ -657,17 +687,12 @@ export function PoincarePlot(props: Props): null {
                     yAxisRangesRef.current.set(axisId, ContinuousAxisRange.from(start, end))
                 }
             })
-            if (zoomEnabled && zoomSelectionRef.current !== undefined && zoomRef.current !== undefined) {
-                zoomSelectionRef.current.call(zoomRef.current.transform, d3.zoomIdentity)
-                // d3-zoom's own `k` is back at identity (1) -- see ScatterPlot's identical reset
-                // for why `lastZoomKRef` must follow it back to 1
-                lastZoomKRef.current = 1
-            }
+            if (zoomEnabled) resetZoomTransform()
             // the axes' bounds were changed from outside (e.g. a different iterate function), which
             // resets the zoom, so a previously reported zoom state no longer applies
             reportZoomState()
         },
-        [zoomEnabled, reportZoomState]
+        [zoomEnabled, resetZoomTransform, reportZoomState]
     )
 
     // strange construct so that we only add the update handler when the chart ID
@@ -745,9 +770,9 @@ export function PoincarePlot(props: Props): null {
      * Called when the user uses the scroll wheel (or scroll gesture) to zoom in or out. Zooms in/out
      * at the location of the mouse when the scroll wheel or gesture was applied. Unlike time-series
      * plots, the iterates plot zooms the x- and y-axis at the same rate.
-     * @param zoomFactor The *incremental* zoom scale factor for this event -- see the pan/zoom
-     * effect below (`lastZoomKRef`) for how d3-zoom's own cumulative `event.transform.k` is
-     * converted to this incremental form before this is called.
+     * @param zoomFactor The *incremental* zoom scale factor for this event -- see
+     * `useCanvasZoomPan` for how d3-zoom's own cumulative `k` is converted to this incremental
+     * form before this is called.
      * @param x The x-position of the mouse when the scroll wheel or gesture is used
      * @param y The y-position of the mouse when the scroll wheel or gesture is used
      * @param plotDimensions The dimensions of the plot
@@ -768,119 +793,6 @@ export function PoincarePlot(props: Props): null {
         [xAxesForSeries, yAxesForSeries, margin, setAxisIntervalFor, xAxesState, yAxesState, zoomMinScaleFactor, zoomMaxScaleFactor]
     )
 
-    // sets up panning and zooming exactly once (and again only when something pan/zoom-relevant
-    // actually changes -- e.g. a resize), rather than on every data tick. This used to live inside
-    // `updatePlot`, which runs on every data tick; recreating a `d3.drag()`/`d3.zoom()` behavior
-    // and reattaching it to the canvas that often was pure overhead unrelated to drawing the new
-    // data, and the constant allocation churn is a plausible contributor to the plot getting
-    // choppier the longer a stream runs.
-    useEffect(
-        () => {
-            if (!canvasContext) return
-            const cc = canvasContext
-            const canvasSelection = d3.select<HTMLCanvasElement, Datum>(cc.canvas)
-
-            if (panEnabled) {
-                const drag = d3.drag<HTMLCanvasElement, Datum>()
-                    .on("start", () => {
-                        canvasSelection.style("cursor", "move")
-                        // during panning, we need to disable viewing the tooltip to prevent
-                        // tooltips from rendering but not getting removed
-                        allowTooltip.current = false;
-                    })
-                    .on("drag", event => {
-                        onPan(
-                            event.dx,
-                            event.dy,
-                            plotDimensions,
-                            dataRef.current.map(series => series.name),
-                            xAxisRangesRef.current,
-                            yAxisRangesRef.current
-                        )
-                        updatePlotRef.current(cc)
-                    })
-                    .on("end", () => {
-                        canvasSelection.style("cursor", "auto")
-                        // during panning, we disabled viewing the tooltip to prevent
-                        // tooltips from rendering but not getting removed, now that panning
-                        // is over, allow tooltips to render again
-                        allowTooltip.current = !(dataSource?.running ?? false)
-                        reportZoomState()
-                    })
-
-                canvasSelection.call(drag)
-            }
-
-            if (zoomEnabled) {
-                zoomRef.current = d3.zoom<HTMLCanvasElement, Datum>()
-                    // restricted to wheel events -- see RasterPlot's identical `.filter()` for
-                    // the full explanation: without this, d3-zoom's own built-in mousedown-drag
-                    // handling (which it still has, separate from this app's dedicated pan
-                    // `d3.drag()`) would ALSO fire "zoom" events for a shift/ctrl-held drag,
-                    // double-handling the same gesture.
-                    .filter(event => event.type === 'wheel' && (!zoomKeyModifiersRequired || event.shiftKey || event.ctrlKey))
-                    .scaleExtent([zoomMinScaleFactor, zoomMaxScaleFactor])
-                    .translateExtent([[margin.left, margin.top], [plotDimensions.width, plotDimensions.height]])
-                    .on("zoom", event => {
-                            allowTooltip.current = false
-                            if (event.sourceEvent !== null) {
-                                // convert d3-zoom's cumulative `k` to the incremental factor this
-                                // event represents -- see `lastZoomKRef`'s declaration above
-                                const zoomFactor = event.transform.k / lastZoomKRef.current
-                                lastZoomKRef.current = event.transform.k
-
-                                // back at d3-zoom's identity (`k` is exactly 1, see `snapToOriginalRanges`)
-                                // means fully zoomed out, which has exactly one correct view: the axes'
-                                // original domains, however many pivots it took to get here
-                                if (event.transform.k === 1) {
-                                    snapToOriginalRanges()
-                                } else {
-                                    onZoom(
-                                        zoomFactor,
-                                        event.sourceEvent.offsetX - margin.left,
-                                        event.sourceEvent.offsetY - margin.top,
-                                        plotDimensions,
-                                        xAxisRangesRef.current,
-                                        yAxisRangesRef.current
-                                    )
-                                }
-                                updatePlotRef.current(cc)
-                                reportZoomState()
-                            }
-                            allowTooltip.current = true
-                        }
-                    )
-
-                zoomSelectionRef.current = canvasSelection.call(zoomRef.current)
-
-                // hands the caller a way to reset the zoom: d3-zoom's transform back to identity
-                // (the resulting "zoom" event has no source event, so the handler above ignores it),
-                // and every axis back to its original domain
-                const zoom = zoomRef.current
-                onZoomReset(() => {
-                    canvasSelection.call(zoom.transform, d3.zoomIdentity)
-                    lastZoomKRef.current = 1
-                    snapToOriginalRanges()
-                    updatePlotRef.current(cc)
-                    reportZoomState()
-                })
-            }
-
-            return () => {
-                if (panEnabled) canvasSelection.on(".drag", null)
-                if (zoomEnabled) {
-                    canvasSelection.on(".zoom", null)
-                    zoomRef.current = undefined
-                    zoomSelectionRef.current = undefined
-                }
-            }
-        },
-        [
-            canvasContext, panEnabled, zoomEnabled, onPan, onZoom, plotDimensions, margin,
-            zoomKeyModifiersRequired, zoomMinScaleFactor, zoomMaxScaleFactor, dataSource, reportZoomState,
-            snapToOriginalRanges, onZoomReset
-        ]
-    )
 
     const onUpdateAxesBoundsRef = useRef(updateAxisRanges)
     useEffect(
@@ -1003,7 +915,7 @@ export function PoincarePlot(props: Props): null {
     )
 
     // creates the view driver that keeps this plot's view in step with the data source, using the
-    // current settings -- see ScatterPlot's identical effect event
+    // current settings -- see `useStreamingTimeAxes`'s identical effect event
     const createViewDriver = useEffectEvent(
         (source: NonNullable<typeof dataSource>) => iteratesViewDriverFor(
             source,
@@ -1016,7 +928,7 @@ export function PoincarePlot(props: Props): null {
     )
 
     // while the data source is running (and this plot has a canvas), drive the view from the
-    // data source's updates -- see ScatterPlot's identical effect. The driver belongs to this plot
+    // data source's updates -- see `useStreamingTimeAxes`'s identical effect. The driver belongs to this plot
     // instance alone and is always torn down with it.
     useEffect(
         () => {
