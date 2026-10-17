@@ -13,6 +13,7 @@ import poincare_chart_page from "./poincare-chart.md?raw";
 import bar_chart_page from "./bar-chart.md?raw";
 import outlier_chart_page from "./outlier-chart.md?raw";
 import legends_page from "./legends.md?raw";
+import theming_page from "./theming.md?raw";
 import tooltips_and_trackers_page from "./tooltips-and-trackers.md?raw";
 import where_the_code_lives_page from "./where-the-code-lives.md?raw";
 import how_the_data_flows_page from "./how-the-data-flows.md?raw";
@@ -49,6 +50,7 @@ const pages = [
     bar_chart_page,
     outlier_chart_page,
     legends_page,
+    theming_page,
     tooltips_and_trackers_page,
     where_the_code_lives_page,
     how_the_data_flows_page,

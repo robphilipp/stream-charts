@@ -20,7 +20,7 @@ There's a simple rule that keeps the two apart: **the example uses the library, 
 - `datasources` – the data sources, which hold a chart's data and ingest the stream (next page)
 - `subscriptions` – the view drivers, which keep a plot's view in step with its data source (also the next page)
 - `series` and `observables` – the shapes of the data, and helpers for building streams of it
-- `legends`, `tooltips`, and `trackers` – the components from the previous two pages
+- `legends`, `tooltips`, and `trackers` – the components from the earlier pages
 - `hooks`, `styling`, and `filters` – the plumbing that ties it all together (the chart's React contexts, the plots' styles and margins, and the regular-expression filter)
 
 #### the example – `src/app/examples`
