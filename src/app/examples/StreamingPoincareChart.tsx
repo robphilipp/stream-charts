@@ -113,17 +113,17 @@ const ITERATE_FUNCTIONS: Map<string, IterateFunctionInfo> = new Map([
     ['Tent Map', {
         inputFn: (callback: IterateFunctionCallback, theme: Theme) => (
             <TentMapGenerator onFunctionChange={callback} theme={theme}/>),
-        range: [0, 1]
+        range: [-0.05, 1.05]
     }],
     ['Logistic Map', {
         inputFn: (callback: IterateFunctionCallback, theme: Theme) => (
             <LogisticMapGenerator onFunctionChange={callback} theme={theme}/>),
-        range: [0, 1]
+        range: [-0.05, 1.05]
     }],
     ['Gauss Map', {
         inputFn: (callback: IterateFunctionCallback, theme: Theme) => (
             <GaussMapGenerator onFunctionChange={callback} theme={theme}/>),
-        range: [-1, 1]
+        range: [-1.05, 1.05]
     }],
 ])
 
