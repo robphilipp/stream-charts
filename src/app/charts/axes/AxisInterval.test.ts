@@ -1,4 +1,4 @@
-import {AxisInterval, copyRangeMap} from "./AxisInterval";
+import {AxisInterval} from "./AxisInterval";
 
 describe('AxisInterval', () => {
 
@@ -166,21 +166,6 @@ describe('AxisInterval', () => {
 
         it('should translate an empty interval into an empty interval', () => {
             expect(AxisInterval.empty().translate(12)).toEqual(AxisInterval.empty())
-        })
-    })
-
-    describe('Copy a range map', () => {
-        it('should create a copy of a range map', () => {
-            const ranges = new Map<string, AxisInterval>([
-                ['a', AxisInterval.from(1, 5)],
-                ['b', AxisInterval.from(10, 20)]
-            ])
-            const copy = copyRangeMap(ranges)
-
-            expect(copy).not.toBe(ranges)
-            expect(copy.size).toBe(ranges.size)
-            expect(copy.get('a')).toEqual(ranges.get('a'))
-            expect(copy.get('b')).toEqual(ranges.get('b'))
         })
     })
 })

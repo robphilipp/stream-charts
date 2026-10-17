@@ -21,33 +21,6 @@ export interface CanvasStrokeStyle {
 }
 
 /**
- * @param current The stroke style
- * @param color The new color
- * @return A copy of the stroke style with the new color
- */
-export function updateStrokeColor(current: CanvasStrokeStyle, color: string): CanvasStrokeStyle {
-    return {...current, color}
-}
-
-/**
- * @param current The stroke style
- * @param width The new width (in pixels)
- * @return A copy of the stroke style with the new width
- */
-export function updateStrokeWidth(current: CanvasStrokeStyle, width: number): CanvasStrokeStyle {
-    return {...current, width}
-}
-
-/**
- * @param current The stroke style
- * @param opacity The new opacity, from 0 (transparent) to 1 (opaque)
- * @return A copy of the stroke style with the new opacity
- */
-export function updateStrokeOpacity(current: CanvasStrokeStyle, opacity: number): CanvasStrokeStyle {
-    return {...current, opacity}
-}
-
-/**
  * Applies a stroke style to the canvas context. Call this immediately before `ctx.stroke()` --
  * unlike the old SVG version, the effect is not persistent.
  * @param context The canvas 2D context to apply the style to
@@ -67,24 +40,6 @@ export function applyStrokeStyle(context: CanvasRenderingContext2D, style: Parti
 export interface CanvasFillStyle {
     readonly color: string
     readonly opacity: number
-}
-
-/**
- * @param current The fill style
- * @param color The new color
- * @return A copy of the fill style with the new color
- */
-export function updateFillColor(current: CanvasFillStyle, color: string): CanvasFillStyle {
-    return {...current, color}
-}
-
-/**
- * @param current The fill style
- * @param opacity The new opacity, from 0 (transparent) to 1 (opaque)
- * @return A copy of the fill style with the new opacity
- */
-export function updateFillOpacity(current: CanvasFillStyle, opacity: number): CanvasFillStyle {
-    return {...current, opacity}
 }
 
 /**

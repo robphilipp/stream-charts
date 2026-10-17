@@ -6,7 +6,6 @@ import {useAxes} from "./useAxes";
 import {useMouse} from "./useMouse";
 import {useTooltip} from "./useTooltip";
 import {useCanvasSurface} from "./useCanvasSurface";
-import type {SvgStyle} from "../styling/svgStyle";
 import {ChartContext} from "./useChart";
 
 /**
@@ -23,13 +22,9 @@ export interface Props<S extends SeriesStyle> {
      */
     color: string
     /**
-     * The base/default background color. This can be overridden by the {@link Props.svgStyle} property.
+     * The base/default background color
      */
     backgroundColor: string
-    /**
-     * Overrides for the chart container's CSS style
-     */
-    svgStyle: Partial<SvgStyle>
     /**
      * A `map(series_name -> series_line_style)` holding the style for each series
      */
@@ -56,7 +51,6 @@ export default function ChartProvider<S extends SeriesStyle, AR extends BaseAxis
         color,
         backgroundColor,
         seriesFilter = defaultUseChartValues().seriesFilter,
-        svgStyle,
         seriesStyles = new Map<string, S>(),
     } = props
 
@@ -76,7 +70,6 @@ export default function ChartProvider<S extends SeriesStyle, AR extends BaseAxis
             chartId,
             color,
             backgroundColor,
-            svgStyle,
             seriesStyles,
             seriesFilter,
             canvasContext,

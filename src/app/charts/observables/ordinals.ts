@@ -95,25 +95,6 @@ export const initialMinTimeDatum = (): OrdinalDatum => ordinalDatumOf(Infinity, 
 export const initialMaxTimeDatum = (): OrdinalDatum => ordinalDatumOf(-Infinity, "", NaN)
 
 /**
- * Returns the specified datum, or the default value-stats datum (`NaN` time and value, and an
- * empty ordinal -- see {@link isDefaultValueStatsDatum}) when there's none
- * @param datum The datum, or `undefined`
- * @return The datum, or the default value-stats datum
- */
-export function valueStatusDatumOfDefault(datum: OrdinalDatum | undefined): OrdinalDatum {
-    return (datum === undefined) ? ordinalDatumOf(NaN, "", NaN) : datum
-}
-
-/**
- * Whether the datum is the default value-stats datum (see {@link valueStatusDatumOfDefault})
- * @param datum The datum
- * @return `true` when the datum's time and value are `NaN`, and its ordinal is empty
- */
-export function isDefaultValueStatsDatum(datum: OrdinalDatum): boolean {
-    return isNaN(datum.time) && datum.ordinal === "" && isNaN(datum.value)
-}
-
-/**
  * @return The extremum to start a search for the min time and value from
  */
 const initialMinOrdinalDatum = (): OrdinalDatumExtremum => ({

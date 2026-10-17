@@ -4,7 +4,6 @@ import type {BaseAxis, SeriesStyle} from "../axes/axes";
 import {type UseAxesValues} from "./useAxes";
 import {type UseMouseValues} from "./useMouse";
 import {type UseTooltipValues} from "./useTooltip";
-import type {SvgStyle} from "../styling/svgStyle";
 import {BaseAxisRange} from "../axes/BaseAxisRange";
 import {defaultUseChartValues} from "./defaultUseChartValues";
 
@@ -45,10 +44,6 @@ export interface UseChartValues<D, S extends SeriesStyle, TM, AR extends BaseAxi
      * The base/default background color. This can be overridden by the {@link Props.svgStyle} property.
      */
     backgroundColor: string
-    /**
-     * Overrides for the chart container's CSS style
-     */
-    svgStyle: Partial<SvgStyle>
     /**
      * A `map(series_name -> series_line_style)`
      */

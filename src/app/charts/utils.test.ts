@@ -1,5 +1,4 @@
 import {
-    emptyBoundingBox,
     firstIndexAtOrAfter,
     fontStringFor,
     formatChange,
@@ -8,13 +7,9 @@ import {
     formatTimeChange,
     formatValue,
     formatValueChange,
-    makeIdSafeForCss,
-    minMaxOf,
     mouseInPlotAreaFor,
     noop,
     textDimensions,
-    textMetricsOf,
-    textWidthOf,
 } from "./utils";
 import type {Dimensions, Margin} from "./styling/margins";
 
@@ -56,16 +51,6 @@ describe('mouseInPlotAreaFor', () => {
     })
 })
 
-describe('emptyBoundingBox', () => {
-    it('returns a box with everything set to 0', () => {
-        expect(emptyBoundingBox()).toEqual({x: 0, y: 0, width: 0, height: 0})
-    })
-
-    it('returns a fresh object each call', () => {
-        expect(emptyBoundingBox()).not.toBe(emptyBoundingBox())
-    })
-})
-
 /**
  * A minimal structural fake of `CanvasRenderingContext2D` -- just enough surface for
  * `textWidthOf`/`textDimensions`/`textMetricsOf` to touch (`measureText`, returning a controllable
@@ -77,16 +62,6 @@ function fakeContext(metrics: Partial<TextMetrics>): CanvasRenderingContext2D {
         measureText: () => metrics as TextMetrics,
     } as unknown as CanvasRenderingContext2D
 }
-
-describe('textWidthOf', () => {
-    it('returns the measured width', () => {
-        expect(textWidthOf(fakeContext({width: 42}), 'abc')).toBe(42)
-    })
-
-    it('returns 0 for a legitimately zero-width measurement', () => {
-        expect(textWidthOf(fakeContext({width: 0}), '')).toBe(0)
-    })
-})
 
 describe('textDimensions', () => {
     it('always reports x=0, y=0 (canvas text has no bbox offset)', () => {
@@ -124,23 +99,6 @@ describe('textDimensions', () => {
     it('falls back to 0 ascent/descent when neither metric is available', () => {
         const box = textDimensions(fakeContext({width: 10}), 'abc')
         expect(box.height).toBe(0)
-    })
-})
-
-describe('textMetricsOf', () => {
-    it('returns width, ascent, and descent (no x/y)', () => {
-        const metrics = textMetricsOf(
-            fakeContext({width: 12, actualBoundingBoxAscent: 9, actualBoundingBoxDescent: 4}),
-            'abc'
-        )
-        expect(metrics).toEqual({width: 12, ascent: 9, descent: 4})
-    })
-
-    it('falls back to fontBoundingBoxAscent/Descent, then to 0, same as textDimensions', () => {
-        expect(
-            textMetricsOf(fakeContext({width: 1, fontBoundingBoxAscent: 5, fontBoundingBoxDescent: 1}), 'a')
-        ).toEqual({width: 1, ascent: 5, descent: 1})
-        expect(textMetricsOf(fakeContext({width: 1}), 'a')).toEqual({width: 1, ascent: 0, descent: 0})
     })
 })
 
@@ -220,38 +178,6 @@ describe('formatValueChange', () => {
     })
 })
 
-describe('minMaxOf', () => {
-    const yOf = (datum: [number, number]): number => datum[1]
-
-    it('computes the min and max of the y-values, clamped against the current min/max', () => {
-        const data: Array<Array<[number, number]>> = [[[0, 5], [1, 10]]]
-        const [min, max] = minMaxOf(yOf)(data, [0, 0])
-        expect(min).toBe(0)
-        expect(max).toBe(10)
-    })
-
-    // guards against a regression of L1: the max branch used `d3.max(...) || 1`, which treats a
-    // legitimate all-zero max as falsy and substitutes 1 -- `?? 1` only substitutes when d3.max
-    // actually returns undefined (a genuinely empty series), not for a real max of 0
-    it('preserves a legitimate all-zero max instead of substituting the empty-data default', () => {
-        const data: Array<Array<[number, number]>> = [[[0, 0], [1, 0]]]
-        const [, max] = minMaxOf(yOf)(data, [-100, -100])
-        expect(max).toBe(0)
-    })
-
-    it('preserves a legitimate all-zero min', () => {
-        const data: Array<Array<[number, number]>> = [[[0, 0], [1, 0]]]
-        const [min] = minMaxOf(yOf)(data, [100, 100])
-        expect(min).toBe(0)
-    })
-
-    it('falls back to the empty-data defaults (0, 1) only when there is genuinely no data', () => {
-        const [min, max] = minMaxOf(yOf)([], [-100, -100])
-        expect(min).toBe(-100)
-        expect(max).toBe(1)
-    })
-})
-
 describe('firstIndexAtOrAfter', () => {
     const data = [0, 10, 20, 30, 40]
     const xFrom = (x: number): number => x
@@ -278,24 +204,5 @@ describe('firstIndexAtOrAfter', () => {
 
     it('returns 0 for an empty collection', () => {
         expect(firstIndexAtOrAfter([], 5, xFrom)).toBe(0)
-    })
-})
-
-describe('makeIdSafeForCss', () => {
-    it('replaces a single space with an underscore', () => {
-        expect(makeIdSafeForCss('hello world')).toBe('hello_world')
-    })
-
-    it('collapses a run of whitespace into a single underscore', () => {
-        expect(makeIdSafeForCss('a   b')).toBe('a_b')
-        expect(makeIdSafeForCss('a\tb')).toBe('a_b')
-    })
-
-    it('replaces leading and trailing whitespace too', () => {
-        expect(makeIdSafeForCss(' abc ')).toBe('_abc_')
-    })
-
-    it('leaves a name with no whitespace unchanged', () => {
-        expect(makeIdSafeForCss('abc123')).toBe('abc123')
     })
 })

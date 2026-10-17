@@ -1,6 +1,6 @@
 import {type JSX, useMemo} from 'react'
 import {type Margin} from "./styling/margins";
-import {initialSvgStyle, type SvgStyle} from "./styling/svgStyle";
+import type {SvgStyle} from "./styling/svgStyle";
 import type {BaseAxis, SeriesStyle} from "./axes/axes";
 import {noop} from "./utils";
 import type {BaseSeries} from "./series/baseSeries";
@@ -255,13 +255,6 @@ export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM, AR ext
 
     // override the defaults with the parent's properties, leaving any unset values as the default value
     const margin = {...defaultMargin, ...props.margin}
-    // svgStyle (with width/height baked in) is kept for the useChart().svgStyle context value's
-    // existing shape/contract -- it is NOT used for the canvas's own CSS sizing, which
-    // CanvasSurfaceProvider derives from usePlotDimensions() instead (see the doc comment above)
-    const svgStyle = useMemo<SvgStyle>(
-        () => ({...initialSvgStyle, ...props.svgStyle, width: props.width, height: props.height}),
-        [props.height, props.svgStyle, props.width]
-    )
 
     // `seriesFilter` is tested against every series name on every redraw frame by each plot
     // component (not just once), so an unvetted pattern -- e.g. one built directly from
@@ -300,7 +293,6 @@ export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM, AR ext
 
                                         color={color}
                                         backgroundColor={backgroundColor}
-                                        svgStyle={svgStyle}
                                         seriesStyles={seriesStyles}
                                         seriesFilter={safeSeriesFilter}
                                     >

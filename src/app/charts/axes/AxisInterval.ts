@@ -162,14 +162,3 @@ export class AxisInterval {
     }
 }
 
-/**
- * Creates a copy of the specified map(axis_id, (start, end))
- * @param ranges The ranges map to copy
- * @return A copy of the specified map(axis_id, (start, end))
- */
-export function copyRangeMap(ranges: Map<string, AxisInterval>): Map<string, AxisInterval> {
-    return new Map(Array.from(ranges.entries())
-        .map(([id, range]) => [id, range.copy()])
-    )
-}
-

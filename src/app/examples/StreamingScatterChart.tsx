@@ -26,7 +26,7 @@ import {assignAxes} from "../charts/plots/plot";
 import * as d3 from "d3";
 import {lightTheme, type Theme} from "../ui/Themes.ts";
 import {seriesFrom} from "../charts/series/baseSeries";
-import {AxisInterval, regexFilter} from "stream-charts";
+import {AxisInterval, regexFilter} from "../charts";
 import {TrackerLabelLocation} from "../charts/trackers/trackerUtils.ts";
 import {LegendLocation} from "../charts/legends/constants";
 import {defaultMargin} from "../charts/hooks/defaultPlotDimensions";

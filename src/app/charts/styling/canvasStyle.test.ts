@@ -1,53 +1,8 @@
 import {
     applyFillStyle,
     applyStrokeStyle,
-    type CanvasFillStyle,
-    type CanvasStrokeStyle,
-    updateFillColor,
-    updateFillOpacity,
-    updateStrokeColor,
-    updateStrokeOpacity,
-    updateStrokeWidth,
     withAlpha,
 } from "./canvasStyle";
-
-describe('updateStrokeColor/Width/Opacity', () => {
-    const style: CanvasStrokeStyle = {color: 'red', width: 1, opacity: 0.5};
-
-    it('should update only the color', () => {
-        expect(updateStrokeColor(style, 'blue')).toEqual({color: 'blue', width: 1, opacity: 0.5});
-    });
-
-    it('should update only the width', () => {
-        expect(updateStrokeWidth(style, 3)).toEqual({color: 'red', width: 3, opacity: 0.5});
-    });
-
-    it('should update only the opacity', () => {
-        expect(updateStrokeOpacity(style, 0.9)).toEqual({color: 'red', width: 1, opacity: 0.9});
-    });
-
-    it('should not mutate the original style object', () => {
-        updateStrokeColor(style, 'blue');
-        expect(style).toEqual({color: 'red', width: 1, opacity: 0.5});
-    });
-});
-
-describe('updateFillColor/Opacity', () => {
-    const style: CanvasFillStyle = {color: 'red', opacity: 0.5};
-
-    it('should update only the color', () => {
-        expect(updateFillColor(style, 'blue')).toEqual({color: 'blue', opacity: 0.5});
-    });
-
-    it('should update only the opacity', () => {
-        expect(updateFillOpacity(style, 0.9)).toEqual({color: 'red', opacity: 0.9});
-    });
-
-    it('should not mutate the original style object', () => {
-        updateFillColor(style, 'blue');
-        expect(style).toEqual({color: 'red', opacity: 0.5});
-    });
-});
 
 /**
  * A minimal structural fake of `CanvasRenderingContext2D` -- just enough surface for

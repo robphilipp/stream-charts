@@ -21,7 +21,6 @@ export function defaultUseChartValues<D, S extends SeriesStyle, TM, AR extends B
         canvasContext: null,
         color: '#d2933f',
         backgroundColor: '#EEE',
-        svgStyle: {},
         seriesStyles: new Map<string, S>(),
 
         // axes

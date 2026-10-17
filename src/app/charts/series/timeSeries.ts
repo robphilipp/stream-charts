@@ -39,12 +39,4 @@ export type TimeSeries = BaseSeries<Datum>
 export const timeSeriesFromTuples = (name: string, data: Array<[number, number]> = []): TimeSeries =>
     seriesFrom(name, data.map(([t, y]) => datumOf(t, y)))
 
-/**
- * Extends the {@link Datum} interface with the pixel coordinates of the datum.
- */
-export interface PixelDatum extends Datum {
-    xPixel: number;
-    yPixel: number;
-}
-
 

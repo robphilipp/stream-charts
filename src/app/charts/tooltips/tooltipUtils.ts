@@ -251,37 +251,6 @@ export function findPointAndNeighbors<D>(
 }
 
 /**
- * Calculates the width and height of the tooltip content. Canvas replacement for the old SVG
- * `getBBox()`-based version: tooltip content is now plain HTML, so the browser lays it out and
- * we just read the resulting box back via `getBoundingClientRect()`.
- * @param element The HTML element holding the tooltip content (must already be attached to the
- * DOM -- an unattached/`display: none` element measures as 0x0)
- * @returns The width and height of the tooltip content
- */
-export function textDimensionsFor(element: HTMLElement): {width: number, height: number} {
-    const rect = element.getBoundingClientRect()
-    return {width: rect.width, height: rect.height}
-}
-
-/**
- * Calculates the width of the tooltip content. See {@link textDimensionsFor}.
- * @param element The HTML element holding the tooltip content
- * @returns The width of the tooltip content
- */
-export function textWidthFor(element: HTMLElement): number {
-    return textDimensionsFor(element).width
-}
-
-/**
- * Calculates the height of the tooltip content. See {@link textDimensionsFor}.
- * @param element The HTML element holding the tooltip content
- * @returns The height of the tooltip content
- */
-export function textHeightFor(element: HTMLElement): number {
-    return textDimensionsFor(element).height
-}
-
-/**
  * The points of a scatter series that a tooltip shows (and the plot highlights), depending on
  * where the mouse is over the series:
  * - directly over a data point: that `point`, along with the points `before` and `after` it
