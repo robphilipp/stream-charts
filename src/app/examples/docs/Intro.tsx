@@ -18,6 +18,7 @@ import tooltips_and_trackers_page from "./tooltips-and-trackers.md?raw";
 import where_the_code_lives_page from "./where-the-code-lives.md?raw";
 import how_the_data_flows_page from "./how-the-data-flows.md?raw";
 import adding_a_data_source_page from "./adding-a-data-source.md?raw";
+import writing_tooltips_page from "./writing-tooltips.md?raw";
 import ReactMarkdown, {type Components, type ExtraProps, type Options} from "react-markdown";
 import rehypeRaw from 'rehype-raw';
 import rehypeHighlight from "rehype-highlight";
@@ -55,6 +56,7 @@ const pages = [
     where_the_code_lives_page,
     how_the_data_flows_page,
     adding_a_data_source_page,
+    writing_tooltips_page,
 ]
 
 /**

@@ -26,7 +26,7 @@ The next pages describe:
 5. theming – how the charts change colors, how to add a theme, and what the limits are,
 6. tooltips and trackers,
 7. what's going on under the hood – which code is the example's and which is the library's, and how the data flows from one to the other, and
-8. a tutorial that walks you through adding your own data source, from the RxJS observable to the chart.
+8. two tutorials: one that walks you through adding your own data source, from the RxJS observable to the chart, and one on writing your own tooltips for each chart type.
 
 Click on the `Next` button in the navigation bar to continue. Or, if you're the impatient type, jump ahead using the table of contents (the button on the left of the navigation bar).
 

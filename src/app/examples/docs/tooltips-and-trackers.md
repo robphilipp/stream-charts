@@ -30,7 +30,7 @@ You put the content inside the tooltip, and the tooltip inside the chart:
 
 Most of the content components take *formatters* – functions that turn the values into text – so you can control the units, the number of decimal places, and the wording without writing a whole tooltip. Each example sets its own (have a look for `Formatter` in the example's code).
 
-And when the formatters aren't enough, you can write the content yourself. The HTML tooltip is the easiest place to start, since it's just React. The outlier example comes with a custom tooltip, `MyOutlierHtmlTooltipContent` (in `src/app/examples`), that you can switch on in `StreamingOutlierChart.tsx`: uncomment the `<MyOutlierHtmlTooltipContent/>` line (inside the `<OutlierPlotHtmlTooltipContent>`), and import it. It gets the tooltip's data from the library's `useOutlierTooltip()` hook, and then lays it out however it likes.
+And when the formatters aren't enough, you can write the content yourself. The HTML tooltip is the easiest place to start, since it's just React. The outlier example comes with a custom tooltip, `MyOutlierHtmlTooltipContent` (in `src/app/examples`), that you can switch on in `StreamingOutlierChart.tsx`: uncomment the `<MyOutlierHtmlTooltipContent/>` line (inside the `<OutlierPlotHtmlTooltipContent>`), and import it. It gets the tooltip's data from the library's `useOutlierTooltip()` hook, and then lays it out however it likes. And for the whole story – a tooltip of your own for each chart type – see the tutorial at the end of these pages.
 
 #### trackers
 

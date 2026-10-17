@@ -191,3 +191,5 @@ That's a working chart. From here, you can add the pieces from the earlier pages
 - **A different chart type** – pick a different row from the table in step 1. The steps are the same: write an observable of that chart data, wrap it in a generator, and create its data source. The examples' generators in `src/app/examples/dataproviders` show one of each.
 
 And when you're ready for real data, replace `sensorReadings` with an observable of your own. Nothing else needs to change.
+
+Next up: a tooltip of your own.
