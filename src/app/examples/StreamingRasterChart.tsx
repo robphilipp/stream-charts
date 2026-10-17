@@ -192,8 +192,14 @@ export function StreamingRasterChart(props: Props): JSX.Element {
 
     const [legendLocation, setLegendLocation] = useState<LegendLocation>(LegendLocation.EXTERNAL_CONTAINER)
     const legendContainerRef = useRef<HTMLDivElement>(null)
-    const [externalLegendWidth, setExternalLegendWidth] = useState<number>(0)
-    const externalLegendWidthRef = useRef<number>(0)
+    // the external legend's column starts out at its final width when the legend is already shown
+    // (e.g. when returning to this chart), so that it's simply there, rather than animating open --
+    // it only animates when it's shown or hidden while the chart is on screen (see the effect below)
+    const initialExternalLegendWidth = visibility.legend && legendLocation === LegendLocation.EXTERNAL_CONTAINER ?
+        EXTERNAL_LEGEND_WIDTH :
+        0
+    const [externalLegendWidth, setExternalLegendWidth] = useState<number>(initialExternalLegendWidth)
+    const externalLegendWidthRef = useRef<number>(initialExternalLegendWidth)
 
     // elapsed time
     const startTimeRef = useRef<number>(new Date().valueOf())
