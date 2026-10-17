@@ -16,6 +16,7 @@ import legends_page from "./legends.md?raw";
 import tooltips_and_trackers_page from "./tooltips-and-trackers.md?raw";
 import where_the_code_lives_page from "./where-the-code-lives.md?raw";
 import how_the_data_flows_page from "./how-the-data-flows.md?raw";
+import adding_a_data_source_page from "./adding-a-data-source.md?raw";
 import ReactMarkdown, {type Components, type ExtraProps} from "react-markdown";
 import rehypeRaw from 'rehype-raw';
 import {buttonStyle, interpolateColor} from "../../ui/utils.ts";
@@ -47,6 +48,7 @@ const pages = [
     tooltips_and_trackers_page,
     where_the_code_lives_page,
     how_the_data_flows_page,
+    adding_a_data_source_page,
 ]
 
 /**

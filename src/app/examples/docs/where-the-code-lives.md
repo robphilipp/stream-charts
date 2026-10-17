@@ -1,6 +1,6 @@
 ### under the hood: where the code lives
 
-So far, we've looked at the examples from the outside. These last two pages look at the code – and in particular, at where the example application ends and the [stream-charts](https://www.npmjs.com/package/stream-charts) library begins. When you go to build your own charts, the library is what you use, and the example is what you read (and maybe borrow from).
+So far, we've looked at the examples from the outside. These next two pages look at the code – and in particular, at where the example application ends and the [stream-charts](https://www.npmjs.com/package/stream-charts) library begins. When you go to build your own charts, the library is what you use, and the example is what you read (and maybe borrow from).
 
 Everything lives under `src/app`, in three directories.
 

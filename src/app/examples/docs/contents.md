@@ -23,8 +23,9 @@ The next pages describe:
 2. common control bar functions,
 3. each chart type – what the chart represents, and the control bar functions specific to it (one page per chart type),
 4. legends, 
-5. tooltips and trackers, and
-6. what's going on under the hood – which code is the example's and which is the library's, and how the data flows from one to the other.
+5. tooltips and trackers,
+6. what's going on under the hood – which code is the example's and which is the library's, and how the data flows from one to the other, and
+7. a tutorial that walks you through adding your own data source, from the RxJS observable to the chart.
 
 Click on the `Next` button in the navigation bar to continue. Or, if you're the impatient type, jump ahead using the table of contents (the button on the left of the navigation bar).
 
