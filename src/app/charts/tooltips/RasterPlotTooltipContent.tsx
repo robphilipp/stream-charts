@@ -74,7 +74,7 @@ interface RasterTooltipContent {
  * Adds tooltip content that shows the series name, the (time, value) of the selected spike, the
  * statistics of the series' spikes in the window of data the chart holds (their count, the mean
  * and standard deviation of their values, and the mean time between them), and a sparkline of
- * their values over the window.
+ * their values over the window, with the selected spike marked.
  * ```
  * series name
  * time, value
@@ -139,7 +139,7 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
                             </tbody>
                         </table>
                     }
-                    {/* the spikes' values over the window, ending in the latest spike (the dot) */}
+                    {/* the spikes' values over the window, with the hovered spike marked (the dot) */}
                     {tooltipContent.sparkline !== undefined &&
                         <svg
                             width={SPARKLINE_WIDTH}
@@ -155,12 +155,14 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
                                 strokeLinejoin="round"
                                 strokeLinecap="round"
                             />
-                            <circle
-                                cx={tooltipContent.sparkline.end[0]}
-                                cy={tooltipContent.sparkline.end[1]}
-                                r={2.5}
-                                fill={tooltipStyle.fontColor}
-                            />
+                            {tooltipContent.sparkline.mark !== undefined &&
+                                <circle
+                                    cx={tooltipContent.sparkline.mark[0]}
+                                    cy={tooltipContent.sparkline.mark[1]}
+                                    r={2.5}
+                                    fill={tooltipStyle.fontColor}
+                                />
+                            }
                         </svg>
                     }
             </>}
@@ -203,7 +205,7 @@ function captureTooltipContent(
         spikeTime,
         value: y,
         statistics: spikes !== undefined ? seriesStatistics(spikes) : undefined,
-        sparkline: sparklineFor(spikeValues, SPARKLINE_WIDTH, SPARKLINE_HEIGHT),
+        sparkline: sparklineFor(spikeValues, SPARKLINE_WIDTH, SPARKLINE_HEIGHT, 2, undefined, spikeTime),
         axis,
     }
 }
