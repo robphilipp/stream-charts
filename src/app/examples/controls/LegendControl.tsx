@@ -46,7 +46,10 @@ export function LegendControl(props: Props): JSX.Element {
             flexDirection: 'row',
             gap: 5,
         }}>
-            <label style={{color: theme.color}}>
+            {/* (a plain container, not a <label>: a click on a label is forwarded to the first
+                control inside it -- here, the drop-down's button, since the checkbox isn't a
+                native input -- so checking the checkbox would also open the drop-down) */}
+            <div style={{color: theme.color, display: 'inline'}}>
                 <Checkbox
                     key={3}
                     checked={visibility}
@@ -65,7 +68,7 @@ export function LegendControl(props: Props): JSX.Element {
                     onChange={setLegendLocation}
                     disabled={!visibility}
                 />
-            </label>
+            </div>
         </div>
     )
 }
