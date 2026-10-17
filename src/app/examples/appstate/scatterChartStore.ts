@@ -7,6 +7,7 @@ import type {DataGenerator} from "../../charts/datasources/StreamingDataSource.t
 import {randomWeightDataObservable} from "../dataproviders/randomWeightData.ts";
 import {createInitialVisibility} from "../options/visibility.ts";
 import {devtools} from "zustand/middleware";
+import {LegendLocation} from "../../charts/legends/constants.ts";
 import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceStateSlice.ts";
 import {
     type VisibilitySlice,
@@ -71,6 +72,8 @@ type ScatterChartState = {
     // (undefined until they've been auto-scaled)
     y1AutoScaledDomain: Range | undefined
     y2AutoScaledDomain: Range | undefined
+    // where the legend goes (kept here, so that it's still there when returning to the chart)
+    legendLocation: LegendLocation
 }
 
 const initialState: ScatterChartState = {
@@ -86,6 +89,7 @@ const initialState: ScatterChartState = {
     autoScaleYAxes: false,
     y1AutoScaledDomain: undefined,
     y2AutoScaledDomain: undefined,
+    legendLocation: LegendLocation.EXTERNAL_CONTAINER,
 }
 
 type ScatterChartActions = {
@@ -101,6 +105,7 @@ type ScatterChartActions = {
     setAutoScaleYAxes: (autoScaleYAxes: boolean) => void
     setY1AutoScaledDomain: (domain: Range) => void
     setY2AutoScaledDomain: (domain: Range) => void
+    setLegendLocation: (legendLocation: LegendLocation) => void
     reset: () => void
 }
 
@@ -126,6 +131,8 @@ export const useScatterChartStore: UseBoundStore<StoreApi<ScatterChartStore>> = 
         // the compiled regex is derived from this in the component, so its reference only
         // changes when the filter value actually changes
         setFilterValue: filterValue => set({filterValue}),
+
+        setLegendLocation: (legendLocation: LegendLocation) => set({legendLocation}),
 
         // holds status of the visibility for tooltip, tracker, markers, legend
         ...createVisibilitySlice(set, get, store),

@@ -239,7 +239,8 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     const [elapsed, setElapsed] = useState<number>(0)
 
     // legend
-    const [legendLocation, setLegendLocation] = useState<LegendLocation>(LegendLocation.EXTERNAL_CONTAINER)
+    const legendLocation = useScatterChartStore(state => state.legendLocation)
+    const setLegendLocation = useScatterChartStore(state => state.setLegendLocation)
     const legendContainerRef = useRef<HTMLDivElement>(null)
     // the external legend's column starts out at its final width when the legend is already shown
     // (e.g. when returning to this chart), so that it's simply there, rather than animating open --

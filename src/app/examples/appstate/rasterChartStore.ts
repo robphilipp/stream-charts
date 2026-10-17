@@ -7,6 +7,7 @@ import type {DataGenerator} from "../../charts/datasources/StreamingDataSource.t
 import {randomSpikeDataObservable} from "../dataproviders/randomSpikeData.ts";
 import {createInitialVisibility} from "../options/visibility.ts";
 import {devtools} from "zustand/middleware";
+import {LegendLocation} from "../../charts/legends/constants.ts";
 import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceStateSlice.ts";
 import {
     type VisibilitySlice,
@@ -65,6 +66,8 @@ type RasterChartState = {
     windowingTime: number
     cadence: number
     dataUpdatePeriod: number
+    // where the legend goes (kept here, so that it's still there when returning to the chart)
+    legendLocation: LegendLocation
 }
 
 const initialState: RasterChartState = {
@@ -75,6 +78,7 @@ const initialState: RasterChartState = {
     windowingTime: 50,
     cadence: 25,
     dataUpdatePeriod: DEFAULT_DATA_UPDATE_PERIOD,
+    legendLocation: LegendLocation.EXTERNAL_CONTAINER,
 }
 
 type RasterChartActions = {
@@ -85,6 +89,7 @@ type RasterChartActions = {
     setWindowingTime: (windowingTime: number) => void
     setCadence: (cadence: number) => void
     setDataUpdatePeriod: (dataUpdatePeriod: number) => void
+    setLegendLocation: (legendLocation: LegendLocation) => void
     reset: () => void
 }
 
@@ -109,6 +114,8 @@ export const useRasterChartStore: UseBoundStore<StoreApi<RasterChartStore>> = cr
         // the compiled regex is derived from this in the component, so its reference only
         // changes when the filter value actually changes
         setFilterValue: filterValue => set({filterValue}),
+
+        setLegendLocation: (legendLocation: LegendLocation) => set({legendLocation}),
 
         // holds status of the visibility for tooltip, tracker, markers, legend
         ...createVisibilitySlice(set, get, store),

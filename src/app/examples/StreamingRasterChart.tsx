@@ -190,7 +190,8 @@ export function StreamingRasterChart(props: Props): JSX.Element {
     // whether the store has already been seeded with the initial data from the props
     const seededInitialDataRef = useRef<boolean>(false)
 
-    const [legendLocation, setLegendLocation] = useState<LegendLocation>(LegendLocation.EXTERNAL_CONTAINER)
+    const legendLocation = useRasterChartStore(state => state.legendLocation)
+    const setLegendLocation = useRasterChartStore(state => state.setLegendLocation)
     const legendContainerRef = useRef<HTMLDivElement>(null)
     // the external legend's column starts out at its final width when the legend is already shown
     // (e.g. when returning to this chart), so that it's simply there, rather than animating open --
