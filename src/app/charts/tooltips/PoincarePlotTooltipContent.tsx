@@ -1,10 +1,9 @@
 import type {CSSProperties, ReactElement} from "react";
-import {useEffect, useMemo, useState, useRef} from "react";
+import {useEffect, useLayoutEffect, useMemo, useState, useRef} from "react";
 import {createPortal} from "react-dom";
 import {
     defaultTooltipStyle,
     findPointAndNeighbors,
-    type Sparkline,
     sparklineFor,
     type TooltipDimensions,
     type TooltipStyle,
@@ -111,23 +110,28 @@ interface PoincareTooltipContent {
     yPrev: string
     yCurrent: string
     yNext: string
-    // the series' values (each point's `f[n+1](x)`) over time, with the hovered point marked,
-    // when there are enough of them to draw
-    sparkline: Sparkline | undefined
+    // the series' values (each point's `f[n+1](x)`) over time, around the hovered point (see
+    // `SPARKLINE_POINTS`), for the sparkline -- which is drawn once the tooltip's width is known
+    sparklineValues: Array<{ time: number, value: number }>
+    // the hovered point's time (marked on the sparkline)
+    hoveredTime: number
     // where the tooltip is anchored (the mouse)
     anchor: TooltipAnchor
 }
 
-// the size of the tooltip's sparkline (of the series' values over time)
-const SPARKLINE_WIDTH = 180
+// the height of the tooltip's sparkline (of the series' values over time); it's as wide as the
+// tooltip's content (at least this wide)
 const SPARKLINE_HEIGHT = 36
+const MIN_SPARKLINE_WIDTH = 120
+// the number of points (around the hovered point) the sparkline shows
+const SPARKLINE_POINTS = 60
 
 /**
  * Adds tooltip content as a table. The columns of the table are the previous, current, and next
  * iterate (relative to the hovered point). The rows of the table are the time values for the
  * first row, and the iterate values (each point's `f[n+1](x)`) for the second row. Below the
- * table, a sparkline of the series' values over time (the data the chart holds), with the
- * hovered point marked.
+ * table, as wide as it, a sparkline of the series' values over time -- the 60 points around the
+ * hovered point -- with the hovered point marked.
  * ```
  * series name
  *            f[n-1](x)     f[n](x)      f[n+1](x)
@@ -222,6 +226,26 @@ export function PoincarePlotTooltipContent(props: Props): ReactElement | null {
     )
 
     // positions the tooltip next to the mouse, based on its rendered size
+    // the sparkline is as wide as the tooltip's content: its table, or its title when that's wider.
+    // Both are measured at their natural widths (rather than the sparkline-stretched width of the
+    // tooltip itself), so the sparkline shrinks again for a narrower tooltip. Measured before the
+    // tooltip is painted, and before it's placed (the placement below runs after this re-render).
+    const titleRef = useRef<HTMLDivElement>(null)
+    const tableRef = useRef<HTMLTableElement>(null)
+    const [sparklineWidth, setSparklineWidth] = useState<number>(MIN_SPARKLINE_WIDTH)
+    useLayoutEffect(
+        () => {
+            if (tooltipContent === null) return
+            const contentWidth = Math.max(
+                MIN_SPARKLINE_WIDTH,
+                tableRef.current?.offsetWidth ?? 0,
+                titleRef.current?.offsetWidth ?? 0
+            )
+            if (contentWidth !== sparklineWidth) setSparklineWidth(contentWidth)
+        },
+        [tooltipContent, sparklineWidth]
+    )
+
     useTooltipPlacement(tooltipRef, tooltipContent?.anchor ?? null, plotDimensions, margin, tooltipStyle)
 
     if (tooltipContent === null) return null
@@ -248,12 +272,23 @@ export function PoincarePlotTooltipContent(props: Props): ReactElement | null {
     // matches the old version's `currentIterateStyle`, applied to the "current" (middle) column
     const currentColumnStyle: CSSProperties = {...cellStyle, fontWeight: tooltipStyle.fontWeight + 300}
 
+    // the series' values around the hovered point, over time, with the hovered point marked (when
+    // there are enough values to draw)
+    const sparkline = sparklineFor(
+        tooltipContent.sparklineValues, sparklineWidth, SPARKLINE_HEIGHT, 2, undefined, tooltipContent.hoveredTime
+    )
+
     return createPortal(
         <div ref={tooltipRef} style={divStyle}>
-            <div style={{fontSize: tooltipStyle.fontSize, fontWeight: tooltipStyle.fontWeight, marginBottom: 4}}>
+            <div
+                ref={titleRef}
+                style={{fontSize: tooltipStyle.fontSize, fontWeight: tooltipStyle.fontWeight, marginBottom: 4, width: 'fit-content'}}
+            >
                 {tooltipContent.seriesName}
             </div>
-            <table style={{fontSize: tooltipStyle.fontSize, borderCollapse: 'collapse', border: 'none'}}>
+            {/* (at its natural width, rather than the app's default full-width tables, so that it
+                can be measured for the sparkline's width) */}
+            <table ref={tableRef} style={{fontSize: tooltipStyle.fontSize, borderCollapse: 'collapse', border: 'none', width: 'auto'}}>
                 <thead>
                 <tr>
                     <td style={rowLabelStyle}/>
@@ -278,28 +313,28 @@ export function PoincarePlotTooltipContent(props: Props): ReactElement | null {
                 </tbody>
             </table>
             {/* the series' values over time, with the hovered point marked (the dot) */}
-            {tooltipContent.sparkline !== undefined && <>
+            {sparkline !== undefined && <>
                 <div style={{fontSize: tooltipStyle.fontSize, marginTop: 8}}>
                     {tooltipContent.yLabel} over time
                 </div>
                 <svg
-                    width={SPARKLINE_WIDTH}
+                    width={sparklineWidth}
                     height={SPARKLINE_HEIGHT}
                     style={{display: 'block', marginTop: 4}}
                     aria-hidden="true"
                 >
                     <path
-                        d={tooltipContent.sparkline.path}
+                        d={sparkline.path}
                         fill="none"
                         stroke={tooltipStyle.fontColor}
                         strokeWidth={1}
                         strokeLinejoin="round"
                         strokeLinecap="round"
                     />
-                    {tooltipContent.sparkline.mark !== undefined &&
+                    {sparkline.mark !== undefined &&
                         <circle
-                            cx={tooltipContent.sparkline.mark[0]}
-                            cy={tooltipContent.sparkline.mark[1]}
+                            cx={sparkline.mark[0]}
+                            cy={sparkline.mark[1]}
                             r={2.5}
                             fill={tooltipStyle.fontColor}
                         />
@@ -321,8 +356,8 @@ interface CaptureOptions {
 
 /**
  * Captures the data needed to render the tooltip's content -- the table (the hovered point, the
- * first point within 0.1 of the mouse's time, and its neighbors), and the sparkline of the series'
- * values over time, with the hovered point marked -- and where it's anchored (the mouse -- the
+ * first point within 0.1 of the mouse's time, and its neighbors), and the series' values around
+ * the hovered point, over time, for the sparkline -- and where it's anchored (the mouse -- the
  * tooltip is placed next to it once it's rendered, see {@link useTooltipPlacement}). Replaces the
  * old version, which built and positioned an SVG table via `svg-table`'s `createTable`.
  * @param seriesName The name of the series (i.e. the neuron ID)
@@ -364,13 +399,33 @@ function captureTooltipContent(
         yPrev: yValueFormatter(lower.iterateN_1),
         yCurrent: yValueFormatter(point.iterateN_1),
         yNext: yValueFormatter(upper.iterateN_1),
-        sparkline: sparklineFor(
-            series.map(datum => ({time: datum.time, value: datum.iterateN_1})),
-            SPARKLINE_WIDTH, SPARKLINE_HEIGHT, 2, undefined, point.time
-        ),
+        sparklineValues: valuesAround(series, index, SPARKLINE_POINTS),
+        hoveredTime: point.time,
         anchor: tooltipAnchorFor(mouseCoords, canvas),
     })
 
     // return off-screen coordinates so the Tooltip parent's background div is invisible
     return {x: -99999, y: -99999, contentWidth: 0, contentHeight: 0}
+}
+
+/**
+ * The values (each point's `f[n+1](x)`) of (at most) the specified number of points around the
+ * hovered point, over time: centered on the hovered point, or shifted to stay within the series
+ * when the hovered point is near its start or end
+ * @param series The series' iterates, ordered by time
+ * @param index The index of the hovered point (or -1, when it wasn't found)
+ * @param count The (largest) number of points
+ * @return The points' times and values, in order
+ */
+function valuesAround(
+    series: { length: number, [index: number]: IterateDatum },
+    index: number,
+    count: number
+): Array<{ time: number, value: number }> {
+    if (index < 0) return []
+    const start = Math.max(0, Math.min(index - Math.floor(count / 2), series.length - count))
+    const end = Math.min(series.length, start + count)
+    const values: Array<{ time: number, value: number }> = []
+    for (let i = start; i < end; i++) values.push({time: series[i].time, value: series[i].iterateN_1})
+    return values
 }
