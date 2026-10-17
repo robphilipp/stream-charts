@@ -33,7 +33,7 @@ const stepsInputStyle = (theme: Theme, disabled: boolean): CSSProperties => ({
     color: disabled ? theme.disabledColor : theme.color,
     fontSize: 12,
     padding: 4,
-    height: 20,
+    height: 15,
     width: 60,
 })
 

@@ -93,7 +93,7 @@ function style(theme: Theme, height: number): CSSProperties {
         overflowX: 'hidden',
         scrollbarWidth: "thin",
         // scrollbarColor: `${theme.color} ${theme.backgroundColor}`,
-        scrollbarColor: `${interpolateColor(theme.color as string, theme.backgroundColor as string, 0.5)} ${theme.backgroundColor}`,
+        scrollbarColor: `${interpolateColor(theme.color as string, theme.backgroundColor as string, 50)} ${theme.backgroundColor}`,
         fontSize: INTRO_FONT_SIZE,
         fontWeight: 400,
     }
