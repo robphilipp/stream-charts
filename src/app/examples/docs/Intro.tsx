@@ -17,8 +17,10 @@ import tooltips_and_trackers_page from "./tooltips-and-trackers.md?raw";
 import where_the_code_lives_page from "./where-the-code-lives.md?raw";
 import how_the_data_flows_page from "./how-the-data-flows.md?raw";
 import adding_a_data_source_page from "./adding-a-data-source.md?raw";
-import ReactMarkdown, {type Components, type ExtraProps} from "react-markdown";
+import ReactMarkdown, {type Components, type ExtraProps, type Options} from "react-markdown";
 import rehypeRaw from 'rehype-raw';
+import rehypeHighlight from "rehype-highlight";
+import "./codeHighlighting.css";
 import {buttonStyle, interpolateColor} from "../../ui/utils.ts";
 import {useGridCell} from "react-resizable-grid-layout";
 import {FloatingBar} from "../../ui/FloatingBar.tsx";
@@ -371,6 +373,36 @@ function MarkdownLink(props: ComponentProps<'a'> & ExtraProps): JSX.Element {
 }
 
 /**
+ * A code block: scrolls sideways when its lines are wider than the page (rather than being cut
+ * off), on a background tinted slightly toward the text color. Its code's tokens are colored by
+ * rehype-highlight's classes, in the theme's colors (see `codeHighlighting.css`).
+ * @param props The code block's properties (from the markdown)
+ * @return The code block
+ */
+function MarkdownPre(props: ComponentProps<'pre'> & ExtraProps): JSX.Element {
+    const {style, children} = props
+    const {theme} = useThemeStore()
+    return (
+        <pre
+            className="markdown-code"
+            data-theme={theme.name}
+            style={{
+                ...style,
+                overflowX: 'auto',
+                scrollbarWidth: 'thin',
+                padding: '10px 14px',
+                borderRadius: 4,
+                backgroundColor: interpolateColor(theme.backgroundColor, theme.color, 6),
+                fontSize: INTRO_FONT_SIZE - 2,
+                lineHeight: 1.4,
+            }}
+        >
+            {children}
+        </pre>
+    )
+}
+
+/**
  * A figure, as wide as the page's content
  * @param props The figure's properties (from the markdown)
  * @return The figure
@@ -453,6 +485,8 @@ const MARKDOWN_COMPONENTS: Components = {
     figcaption: MarkdownFigureCaption,
     img: MarkdownImage,
     video: MarkdownVideo,
+    pre: MarkdownPre,
 }
-const REHYPE_PLUGINS = [rehypeRaw]
+// (the pages' tsx code is highlighted as typescript, which highlight.js' typescript also covers)
+const REHYPE_PLUGINS: Options['rehypePlugins'] = [rehypeRaw, [rehypeHighlight, {aliases: {typescript: ['tsx']}}]]
 const REMARK_PLUGINS = [remarkGfm]
