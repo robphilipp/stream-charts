@@ -250,18 +250,23 @@ export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM, AR ext
         children,
     } = props
 
-    // the chart's data: the data source, the series it held when it was handed to the chart (a new
-    // data source means new initial data, so plots keyed on the initial data reset), and the
-    // streaming settings
+    // the series the data source held when it was handed to the chart. Memoized on the data source
+    // ALONE: a new data source means new initial data, and the plots reset themselves when the
+    // initial data changes -- so it must not change when anything else does (e.g. a new
+    // `onUpdateChartTime` callback on every render of the chart's parent, which would otherwise
+    // reset the plots on every render)
+    const initialData = useMemo<Array<BaseSeries<D>>>(() => dataSource.seriesList(), [dataSource])
+
+    // the chart's data: the data source, its initial data, and the streaming settings
     const chartData = useMemo<ChartDataValues<CD, D, BaseSeries<D>>>(
         () => ({
             dataSource: dataSource as StreamingDataSource<CD, D, BaseSeries<D>>,
-            initialData: dataSource.seriesList(),
+            initialData,
             windowingTime,
             dataUpdatePeriod,
             onUpdateChartTime
         }),
-        [dataSource, windowingTime, dataUpdatePeriod, onUpdateChartTime]
+        [dataSource, initialData, windowingTime, dataUpdatePeriod, onUpdateChartTime]
     )
 
     // override the defaults with the parent's properties, leaving any unset values as the default
