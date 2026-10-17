@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useEffectEvent, useMemo, useRef} from 'react'
+import {useHoveredSeries} from "../hooks/useHoveredSeries";
 import {useChart} from "../hooks/useChart";
 import {
     type ScatterTooltipMetadata,
@@ -28,10 +29,8 @@ import {firstIndexAtOrAfter, noop} from "../utils";
 import {NoCurveFactory} from "./constants";
 import type {Dimensions} from "../styling/margins";
 import {timeAxisViewDriverFor, timeSeriesAxisTimes, TimeWindowBehavior} from "../subscriptions/viewDrivers";
-import {useDataObservable} from "../hooks/useDataObservable";
-import {useDataSource, useDataSourceRunning} from "../hooks/useDataSource";
+import {useDataSource, useDataSourceRunning, useInitialData, useStreamingSettings} from "../hooks/useDataSource";
 import type {TimeSeriesChartData} from "../series/timeSeriesChartData";
-import {useInitialData} from "../hooks/useInitialData";
 import {Optional} from "result-fn";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 import {extentWith, visibleExtent} from "../axes/autoScale";
@@ -173,9 +172,9 @@ export function ScatterPlot(props: Props): null {
         seriesStyles,
         seriesFilter,
         mouse,
-        hoveredSeriesName,
         backgroundColor,
     } = useChart<Datum, SeriesLineStyle, ScatterTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
+    const {hoveredSeriesName} = useHoveredSeries()
 
     const {
         initialData
@@ -197,7 +196,7 @@ export function ScatterPlot(props: Props): null {
     const {
         windowingTime = 100,
         dataUpdatePeriod,
-    } = useDataObservable()
+    } = useStreamingSettings()
 
     // the application-owned source of the data, and whether it's running (streaming)
     const dataSource = useDataSource<TimeSeriesChartData, Datum, TimeSeries>()

@@ -29,7 +29,7 @@ randomXxxData.ts  →  RxJS Observable<TimeSeriesChartData>
 
 ### Provider/Hook Pattern
 
-`Chart.tsx` wraps all children in stacked context providers: `ChartProvider → AxesProvider → DataObservableProvider → PlotDimensionsProvider → TooltipProvider → MouseProvider → InitialDataProvider`. Plot components and axes consume these via `useChart()`, `useAxes()`, `usePlotDimensions()`, etc. — never via prop drilling.
+`Chart.tsx` wraps all children in stacked context providers: `PlotDimensionsProvider → CanvasSurfaceProvider → AxesProvider → InteractionProvider` (mouse handlers, tooltip, hovered series) `→ ChartDataContext` (data source, initial data, streaming settings) `→ ChartProvider`. Plot components and axes consume these via `useChart()`, `usePlotDimensions()`, `useDataSource()`/`useInitialData()`/`useStreamingSettings()`, `useHoveredSeries()`, etc. — never via prop drilling. The public API is `src/app/charts/index.ts`.
 
 ### Chart Composition Model
 

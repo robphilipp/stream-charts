@@ -1,12 +1,16 @@
 import type {BaseAxis, SeriesStyle} from "../axes/axes";
 import {BaseAxisRange} from "../axes/BaseAxisRange";
-import {type JSX, useState} from "react";
+import {type JSX, useMemo} from "react";
 import {defaultUseChartValues} from "./defaultUseChartValues";
 import {useAxes} from "./useAxes";
 import {useMouse} from "./useMouse";
 import {useTooltip} from "./useTooltip";
 import {useCanvasSurface} from "./useCanvasSurface";
 import {ChartContext} from "./useChart";
+
+// the defaults (constants, so that their identity doesn't change from one render to the next)
+const DEFAULT_SERIES_FILTER = defaultUseChartValues().seriesFilter
+const NO_SERIES_STYLES = new Map<string, SeriesStyle>()
 
 /**
  * The properties for the {@link ChartProvider}
@@ -50,8 +54,8 @@ export default function ChartProvider<S extends SeriesStyle, AR extends BaseAxis
         chartId,
         color,
         backgroundColor,
-        seriesFilter = defaultUseChartValues().seriesFilter,
-        seriesStyles = new Map<string, S>(),
+        seriesFilter = DEFAULT_SERIES_FILTER,
+        seriesStyles = NO_SERIES_STYLES as Map<string, S>,
     } = props
 
     // canvas/canvasContext come from CanvasSurfaceProvider (a shared ancestor -- see Chart.tsx),
@@ -62,26 +66,14 @@ export default function ChartProvider<S extends SeriesStyle, AR extends BaseAxis
     const axes = useAxes<AR, A>()
     const mouse = useMouse()
     const tooltip = useTooltip()
-    // holds the name of the currently selected/hovered series to allow components to share this state
-    const [hoveredSeriesName, setHoveredSeriesName] = useState<string | null>(null)
 
-    return <ChartContext.Provider
-        value={{
-            chartId,
-            color,
-            backgroundColor,
-            seriesStyles,
-            seriesFilter,
-            canvasContext,
-            canvas,
+    // (memoized, so that the chart's components only re-render when something in it changes)
+    const value = useMemo(
+        () => ({chartId, color, backgroundColor, seriesStyles, seriesFilter, canvasContext, canvas, axes, mouse, tooltip}),
+        [chartId, color, backgroundColor, seriesStyles, seriesFilter, canvasContext, canvas, axes, mouse, tooltip]
+    )
 
-            axes,
-            mouse,
-            tooltip,
-            hoveredSeriesName,
-            setHoveredSeriesName
-        }}
-    >
+    return <ChartContext.Provider value={value}>
         {props.children}
     </ChartContext.Provider>
 }

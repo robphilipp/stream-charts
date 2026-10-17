@@ -49,14 +49,15 @@ export type UseMouseValues<D, TM> = {
      */
     unregisterMouseOverHandler: (handlerId: string) => void
     /**
-     * Retrieves a mouse-over-series handler that calls *every* registered mouse-over-series
-     * handler, handing each the specified provider ID. (The `<MouseProvider>`'s implementation
-     * doesn't look up the handler by `handlerId` -- it's accepted, but unused.)
-     * @param handlerId The ID of the handler (unused by the `<MouseProvider>`)
+     * Retrieves the mouse-over-series handler a plot calls when the mouse is over one of its
+     * series: it sets the hovered series (see {@link useHoveredSeries}), and calls *every*
+     * registered mouse-over-series handler, handing each the specified provider ID. (The
+     * `handlerId` is accepted, but unused.)
+     * @param handlerId The ID of the handler (unused)
      * @param [providerId] The ID of the tooltip content provider handed to the handlers
-     * @return The mouse-over-series handler, or `undefined` when no handlers are registered
+     * @return The mouse-over-series handler
      */
-    mouseOverHandlerFor: (handlerId: string, providerId?: string) => TooltipMouseOverHandlerFn<D, TM> | undefined
+    mouseOverHandlerFor: (handlerId: string, providerId?: string) => TooltipMouseOverHandlerFn<D, TM>
     /**
      * Adds a mouse-leave-series handler with the specified ID and handler function (replacing any
      * handler already registered with that ID)
@@ -71,33 +72,33 @@ export type UseMouseValues<D, TM> = {
      */
     unregisterMouseLeaveHandler: (handlerId: string) => void
     /**
-     * Retrieves a mouse-leave-series handler that calls *every* registered mouse-leave-series
-     * handler, handing each the specified provider ID. (The `<MouseProvider>`'s implementation
-     * doesn't look up the handler by `handlerId` -- it's accepted, but unused.)
-     * @param handlerId The ID of the handler (unused by the `<MouseProvider>`)
+     * Retrieves the mouse-leave-series handler a plot calls when the mouse leaves one of its
+     * series: it clears the hovered series, and calls *every* registered mouse-leave-series
+     * handler, handing each the specified provider ID. (The `handlerId` is accepted, but unused.)
+     * @param handlerId The ID of the handler (unused)
      * @param [providerId] The ID of the tooltip content provider handed to the handlers
-     * @return The mouse-leave-series handler, or `undefined` when no handlers are registered
+     * @return The mouse-leave-series handler
      */
-    mouseLeaveHandlerFor: (handlerId: string, providerId?: string) => ((seriesName: string, providerId?: string) => void) | undefined
+    mouseLeaveHandlerFor: (handlerId: string, providerId?: string) => ((seriesName: string, providerId?: string) => void)
 }
 
 // the context is generic over the same type parameters as `UseMouseValues`, but a context
 // object can't itself carry unbound generics -- `useMouse` below casts it back to the caller's
-// concrete types, which is safe because `<MouseProvider/>` is what actually supplies the value
+// concrete types, which is safe because `<InteractionProvider/>` is what actually supplies the value
 export const MouseContext = createContext<unknown>(undefined)
 
 /**
  * React hook for registering, and retrieving, the chart's mouse-over-series and
- * mouse-leave-series handlers. Must be used within a {@link MouseProvider} (i.e. within a `<Chart>`).
+ * mouse-leave-series handlers. Must be used within a `<Chart>`.
  * @return The {@link UseMouseValues} held in the React context.
- * @throws Error when used outside a `<MouseProvider>`
+ * @throws Error when used outside a `<Chart>`
  * @template D The type of the data object for the series
  * @template TM The type of the metadata object for the series
  */
 export function useMouse<D, TM>(): UseMouseValues<D, TM> {
     const context = useContext(MouseContext)
     if (context === undefined) {
-        throw new Error("useMouse can only be used when the parent is a <MouseProvider/>")
+        throw new Error("useMouse can only be used within a <Chart/>")
     }
     return context as UseMouseValues<D, TM>
 }

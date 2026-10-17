@@ -1,4 +1,5 @@
 import {type AxesAssignment, clipToArea, currentIntervalsFrom, type Series} from "./plot";
+import {useHoveredSeries} from "../hooks/useHoveredSeries";
 import * as d3 from "d3";
 import {type D3DragEvent, type D3ZoomEvent} from "d3";
 import {noop} from "../utils";
@@ -23,11 +24,9 @@ import type {CanvasContext} from "../d3types";
 import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
 import type {Dimensions, Margin} from "../styling/margins";
 import {timeAxisViewDriverFor, timeSeriesAxisTimes} from "../subscriptions/viewDrivers";
-import {useDataObservable} from "../hooks/useDataObservable";
-import {useDataSource, useDataSourceRunning} from "../hooks/useDataSource";
+import {useDataSource, useDataSourceRunning, useInitialData, useStreamingSettings} from "../hooks/useDataSource";
 import type {TimeSeriesChartData} from "../series/timeSeriesChartData";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
-import {useInitialData} from "../hooks/useInitialData";
 import type {TooltipData} from "../hooks/useTooltip";
 import {Optional} from "result-fn";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
@@ -124,8 +123,8 @@ export function RasterPlot(props: Props): null {
         seriesStyles,
         seriesFilter,
         mouse,
-        hoveredSeriesName,
     } = useChart<Datum, SeriesLineStyle, RasterTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
+    const {hoveredSeriesName} = useHoveredSeries()
 
     const {
         xAxesState,
@@ -143,7 +142,7 @@ export function RasterPlot(props: Props): null {
     const {
         windowingTime = 100,
         dataUpdatePeriod,
-    } = useDataObservable()
+    } = useStreamingSettings()
 
     // the application-owned source of the data, and whether it's running (streaming)
     const dataSource = useDataSource<TimeSeriesChartData, Datum, TimeSeries>()

@@ -104,8 +104,10 @@ export default function CanvasSurfaceProvider(props: Props): JSX.Element {
         [backgroundColor, chartId, color, svgStyle]
     )
 
+    const value = useMemo(() => ({canvas, canvasContext}), [canvas, canvasContext])
+
     return (
-        <CanvasSurfaceContext.Provider value={{canvas, canvasContext}}>
+        <CanvasSurfaceContext.Provider value={value}>
             <div style={{position: 'relative', width, height}}>
                 <canvas ref={setCanvasCallback}/>
             </div>

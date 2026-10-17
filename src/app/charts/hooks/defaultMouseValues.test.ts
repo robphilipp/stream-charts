@@ -8,9 +8,9 @@ describe('defaultMouseValues', () => {
         expect(values.registerMouseLeaveHandler('id', () => {})).toBe('');
     });
 
-    it('should return undefined for any handler lookup', () => {
-        expect(values.mouseOverHandlerFor('id')).toBeUndefined();
-        expect(values.mouseLeaveHandlerFor('id')).toBeUndefined();
+    it('should return no-op handlers for any handler lookup', () => {
+        expect(() => values.mouseOverHandlerFor('id')('series', 0, {series: [], metadata: undefined}, [0, 0])).not.toThrow();
+        expect(() => values.mouseLeaveHandlerFor('id')('series')).not.toThrow();
     });
 
     it('should not throw when unregistering', () => {

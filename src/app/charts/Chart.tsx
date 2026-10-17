@@ -8,17 +8,14 @@ import type {ChartData} from "./observables/ChartData";
 import {AxisInterval} from "./axes/AxisInterval";
 import type {BaseAxisRange} from "./axes/BaseAxisRange.ts";
 import {defaultMargin} from "./hooks/defaultPlotDimensions";
-import TooltipProvider from "./hooks/TooltipProvider";
 import PlotDimensionsProvider from "./hooks/PlotDimensionsProvider";
 import CanvasSurfaceProvider from "./hooks/CanvasSurfaceProvider";
-import MouseProvider from "./hooks/MouseProvider";
-import InitialDataProvider from "./hooks/InitialDataProvider";
-import DataObservableProvider from "./hooks/DataObservableProvider";
+import InteractionProvider from "./hooks/InteractionProvider";
 import ChartProvider from "./hooks/ChartProvider";
 import AxesProvider from "./hooks/AxesProvider";
 import {isSafeRegex} from "./filters/regexFilter";
 import type {StreamingDataSource} from "./datasources/StreamingDataSource";
-import {DataSourceContext} from "./hooks/useDataSource";
+import {ChartDataContext, type ChartDataValues} from "./hooks/useDataSource";
 
 const defaultBackground = '#202020';
 
@@ -229,6 +226,10 @@ export interface Props<CD extends ChartData, D, S extends SeriesStyle> {
     />
 </Chart>
 */
+// the defaults (constants, so that their identity doesn't change from one render to the next)
+const NO_SERIES_STYLES = new Map<string, SeriesStyle>()
+const MATCH_EVERYTHING = /./
+
 export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A extends BaseAxis>(props: Props<CD, D, S>): JSX.Element {
     const {
         chartId,
@@ -237,8 +238,8 @@ export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM, AR ext
         height,
         color = '#d2933f',
         backgroundColor = defaultBackground,
-        seriesStyles = new Map<string, S>(),
-        seriesFilter = /./,
+        seriesStyles = NO_SERIES_STYLES as Map<string, S>,
+        seriesFilter = MATCH_EVERYTHING,
         dataSource,
         windowingTime = 100,
         dataUpdatePeriod,
@@ -249,12 +250,26 @@ export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM, AR ext
         children,
     } = props
 
-    // the series held by the data source, as of when it was handed to the chart (a new data source
-    // means new initial data, so plots keyed on the initial data reset)
-    const initialData = useMemo<Array<BaseSeries<D>>>(() => dataSource.seriesList(), [dataSource])
+    // the chart's data: the data source, the series it held when it was handed to the chart (a new
+    // data source means new initial data, so plots keyed on the initial data reset), and the
+    // streaming settings
+    const chartData = useMemo<ChartDataValues<CD, D, BaseSeries<D>>>(
+        () => ({
+            dataSource: dataSource as StreamingDataSource<CD, D, BaseSeries<D>>,
+            initialData: dataSource.seriesList(),
+            windowingTime,
+            dataUpdatePeriod,
+            onUpdateChartTime
+        }),
+        [dataSource, windowingTime, dataUpdatePeriod, onUpdateChartTime]
+    )
 
-    // override the defaults with the parent's properties, leaving any unset values as the default value
-    const margin = {...defaultMargin, ...props.margin}
+    // override the defaults with the parent's properties, leaving any unset values as the default
+    // value (memoized on the margin's values, so that a new `margin` object with the same values
+    // doesn't change the plot dimensions' context)
+    const {top, bottom, left, right} = {...defaultMargin, ...props.margin}
+    const margin = useMemo<Margin>(() => ({top, bottom, left, right}), [top, bottom, left, right])
+    const containerDimensions = useMemo(() => ({width, height}), [width, height])
 
     // `seriesFilter` is tested against every series name on every redraw frame by each plot
     // component (not just once), so an unvetted pattern -- e.g. one built directly from
@@ -270,42 +285,31 @@ export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM, AR ext
                 `seriesFilter regex risks catastrophic backtracking and was ignored; ` +
                 `falling back to the default (match-everything) filter; pattern: ${seriesFilter}`
             )
-            return /./
+            return MATCH_EVERYTHING
         },
         [seriesFilter]
     )
 
     return (
-        <PlotDimensionsProvider containerDimensions={{width, height}} margin={margin}>
+        <PlotDimensionsProvider containerDimensions={containerDimensions} margin={margin}>
             <CanvasSurfaceProvider chartId={chartId} color={color} backgroundColor={backgroundColor} svgStyle={props.svgStyle}>
                 <AxesProvider onUpdateAxesInterval={onUpdateAxesBounds}>
-                    <MouseProvider<D, TM>>
-                        <TooltipProvider<D, TM>>
-                            <InitialDataProvider<D> initialData={initialData}>
-                                <DataObservableProvider
-                                    windowingTime={windowingTime}
-                                    dataUpdatePeriod={dataUpdatePeriod}
-                                    onUpdateChartTime={onUpdateChartTime}
-                                >
-                                    <DataSourceContext.Provider value={dataSource}>
-                                    <ChartProvider<S, AR, A>
-                                        chartId={chartId}
-
-                                        color={color}
-                                        backgroundColor={backgroundColor}
-                                        seriesStyles={seriesStyles}
-                                        seriesFilter={safeSeriesFilter}
-                                    >
-                                        {
-                                            // the chart elements are the children
-                                            children
-                                        }
-                                    </ChartProvider>
-                                    </DataSourceContext.Provider>
-                                </DataObservableProvider>
-                            </InitialDataProvider>
-                        </TooltipProvider>
-                    </MouseProvider>
+                    <InteractionProvider<D, TM>>
+                        <ChartDataContext.Provider value={chartData}>
+                            <ChartProvider<S, AR, A>
+                                chartId={chartId}
+                                color={color}
+                                backgroundColor={backgroundColor}
+                                seriesStyles={seriesStyles}
+                                seriesFilter={safeSeriesFilter}
+                            >
+                                {
+                                    // the chart elements are the children
+                                    children
+                                }
+                            </ChartProvider>
+                        </ChartDataContext.Provider>
+                    </InteractionProvider>
                 </AxesProvider>
             </CanvasSurfaceProvider>
         </PlotDimensionsProvider>

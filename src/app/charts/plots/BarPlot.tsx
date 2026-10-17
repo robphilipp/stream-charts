@@ -18,11 +18,9 @@ import {
 } from "../axes/axes";
 import type {Dimensions, Margin} from "../styling/margins";
 import {ordinalViewDriverFor} from "../subscriptions/viewDrivers";
-import {useDataObservable} from "../hooks/useDataObservable";
-import {useDataSource, useDataSourceRunning} from "../hooks/useDataSource";
+import {useDataSource, useDataSourceRunning, useInitialData, useStreamingSettings} from "../hooks/useDataSource";
 import {initialOrdinalStats, type WindowedOrdinalStats} from "../datasources/ordinalDataSource";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
-import {useInitialData} from "../hooks/useInitialData";
 import {type OrdinalChartData} from "../observables/ordinals";
 import type {BaseSeries} from "../series/baseSeries";
 import {type OrdinalDatum} from "../series/ordinalSeries";
@@ -232,7 +230,7 @@ export function BarPlot(props: Props): null {
     const {
         windowingTime = 100,
         onUpdateChartTime = noop
-    } = useDataObservable()
+    } = useStreamingSettings()
 
     // the application-owned source of the data, and whether it's running (streaming)
     const dataSource = useDataSource<OrdinalChartData, OrdinalDatum>()

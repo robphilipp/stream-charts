@@ -1,11 +1,10 @@
 import {useCallback, useEffect, useEffectEvent, useMemo, useRef} from 'react'
+import {useHoveredSeries} from "../hooks/useHoveredSeries";
 import * as d3 from "d3"
 import {Optional} from "result-fn"
 
 import {useChart} from "../hooks/useChart"
-import {useDataObservable} from "../hooks/useDataObservable"
-import {useDataSource, useDataSourceRunning} from "../hooks/useDataSource"
-import {useInitialData} from "../hooks/useInitialData"
+import {useDataSource, useDataSourceRunning, useInitialData, useStreamingSettings} from "../hooks/useDataSource";
 import {usePlotDimensions} from "../hooks/usePlotDimensions"
 import {type AxesAssignment, clipToArea, currentIntervalsFrom} from "./plot"
 import type {CanvasContext} from "../d3types"
@@ -176,9 +175,9 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
         axes,
         seriesStyles,
         seriesFilter,
-        hoveredSeriesName,
         mouse,
     } = useChart<OutlierDatum<M>, SeriesLineStyle, OutlierBandTooltipMetadata<M>, ContinuousAxisRange, ContinuousNumericAxis>()
+    const {hoveredSeriesName} = useHoveredSeries()
 
     const {mouseOverHandlerFor, mouseLeaveHandlerFor} = mouse
 
@@ -198,7 +197,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
     const {
         windowingTime = 100,
         dataUpdatePeriod,
-    } = useDataObservable()
+    } = useStreamingSettings()
 
     // the application-owned source of the data, and whether it's running (streaming)
     const dataSource = useDataSource<OutlierChartData<M>, OutlierDatum<M>, OutlierSeries<M>>()

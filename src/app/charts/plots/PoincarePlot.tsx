@@ -17,12 +17,10 @@ import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
 import {formatTime, fontStringFor, noop, textDimensions} from "../utils";
 import type {Dimensions} from "../styling/margins";
 import {iteratesViewDriverFor} from "../subscriptions/viewDrivers";
-import {useDataObservable} from "../hooks/useDataObservable";
-import {useDataSource, useDataSourceRunning} from "../hooks/useDataSource";
+import {useDataSource, useDataSourceRunning, useInitialData, useStreamingSettings} from "../hooks/useDataSource";
 import type {IterateChartData} from "../observables/iterates";
 import type {IterateDatum, IterateSeries} from "../series/iterateSeries";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
-import {useInitialData} from "../hooks/useInitialData";
 import {type TooltipData, useTooltip} from "../hooks/useTooltip";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 import {AxisInterval} from "../axes/AxisInterval";
@@ -250,7 +248,7 @@ export function PoincarePlot(props: Props): null {
     const {
         windowingTime = 100,
         onUpdateChartTime = noop,
-    } = useDataObservable()
+    } = useStreamingSettings()
 
     // the application-owned source of the data, and whether it's running (streaming)
     const dataSource = useDataSource<IterateChartData, IterateDatum, IterateSeries>()

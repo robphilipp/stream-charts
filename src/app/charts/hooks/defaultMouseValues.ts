@@ -16,9 +16,9 @@ export function defaultMouseValues<D, TM>(): UseMouseValues<D, TM> {
     return {
         registerMouseOverHandler: () => '',
         unregisterMouseOverHandler: noop,
-        mouseOverHandlerFor: () => undefined,
+        mouseOverHandlerFor: () => noop,
         registerMouseLeaveHandler: () => '',
         unregisterMouseLeaveHandler: noop,
-        mouseLeaveHandlerFor: () => undefined,
+        mouseLeaveHandlerFor: () => noop,
     }
 }

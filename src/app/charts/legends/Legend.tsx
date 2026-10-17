@@ -1,8 +1,9 @@
 import {type BaseAxis, type SeriesStyle} from "../axes/axes";
+import {useHoveredSeries} from "../hooks/useHoveredSeries";
+import {useInitialData} from "../hooks/useDataSource";
 import {BaseAxisRange} from "../axes/BaseAxisRange";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import {useChart} from "../hooks/useChart";
-import {useInitialData} from "../hooks/useInitialData";
 import React, {useCallback, useEffect, useMemo, useRef} from "react";
 import {createPortal} from "react-dom";
 import * as d3 from "d3";
@@ -123,15 +124,12 @@ export function Legend<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A
     } = props
 
     const {
-        chartId,
         canvas,
         color,
         seriesStyles,
         seriesFilter,
-        mouse,
-        hoveredSeriesName,
-        setHoveredSeriesName
     } = useChart<D, S, TM, AR, A>()
+    const {hoveredSeriesName, setHoveredSeriesName} = useHoveredSeries()
     const {margin, plotDimensions} = usePlotDimensions()
     const {initialData} = useInitialData<D>()
 
@@ -143,19 +141,6 @@ export function Legend<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A
         }),
         [style, plotDimensions.height]
     )
-
-    // Track the currently hovered series name so legend entries (and, via shared chart state,
-    // other plots -- see e.g. OutlierPlot/ScatterPlot's `hoveredSeriesName`-driven line highlight)
-    // can be highlighted
-    useEffect(() => {
-        const handlerId = `legend-${chartId}`
-        mouse.registerMouseOverHandler(handlerId, seriesName => setHoveredSeriesName(seriesName))
-        mouse.registerMouseLeaveHandler(handlerId, () => setHoveredSeriesName(null))
-        return () => {
-            mouse.unregisterMouseOverHandler(handlerId)
-            mouse.unregisterMouseLeaveHandler(handlerId)
-        }
-    }, [chartId, mouse, setHoveredSeriesName])
 
     const highlightSeriesInPlot = useCallback<(name: string) => void>(
         name => {

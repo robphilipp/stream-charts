@@ -32,7 +32,5 @@ export function defaultUseChartValues<D, S extends SeriesStyle, TM, AR extends B
         // internal chart-interaction event handlers
         mouse: defaultMouseValues(),
         tooltip: defaultTooltipValues(),
-        hoveredSeriesName: null,
-        setHoveredSeriesName: () => {}
     }
 }

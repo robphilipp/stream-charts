@@ -15,18 +15,13 @@ describe('defaultUseChartValues', () => {
         expect(values.seriesFilter.test('anything at all')).toBe(true);
     });
 
-    it('should default seriesStyles to an empty map and hoveredSeriesName to null', () => {
+    it('should default seriesStyles to an empty map', () => {
         expect(values.seriesStyles.size).toBe(0);
-        expect(values.hoveredSeriesName).toBeNull();
     });
 
     it('should compose the axes/mouse/tooltip defaults', () => {
         expect(values.axes.xAxesState.isEmpty()).toBe(true);
-        expect(values.mouse.mouseOverHandlerFor('id')).toBeUndefined();
+        expect(() => values.mouse.mouseOverHandlerFor('id')('series', 0, {series: [], metadata: undefined}, [0, 0])).not.toThrow();
         expect(values.tooltip.visibilityState).toBe(false);
-    });
-
-    it('should not throw when setHoveredSeriesName is called', () => {
-        expect(() => values.setHoveredSeriesName('series')).not.toThrow();
     });
 });

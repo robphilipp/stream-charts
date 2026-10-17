@@ -1,4 +1,4 @@
-import {createContext, type SetStateAction, type Dispatch, useContext} from "react";
+import {createContext, useContext} from "react";
 import type {CanvasContext} from "../d3types";
 import type {BaseAxis, SeriesStyle} from "../axes/axes";
 import {type UseAxesValues} from "./useAxes";
@@ -67,15 +67,6 @@ export interface UseChartValues<D, S extends SeriesStyle, TM, AR extends BaseAxi
      */
     mouse: UseMouseValues<D, TM>
     tooltip: UseTooltipValues<D, TM>
-    /**
-     * Holds the series name that is currently highlighted
-     */
-    hoveredSeriesName: string | null
-    /**
-     * Sets the name of the series that is highlighted, allowing other components to share this
-     * highlight state
-     */
-    setHoveredSeriesName:  Dispatch<SetStateAction<string | null>>
 }
 
 // the context is generic over the same type parameters as `UseChartValues`, but a context

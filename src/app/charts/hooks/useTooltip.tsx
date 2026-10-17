@@ -60,21 +60,21 @@ export type UseTooltipValues<D, M> = {
 
 // the context is generic over the same type parameters as `UseTooltipValues`, but a context
 // object can't itself carry unbound generics -- `useTooltip` below casts it back to the caller's
-// concrete types, which is safe because `<TooltipProvider/>` is what actually supplies the value
+// concrete types, which is safe because `<InteractionProvider/>` is what actually supplies the value
 export const TooltipContext = createContext<unknown>(undefined)
 
 /**
  * React hook for registering, and retrieving, the chart's tooltip content provider, and for the
- * tooltip's visibility. Must be used within a {@link TooltipProvider} (i.e. within a `<Chart>`).
+ * tooltip's visibility. Must be used within a `<Chart>`.
  * @return The {@link UseTooltipValues} held in the React context.
- * @throws Error when used outside a `<TooltipProvider>`
+ * @throws Error when used outside a `<Chart>`
  * @template D The type of the data object for the series
  * @template M The type of the metadata object for the series
  */
 export function useTooltip<D, M>(): UseTooltipValues<D, M> {
     const context = useContext(TooltipContext)
     if (context === undefined) {
-        throw new Error("useTooltip can only be used when the parent is a <TooltipProvider/>")
+        throw new Error("useTooltip can only be used within a <Chart/>")
     }
     return context as UseTooltipValues<D, M>
 }
