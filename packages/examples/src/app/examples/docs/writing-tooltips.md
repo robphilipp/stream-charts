@@ -2,7 +2,7 @@
 
 The tooltips page showed the tooltips that come with the library, and the formatters that tweak them. This tutorial goes further: we'll write tooltips from scratch, one for each of the five chart types. Along the way, you'll see exactly what each plot tells a tooltip about the thing under the mouse – which is most of what you need to know to show whatever you like.
 
-As in the previous tutorial, the code is written as if it lives in `src/app/examples`, so it imports the library from `../charts`. Every piece of it was tried out in place of the examples' own tooltips.
+As in the previous tutorial, the code imports the library from the `stream-charts` package. Every piece of it was tried out in place of the examples' own tooltips.
 
 #### how a tooltip works
 
@@ -66,7 +66,7 @@ Our scatter tooltip shows the point (or the two points around the mouse), and th
 
 ```tsx
 import type {ReactElement} from "react";
-import {TooltipContent, type Datum, type ScatterTooltipMetadata, type ScatterTooltipPoints} from "../charts";
+import {TooltipContent, type Datum, type ScatterTooltipMetadata, type ScatterTooltipPoints} from "stream-charts";
 
 type ScatterContent = {
     seriesName: string
@@ -117,7 +117,7 @@ Our raster tooltip shows when the spike happened, and how many spikes the neuron
 
 ```tsx
 import type {ReactElement} from "react";
-import {TooltipContent, type Datum, type RasterTooltipMetadata} from "../charts";
+import {TooltipContent, type Datum, type RasterTooltipMetadata} from "stream-charts";
 
 type RasterContent = {
     neuron: string
@@ -164,7 +164,7 @@ Our Poincaré tooltip shows which iterate the point is, its values, and how far 
 
 ```tsx
 import type {ReactElement} from "react";
-import {TooltipContent, type IterateDatum, type NoTooltipMetadata} from "../charts";
+import {TooltipContent, type IterateDatum, type NoTooltipMetadata} from "stream-charts";
 
 type PoincareContent = {
     seriesName: string
@@ -208,7 +208,7 @@ Our bar tooltip says which element you're over, and shows the current value and 
 
 ```tsx
 import type {ReactElement} from "react";
-import {BAR_CHART_TOOLTIP_PROVIDER_IDS, TooltipContent, type OrdinalDatum, type OrdinalValueStats, type WindowedOrdinalStats} from "../charts";
+import {BAR_CHART_TOOLTIP_PROVIDER_IDS, TooltipContent, type OrdinalDatum, type OrdinalValueStats, type WindowedOrdinalStats} from "stream-charts";
 
 // what each of the bar's elements is called, by its provider ID
 const ELEMENT_NAMES = new Map<string, string>([
@@ -265,7 +265,7 @@ Our outlier tooltip tells you which band you're in, and, for an outlier, where i
 
 ```tsx
 import type {ReactElement} from "react";
-import {TooltipContent, type OutlierBandTooltipMetadata, type OutlierDatum} from "../charts";
+import {TooltipContent, type OutlierBandTooltipMetadata, type OutlierDatum} from "stream-charts";
 
 type OutlierContent = {
     seriesName: string

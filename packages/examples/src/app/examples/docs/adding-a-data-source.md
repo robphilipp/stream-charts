@@ -9,7 +9,7 @@ The last page described how the data flows. On this page, we'll put that into pr
 
 Our data will be three temperature sensors – the kitchen, the garage, and the attic – each reporting a reading every 100 ms. They're made-up readings (a slow sine wave plus a little noise), but by the end of the tutorial, you'll see where your real data would plug in.
 
-The code below is written as if it lives in `src/app/examples` (that's what the import paths assume). In your own application, you'd import the same things from the library.
+The code imports the library from the `stream-charts` package, just as your own application would.
 
 #### step 1: pick the shape of your data
 
@@ -39,8 +39,7 @@ Now for the RxJS part. We want an observable that, every 100 ms, emits one new r
 ```ts
 import {interval, Observable} from "rxjs";
 import {map} from "rxjs/operators";
-import type {Datum} from "../charts/series/timeSeries";
-import type {TimeSeriesChartData} from "../charts/series/timeSeriesChartData";
+import type {Datum, TimeSeriesChartData} from "stream-charts";
 
 export function sensorReadings(
     sensorNames: Array<string>,
@@ -87,8 +86,7 @@ The same goes for server-sent events, polling an API (`interval` + `switchMap` t
 The data source doesn't take an observable. It takes a *generator* – a function that creates the observable. The data source calls the generator every time it starts, and passes it the series as they are *right now*. That's what lets **Run** after **Pause** carry on from where the data left off, instead of starting over at time zero:
 
 ```ts
-import type {TimeSeries} from "../charts/series/timeSeries";
-import type {DataGenerator} from "../charts/datasources/StreamingDataSource";
+import type {DataGenerator, TimeSeries} from "stream-charts";
 
 export const sensorGenerator = (updatePeriod: number): DataGenerator<TimeSeriesChartData, TimeSeries> =>
     currentSeries => {
@@ -110,8 +108,7 @@ Our generator also takes the sensor names from the current series, rather than f
 Next, create the data source. You give it the initial series, the generator, and how long to keep the data:
 
 ```ts
-import {TimeSeriesDataSource} from "../charts/datasources/timeSeriesDataSource";
-import {emptySeries} from "../charts/series/baseSeries";
+import {emptySeries, TimeSeriesDataSource} from "stream-charts";
 
 const SENSORS = ['kitchen', 'garage', 'attic']
 
@@ -135,10 +132,7 @@ Finally, put the data source in a `<Chart>`, along with the axes and a plot. The
 
 ```tsx
 import {type JSX, useEffect, useState} from "react";
-import {Chart} from "../charts/Chart";
-import {ContinuousAxis} from "../charts/axes/ContinuousAxis";
-import {AxisLocation} from "../charts/axes/axes";
-import {ScatterPlot} from "../charts/plots/ScatterPlot";
+import {AxisLocation, Chart, ContinuousAxis, ScatterPlot} from "stream-charts";
 import {sensorDataSource} from "./sensorData";
 
 export function SensorChart(): JSX.Element {

@@ -2,17 +2,19 @@
 
 So far, we've looked at the examples from the outside. These next two pages look at the code – and in particular, at where the example application ends and the [stream-charts](https://www.npmjs.com/package/stream-charts) library begins. When you go to build your own charts, the library is what you use, and the example is what you read (and maybe borrow from).
 
-Everything lives under `src/app`, in three directories.
+The library and the example live side by side in the same repository, as two packages: the library in `packages/stream-charts`, and this example in `packages/examples`. The example depends on the library (see its `package.json`) as it would on any other package. The example's own code lives under `src/app`, in two directories.
 
-| directory          | whose is it? | what's in it                                                         |
-|--------------------|--------------|----------------------------------------------------------------------|
-| `src/app/charts`   | the library  | the charts: `<Chart>`, the axes, plots, data sources, and so on      |
-| `src/app/examples` | the example  | the five examples, their state, their data, and their controls       |
-| `src/app/ui`       | the example  | general-purpose UI widgets – buttons, drop-downs, the control bar    |
+| where                                   | whose is it? | what's in it                                                    |
+|-----------------------------------------|--------------|-----------------------------------------------------------------|
+| `packages/stream-charts/src/app/charts` | the library  | the charts: `<Chart>`, the axes, plots, data sources, and so on |
+| `src/app/examples`                      | the example  | the five examples, their state, their data, and their controls  |
+| `src/app/ui`                            | the example  | general-purpose UI widgets – buttons, drop-downs, the control bar |
 
-There's a simple rule that keeps the two apart: **the example uses the library, and the library never uses the example.** Nothing in `src/app/charts` imports anything from `src/app/examples` or `src/app/ui`. So if you're wondering whether a piece of code is "stream-charts," check which directory it's in.
+There's a simple rule that keeps the two apart: **the example uses the library, and the library never uses the example.** The example imports everything it uses from the library from one place, `"stream-charts"` – for example, `import {Chart, ContinuousAxis, ScatterPlot} from "stream-charts"` – and that's all your application needs, too. So if you're wondering whether a piece of code is "stream-charts," check where it's imported from.
 
-#### the library – `src/app/charts`
+#### the library – `stream-charts`
+
+Everything the library offers is exported from the package itself. Inside, its code (under `packages/stream-charts/src/app/charts`) is organized like this:
 
 - `Chart.tsx` – the `<Chart>` component, the container that everything else goes into
 - `axes` – `<ContinuousAxis>`, `<OrdinalAxis>`, and `<EmptyAxis>`, and the code for zooming and panning them

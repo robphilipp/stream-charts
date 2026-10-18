@@ -1,7 +1,7 @@
 [Homepage](https://robphilipp.github.io/stream-charts/) •
 [API Docs](https://robphilipp.github.io/stream-charts/docs/modules.html) •
 [Change History](changes.md) •
-[Example Project](https://github.com/robphilipp/stream-charts-examples)
+[Example Project](https://github.com/robphilipp/stream-charts/tree/master/packages/examples)
 
 `stream-charts` is a [React](https://react.dev) library for real-time charts of high-frequency streaming data. Plotting new data for about 100 series every 25 ms isn't generally a problem.
 
@@ -147,7 +147,7 @@ export function SensorChart(): JSX.Element {
 
 Click **Run** and the three sensors start drawing. When the data reaches the end of the x-axis, the axis scrolls to keep up. To show your real data, replace `sensorReadings` with an observable of your own: a web socket (`rxjs/webSocket`), server-sent events, polling (`interval` + `switchMap` to a `fetch`), or a simulation. Nothing else needs to change.
 
-From here you can add [colors](#chart-styling), a [tooltip](#tooltip), a [tracker](#tracker), a [legend](#legend), and [zooming and panning](#plot-common). The [example project](https://github.com/robphilipp/stream-charts-examples) has a complete, working example of each plot type. Its tutorial, [adding your own data source](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/adding-a-data-source.md), builds this quick start one step at a time.
+From here you can add [colors](#chart-styling), a [tooltip](#tooltip), a [tracker](#tracker), a [legend](#legend), and [zooming and panning](#plot-common). The [example project](https://github.com/robphilipp/stream-charts/tree/master/packages/examples) has a complete, working example of each plot type. Its tutorial, [adding your own data source](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/adding-a-data-source.md), builds this quick start one step at a time.
 
 ### [&#10514;](#content) <span id="how-it-works">how it works</span>
 
@@ -164,7 +164,7 @@ From here you can add [colors](#chart-styling), a [tooltip](#tooltip), a [tracke
 3. **The `<Chart>`** is handed the data source. The chart and its plots only *read* from the data source; they never subscribe to the stream themselves. While a plot is mounted, it listens for the data source's updates, batches them (see `windowingTime`), scrolls the time axes, and redraws.
 4. **The plot** draws the data onto a single `<canvas>`, outside of React's render cycle.
 
-Because the data source isn't tied to any component, *you* decide how long it lives. Keep it in a store, a context, or at module level, and it outlives the chart. The user can start a chart, navigate to another page, and come back to find that it kept streaming the whole time. (The examples keep theirs in [zustand](https://www.npmjs.com/package/zustand) stores, but any of these works.) For a longer walk through this, see [how the data flows](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/how-the-data-flows.md).
+Because the data source isn't tied to any component, *you* decide how long it lives. Keep it in a store, a context, or at module level, and it outlives the chart. The user can start a chart, navigate to another page, and come back to find that it kept streaming the whole time. (The examples keep theirs in [zustand](https://www.npmjs.com/package/zustand) stores, but any of these works.) For a longer walk through this, see [how the data flows](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/how-the-data-flows.md).
 
 The chart is composed from React components, so you pick the pieces you need: one or two x-axes and y-axes, a plot, and optionally a tracker, a tooltip, and a legend.
 
@@ -513,7 +513,7 @@ The plot draws the data. It reads the series from the chart's data source and th
 
 #### <span id="scatter-plot">&lt;ScatterPlot/&gt;</span>
 
-Values over time, drawn as lines, with optional markers. Both axes are `<ContinuousAxis>`. Uses a `TimeSeriesDataSource`. ([full example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingScatterChart.tsx), [walkthrough](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/scatter-chart.md))
+Values over time, drawn as lines, with optional markers. Both axes are `<ContinuousAxis>`. Uses a `TimeSeriesDataSource`. ([full example](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/StreamingScatterChart.tsx), [walkthrough](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/scatter-chart.md))
 
 ![scatter-chart](https://github.com/robphilipp/stream-charts/blob/develop/images/scatter-chart-video.gif)
 
@@ -547,7 +547,7 @@ Values over time, drawn as lines, with optional markers. Both axes are `<Continu
 
 #### <span id="raster-plot">&lt;RasterPlot/&gt;</span>
 
-Events over time: each series is a row, and each datum is a short vertical line (a "spike") at its time. The x-axis is a `<ContinuousAxis>`, and the y-axis is an `<OrdinalAxis>` whose categories are the series names. Uses a `TimeSeriesDataSource`. ([full example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingRasterChart.tsx), [walkthrough](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/raster-chart.md))
+Events over time: each series is a row, and each datum is a short vertical line (a "spike") at its time. The x-axis is a `<ContinuousAxis>`, and the y-axis is an `<OrdinalAxis>` whose categories are the series names. Uses a `TimeSeriesDataSource`. ([full example](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/StreamingRasterChart.tsx), [walkthrough](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/raster-chart.md))
 
 ![raster-chart](https://github.com/robphilipp/stream-charts/blob/develop/images/raster-chart-video.gif)
 
@@ -571,7 +571,7 @@ Events over time: each series is a row, and each datum is a short vertical line 
 
 #### <span id="bar-plot">&lt;BarPlot/&gt;</span>
 
-One bar per category, showing the category's latest value and its statistics, both over all time ("lifetime") and over the data currently held ("windowed", which depends on the data source's `dropDataAfter`). The x-axis is an `<OrdinalAxis>`, and the y-axis is a `<ContinuousAxis>`. Uses an `OrdinalDataSource`. ([full example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingBarChart.tsx), [walkthrough](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/bar-chart.md))
+One bar per category, showing the category's latest value and its statistics, both over all time ("lifetime") and over the data currently held ("windowed", which depends on the data source's `dropDataAfter`). The x-axis is an `<OrdinalAxis>`, and the y-axis is a `<ContinuousAxis>`. Uses an `OrdinalDataSource`. ([full example](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/StreamingBarChart.tsx), [walkthrough](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/bar-chart.md))
 
 ![bar-chart](https://github.com/robphilipp/stream-charts/blob/develop/images/bar-chart-video.gif)
 
@@ -615,7 +615,7 @@ seriesStyles={new Map<string, BarSeriesStyle>([
 
 #### <span id="poincare-plot">&lt;PoincarePlot/&gt;</span>
 
-A Poincaré (iterates) plot shows each value of a sequence against a later value of the same sequence: `(f[m](x), f[m+n](x))`. Patterns that are hard to see over time, such as cycles and attractors, show up as shapes. Random noise fills the plot with a shapeless cloud, but a series generated by a rule, even a chaotic one that *looks* random over time, traces out a distinct shape. That makes the plot handy for spotting auto-correlations, and for telling random apart from complicated-but-deterministic. Both axes are `<ContinuousAxis>` and don't scroll, so set `updateAxisBasedOnDomainValues={false}` on them. Uses an `IteratesDataSource`, usually fed by [`iteratesObservable`](#chart-data). ([full example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingPoincareChart.tsx), [walkthrough](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/poincare-chart.md), with the tent, logistic, and Gauss maps)
+A Poincaré (iterates) plot shows each value of a sequence against a later value of the same sequence: `(f[m](x), f[m+n](x))`. Patterns that are hard to see over time, such as cycles and attractors, show up as shapes. Random noise fills the plot with a shapeless cloud, but a series generated by a rule, even a chaotic one that *looks* random over time, traces out a distinct shape. That makes the plot handy for spotting auto-correlations, and for telling random apart from complicated-but-deterministic. Both axes are `<ContinuousAxis>` and don't scroll, so set `updateAxisBasedOnDomainValues={false}` on them. Uses an `IteratesDataSource`, usually fed by [`iteratesObservable`](#chart-data). ([full example](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/StreamingPoincareChart.tsx), [walkthrough](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/poincare-chart.md), with the tent, logistic, and Gauss maps)
 
 ![poincare-chart](https://github.com/robphilipp/stream-charts/blob/develop/images/poincare-video.gif)
 
@@ -645,7 +645,7 @@ A Poincaré (iterates) plot shows each value of a sequence against a later value
 
 #### <span id="outlier-plot">&lt;OutlierPlot/&gt;</span>
 
-Values over time, like the scatter plot, with a translucent band for each confidence level (measure) around the line. Points that fall outside a band are marked, so outliers stand out. Both axes are `<ContinuousAxis>`. Uses an `OutlierDataSource`. ([full example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/StreamingOutlierChart.tsx), [walkthrough](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/outlier-chart.md))
+Values over time, like the scatter plot, with a translucent band for each confidence level (measure) around the line. Points that fall outside a band are marked, so outliers stand out. Both axes are `<ContinuousAxis>`. Uses an `OutlierDataSource`. ([full example](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/StreamingOutlierChart.tsx), [walkthrough](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/outlier-chart.md))
 
 | prop | type | description |
 |---|---|---|
@@ -697,7 +697,7 @@ The tracker follows the mouse over the plot with a line, and labels the axes' va
 
 ### [&#10514;](#content) <span id="legend">&lt;Legend/&gt;</span>
 
-The legend shows each series' name and color. It reads the names from the chart's data and the colors from the chart's `seriesStyles`, so there's nothing to keep in sync. It lists only the series that pass the chart's `seriesFilter`, and scrolls when there are more series than fit. Hovering over a legend entry highlights its series (and fades the rest), and hovering over a series highlights its entry. It can sit over a corner of the plot, or render into a container of your own, outside the chart. ([walkthrough](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/legends.md))
+The legend shows each series' name and color. It reads the names from the chart's data and the colors from the chart's `seriesStyles`, so there's nothing to keep in sync. It lists only the series that pass the chart's `seriesFilter`, and scrolls when there are more series than fit. Hovering over a legend entry highlights its series (and fades the rest), and hovering over a series highlights its entry. It can sit over a corner of the plot, or render into a container of your own, outside the chart. ([walkthrough](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/legends.md))
 
 ```tsx
 // over the plot's top-right corner
@@ -723,7 +723,7 @@ const legendContainer = useRef<HTMLDivElement>(null)
 
 ### [&#10514;](#content) <span id="tooltip">&lt;Tooltip/&gt; and tooltip content</span>
 
-The tooltip shows information about the *data* under the mouse: a line, a spike, a point, a bar, or a band. (The [tracker](#tracker), by contrast, shows the mouse's *position*.) The `<Tooltip>` provides the box and its style. Its child, the *tooltip content*, decides what goes in the box. Each plot has its own content component, most of which take formatters for their values, and you can [write your own](#custom-tooltip). ([walkthrough](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/tooltips-and-trackers.md))
+The tooltip shows information about the *data* under the mouse: a line, a spike, a point, a bar, or a band. (The [tracker](#tracker), by contrast, shows the mouse's *position*.) The `<Tooltip>` provides the box and its style. Its child, the *tooltip content*, decides what goes in the box. Each plot has its own content component, most of which take formatters for their values, and you can [write your own](#custom-tooltip). ([walkthrough](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/tooltips-and-trackers.md))
 
 ```tsx
 <Tooltip visible={true} style={{fontColor: theme.color, backgroundColor: theme.backgroundColor, borderColor: theme.color, backgroundOpacity: 0.9}}>
@@ -813,7 +813,7 @@ What `tooltipData` holds (`{series, metadata}`) depends on the plot:
 | bar | the category's data | `WindowedOrdinalStats`, the lifetime and windowed statistics. `providerId` says which element is under the mouse (see `BAR_CHART_TOOLTIP_PROVIDER_IDS`). |
 | outlier | the series' data | `OutlierBandTooltipMetadata`: the `datum`, the band's `upperMeasure` and `lowerMeasure`, its `bandIndex`, and `pointsInBand` |
 
-Other props: `style` overrides the tooltip's style, `boxStyle` adds CSS to the box, and `topFor(content, height)` places the box's top yourself. The tutorial [writing your own tooltips](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/writing-tooltips.md) builds a custom tooltip for each plot.
+Other props: `style` overrides the tooltip's style, `boxStyle` adds CSS to the box, and `topFor(content, height)` places the box's top yourself. The tutorial [writing your own tooltips](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/writing-tooltips.md) builds a custom tooltip for each plot.
 
 ---
 
@@ -837,7 +837,7 @@ The library has no theme object. It has colors: every component takes its colors
 
 A component you don't hand colors to uses the library's defaults, which are tuned for a dark background: orange (`#d2933f`) axes on near-black (`#202020`), with teal (`#008aad`) series. On a light page, pass colors to every component. The simplest way is to collect them in one theme object and spread it into each component's props. Themes change only colors; fonts, line widths, and margins each have their own props.
 
-The example project's [theming page](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/theming.md) shows a light/dark theme held in a store, and how to add a third theme.
+The example project's [theming page](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/theming.md) shows a light/dark theme held in a store, and how to add a third theme.
 
 ### [&#10514;](#content) <span id="filtering">filtering series</span>
 
@@ -869,13 +869,13 @@ The full API, including the formatting helpers (`formatNumber`, `formatTime`, `f
 
 ### [&#10514;](#content) <span id="further-reading">further reading</span>
 
-The [example project](https://github.com/robphilipp/stream-charts-examples) is a working app with one tab for each plot type, and a set of guide pages (shown in the app, and readable on GitHub):
+The [example project](https://github.com/robphilipp/stream-charts/tree/master/packages/examples) is a working app with one tab for each plot type, and a set of guide pages (shown in the app, and readable on GitHub):
 
-- **Getting oriented:** [intro](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/intro.md), [what the pages cover](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/contents.md), [anatomy of an example](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/anatomy-of-example.md), and [the common controls](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/common-controls.md), which says which library option each control is wired to.
-- **The plots:** [scatter](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/scatter-chart.md), [raster](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/raster-chart.md), [Poincaré](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/poincare-chart.md), [bar](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/bar-chart.md), and [outlier](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/outlier-chart.md).
-- **The extras:** [legends](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/legends.md), [theming](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/theming.md), and [tooltips and trackers](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/tooltips-and-trackers.md).
-- **Under the hood:** [some context](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/some-context.md) (which supporting libraries you need, sizing charts, and keeping state), [where the code lives](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/where-the-code-lives.md), and [how the data flows](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/how-the-data-flows.md).
-- **Tutorials:** [adding your own data source](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/adding-a-data-source.md), from an RxJS observable to a chart, and [writing your own tooltips](https://github.com/robphilipp/stream-charts-examples/blob/master/src/app/examples/docs/writing-tooltips.md), one for each plot.
+- **Getting oriented:** [intro](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/intro.md), [what the pages cover](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/contents.md), [anatomy of an example](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/anatomy-of-example.md), and [the common controls](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/common-controls.md), which says which library option each control is wired to.
+- **The plots:** [scatter](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/scatter-chart.md), [raster](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/raster-chart.md), [Poincaré](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/poincare-chart.md), [bar](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/bar-chart.md), and [outlier](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/outlier-chart.md).
+- **The extras:** [legends](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/legends.md), [theming](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/theming.md), and [tooltips and trackers](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/tooltips-and-trackers.md).
+- **Under the hood:** [some context](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/some-context.md) (which supporting libraries you need, sizing charts, and keeping state), [where the code lives](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/where-the-code-lives.md), and [how the data flows](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/how-the-data-flows.md).
+- **Tutorials:** [adding your own data source](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/adding-a-data-source.md), from an RxJS observable to a chart, and [writing your own tooltips](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/writing-tooltips.md), one for each plot.
 
 ### [&#10514;](#content) <span id="building">building the library</span>
 

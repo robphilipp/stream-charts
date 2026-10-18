@@ -1,0 +1,19 @@
+{
+  "name": "stream-charts-monorepo",
+  "private": true,
+  "description": "The stream-charts library (packages/stream-charts) and its example app (packages/examples)",
+  "workspaces": [
+    "packages/stream-charts",
+    "packages/examples"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w stream-charts-examples",
+    "build": "npm run build -w stream-charts && npm run build -w stream-charts-examples",
+    "test": "npm test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "docs": "npm run gen-docs -w stream-charts"
+  },
+  "devDependencies": {
+    "@babel/preset-react": "^7.27.1"
+  }
+}
