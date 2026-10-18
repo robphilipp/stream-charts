@@ -1,0 +1,39 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #202020;
+  color: #d2933f;
+  font-family: 'Avenir Next', 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  /*background-color: #f5f5f5;*/
+}
+
+/*
+  While a theme change is being applied (see THEME_CHANGING_ATTRIBUTE in routeComponents.tsx), the
+  page's transitions are off, so that the new theme's colors appear at once everywhere, rather than
+  some components (e.g. the expandable control bar) fading from the old theme's colors. (Important,
+  to override the components' inline transition styles.)
+*/
+[data-theme-changing] *,
+[data-theme-changing] *::before,
+[data-theme-changing] *::after {
+  transition: none !important;
+}
