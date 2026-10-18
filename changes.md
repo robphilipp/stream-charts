@@ -1,5 +1,37 @@
 # change history
 
+## version 2.0.0 (data sources, canvas rendering, outlier plot)
+
+A redesign of how charts get their data and how they're drawn. Code written for 1.x needs updating; see "migrating from 1.x" in the [README](README.md).
+
+**Breaking changes**
+1. Charts read their data from an application-owned *data source* (`TimeSeriesDataSource`, `IteratesDataSource`, `OrdinalDataSource`, `OutlierDataSource`), handed to the chart through its new `dataSource` property. The data source subscribes to a *generator* (a function that creates the RxJS observable) when started, and unsubscribes when stopped. The `<Chart>`'s `initialData`, `seriesObservable`, `shouldSubscribe`, `onSubscribe`, and `onUpdateData` properties are gone: the initial data and `onUpdateData` are now data-source options, and running is controlled with `dataSource.start()` and `dataSource.stop()`.
+2. `dropDataAfter` moved from the plots to the data sources (and can be changed with `setDropDataAfter`).
+3. Charts are drawn on a single `<canvas>` rather than SVG elements. The `svgStyle` property still styles the chart's container.
+4. `Datum` is now `{x, y}` rather than `{time, value}` (create one with `datumOf(time, value)`), and `seriesFromTuples` is now `timeSeriesFromTuples`. Series data is held in a `FastShiftArray`, so dropping old data is cheap.
+5. `TrackerLabelLocation.WithMouse` was removed (`ByAxis` is the default, and `Nowhere` hides the labels).
+6. `zoomKeyModifiersRequired` now defaults to `true` (hold shift or ctrl while scrolling to zoom).
+7. The `useDataObservable` and `useInitialData` hooks were replaced by `useDataSource` and `useDataSourceRunning`.
+8. The public API is everything exported from the package root (`import {...} from "stream-charts"`); anything else is internal. Several 1.x exports were renamed or removed.
+
+**New**
+1. Data keeps streaming while a chart is unmounted (for example, when the user navigates to another page), and a restarted data source carries on from its latest data rather than starting over.
+2. Added the `<OutlierPlot>`, which plots a series with a confidence band for each measure (for example 1σ, 2σ, 3σ), and marks the points outside a band. Includes the `<OutlierPlotTooltipContent>`, which accepts custom content through `useOutlierTooltip`.
+3. Added the `<EmptyAxis>`, a plain line for a side of the plot that has no axis.
+4. Continuous y-axes can auto-scale (grow to fit the data on screen) in the scatter, bar, and outlier plots (`autoScale`, `autoScaleMin`, `autoScaleMax`, `autoScalePadding`, `autoScaledDomain`, `onAutoScale`).
+5. The scatter plot can draw markers at each point (`markerRadius`, `hideMarkersWhileRunning`).
+6. The Poincaré plot can colorize its lines by age (`colorizeLines`, `lineStartColor`, `lineEndColor`, `lineColorSteps`).
+7. All plots can highlight the axes of the hovered series (`highlightAxesOnMouseOver`), and hand back a `resetZoom` function (`onZoomReset`) for resetting the zoom along with the axes.
+8. The bar and Poincaré plots' zoom can survive remounting (`zoomState`, `onZoomStateChange`).
+9. The chart takes a `dataUpdatePeriod`, which gives smoother scrolling when the data arrives at a known, regular period.
+10. Custom tooltip content can be built on the new `<TooltipContent>` component. The raster, bar, and Poincaré tooltips now include sparklines.
+11. Series filters are screened for regular expressions that risk catastrophic backtracking (`regexFilter`, `literalFilter`, `isSafeRegex`).
+
+**Packaging and documentation**
+1. Dependencies are now declared correctly (in 1.x they were all listed only as development dependencies, so none were installed with the package). React 19, RxJS 7, and d3 7 are peer dependencies, so the library shares the application's copies (`npm install stream-charts react react-dom rxjs d3`). The small utilities the library uses internally (`result-fn`, `fast-shift-array`, `safe-regex`), and d3's type definitions, are installed with the package.
+2. Built with TypeScript 6 and tested with Jest 30.
+3. Rewrote the README for the new API, with a quick start, a migration guide, and links to the example project's guides and tutorials. The API docs now cover the public API only.
+
 ## version 1.2.1 (doc update)
 
 Added videos of the charts to the documentation.

@@ -1,9 +1,10 @@
-import {TimeSeriesChartData} from "../series/timeSeriesChartData";
-import {Datum, datumOf, TimeSeries} from "../series/timeSeries";
+import {emptyTimeSeriesChartData, type TimeSeriesChartData} from "../series/timeSeriesChartData";
+import {type Datum, datumOf, type TimeSeries} from "../series/timeSeries";
 import {seriesFrom} from "../series/baseSeries";
-import {Observable, range} from "rxjs";
+import {Observable, of, range} from "rxjs";
 import {map} from "rxjs/operators";
-import {OrdinalChartData, ordinalsObservable} from "./ordinals";
+import {type OrdinalChartData, ordinalsObservable} from "./ordinals";
+import {calculateOrdinalStats, type OrdinalDatum, ordinalDatumOf} from "../series/ordinalSeries";
 
 export function sinFn(x: number, period: number): number {
     return Math.sin(2 * Math.PI * x / period)
@@ -18,7 +19,7 @@ describe('when generating ordinal series', () => {
         .map(([name, value], index) => seriesFrom(name, [datumOf(index, value)]))
 
     test('should be able to generate ordinals', done => {
-        let results: Array<OrdinalChartData> = []
+        const results: Array<OrdinalChartData> = []
         ordinalsObservable(
             sineDataObservable(initialData, NUM_POINTS, UPDATE_PERIOD)
         ).subscribe(chartData => results.push(chartData))
@@ -52,6 +53,76 @@ describe('when generating ordinal series', () => {
 })
 
 /**
+ * Builds a single-tick {@link TimeSeriesChartData} with one series holding one (x, y) datum, used
+ * to drive {@link ordinalsObservable}'s internal `scan` accumulator one point at a time.
+ */
+function tick(seriesName: string, x: number, y: number): TimeSeriesChartData {
+    return {
+        ...emptyTimeSeriesChartData([seriesName]),
+        maxTime: x,
+        maxTimes: new Map([[seriesName, x]]),
+        newPoints: new Map([[seriesName, [{x, y}]]]),
+    }
+}
+
+describe('min/max time and value tracking', () => {
+    // guards against a regression of M10: the reducer used `if (x < min) {...} else if (x > max)
+    // {...}`, so a single datum could only ever update min OR max, never both. Since min/max start
+    // at +-Infinity, a single data point (which is trivially both the min and the max so far) or a
+    // decreasing sequence of points left the other bound frozen at its +-Infinity sentinel forever
+    it('sets both min and max to a single data point, which is trivially both', () => {
+        const results: Array<OrdinalChartData> = []
+        ordinalsObservable(of(tick('s1', 10, 5))).subscribe(chartData => results.push(chartData))
+
+        expect(results).toHaveLength(1)
+        const {stats} = results[0]
+        expect(stats.minDatum.time.time).toBe(10)
+        expect(stats.maxDatum.time.time).toBe(10)
+        expect(stats.minDatum.value.value).toBe(5)
+        expect(stats.maxDatum.value.value).toBe(5)
+    })
+
+    it('tracks the max across a decreasing time/value sequence instead of freezing at the sentinel', () => {
+        const results: Array<OrdinalChartData> = []
+        ordinalsObservable(of(tick('s1', 10, 8), tick('s1', 5, 3)))
+            .subscribe(chartData => results.push(chartData))
+
+        expect(results).toHaveLength(2)
+        const {stats} = results[1]
+        expect(stats.minDatum.time.time).toBe(5)
+        expect(stats.maxDatum.time.time).toBe(10)
+        expect(stats.minDatum.value.value).toBe(3)
+        expect(stats.maxDatum.value.value).toBe(8)
+    })
+})
+
+describe('seeding the stats with the stats of existing data', () => {
+    it('accumulates the stats from the seed rather than from scratch', () => {
+        const seed = calculateOrdinalStats([seriesFrom<OrdinalDatum>('s1', [ordinalDatumOf(0, 's1', 2), ordinalDatumOf(1, 's1', 4)])])
+        const results: Array<OrdinalChartData> = []
+        ordinalsObservable(of(tick('s1', 10, 6)), undefined, seed).subscribe(chartData => results.push(chartData))
+
+        expect(results).toHaveLength(1)
+        const stats = results[0].stats
+        // the existing two points (2, 4) plus the new one (6)
+        expect(stats.valueStatsForSeries.get('s1')!.count).toBe(3)
+        expect(stats.valueStatsForSeries.get('s1')!.mean).toBe(4)
+        expect(stats.minDatum.value.value).toBe(2)
+        expect(stats.maxDatum.value.value).toBe(6)
+        expect(stats.minDatum.time.time).toBe(0)
+        expect(stats.maxDatum.time.time).toBe(10)
+        // only the new point is emitted as new
+        expect(results[0].newPoints.get('s1')!.length).toBe(1)
+    })
+
+    it('does not modify the seed', () => {
+        const seed = calculateOrdinalStats([seriesFrom<OrdinalDatum>('s1', [ordinalDatumOf(0, 's1', 2)])])
+        ordinalsObservable(of(tick('s1', 10, 6)), undefined, seed).subscribe()
+        expect(seed.valueStatsForSeries.get('s1')!.count).toBe(1)
+    })
+})
+
+/**
  * Creates random data
  * @param sequenceTime The current time
  * @param maxTime The number of points in the series
@@ -75,7 +146,7 @@ function sineData(
         newPoints: new Map(series.map((name, index) => {
             const time = sequenceTime + index
             const value = sinFn(time, maxTime + index)
-            return [name, [{time, value}]]
+            return [name, [{x: time, y: value}]]
         }))
     };
 }
@@ -88,18 +159,18 @@ function sineData(
  */
 function initialChartData(seriesList: Array<TimeSeries>, currentTime: number = 0): TimeSeriesChartData {
     const maxTime = seriesList.reduce(
-        (tMax, series) => Math.max(tMax, series.last().map(datum => datum.time).getOrElse(-Infinity)),
+        (tMax, series) => Math.max(tMax, series.last().map(datum => datum.x).getOrElse(-Infinity)),
         -Infinity
     )
     return {
         seriesNames: new Set(seriesList.map(series => series.name)),
         maxTime,
-        maxTimes: new Map(seriesList.map(series => [series.name, series.last().map(datum => datum.time).getOrElse(0)])),
+        maxTimes: new Map(seriesList.map(series => [series.name, series.last().map(datum => datum.x).getOrElse(0)])),
         newPoints: new Map<string, Array<Datum>>(seriesList.map(series => [
             series.name,
             [{
-                time: series.last().map(datum => datum.time).getOrElse(0),
-                value: series.last().map(datum => datum.value).getOrElse(0)
+                x: series.last().map(datum => datum.x).getOrElse(0),
+                y: series.last().map(datum => datum.y).getOrElse(0)
             }]
         ])),
         currentTime: currentTime

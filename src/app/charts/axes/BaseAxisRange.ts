@@ -31,67 +31,87 @@ export abstract class BaseAxisRange {
     }
 
     /**
-     * Returns the current distance between the start and end of the range.
+     * The current distance between the start and end of the range
+     * @return The current range's measure (0 when it's empty)
      */
     get currentDistance(): number {
         return this.current.measure()
     }
 
     /**
-     * Returns the original (e.g. before any zooming or panning) distance between the start and end of the range.
+     * The original (e.g. before any zooming or panning) distance between the start and end of the range
+     * @return The original range's measure (0 when it's empty)
      */
     get originalDistance(): number {
         return this.original.measure()
     }
 
     /**
-     * The ratio between the current and original distance.
-     */
-    get scaleFactor(): number {
-        return this.currentDistance / this.originalDistance
-    }
-
-    /**
-     * Scales the range using the current scale-factor (closure on `scaleFactor`)
-     * @param factor The factor used to update the range
+     * Scales the range by the specified *incremental* factor -- i.e. relative to `.current`, not
+     * relative to `.original`. d3-zoom's own `transform.k` is cumulative from wherever `__zoom` was
+     * last reset to identity, so callers must first convert it to an incremental factor (this
+     * event's `k` divided by the previously-applied `k`, tracked in a ref that survives across
+     * zoom events -- see `useCanvasZoomPan`) before calling this. Scaling relative
+     * to `.current` this way means `.original` no longer needs to be preserved/shifted for the
+     * zoom math to stay correct -- unlike the previous design, where `factor` was the *cumulative*
+     * `transform.k` applied against `.original`, which broke the moment anything (e.g. a fresh
+     * subscription on Run) rebuilt `.original` to match a since-zoomed `.current` mid-session.
+     * @param factor The incremental scale factor (this event's change in scale, not the cumulative
+     * scale since the axis was last at identity)
      * @param value The current value being scaled
      * @return The new range, represented by an array holding the start and end value
      */
     protected scaledRange(factor: number, value: number): AxisInterval {
         const dtStart = value - this.current.start
         const dtEnd = this.current.end - value
-        const start = value - dtStart * factor / this.scaleFactor
-        const end = value + dtEnd * factor / this.scaleFactor
+        const start = value - dtStart * factor
+        const end = value + dtEnd * factor
         return AxisInterval.from(start, end)
     }
 
     /**
-     *
-     * Scales the axis-range by the specified scale factor from the specified {@link value}. The equations
-     * are written so that the zooming (scaling) occurs at the specified {@link value}, and expands/contracts equally
-     * from that {@link value}.
-     * @param factor The scale factor
-     * @param value The time from which to scale the interval
-     * @return A new continuous-axis range with updated values
+     * Scales the axis-range by the specified factor from the specified `value` (see
+     * {@link scaledRange} for what "incremental" means for a continuous axis range). The equations are written so
+     * that the zooming (scaling) occurs at the specified `value`, and expands/contracts
+     * equally from that `value`.
+     * @param factor The scale factor -- incremental for a {@link ContinuousAxisRange}, but cumulative
+     * for an {@link OrdinalAxisRange} (see its {@link OrdinalAxisRange.scale})
+     * @param value The value from which to scale the interval
+     * @return A new axis range with updated values
      */
     abstract scale(factor: number, value: number): BaseAxisRange
 
     /**
-     * Scales the axis-range by the specified scale factor, but constrains the range to the specified
-     * {@link constraint} min and max. The equations are written so that the zooming (scaling) occurs
-     * at the specified {@link value}, and expands/contracts equally from that {@link value}.
-     * @param factor The scale factor
+     * Scales the axis-range from the specified `value`, honoring the specified
+     * `constraint` min and max. The equations are written so that the zooming (scaling)
+     * occurs at the specified `value`, and expands/contracts equally from that
+     * `value`.
+     *
+     * IMPORTANT: the two concrete subclasses give `constraint` opposite meanings, and neither
+     * uses the same kind of `factor` -- this base signature is shared for convenience, not
+     * because the implementations are interchangeable:
+     * - {@link ContinuousAxisRange.constrainedScale} takes an *incremental* factor and *clamps*
+     *   the result to stay inside `constraint` -- `constraint` is a hard viewport edge the range
+     *   is not allowed to scroll/zoom past.
+     * - {@link OrdinalAxisRange.constrainedScale} takes a *cumulative* factor and *widens* the
+     *   result to guarantee it fully covers `constraint` -- `constraint` is the domain that must
+     *   be entirely visible once zoomed all the way out, and widening (rather than clamping) is
+     *   what fixes the pivot-drift bug documented on `OrdinalAxisRange.scaledCumulative`.
+     * Do not port logic between the two without re-reading both subclasses' own doc comments.
+     * @param factor The scale factor -- incremental or cumulative, depending on the concrete subclass
      * @param value The value at which the zoom is initiated
      * @param constraint The min and max range
-     * @return A new continuous-axis range with updated values
+     * @return A new axis range with updated values
      */
     abstract constrainedScale(factor: number, value: number, constraint: [min: number, max: number]): BaseAxisRange
 
     /**
-     * Translates the axis-range by the specified amount
+     * Translates the axis-range by the specified amount, unless that would take it outside the
+     * constraint interval
      * @param amount The amount by which to translate the axis-range
      * @param [constraints] Optional constraint interval in which the axis range must be within
-     * @return An updated {@link ContinuousAxisRange} that has been translated by the specified amount
+     * @return An updated axis range that has been translated by the specified amount (or an
+     * unchanged copy, when the translation would leave the constraint interval)
      */
     abstract translate(amount: number, constraints?: [start: number, end: number]): BaseAxisRange
 

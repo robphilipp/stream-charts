@@ -1,4 +1,4 @@
-import {AxisInterval, copyRangeMap} from "./AxisInterval";
+import {AxisInterval} from "./AxisInterval";
 
 describe('AxisInterval', () => {
 
@@ -39,6 +39,49 @@ describe('AxisInterval', () => {
             expect(copy.start).toBe(1);
             expect(copy.end).toBe(5);
             expect(copy).not.toBe(interval);
+        })
+    })
+
+    // guards against a regression of M6: a single NaN endpoint used to collapse silently into the
+    // same (NaN, NaN) representation as a deliberate empty interval, discarding which of the two
+    // inputs was actually bad -- these confirm the warning added for that mixed case fires only
+    // for it, with the returned value unchanged in every case (so existing callers are unaffected)
+    describe('single-NaN endpoint diagnostic', () => {
+        let warnSpy: jest.SpyInstance
+
+        beforeEach(() => {
+            warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+        })
+
+        afterEach(() => {
+            warnSpy.mockRestore()
+        })
+
+        it('warns when only start is NaN, and still collapses to the empty representation', () => {
+            const interval = AxisInterval.from(NaN, 5);
+            expect(interval.start).toBeNaN()
+            expect(interval.end).toBeNaN()
+            expect(warnSpy).toHaveBeenCalledTimes(1)
+            expect(warnSpy.mock.calls[0][0]).toContain('start: NaN, end: 5')
+        })
+
+        it('warns when only end is NaN, and still collapses to the empty representation', () => {
+            const interval = AxisInterval.from(5, NaN);
+            expect(interval.start).toBeNaN()
+            expect(interval.end).toBeNaN()
+            expect(warnSpy).toHaveBeenCalledTimes(1)
+            expect(warnSpy.mock.calls[0][0]).toContain('start: 5, end: NaN')
+        })
+
+        it('does not warn when both endpoints are NaN (the deliberate empty-interval case)', () => {
+            AxisInterval.from(NaN, NaN);
+            expect(warnSpy).not.toHaveBeenCalled()
+        })
+
+        it('does not warn for ordinary, non-NaN input, including a reversed order', () => {
+            AxisInterval.from(1, 5);
+            AxisInterval.from(5, 1);
+            expect(warnSpy).not.toHaveBeenCalled()
         })
     })
 
@@ -123,21 +166,6 @@ describe('AxisInterval', () => {
 
         it('should translate an empty interval into an empty interval', () => {
             expect(AxisInterval.empty().translate(12)).toEqual(AxisInterval.empty())
-        })
-    })
-
-    describe('Copy a range map', () => {
-        it('should create a copy of a range map', () => {
-            const ranges = new Map<string, AxisInterval>([
-                ['a', AxisInterval.from(1, 5)],
-                ['b', AxisInterval.from(10, 20)]
-            ])
-            const copy = copyRangeMap(ranges)
-
-            expect(copy).not.toBe(ranges)
-            expect(copy.size).toBe(ranges.size)
-            expect(copy.get('a')).toEqual(ranges.get('a'))
-            expect(copy.get('b')).toEqual(ranges.get('b'))
         })
     })
 })

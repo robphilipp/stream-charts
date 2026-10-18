@@ -1,12 +1,17 @@
-import {emptySeries, seriesFrom} from "./baseSeries";
+import {DEFAULT_COMPACTING_SIZE, emptySeries, emptySeriesFor, seriesFrom} from "./baseSeries";
+import {FastShiftArray} from "fast-shift-array";
 
 describe('should be able to create an empty series', () => {
+    // NOTE: the two `isEmpty()`/`.failed` assertions below previously called `expect(...)` with no
+    // matcher chained (e.g. `expect(emptySeries('test1').isEmpty());`) -- a bare `expect()` call
+    // asserts nothing at all and always passes, so these tests were vacuous; they now actually
+    // assert the value.
     test('an empty series should be empty', () => {
-        expect(emptySeries('test1').isEmpty());
+        expect(emptySeries('test1').isEmpty()).toBe(true);
     });
 
     test('an empty series should not have a last element', () => {
-        expect(emptySeries('test1').last().failed);
+        expect(emptySeries('test1').last().failed).toBe(true);
     });
 
     test('an empty series should have 0 length', () => {
@@ -38,7 +43,7 @@ describe('should be able to create a series from data', () => {
     const series = seriesFrom('test2', data);
 
     test('series should not be empty', () => {
-        expect(!series.isEmpty())
+        expect(series.isEmpty()).toBe(false)
     });
 
     test('series name should be test2', () => {
@@ -55,6 +60,19 @@ describe('should be able to create a series from data', () => {
     });
 
     test('series data should equal original data', () => {
-        expect(series.data).toEqual(data);
+        expect(series.data).toEqual(FastShiftArray.fromArray(data, true, DEFAULT_COMPACTING_SIZE));
+    });
+});
+
+describe('emptySeriesFor', () => {
+    test('should create one empty series per name', () => {
+        const series = emptySeriesFor<{time: number, value: number}>(['a', 'b', 'c']);
+        expect(series).toHaveLength(3);
+        expect(series.map(s => s.name)).toEqual(['a', 'b', 'c']);
+        series.forEach(s => expect(s.isEmpty()).toBe(true));
+    });
+
+    test('should return an empty array for an empty list of names', () => {
+        expect(emptySeriesFor([])).toEqual([]);
     });
 });

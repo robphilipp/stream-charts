@@ -1,7 +1,7 @@
 import {filter, map, scan} from 'rxjs/operators';
 import {Observable, range} from 'rxjs';
-import {IterateChartData, iteratesObservable as iterateObservable} from '../observables/iterates'
-import {TimeSeriesChartData} from "../series/timeSeriesChartData";
+import {type IterateChartData, iteratesObservable as iterateObservable} from '../observables/iterates'
+import {type TimeSeriesChartData} from "../series/timeSeriesChartData";
 import {datumOf} from "../series/timeSeries";
 
 
@@ -82,7 +82,7 @@ function successiveDiffsObservable(
 describe('should be able to calculate successive differences', () => {
 
     test('should be able to calc successive-diffs for x^2 where x is in 1..10', done => {
-        let results: Array<Point> = []
+        const results: Array<Point> = []
         successiveDiffsObservable(1, pointsObservable(10, x => x * x), true).subscribe(point => results.push(point))
         done()
         expect(results).toHaveLength(9)
@@ -100,7 +100,7 @@ describe('should be able to calculate successive differences', () => {
     });
 
     test('should be able to calc successive-diffs for x^2 where x is in 1..10 using interval end', done => {
-        let results: Array<Point> = []
+        const results: Array<Point> = []
         successiveDiffsObservable(1, pointsObservable(10, x => x * x), false).subscribe(point => results.push(point))
         done()
         expect(results).toHaveLength(9)
@@ -118,7 +118,7 @@ describe('should be able to calculate successive differences', () => {
     });
 
     test('should be able to calc 3-diffs for x^2 where x is in 1..10', done => {
-        let results: Array<Point> = []
+        const results: Array<Point> = []
         successiveDiffsObservable(3, pointsObservable(10, x => x * x), true).subscribe(point => results.push(point))
         done()
         expect(results).toHaveLength(7)
@@ -134,7 +134,7 @@ describe('should be able to calculate successive differences', () => {
     });
 
     test('should be able to calc 3-diffs for x^2 where x is in 1..10 using interval end', done => {
-        let results: Array<Point> = []
+        const results: Array<Point> = []
         successiveDiffsObservable(3, pointsObservable(10, x => x * x), false).subscribe(point => results.push(point))
         done()
         expect(results).toHaveLength(7)
@@ -192,7 +192,7 @@ function tentFn(x: number, mu: number = 1): number {
 describe('should be able to calculate iterates', () => {
 
     test('should be able to calc 1-iterates for x^2 where x is in 1..10', done => {
-        let results: Array<Point> = []
+        const results: Array<Point> = []
         iteratesObservable(1, pointsObservable(10, x => 2 * x)).subscribe(point => results.push(point))
         done()
         expect(results).toHaveLength(9)
@@ -210,7 +210,7 @@ describe('should be able to calculate iterates', () => {
     });
 
     test('should be able to calc 3-iterates for x^2 where x is in 1..10', done => {
-        let results: Array<Point> = []
+        const results: Array<Point> = []
         iteratesObservable(3, pointsObservable(10, x => 2 * x)).subscribe(point => results.push(point))
         done()
         expect(results).toHaveLength(7)
@@ -243,7 +243,7 @@ describe('when calculating tent-map iterates with one new data point for each ev
 
     test('should be able to calc 1-iterates for tent-map chart data, when 1 point is added at a time', done => {
         const numPoints = 10
-        let results: Array<IterateChartData> = []
+        const results: Array<IterateChartData> = []
         iterateObservable(
             range(0, numPoints).pipe(
                 map(x => ({
@@ -316,7 +316,7 @@ describe('when calculating tent-map 1-iterates with two new data points for each
 
     test('should be able to calc iterates for tent-map chart data, when 2 points are added at a time', done => {
         const numPoints = 5
-        let results: Array<IterateChartData> = []
+        const results: Array<IterateChartData> = []
         iterateObservable(
             range(0, numPoints)
                 .pipe(
@@ -391,7 +391,7 @@ describe('when calculating tent-map 1-iterates with two new data points for each
 
     test('should be able to calc iterates for tent-map chart data, when 2 points are added at a time, with 2 series', done => {
         const numPoints = 5
-        let results: Array<IterateChartData> = []
+        const results: Array<IterateChartData> = []
         iterateObservable(
             range(0, numPoints)
                 .pipe(

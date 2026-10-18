@@ -1,20 +1,7 @@
 {
-  "compilerOptions": {
-    "declaration": true,
-    "outDir": "dist",
-    "sourceMap": true,
-    "module": "esnext",
-    "target": "es2015",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "jsx": "react-jsx",
-    "moduleResolution": "node",
-
-    "allowJs": false,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-  }
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
 }

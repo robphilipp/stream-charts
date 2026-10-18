@@ -1,54 +1,50 @@
-import {JSX, useEffect, useMemo, useRef} from 'react'
-import {Dimensions, Margin, plotDimensionsFrom} from "./styling/margins";
-import {initialSvgStyle, SvgStyle} from "./styling/svgStyle";
-import {GSelection} from "./d3types";
-import ChartProvider from "./hooks/useChart";
-import PlotDimensionsProvider, {defaultMargin} from "./hooks/usePlotDimensions";
-import * as d3 from "d3";
-import {SeriesStyle} from "./axes/axes";
-import {createPlotContainer} from "./plots/plot";
+import {type JSX, useMemo} from 'react'
+import {type Margin} from "./styling/margins";
+import type {SvgStyle} from "./styling/svgStyle";
+import type {BaseAxis, SeriesStyle} from "./axes/axes";
 import {noop} from "./utils";
-import AxesProvider from "./hooks/useAxes";
-import MouseProvider from "./hooks/useMouse";
-import TooltipProvider from "./hooks/useTooltip";
-import {Observable, Subscription} from "rxjs";
-import DataObservableProvider from './hooks/useDataObservable';
-import {BaseSeries} from "./series/baseSeries";
-import InitialDataProvider from "./hooks/useInitialData";
-import {ChartData} from "./observables/ChartData";
+import type {BaseSeries} from "./series/baseSeries";
+import type {ChartData} from "./observables/ChartData";
 import {AxisInterval} from "./axes/AxisInterval";
+import type {BaseAxisRange} from "./axes/BaseAxisRange";
+import {defaultMargin} from "./hooks/defaultPlotDimensions";
+import PlotDimensionsProvider from "./hooks/PlotDimensionsProvider";
+import CanvasSurfaceProvider from "./hooks/CanvasSurfaceProvider";
+import InteractionProvider from "./hooks/InteractionProvider";
+import ChartProvider from "./hooks/ChartProvider";
+import AxesProvider from "./hooks/AxesProvider";
+import {isSafeRegex} from "./filters/regexFilter";
+import type {StreamingDataSource} from "./datasources/StreamingDataSource";
+import {ChartDataContext, type ChartDataValues} from "./hooks/useDataSource";
 
 const defaultBackground = '#202020';
 
 /**
- * @param chartId A unique identifier for the chart. This is used to identify the chart in the DOM.
+ * @param chartId A unique identifier for the chart. This is used to namespace draw-handles registered
+ * with the chart's canvas context.
  * @param width The width of the chart container
  * @param height The height of the chart container
  * @param margin The margin between the edges of the chart container and the axes
- * @param color The base/default color of the chart lines. This can be overridden by the {@link Props.svgStyle} property.
- * @param backgroundColor The base/default background color. This can be overridden by the {@link Props.svgStyle} property.
- * @param svgStyle Overrides for the SVG style
+ * @param color The base/default color of the chart lines. This can be overridden by the {@link ChartProps.svgStyle} property.
+ * @param backgroundColor The base/default background color. This can be overridden by the {@link ChartProps.svgStyle} property.
+ * @param svgStyle Overrides for the chart container's CSS style
  * @param seriesStyles Map holding the series name to the series style associated with that series.
- * @param initialData Initial (static) data to plot before subscribing to the {@link ChartData} observable.
- * @param asChartData Optional conversion function that converts an array of base-series with datum type D to a
- * descendent of a {@link ChartData} object
  * @param seriesFilter Regular expression that filters which series to display on the plot. Can be update while streaming
- * @param seriesObservable {@link ChartData} RxJS `Observable` that feeds the chart data to display (i.e. the data stream).
+ * @param dataSource The application-owned {@link StreamingDataSource} that holds (and ingests) the chart's data
  * @param windowingTime The time-window (in milliseconds) to buffer the incoming data before updating the chart. This is
  * a lever to reduce the lag between real-time and chart-time when a large amount of data is being
- * sourced by the observable. Smaller time-windows result in smoother scrolling, but more updates, and
+ * ingested by the data source. Smaller time-windows result in smoother scrolling, but more updates, and
  * possibly a larger lag.
- * @param shouldSubscribe When switching to `true` from `false`, subscribes to the {@link seriesObservable}. When switching
- * to `false` from `true`, unsubscribes from the {@link seriesObservable}.
- * @param onSubscribe Callback when the chart subscribes to the {@link ChartData} observable
+ * @param dataUpdatePeriod The period (ms) at which the data source's generator emits new data, when known
  * @param onUpdateAxesBounds Callback when the time range changes. This is generally used by plots where the
  * x-axis starts to scroll as the data streams in past the end of the current time
  * @param onUpdateChartTime Callback for updating the current chart time. This is generally used by plots
+ * whose axes don't represent time (e.g. the Poincaré plot)
  * @template CD refers to the chart-data that is used by the Observable that has the stream of data.
  * @template D refers to the datum in the data-series
  * @template S refers to the type for the series style
  */
-export interface Props<CD, D, S extends SeriesStyle> {
+export interface Props<CD extends ChartData, D, S extends SeriesStyle> {
     chartId: number
     /**
      * The width of the chart container
@@ -63,15 +59,15 @@ export interface Props<CD, D, S extends SeriesStyle> {
      */
     margin?: Partial<Margin>
     /**
-     * The base/default color of the chart lines. This can be overridden by the {@link Props.svgStyle} property.
+     * The base/default color of the chart lines. This can be overridden by the {@link ChartProps.svgStyle} property.
      */
     color?: string
     /**
-     * The base/default background color. This can be overridden by the {@link Props.svgStyle} property.
+     * The base/default background color. This can be overridden by the {@link ChartProps.svgStyle} property.
      */
     backgroundColor?: string
     /**
-     * Overrides for the SVG style
+     * Overrides for the chart container's CSS style
      */
     svgStyle?: Partial<SvgStyle>
     /**
@@ -79,19 +75,6 @@ export interface Props<CD, D, S extends SeriesStyle> {
      */
     seriesStyles?: Map<string, S>
 
-    /*
-     | INITIAL DATA
-     */
-    /**
-     * Initial (static) data to plot before subscribing to the {@link ChartData} observable.
-     */
-    initialData: Array<BaseSeries<D>>
-    /**
-     * Optional conversion function that converts an array of base-series with datum type D to a
-     * descendent of a {@link ChartData} object
-     * @param initialData The initial array of series
-     */
-    asChartData?: (initialData: Array<BaseSeries<D>>) => CD
     /**
      * Regular expression that filters which series to display on the plot. Can be update while streaming
      */
@@ -101,26 +84,28 @@ export interface Props<CD, D, S extends SeriesStyle> {
      | DATA STREAM
      */
     /**
-     * {@link ChartData} RxJS `Observable` that feeds the chart data to display (i.e. the data stream).
+     * The application-owned source of the chart's data (see {@link StreamingDataSource}). The chart
+     * and its plots read their series from the data source, and redraw as it ingests new data --
+     * they never subscribe to the data stream themselves. The application starts and stops the
+     * data source (e.g. Run/Pause), and the data source keeps ingesting while the chart is
+     * unmounted (e.g. the user navigated to another page), so the chart picks up where it left
+     * off when it remounts.
      */
-    seriesObservable?: Observable<CD>
+    dataSource: StreamingDataSource<CD, D>
     /**
      * The time-window (in milliseconds) to buffer the incoming data before updating the chart. This is
      * a lever to reduce the lag between real-time and chart-time when a large amount of data is being
-     * sourced by the observable. Smaller time-windows result in smoother scrolling, but more updates, and
+     * ingested by the data source. Smaller time-windows result in smoother scrolling, but more updates, and
      * possibly a larger lag.
      */
     windowingTime?: number
     /**
-     * When switching to `true` from `false`, subscribes to the {@link seriesObservable}. When switching
-     * to `false` from `true`, unsubscribes from the {@link seriesObservable}.
+     * The period (ms) at which the data source's generator emits new data, when known. When
+     * provided, buffering switches from wall-clock-based to a fixed tick count derived from
+     * `windowingTime / dataUpdatePeriod`, avoiding a jittery scroll that can otherwise result once
+     * the axis auto-scrolls (see the view drivers in `subscriptions/viewDrivers.ts`).
      */
-    shouldSubscribe?: boolean
-    /**
-     * Callback when the chart subscribes to the {@link ChartData} observable
-     * @param subscription The RxJS subscription
-     */
-    onSubscribe?: (subscription: Subscription) => void
+    dataUpdatePeriod?: number
     /**
      * Callback when the time range changes. This is generally used by plots where the
      * x-axis starts to scroll as the data streams in past the end of the current time
@@ -137,13 +122,6 @@ export interface Props<CD, D, S extends SeriesStyle> {
      * @param time The current chart time
      */
     onUpdateChartTime?: (time: number) => void
-    /**
-     * Callback function that is called when new data arrives to the chart.
-     * @param seriesName The name of the series for which new data arrived
-     * @param data The new data that arrived in the windowing tine
-     * @see UseChartValues.windowingTime
-     */
-    onUpdateData?: (seriesName: string, data: Array<D>) => void
 
     /**
      * The child components of the chart (i.e. the axis, plot, tracker, tooltip)
@@ -152,9 +130,22 @@ export interface Props<CD, D, S extends SeriesStyle> {
 }
 
 /**
- * The chart container that holds the axes, plot, tracker, and tooltip. The chart manages the
- * subscription, sets up the {@link useChart} hook via the {@link ChartProvider}.
+ * The chart container that holds the axes, plot, tracker, and tooltip. The chart reads its data
+ * from the application-owned data source (its `dataSource` prop), and sets up the
+ * {@link useChart} hook via the {@link ChartProvider}.
+ *
+ * Internally, the chart is backed by a single `<canvas>` element rather than an SVG element tree.
+ * The canvas itself is created and sized by {@link CanvasSurfaceProvider}, which derives its size
+ * from {@link usePlotDimensions} (the single source of truth for the chart's dimensions) rather
+ * than from this component's `width`/`height` props directly -- this keeps the canvas correctly
+ * sized even if dimensions are ever updated via `usePlotDimensions().updateDimensions(...)`
+ * independent of a prop change. Axes, plots, and the tracker don't create/mutate their own DOM
+ * nodes -- they register a draw function with the {@link CanvasContext} (exposed via
+ * `useChart().canvasContext`, itself sourced from {@link CanvasSurfaceProvider} via
+ * `useCanvasSurface()`), and the canvas context clears and repaints all registered draw functions
+ * whenever a redraw is requested.
  * @param props The properties of the chart
+ * @return The chart, with its children inside the chart's context providers
  * @template CD Chart data
  * @template D The type of the datum type held in a series
  * @template S The type of the series style
@@ -171,24 +162,22 @@ export interface Props<CD, D, S extends SeriesStyle> {
     backgroundColor={theme.backgroundColor}
     seriesStyles={new Map([
         ['neuron1', {
-            ...defaultLineStyle,
+            ...defaultLineStyle(),
             color: 'orange',
             lineWidth: 2,
             highlightColor: 'orange'
         }],
         ['neuron6', {
-            ...defaultLineStyle,
+            ...defaultLineStyle(),
             color: theme.name === 'light' ? 'blue' : 'gray',
             lineWidth: 3,
             highlightColor: theme.name === 'light' ? 'blue' : 'gray',
             highlightWidth: 5
         }],
     ])}
-    initialData={initialDataRef.current}
+    dataSource={dataSource}
     seriesFilter={filter}
-    seriesObservable={observableRef.current}
-    shouldSubscribe={running}
-    onUpdateTime={handleChartTimeUpdate}
+    onUpdateAxesBounds={handleChartTimeUpdate}
     windowingTime={150}
 >
     <ContinuousAxis
@@ -197,16 +186,16 @@ export interface Props<CD, D, S extends SeriesStyle> {
         domain={[0, 5000]}
         label="t (ms)"
     />
-    <CategoryAxis
+    <OrdinalAxis
         axisId="y-axis-1"
         location={AxisLocation.Left}
-        categories={initialDataRef.current.map(series => series.name)}
+        categories={dataSource.seriesList().map(series => series.name)}
         label="neuron"
     />
-    <CategoryAxis
+    <OrdinalAxis
         axisId="y-axis-2"
         location={AxisLocation.Right}
-        categories={initialDataRef.current.map(series => series.name)}
+        categories={dataSource.seriesList().map(series => series.name)}
         label="neuron"
     />
     <Tracker
@@ -231,14 +220,17 @@ export interface Props<CD, D, S extends SeriesStyle> {
     </Tooltip>
     <RasterPlot
         spikeMargin={1}
-        dropDataAfter={5000}
         panEnabled={true}
         zoomEnabled={true}
         zoomKeyModifiersRequired={true}
     />
 </Chart>
 */
-export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM>(props: Props<CD, D, S>): JSX.Element {
+// the defaults (constants, so that their identity doesn't change from one render to the next)
+const NO_SERIES_STYLES = new Map<string, SeriesStyle>()
+const MATCH_EVERYTHING = /./
+
+export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A extends BaseAxis>(props: Props<CD, D, S>): JSX.Element {
     const {
         chartId,
 
@@ -246,113 +238,85 @@ export function Chart<CD extends ChartData, D, S extends SeriesStyle, TM>(props:
         height,
         color = '#d2933f',
         backgroundColor = defaultBackground,
-        seriesStyles = new Map(),
-        initialData,
-        asChartData,
-        seriesFilter = /./,
-        seriesObservable,
+        seriesStyles = NO_SERIES_STYLES as Map<string, S>,
+        seriesFilter = MATCH_EVERYTHING,
+        dataSource,
         windowingTime = 100,
-        shouldSubscribe = true,
+        dataUpdatePeriod,
 
-        onSubscribe = noop,
         onUpdateAxesBounds = noop,
         onUpdateChartTime = noop,
-        onUpdateData = noop,
 
         children,
     } = props
 
-    // override the defaults with the parent's properties, leaving any unset values as the default value
-    const margin = {...defaultMargin, ...props.margin}
-    const svgStyle = useMemo<SvgStyle>(
-        () => ({...initialSvgStyle, ...props.svgStyle, width: props.width, height: props.height}),
-        [props.height, props.svgStyle, props.width]
+    // the series the data source held when it was handed to the chart. Memoized on the data source
+    // ALONE: a new data source means new initial data, and the plots reset themselves when the
+    // initial data changes -- so it must not change when anything else does (e.g. a new
+    // `onUpdateChartTime` callback on every render of the chart's parent, which would otherwise
+    // reset the plots on every render)
+    const initialData = useMemo<Array<BaseSeries<D>>>(() => dataSource.seriesList(), [dataSource])
+
+    // the chart's data: the data source, its initial data, and the streaming settings
+    const chartData = useMemo<ChartDataValues<CD, D, BaseSeries<D>>>(
+        () => ({
+            dataSource: dataSource as StreamingDataSource<CD, D, BaseSeries<D>>,
+            initialData,
+            windowingTime,
+            dataUpdatePeriod,
+            onUpdateChartTime
+        }),
+        [dataSource, initialData, windowingTime, dataUpdatePeriod, onUpdateChartTime]
     )
 
-    // hold a reference to the current width and the plot dimensions
-    const plotDimRef = useRef<Dimensions>(plotDimensionsFrom(width, height, margin))
+    // override the defaults with the parent's properties, leaving any unset values as the default
+    // value (memoized on the margin's values, so that a new `margin` object with the same values
+    // doesn't change the plot dimensions' context)
+    const {top, bottom, left, right} = {...defaultMargin, ...props.margin}
+    const margin = useMemo<Margin>(() => ({top, bottom, left, right}), [top, bottom, left, right])
+    const containerDimensions = useMemo(() => ({width, height}), [width, height])
 
-    // the container that holds the d3 svg element
-    const mainGRef = useRef<GSelection | null>(null)
-    const containerRef = useRef<SVGSVGElement>(null)
-    const hoveredSeriesRef = useRef<string | null>(null)
-
-    // creates the main <g> element for the chart if it doesn't already exist, otherwise
-    // updates the svg element with the updated dimensions or style properties
-    useEffect(
+    // `seriesFilter` is tested against every series name on every redraw frame by each plot
+    // component (not just once), so an unvetted pattern -- e.g. one built directly from
+    // free-text user input without going through the `regexFilter` helper, which already screens
+    // for this -- could freeze the whole render loop with catastrophic backtracking. This is the
+    // one place every `seriesFilter`, however it was constructed, necessarily passes through
+    // before reaching a plot, so it's checked here too, falling back to the safe match-everything
+    // default rather than ever handing plots something that could hang them.
+    const safeSeriesFilter = useMemo<RegExp>(
         () => {
-            if (containerRef.current) {
-                // create the main SVG element if it doesn't already exist
-                if (!mainGRef.current) {
-                    mainGRef.current = createPlotContainer(chartId, containerRef.current, plotDimRef.current, color)
-                }
-
-                // build up the svg style from the defaults and any svg style object
-                // passed in as properties
-                const style = Object.getOwnPropertyNames(svgStyle)
-                    .map(name => `${name}: ${svgStyle[name]}; `)
-                    .join("")
-
-                // when the chart "backgroundColor" property is set (i.e. not the default value),
-                // then we need add it to the styles, overwriting any color that may have been
-                // set in the svg style object
-                const background = backgroundColor !== defaultBackground ?
-                    `background-color: ${backgroundColor}; ` :
-                    ''
-
-                // update the dimension and style
-                d3.select<SVGSVGElement, any>(containerRef.current)
-                    .attr('width', width)
-                    .attr('height', height)
-                    .attr('style', style + background + ` color: ${color}`)
-            }
+            if (isSafeRegex(seriesFilter)) return seriesFilter
+            console.warn(
+                `seriesFilter regex risks catastrophic backtracking and was ignored; ` +
+                `falling back to the default (match-everything) filter; pattern: ${seriesFilter}`
+            )
+            return MATCH_EVERYTHING
         },
-        [color, backgroundColor, height, svgStyle, width, chartId]
+        [seriesFilter]
     )
 
     return (
-        <>
-            <svg ref={containerRef}/>
-            <PlotDimensionsProvider containerDimensions={{width, height}} margin={margin}>
+        <PlotDimensionsProvider containerDimensions={containerDimensions} margin={margin}>
+            <CanvasSurfaceProvider chartId={chartId} color={color} backgroundColor={backgroundColor} svgStyle={props.svgStyle}>
                 <AxesProvider onUpdateAxesInterval={onUpdateAxesBounds}>
-                    <MouseProvider<D, TM>>
-                        <TooltipProvider<D, TM>>
-                            <InitialDataProvider<CD, D>
-                                initialData={initialData}
-                                asChartData={asChartData}
+                    <InteractionProvider<D, TM>>
+                        <ChartDataContext.Provider value={chartData}>
+                            <ChartProvider<S, AR, A>
+                                chartId={chartId}
+                                color={color}
+                                backgroundColor={backgroundColor}
+                                seriesStyles={seriesStyles}
+                                seriesFilter={safeSeriesFilter}
                             >
-                                <DataObservableProvider<CD, D>
-                                    seriesObservable={seriesObservable}
-                                    windowingTime={windowingTime}
-                                    shouldSubscribe={shouldSubscribe}
-
-                                    onSubscribe={onSubscribe}
-                                    onUpdateData={onUpdateData}
-                                    onUpdateChartTime={onUpdateChartTime}
-                                >
-                                    <ChartProvider
-                                        chartId={chartId}
-                                        container={containerRef.current}
-                                        mainG={mainGRef.current}
-
-                                        color={color}
-                                        backgroundColor={backgroundColor}
-                                        svgStyle={svgStyle}
-                                        seriesStyles={seriesStyles}
-                                        seriesFilter={seriesFilter}
-                                        hoveredSeriesRef={hoveredSeriesRef}
-                                    >
-                                        {
-                                            // the chart elements are the children
-                                            children
-                                        }
-                                    </ChartProvider>
-                                </DataObservableProvider>
-                            </InitialDataProvider>
-                        </TooltipProvider>
-                    </MouseProvider>
+                                {
+                                    // the chart elements are the children
+                                    children
+                                }
+                            </ChartProvider>
+                        </ChartDataContext.Provider>
+                    </InteractionProvider>
                 </AxesProvider>
-            </PlotDimensionsProvider>
-        </>
+            </CanvasSurfaceProvider>
+        </PlotDimensionsProvider>
     );
 }

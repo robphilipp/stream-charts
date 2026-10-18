@@ -1,0 +1,64 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>PoincarePlot | stream-charts</title><meta name="description" content="Documentation for stream-charts"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">stream-charts</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="" aria-current="page">PoincarePlot</a></li></ul>
+<h1>Function PoincarePlot</h1></div>
+<section class="tsd-panel">
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="poincareplot"><span class="tsd-kind-call-signature">PoincarePlot</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">props</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/PoincarePlotProps.html" class="tsd-signature-type tsd-kind-interface">PoincarePlotProps</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">null</span><a href="#poincareplot" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Renders a streaming Poincare (iterates) plot for the series held by the <a href="../interfaces/StreamingDataSource.html" class="tsd-kind-interface">StreamingDataSource</a>
+handed to the <a href="Chart.html" class="tsd-kind-function">Chart</a> (its <code>dataSource</code> prop). This component uses the <a href="useChart.html" class="tsd-kind-function">useChart</a>
+hook, and therefore must be a child of the <a href="Chart.html" class="tsd-kind-function">Chart</a> in order to be plugged in to the
+chart ecosystem (axes, tracker, tooltip).</p>
+<p>Internally, this no longer creates/updates SVG <code>&lt;path&gt;</code>/<code>&lt;circle&gt;</code>/<code>&lt;text&gt;</code> elements. Instead, it
+registers a single draw function with the chart's <a href="../interfaces/CanvasContext.html" class="tsd-kind-interface">CanvasContext</a> that redraws every
+series' line and points from scratch each time the canvas repaints. The old version's
+hover-a-point-and-annotate-its-neighbors behavior used direct <code>d3.select('#specific-id')</code> lookups
+into already-rendered SVG elements from a separate pass after the main render; since canvas has
+no persistent elements to reach back into, this is restructured so the single draw pass checks
+&quot;is this point hovered, or a neighbor of the hovered point&quot; and renders the highlight/label
+inline, driven by a <code>hoveredPointRef</code> updated on <code>mousemove</code>.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">props</span>: <a href="../interfaces/PoincarePlotProps.html" class="tsd-signature-type tsd-kind-interface">PoincarePlotProps</a></span>
+<div class="tsd-comment tsd-typography"><p>The properties associated with the Poincaré plot</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">null</span></h4><p><code>null</code> (the plot draws onto the chart's canvas)</p>
+
+<div class="tsd-comment tsd-typography">
+<div class="tsd-tag-example">
+<h4 class="tsd-anchor-link" id="example">Example<a href="#example" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><pre><code class="typescript"><span class="hl-1"> &lt;</span><span class="hl-4">PoincarePlot</span><br/><span class="hl-1">     </span><span class="hl-4">interpolation</span><span class="hl-1">={</span><span class="hl-4">interpolation</span><span class="hl-1">}</span><br/><span class="hl-1">     </span><span class="hl-4">showPoints</span><span class="hl-1">={</span><span class="hl-4">true</span><span class="hl-1">}</span><br/><span class="hl-1">     </span><span class="hl-4">panEnabled</span><span class="hl-1">={</span><span class="hl-4">true</span><span class="hl-1">}</span><br/><span class="hl-1">     </span><span class="hl-4">zoomEnabled</span><span class="hl-1">={</span><span class="hl-4">true</span><span class="hl-1">}</span><br/><span class="hl-1">     </span><span class="hl-4">zoomKeyModifiersRequired</span><span class="hl-1">={</span><span class="hl-4">true</span><span class="hl-1">}</span><br/><span class="hl-1"> /&gt;</span>
+</code><button type="button">Copy</button></pre>
+
+</div></div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/PoincarePlot.tsx#L209">plots/PoincarePlot.tsx:209</a></li></ul></aside></div></li></ul></section></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="../modules.html">stream-charts</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>

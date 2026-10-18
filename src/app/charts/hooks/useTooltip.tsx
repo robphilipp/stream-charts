@@ -1,13 +1,5 @@
-import {Series} from "../plots/plot";
-import {TooltipDimensions} from "../tooltips/tooltipUtils";
-import {createContext, JSX, useContext, useRef} from "react";
-
-/**
- * No operation function for use when a default function is needed
- */
-const noop = () => {
-    /* empty on purpose */
-}
+import type {Series} from "../plots/plot";
+import {createContext, useContext} from "react";
 
 /**
  * Base interface for tooltip data that is passed through to the tooltip content provider
@@ -20,20 +12,23 @@ export interface TooltipData<D, M> {
 }
 
 /**
- * A higher-order function that returns a function that provides the tooltip content or
- * `undefined` if no tooltip content is available.
- * @return The tooltip content, or `undefined` if no tooltip content is available.
+ * A function that provides (shows) the tooltip content for the element under the mouse (see
+ * {@link TooltipContent}, which registers one)
  * @param seriesName The name of the series for which the tooltip content is being provided
  * @param time The time (x-value) for which the tooltip content is being provided
  * @param tooltipData The tooltip data
  * @param mouseCoords The mouse coordinates over which the mouse is hovering
  * @param providerId An optional ID of the tooltip content provider.
+ * @template D The type of the data object for the series
+ * @template M The type of the metadata object for the series
  */
 export type TooltipContentProvider<D, M> =
-    (seriesName: string, time: number, tooltipData: TooltipData<D, M>, mouseCoords: [x: number, y: number], providerId?: string) => TooltipDimensions
+    (seriesName: string, time: number, tooltipData: TooltipData<D, M>, mouseCoords: [x: number, y: number], providerId?: string) => void
 
 /**
- * The functions and values exposed through the {@link useTooltip} react hook
+ * The functions and values exposed through the `useTooltip` react hook
+ * @template D The type of the data object for the series
+ * @template M The type of the metadata object for the series
  */
 export type UseTooltipValues<D, M> = {
     /**
@@ -50,62 +45,36 @@ export type UseTooltipValues<D, M> = {
      */
     tooltipContentProvider: () => (TooltipContentProvider<D, M> | undefined)
 
+    /**
+     * Callback that sets the visibility state of the tooltip. This is used to control whether the tooltip is
+     * visible or not.
+     * @param visible Whether the tooltip should be visible or not.
+     */
     setVisibilityState: (visible: boolean) => void
+
+    /**
+     * @return Whether the tooltip is currently visible or not.
+     */
     visibilityState: boolean
 }
 
-/**
- * The default values for the {@link UseTooltipValues}
- */
-export const defaultTooltipValues = (): UseTooltipValues<any, any> => ({
-    registerTooltipContentProvider: noop,
-    tooltipContentProvider: () => undefined,
-    setVisibilityState: noop,
-    visibilityState: false,
-})
-
-const TooltipContext = createContext<UseTooltipValues<any, any>>(defaultTooltipValues())
-
-export type Props = {
-    children: JSX.Element | Array<JSX.Element>
-}
+// the context is generic over the same type parameters as `UseTooltipValues`, but a context
+// object can't itself carry unbound generics -- `useTooltip` below casts it back to the caller's
+// concrete types, which is safe because `<InteractionProvider/>` is what actually supplies the value
+export const TooltipContext = createContext<unknown>(undefined)
 
 /**
- * The tooltip context provider allows registering and retrieving tooltip content providers. When
- * a tooltip content provider is registered with a provider ID, then it must be retrieved with that
- * same provider ID. This allows a chart to have multiple tooltip content providers, depending on
- * the context or types of objects being moused over. When a tooltip content provider is registered
- * without a provider ID, then the default provider ID is used.
- * @param props The properties holding the children
- * @return A JSX element containing the children
- */
-export default function TooltipProvider<D, M>(props: Props): JSX.Element {
-    const {children} = props
-
-    const tooltipContentProviderRef = useRef<TooltipContentProvider<D, M>>(undefined)
-    const visibilityStateRef = useRef<boolean>(false)
-
-    return <TooltipContext.Provider
-        value={{
-            registerTooltipContentProvider: provider => tooltipContentProviderRef.current = provider,
-            tooltipContentProvider: () => tooltipContentProviderRef.current,
-            setVisibilityState: (visible: boolean) => visibilityStateRef.current = visible,
-            visibilityState: visibilityStateRef.current
-        }}
-    >
-        {children}
-    </TooltipContext.Provider>
-}
-
-/**
- * React hook that sets up the React context for the mouse values.
+ * React hook for registering, and retrieving, the chart's tooltip content provider, and for the
+ * tooltip's visibility. Must be used within a `<Chart>`.
  * @return The {@link UseTooltipValues} held in the React context.
+ * @throws Error when used outside a `<Chart>`
+ * @template D The type of the data object for the series
+ * @template M The type of the metadata object for the series
  */
 export function useTooltip<D, M>(): UseTooltipValues<D, M> {
-    const context = useContext<UseTooltipValues<D, M>>(TooltipContext)
-    const {registerTooltipContentProvider} = context
-    if (registerTooltipContentProvider === undefined || registerTooltipContentProvider === null) {
-        throw new Error("useTooltip can only be used when the parent is a <TooltipProvider/>")
+    const context = useContext(TooltipContext)
+    if (context === undefined) {
+        throw new Error("useTooltip can only be used within a <Chart/>")
     }
-    return context
+    return context as UseTooltipValues<D, M>
 }

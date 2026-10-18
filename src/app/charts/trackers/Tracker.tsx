@@ -1,45 +1,58 @@
 import {noop} from "../utils";
 import {useChart} from "../hooks/useChart";
-import {TrackerSelection} from "../d3types";
 import {
     defaultTrackerLabelFont,
     defaultTrackerStyle,
-    removeTrackerControl,
     trackerControlInstance,
-    TrackerLabelFont,
-    TrackerStyle
+    type TrackerLabelFont,
+    TrackerLabelLocation,
+    type TrackerStyle
 } from "./trackerUtils";
 import * as d3 from "d3";
 import {useEffect, useMemo, useRef} from "react";
-import {AxisLocation, BaseAxis, ContinuousNumericAxis} from "../axes/axes";
+import {AxisLocation, type BaseAxis, type ContinuousNumericAxis} from "../axes/axes";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 
+/**
+ * What the tracker reports for an axis: the axis' value at the mouse, and where the axis is
+ */
 export interface TrackerAxisInfo {
+    /** the axis' value at the mouse (for a y-axis too, despite the name) */
     x: number
+    /** the location of the axis */
     axisLocation: AxisLocation
 }
 
 // map(axis_id -> tracker_axis_info)
 export type TrackerAxisUpdate = Map<string, TrackerAxisInfo>
 
-export enum TrackerLabelLocation {
-    Nowhere,
-    ByAxis,
-}
-
+/**
+ * The properties of the {@link Tracker}
+ */
 export interface Props {
+    /** whether the tracker is shown */
     visible: boolean
+    /**
+     * the axes the tracker reports the values of: top or bottom for a vertical line that tracks
+     * the x-axes (the default), left or right for a horizontal line that tracks the y-axes
+     */
     trackerAxis?: AxisLocation
+    /** where the tracker's labels are shown (by the axes, the default, or nowhere) */
     labelLocation?: TrackerLabelLocation
+    /** formats an axis' value for its label (defaults to a whole number, with thousands separators) */
     labelFormatter?: (value: number) => string
+    /** the style of the tracker's line */
     style?: Partial<TrackerStyle>,
+    /** the font of the tracker's labels */
     font?: Partial<TrackerLabelFont>,
+    /** called with each (non-empty) axis' value at the mouse, as the mouse moves over the plot */
     onTrackerUpdate?: (update: TrackerAxisUpdate) => void
 }
 
 /**
  * A tracker line that displays or reports the x or y coordinates at the mouse location. The tracker
- * handles single axes and dual axes.
+ * handles single axes and dual axes. Internally, this registers a draw function with the chart's
+ * canvas context (see `trackerUtils.ts`) rather than creating/updating SVG elements.
  * @param props The tracker control properties
  * @return null component
  */
@@ -55,7 +68,7 @@ export function Tracker(props: Props): null {
     } = props
     const {
         chartId,
-        container,
+        canvasContext,
         axes,
         backgroundColor
     } = useChart()
@@ -69,7 +82,9 @@ export function Tracker(props: Props): null {
 
     const trackerStyle = useMemo(() => ({...defaultTrackerStyle, ...style}), [style])
     const trackerFont = useMemo(() => ({...defaultTrackerLabelFont, ...font}), [font])
-    const trackerRef = useRef<TrackerSelection>(undefined)
+    // holds the cleanup function returned by `trackerControlInstance`, replacing the old
+    // `TrackerSelection` ref
+    const trackerCleanupRef = useRef<(() => void) | undefined>(undefined)
 
     const axisRef = useRef<Map<string, ContinuousNumericAxis>>(new Map())
     useEffect(
@@ -81,28 +96,35 @@ export function Tracker(props: Props): null {
         [axisState]
     )
 
-    // when the container, tracker-control function, or visibility change, then we need to update the
-    // tracker control
+    // when the canvas context, tracker-control function, or visibility change, then we need to
+    // update the tracker control
     useEffect(
         () => {
-            if (container) {
-                const svg = d3.select<SVGSVGElement, any>(container)
-                if (visible && container) {
+            if (canvasContext) {
+                if (visible) {
+                    // if a tracker was already registered (e.g., from a prior render with
+                    // different props), tear it down before registering the new one
+                    if (trackerCleanupRef.current !== undefined) {
+                        trackerCleanupRef.current()
+                        trackerCleanupRef.current = undefined
+                    }
+
                     const trackerLabels = new Map<ContinuousNumericAxis, (x: number) => string>(
-                        Array.from(axisRef.current.values()).map(axis => {
-                            const formatter = labelFormatter ??
-                                ((value: number) => labelLocation === TrackerLabelLocation.Nowhere ?
-                                    "" :
-                                    `${d3.format(",.0f")(value)}`
-                                )
-                            return [axis, formatter]
-                        })
+                        Array.from(axisRef.current.values())
+                            .filter(axis => !axis.isEmpty)
+                            .map(axis => {
+                                const formatter = labelFormatter ??
+                                    ((value: number) => labelLocation === TrackerLabelLocation.Nowhere ?
+                                        "" :
+                                        `${d3.format(",.0f")(value)}`
+                                    )
+                                return [axis, formatter]
+                            })
                     )
 
-                    trackerRef.current = trackerControlInstance(
+                    trackerCleanupRef.current = trackerControlInstance(
+                        canvasContext,
                         chartId,
-                        container,
-                        svg,
                         plotDimensions,
                         margin,
                         trackerStyle,
@@ -115,13 +137,26 @@ export function Tracker(props: Props): null {
                     )
                 }
                 // if the tracker was defined and is now no longer defined (i.e., props changed, then remove the tracker)
-                else if (!visible && trackerRef.current !== undefined) {
-                    removeTrackerControl(svg, trackerAxis)
-                    trackerRef.current = undefined
+                else if (!visible && trackerCleanupRef.current !== undefined) {
+                    trackerCleanupRef.current()
+                    trackerCleanupRef.current = undefined
                 }
             }
         },
-        [backgroundColor, chartId, container, labelFormatter, labelLocation, margin, onTrackerUpdate, plotDimensions, trackerAxis, trackerFont, trackerStyle, visible]
+        [backgroundColor, chartId, canvasContext, labelFormatter, labelLocation, margin, onTrackerUpdate, plotDimensions, trackerAxis, trackerFont, trackerStyle, visible]
+    )
+
+    // unregister the tracker when this component unmounts
+    useEffect(
+        () => {
+            return () => {
+                if (trackerCleanupRef.current !== undefined) {
+                    trackerCleanupRef.current()
+                    trackerCleanupRef.current = undefined
+                }
+            }
+        },
+        []
     )
 
     return null

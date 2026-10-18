@@ -1,7 +1,7 @@
 import {scan} from 'rxjs/operators';
 import {Observable, range} from 'rxjs';
-import {initialTimeSeriesChartData, TimeSeriesChartData} from "../series/timeSeriesChartData";
-import {Datum, datumOf, TimeSeries} from "../series/timeSeries";
+import {initialTimeSeriesChartData, type TimeSeriesChartData} from "../series/timeSeriesChartData";
+import {type Datum, datumOf, type TimeSeries} from "../series/timeSeries";
 import {seriesFrom} from "../series/baseSeries";
 
 /**
@@ -41,26 +41,26 @@ function accumulateTentDataAt(updatePeriod: number):
      * Calculates the next iterate, given the previous iterate, by applying the
      * specified `tentMap` function
      * @param previous The previous iterate
-     * @param iterateNum The iterate
+     * @param _iterateNum The iterate
      * @param tentMap The function to calculate the tent-map
      * @return The next iterate
      */
     return (
         previous: TimeSeriesChartData,
-        iterateNum: number,
+        _iterateNum: number,
         tentMap: (time: number, xn: number) => Datum
     ): TimeSeriesChartData => {
         // make a copy of the current max times, which we'll update with new points
         const maxTimes = new Map(previous.maxTimes.entries())
         previous.newPoints.forEach((datum, name) => {
-            maxTimes.set(name, (datum[datum.length - 1].time + updatePeriod))
+            maxTimes.set(name, (datum[datum.length - 1].x + updatePeriod))
         })
         // deep copy of the previous data points, and calculate the next point
         const newPoints = new Map(Array.from(previous.newPoints.entries())
             .map(([name, data]) => [name, data.slice()]))
-        newPoints.forEach((data, _) => {
+        newPoints.forEach((data, ) => {
             const lastDatum = data[data.length - 1]
-            const newDatum = tentMap(lastDatum.time + updatePeriod, lastDatum.value)
+            const newDatum = tentMap(lastDatum.x + updatePeriod, lastDatum.y)
             data.shift()
             data.push(newDatum)
         })
@@ -90,7 +90,7 @@ function tentMapTimeSeriesObservable(
     updatePeriod: number = 25
 ): Observable<TimeSeriesChartData> {
     const maxTime = series
-        .map(srs => srs.last().map(datum => datum.time).getOrElse(0))
+        .map(srs => srs.last().map(datum => datum.x).getOrElse(0))
         .reduce((tMax, tCurr) => (tCurr > tMax) ? tCurr : tMax, -Infinity)
     const initialData = initialTimeSeriesChartData(series, maxTime)
     const tentMap = tentMapFn(mu)
@@ -182,14 +182,14 @@ describe('when calculating tent-map iterates', () => {
             .forEach(([name, data]: [string, Array<Datum>], index: number) => {
                 data.forEach(actualDatum => {
                     const expectedDatum: Datum = expected.newPoints.get(name)![index]
-                    expect(actualDatum.time).toEqual(expectedDatum.time)
-                    expect(actualDatum.value).toBeCloseTo(expectedDatum.value, 6)
+                    expect(actualDatum.x).toEqual(expectedDatum.x)
+                    expect(actualDatum.y).toBeCloseTo(expectedDatum.y, 6)
                 })
             })
     }
 
     test('should be able to calculate the tent-map iterates', done => {
-        let results: Array<TimeSeriesChartData> = []
+        const results: Array<TimeSeriesChartData> = []
         const initialData: Array<TimeSeries> = [seriesFrom("test1", [datumOf(1, 0.66)])]
         tentMapTimeSeriesObservable(10, 1.7, initialData).subscribe(chartData => results.push(chartData))
         done()

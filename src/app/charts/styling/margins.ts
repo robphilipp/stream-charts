@@ -8,18 +8,24 @@ export interface Margin {
     left: number
 }
 
+/**
+ * @return Margins of 0 on every side
+ */
 export function noMargins(): Margin {
     return {top: 0, bottom: 0, left: 0, right: 0}
 }
 
+/**
+ * A width and height (in pixels)
+ */
 export interface Dimensions {
     readonly width: number
     readonly height: number
 }
 
 /**
- * Given the dimensions of the plot (width, height) based on the container's width and height,
- * and the plot's margins. Calculates the dimensions of the actual plot by subtracting the margins.
+ * Calculates the dimensions of the actual plot from the container's width and height, and the
+ * plot's margins, by subtracting the margins (never less than 0).
  * @param containerWidth The overall width of the container (plot and margins)
  * @param containerHeight The overall height of the container (plot and margins)
  * @param plotMargins The margins around the plot (top, bottom, left, right)
@@ -28,9 +34,15 @@ export interface Dimensions {
  * @see containerDimensionsFrom
  */
 export function plotDimensionsFrom(containerWidth: number, containerHeight: number, plotMargins: Margin): Dimensions {
+    // floor at zero -- margins larger than the container would otherwise produce negative
+    // width/height, which propagates into D3 scale ranges, tracker/tooltip clamping math, and
+    // canvas draw coordinates as silent garbage. Mirrors the same Math.max(0, ...) convention
+    // already used defensively at some (but not all) points of use, e.g. plot.ts's
+    // resizeCanvasTo/clipToArea -- clamping here makes Dimensions a non-negative invariant for
+    // every downstream consumer instead of relying on each one to remember to clamp itself.
     return {
-        width: containerWidth - plotMargins.left - plotMargins.right,
-        height: containerHeight - plotMargins.top - plotMargins.bottom
+        width: Math.max(0, containerWidth - plotMargins.left - plotMargins.right),
+        height: Math.max(0, containerHeight - plotMargins.top - plotMargins.bottom)
     }
 }
 
@@ -49,10 +61,22 @@ export function containerDimensionsFrom(plotDimensions: Dimensions, plotMargin: 
     }
 }
 
+/**
+ * Whether two dimensions have the same width and height
+ * @param dimension1 The first dimensions
+ * @param dimension2 The second dimensions
+ * @return `true` when the widths and heights are equal; `false` otherwise
+ */
 export function dimensionsEqual(dimension1: Dimensions, dimension2: Dimensions) {
     return dimension1.height === dimension2.height && dimension1.width === dimension2.width
 }
 
+/**
+ * Whether two dimensions differ in width or height (the negation of {@link dimensionsEqual})
+ * @param dimension1 The first dimensions
+ * @param dimension2 The second dimensions
+ * @return `true` when the widths or heights differ; `false` otherwise
+ */
 export function dimensionsNotEqual(dimension1: Dimensions, dimension2: Dimensions) {
     return !dimensionsEqual(dimension1, dimension2)
 }

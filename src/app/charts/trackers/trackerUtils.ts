@@ -1,13 +1,13 @@
-import {SvgSelection, TrackerSelection} from "../d3types";
-import * as d3 from "d3";
-import {Selection} from "d3";
-import {Datum} from "../series/timeSeries";
-import {containerDimensionsFrom, Dimensions, Margin, plotDimensionsFrom} from "../styling/margins";
-import {BoundingBox, mouseInPlotAreaFor, textDimensions} from "../utils";
-import {AxisLocation, ContinuousNumericAxis} from "../axes/axes";
-import {TrackerAxisInfo, TrackerAxisUpdate, TrackerLabelLocation} from "./Tracker";
-import React from "react";
+import type {CanvasContext, DrawHandle} from "../d3types";
+import {containerDimensionsFrom, type Dimensions, type Margin} from "../styling/margins";
+import {fontStringFor, mouseInPlotAreaFor, textDimensions} from "../utils";
+import {canvasLocalPoint} from "../plots/hitTesting";
+import {AxisLocation, type ContinuousNumericAxis} from "../axes/axes";
+import {type TrackerAxisInfo, type TrackerAxisUpdate} from "./Tracker";
 
+/**
+ * The font of the tracker's labels
+ */
 export interface TrackerLabelFont {
     size: number
     color: string
@@ -15,6 +15,9 @@ export interface TrackerLabelFont {
     weight: number
 }
 
+/**
+ * The default font of the tracker's labels
+ */
 export const defaultTrackerLabelFont: TrackerLabelFont = {
     size: 12,
     color: '#d2933f',
@@ -22,81 +25,69 @@ export const defaultTrackerLabelFont: TrackerLabelFont = {
     family: 'sans-serif'
 }
 
+/**
+ * The style of the tracker's line (and whether it's shown)
+ */
 export interface TrackerStyle {
     visible: boolean;
     color: string,
     lineWidth: number,
 }
 
+/**
+ * The default tracker style (hidden)
+ */
 export const defaultTrackerStyle: TrackerStyle = {
     visible: false,
     color: '#d2933f',
     lineWidth: 1,
 }
 
-// create namespaced "mousemoved" event names to distinguish between vertical and horizontal trackers
-const MOUSE_MOVED_EVENT_VERTICAL_AXIS = "mousemove.vertical"
-const MOUSE_MOVED_EVENT_HORIZONTAL_AXIS = "mousemove.horizontal"
-
 const TRACKER_ID = "stream-chart-tracker"
 
 /**
- * SVG ID for the vertical tracker line
- * @param chartId The ID of the chart
- * @return SVG ID for the vertical tracker line
+ * The location of the tracker label
+ * Note: replaces enums to support `erasableSyntaxOnly`
+ *  TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
  */
-function verticalTrackerLineId(chartId: number): string {
-    return `${TRACKER_ID}-line-vertical-${chartId}`
-}
+export const TrackerLabelLocation = {
+    Nowhere: "Nowhere",
+    ByAxis: "ByAxis",
+} as const
+export type TrackerLabelLocation = (typeof TrackerLabelLocation)[keyof typeof TrackerLabelLocation]
 
 /**
- * SVG ID for the horizontal tracker line
- * @param chartId The ID of the chart
- * @return SVG ID for the vertical tracker line
+ * A small, fixed corner radius (px) used for the tracker label's background, matching the old
+ * SVG version's hard-coded `rx: '5px'`.
  */
-function horizontalTrackerLineId(chartId: number): string {
-    return `${TRACKER_ID}-line-horizontal-${chartId}`
-}
+const LABEL_BACKGROUND_RADIUS = 5
 
 /**
- * SVG ID for the tracker label
+ * Registers a tracker (a line that follows the mouse, with optional per-axis labels) with the
+ * canvas context. Replaces the old `trackerControlInstance`, which created SVG `<line>`/`<text>`/
+ * `<rect>` elements and updated them via a namespaced `mousemove` handler on the `<svg>`. The
+ * canvas version instead registers a draw function that reads the mouse's last-known position
+ * (tracked via its own `mousemove` listener on the canvas) and paints the tracker fresh every
+ * redraw.
+ * @param cc The canvas context to register the tracker's draw function with
  * @param chartId The ID of the chart
- * @param axisLocation The location of the axis for which the tracker label is to be shown
- * @return SVG ID for the vertical tracker line
- */
-function trackerLabelId(chartId: number, axisLocation: AxisLocation): string {
-    switch (axisLocation) {
-        case AxisLocation.Bottom:
-        case AxisLocation.Top:
-            return `${TRACKER_ID}-label-vertical-${chartId}-${axisLocation}`
-        case AxisLocation.Left:
-        case AxisLocation.Right:
-            return `${TRACKER_ID}-label-horizontal-${chartId}-${axisLocation}`
-    }
-}
-
-/**
- * Creates or returns the existing SVG elements for displaying a tracker line that is either
- * vertical (for x-axes) or horizontal (for y-axes).
- * @param chartId The ID of the chart
- * @param container The SVG container
- * @param svg The SVG selection
  * @param plotDimensions The dimensions of the plot
  * @param margin The margins around the plot
  * @param style The tracker style
  * @param labelFont The font used for the axis labels
- * @param label A function that returns the tracker label string for a given x-value
- * @param labelStyle The location style for the tracker (i.e. on the axes, next to the mouse, none shown)
+ * @param label A map associating each axis with the function that formats the tracker's label for that axis' value
+ * @param labelStyle Where the tracker's labels are shown (by the axes, or nowhere)
  * @param onTrackerUpdate A callback function that accepts the current tracker's axis information
  * @param [axisLocation = AxisLocation.Bottom] The optional location of the axis for which the tracker is to
  * be shown. Default is bottom.
  * @param backgroundColor The background color of the tracker label
- * @return The tracker selection
+ * @return A cleanup function that unregisters the tracker's draw function and removes its
+ * `mousemove` listener. Call this when the tracker becomes invisible or unmounts (replaces the
+ * old `removeTrackerControl`).
  */
 export function trackerControlInstance(
+    cc: CanvasContext,
     chartId: number,
-    container: SVGSVGElement,
-    svg: SvgSelection,
     plotDimensions: Dimensions,
     margin: Margin,
     style: TrackerStyle,
@@ -106,37 +97,38 @@ export function trackerControlInstance(
     onTrackerUpdate: (update: TrackerAxisUpdate) => void,
     axisLocation: AxisLocation = AxisLocation.Bottom,
     backgroundColor: string
-): TrackerSelection {
+): () => void {
     switch (axisLocation) {
         case AxisLocation.Bottom:
         case AxisLocation.Top:
-            return verticalTrackerControlInstance(chartId, container, svg, plotDimensions, margin, style, labelFont, label, labelStyle, onTrackerUpdate, backgroundColor)
+            return verticalTrackerControlInstance(cc, chartId, plotDimensions, margin, style, labelFont, label, labelStyle, onTrackerUpdate, backgroundColor)
         case AxisLocation.Left:
         case AxisLocation.Right:
         default:
-            return horizontalTrackerControlInstance(chartId, container, svg, plotDimensions, margin, style, labelFont, label, labelStyle, onTrackerUpdate, backgroundColor)
+            return horizontalTrackerControlInstance(cc, chartId, plotDimensions, margin, style, labelFont, label, labelStyle, onTrackerUpdate, backgroundColor)
     }
 }
 
 /**
- * Creates or returns the existing SVG elements for displaying a vertical tracker line
+ * Registers a vertical tracker line (for x-axes) with the canvas context: the line follows the
+ * mouse across the plot area, with a label by each x-axis showing that axis' value at the mouse
+ * (see {@link trackerControlInstance}).
+ * @param cc The canvas context to register the tracker's draw function with
  * @param chartId The ID of the chart
- * @param container The SVG container
- * @param svg The SVG selection
  * @param plotDimensions The dimensions of the plot
  * @param margin The margins around the plot
  * @param style The tracker style
  * @param labelFont The font used for the axis labels
- * @param label A function that returns the tracker label string for a given x-value
- * @param labelStyle The location style for the tracker (i.e. on the axes, next to the mouse, none shown)
+ * @param label A map associating each axis with the function that formats the tracker's label for that axis' value
+ * @param labelStyle Where the tracker's labels are shown (by the axes, or nowhere)
  * @param onTrackerUpdate A callback function that accepts the current tracker's axis information
  * @param backgroundColor The background color of the tracker label
- * @return The tracker selection
+ * @return A cleanup function that unregisters the tracker's draw function and removes its mouse listeners
  */
+
 function verticalTrackerControlInstance(
+    cc: CanvasContext,
     chartId: number,
-    container: SVGSVGElement,
-    svg: SvgSelection,
     plotDimensions: Dimensions,
     margin: Margin,
     style: TrackerStyle,
@@ -145,350 +137,245 @@ function verticalTrackerControlInstance(
     labelStyle: TrackerLabelLocation,
     onTrackerUpdate: (update: TrackerAxisUpdate) => void,
     backgroundColor: string
-): TrackerSelection {
-    const trackerLine = svg
-        .append<SVGLineElement>('line')
-        .attr('id', verticalTrackerLineId(chartId))
-        .attr('class', 'tracker')
-        .attr('y1', margin.top)
-        .attr('y2', plotDimensions.height + margin.top)
-        .attr('stroke', style.color)
-        .attr('stroke-width', style.lineWidth)
-        .attr('opacity', 0) as Selection<SVGLineElement, Datum, null, undefined>
+): () => void {
+    const drawHandle: DrawHandle = `${TRACKER_ID}-vertical-${chartId}`
 
-    if (labelStyle === TrackerLabelLocation.ByAxis) {
-        label.forEach((_, axis) => {
-            // create the text element holding the tracker time
-            const labelY = axis.location === AxisLocation.Top ?
-                Math.max(0, margin.top - 20) :
-                Math.max(0, plotDimensions.height + margin.top - 3)
+    // the mouse's last-known position, in canvas coordinates; null when the mouse is outside the canvas
+    let mouseX: number | null = null
+    let mouseY: number | null = null
 
-            svg
-                .append<SVGRectElement>('rect')
-                .attr('id', `${trackerLabelId(chartId, axis.location)}-background`)
-                .attr('y', labelY)
-                .attr('fill', backgroundColor)
-                .attr('opacity', 0)
+    const draw = (context: CanvasContext) => {
+        if (mouseX === null || mouseY === null) return
+        const {context2D} = context
+        const dimensions = containerDimensionsFrom(plotDimensions, margin)
+        const inPlot = mouseInPlotAreaFor(mouseX, mouseY, margin, dimensions)
 
-            svg
-                .append<SVGTextElement>('text')
-                .attr('id', trackerLabelId(chartId, axis.location))
-                .attr('y', labelY)
-                .attr('fill', labelFont.color)
-                .attr('font-family', labelFont.family)
-                .attr('font-size', labelFont.size)
-                .attr('font-weight', labelFont.weight)
-                .attr('opacity', 0)
-                .text(() => '')
-        })
-    }
+        context2D.save()
+        context2D.globalAlpha = inPlot ? 1 : 0
+        context2D.strokeStyle = style.color
+        context2D.lineWidth = style.lineWidth
+        context2D.beginPath()
+        context2D.moveTo(mouseX, margin.top)
+        context2D.lineTo(mouseX, plotDimensions.height + margin.top)
+        context2D.stroke()
+        context2D.restore()
 
-    const containerDimensions = containerDimensionsFrom(plotDimensions, margin)
-    svg.on(
-        MOUSE_MOVED_EVENT_VERTICAL_AXIS,
-        event => handleShowVerticalTracker(
-            chartId, container, event, margin, containerDimensions, style, labelFont, label, labelStyle, onTrackerUpdate, backgroundColor
-        )
-    )
+        const updateInfo: Array<[string, TrackerAxisInfo]> = []
 
-    return trackerLine
-}
-
-/**
- * Creates or returns the existing SVG elements for displaying a horizontal tracker line
- * @param chartId The ID of the chart
- * @param container The SVG container
- * @param svg The SVG selection
- * @param plotDimensions The dimensions of the plot
- * @param margin The margins around the plot
- * @param style The tracker style
- * @param labelFont The font used for the axis labels
- * @param label A function that returns the tracker label string for a given x-value
- * @param labelStyle The location style for the tracker (i.e. on the axes, next to the mouse, none shown)
- * @param onTrackerUpdate A callback function that accepts the current tracker's axis information
- * @param backgroundColor The background color of the tracker label
- * @return The tracker selection
- */
-function horizontalTrackerControlInstance(
-    chartId: number,
-    container: SVGSVGElement,
-    svg: SvgSelection,
-    plotDimensions: Dimensions,
-    margin: Margin,
-    style: TrackerStyle,
-    labelFont: TrackerLabelFont,
-    label: Map<ContinuousNumericAxis, (x: number) => string>,
-    labelStyle: TrackerLabelLocation,
-    onTrackerUpdate: (update: TrackerAxisUpdate) => void,
-    backgroundColor: string
-): TrackerSelection {
-    const trackerLine = svg
-        .append<SVGLineElement>('line')
-        .attr('id', horizontalTrackerLineId(chartId))
-        .attr('class', 'tracker')
-        .attr('x1', margin.left)
-        .attr('x2', plotDimensions.width + margin.left)
-        .attr('stroke', style.color)
-        .attr('stroke-width', style.lineWidth)
-        .attr('opacity', 0) as Selection<SVGLineElement, Datum, null, undefined>
-
-    label.forEach((_, axis) => {
-        // create the text element holding the tracker time
-        const labelY = axis.location === AxisLocation.Left ?
-            Math.max(0, margin.left - 20) :
-            Math.max(0, plotDimensions.width + margin.left - 3)
-
-        svg
-            .append<SVGRectElement>('rect')
-            .attr('id', `${trackerLabelId(chartId, axis.location)}-background`)
-            .attr('y', labelY)
-            .attr('fill', backgroundColor)
-            .attr('opacity', 0)
-
-        svg
-            .append<SVGTextElement>('text')
-            .attr('id', trackerLabelId(chartId, axis.location))
-            .attr('y', labelY)
-            .attr('fill', labelFont.color)
-            .attr('font-family', labelFont.family)
-            .attr('font-size', labelFont.size)
-            .attr('font-weight', labelFont.weight)
-            .attr('opacity', 0)
-            .text(() => '')
-    })
-
-    const containerDimensions = containerDimensionsFrom(plotDimensions, margin)
-    svg.on(
-        MOUSE_MOVED_EVENT_HORIZONTAL_AXIS,
-        event => handleShowHorizontalTracker(
-            chartId, container, event, margin, containerDimensions, style, labelFont, label, labelStyle, onTrackerUpdate, backgroundColor
-        )
-    )
-
-    return trackerLine
-}
-
-/**
- * Removes the tracker control from the chart
- * @param svg The svg selection holding the tracker control
- * @param axisLocation The location of the axis for which the tracker is to be removed.
- */
-export function removeTrackerControl(svg: SvgSelection, axisLocation: AxisLocation) {
-    switch (axisLocation) {
-        case AxisLocation.Bottom:
-        case AxisLocation.Top:
-            svg.on(MOUSE_MOVED_EVENT_VERTICAL_AXIS, () => null)
-            break
-        case AxisLocation.Left:
-        case AxisLocation.Right:
-        default:
-            svg.on(MOUSE_MOVED_EVENT_HORIZONTAL_AXIS, () => null)
-    }
-}
-
-/**
- * Callback when the vertical mouse tracker is to be shown
- * @param chartId The ID number of the chart
- * @param container The svg container
- * @param event The mouse-over series event
- * @param margin The plot margins
- * @param dimensions The container dimensions (i.e., the plot dimensions plus its margins)
- * @param trackerStyle The style settings for the tracker line
- * @param labelFont The style settings for the tracker font
- * @param label A function that returns the tracker label string
- * @param labelStyle Where to display the tracker labels (i.e., with-mouse, with-axes, no-where)
- * @param onTrackerUpdate A callback function that accepts the current tracker's axis information
- * @param backgroundColor The background color of the tracker label
- */
-function handleShowVerticalTracker(
-    chartId: number,
-    container: SVGSVGElement,
-    event: React.MouseEvent<SVGSVGElement>,
-    margin: Margin,
-    dimensions: Dimensions,
-    trackerStyle: TrackerStyle,
-    labelFont: TrackerLabelFont,
-    label: Map<ContinuousNumericAxis, (x: number) => string>,
-    labelStyle: TrackerLabelLocation,
-    onTrackerUpdate: (update: TrackerAxisUpdate) => void,
-    backgroundColor: string
-): void {
-    // determine whether the mouse is in the plot area
-    const [x, y] = d3.pointer(event, container)
-    const inPlot = mouseInPlotAreaFor(x, y, margin, dimensions)
-
-    const updateInfo: Array<[string, TrackerAxisInfo]> = Array.from(label.entries())
-        .map(([axis, trackerLabel]) => {
-            // when the mouse is in the plot area, then set the opacity of the tracker line and label to 1,
-            // which means it is fully visible. when the mouse is not in the plot area, set the opacity to 0,
-            // which means the tracker line and label are invisible.
-            d3.select<SVGLineElement, Datum>(`#${verticalTrackerLineId(chartId)}`)
-                .attr('x1', x)
-                .attr('x2', x)
-                .attr('stroke', trackerStyle.color)
-                .attr('stroke-width', trackerStyle.lineWidth)
-                .attr('opacity', () => inPlot ? 1 : 0)
-
-            // when the label-style is to be with the mouse
+        label.forEach((trackerLabel, axis) => {
             if (labelStyle === TrackerLabelLocation.ByAxis) {
-                const label = d3.select<SVGTextElement, any>(`#${trackerLabelId(chartId, axis.location)}`)
-                    .attr('fill', labelFont.color)
-                    .attr('font-family', labelFont.family)
-                    .attr('font-size', labelFont.size)
-                    .attr('font-weight', labelFont.weight)
-                    .attr('opacity', () => inPlot ? 1 : 0)
-                    .text(() => trackerLabel(axis.scale.invert(x - margin.left)))
+                const value = axis.scale.invert(mouseX! - margin.left)
+                const text = trackerLabel(value)
 
-
-                const labelBackground = d3.select<SVGRectElement, any>(`#${trackerLabelId(chartId, axis.location)}-background`)
-                    .attr('fill', backgroundColor)
-                    .attr('opacity', () => inPlot ? 0.8 : 0)
-                    .attr('rx', '5px')
+                context2D.save()
+                context2D.font = fontStringFor(labelFont.size, labelFont.family, labelFont.weight)
+                const {width: labelWidth, height: labelHeight} = textDimensions(context2D, text)
 
                 const space = 10
-                const {height} = plotDimensionsFrom(dimensions.width, dimensions.height, margin)
                 const labelY = axis.location === AxisLocation.Top ?
                     margin.top + labelFont.size + space :
-                    margin.top + height - space
-                label.attr('y', labelY)
+                    margin.top + plotDimensions.height - space
+                const xOffset = 10
+                const labelX = Math.min(dimensions.width - margin.right - labelWidth, mouseX! + xOffset)
 
-                // adjust the label position when the tracker is at the right-most edges of the plot so that
-                // the label remains visible (i.e., doesn't get clipped)
-                const xOffset = TrackerLabelLocation.ByAxis ? 10 : 0
-                const {width: labelWidth, height: labelHeight} = textDimensions(label)
-                const labelX = Math.min(dimensions.width - margin.right - labelWidth, x + xOffset)
-                label.attr('x', labelX)
+                // label background
+                const padding = 3
+                context2D.globalAlpha = inPlot ? 0.8 : 0
+                context2D.fillStyle = backgroundColor
+                context2D.beginPath()
+                context2D.roundRect(
+                    labelX - padding,
+                    labelY - labelHeight - padding,
+                    labelWidth + 2 * padding,
+                    labelHeight + 2 * padding,
+                    LABEL_BACKGROUND_RADIUS
+                )
+                context2D.fill()
 
-                // set the background location and width
-                const padding: number = 3
-                labelBackground
-                    .attr('x', labelX - padding)
-                    .attr('y', labelY - labelHeight - padding)
-                    .attr('width', labelWidth + 2 * padding)
-                    .attr('height', labelHeight + 2 * padding)
+                // label text
+                context2D.globalAlpha = inPlot ? 1 : 0
+                context2D.fillStyle = labelFont.color
+                context2D.textAlign = 'left'
+                context2D.textBaseline = 'alphabetic'
+                context2D.fillText(text, labelX, labelY)
+                context2D.restore()
             }
 
-            const trackerInfo: TrackerAxisInfo = {
-                x: axis.scale.invert(x - margin.left),
+            updateInfo.push([axis.axisId, {
+                x: axis.scale.invert(mouseX! - margin.left),
                 axisLocation: axis.location
-            }
-            return [axis.axisId, trackerInfo]
+            }])
         })
 
-    if (inPlot) {
-        onTrackerUpdate(new Map<string, TrackerAxisInfo>(updateInfo))
+        if (inPlot) {
+            onTrackerUpdate(new Map<string, TrackerAxisInfo>(updateInfo))
+        }
+    }
+
+    cc.register(drawHandle, draw, 20)
+
+    const handleMouseMove = (event: MouseEvent) => {
+        const [x, y] = canvasLocalPoint(event, cc.canvas)
+        mouseX = x
+        mouseY = y
+        cc.requestRedraw()
+    }
+    const handleMouseLeave = () => {
+        mouseX = null
+        mouseY = null
+        cc.requestRedraw()
+    }
+    cc.canvas.addEventListener('mousemove', handleMouseMove)
+    cc.canvas.addEventListener('mouseleave', handleMouseLeave)
+
+    return () => {
+        cc.unregister(drawHandle)
+        cc.canvas.removeEventListener('mousemove', handleMouseMove)
+        cc.canvas.removeEventListener('mouseleave', handleMouseLeave)
     }
 }
 
 /**
- * Callback when the horizontal mouse tracker is to be shown
- * @param chartId The ID number of the chart
- * @param container The svg container
- * @param event The mouse-over series event
- * @param margin The plot margins
- * @param dimensions The container dimensions (i.e., the plot dimensions plus its margins)
- * @param trackerStyle The style settings for the tracker line
- * @param labelFont The style settings for the tracker font
- * @param label A function that returns the tracker label string
- * @param labelStyle Where to display the tracker labels (i.e., with-mouse, with-axes, no-where)
+ * Registers a horizontal tracker line (for y-axes) with the canvas context: the line follows the
+ * mouse up and down the plot area, with a label by each y-axis showing that axis' value at the
+ * mouse (see {@link trackerControlInstance}).
+ * @param cc The canvas context to register the tracker's draw function with
+ * @param chartId The ID of the chart
+ * @param plotDimensions The dimensions of the plot
+ * @param margin The margins around the plot
+ * @param style The tracker style
+ * @param labelFont The font used for the axis labels
+ * @param label A map associating each axis with the function that formats the tracker's label for that axis' value
+ * @param labelStyle Where the tracker's labels are shown (by the axes, or nowhere)
  * @param onTrackerUpdate A callback function that accepts the current tracker's axis information
  * @param backgroundColor The background color of the tracker label
+ * @return A cleanup function that unregisters the tracker's draw function and removes its mouse listeners
  */
-function handleShowHorizontalTracker(
+
+function horizontalTrackerControlInstance(
+    cc: CanvasContext,
     chartId: number,
-    container: SVGSVGElement,
-    event: React.MouseEvent<SVGSVGElement>,
+    plotDimensions: Dimensions,
     margin: Margin,
-    dimensions: Dimensions,
-    trackerStyle: TrackerStyle,
+    style: TrackerStyle,
     labelFont: TrackerLabelFont,
     label: Map<ContinuousNumericAxis, (x: number) => string>,
     labelStyle: TrackerLabelLocation,
     onTrackerUpdate: (update: TrackerAxisUpdate) => void,
     backgroundColor: string
-): void {
-    // determine whether the mouse is in the plot area
-    const [x, y] = d3.pointer(event, container)
-    const inPlot = mouseInPlotAreaFor(x, y, margin, dimensions)
+): () => void {
+    const drawHandle: DrawHandle = `${TRACKER_ID}-horizontal-${chartId}`
 
-    type AxisAndLabelInfo = {
-        axis: ContinuousNumericAxis
-        labelSelection:  d3.Selection<SVGTextElement, any, HTMLElement, any>
-        labelBoundingBox: BoundingBox,
-        labelBackground: d3.Selection<SVGRectElement, any, HTMLElement, any>
+    let mouseX: number | null = null
+    let mouseY: number | null = null
+
+    const draw = (context: CanvasContext) => {
+        if (mouseX === null || mouseY === null) return
+        const {context2D} = context
+        const dimensions = containerDimensionsFrom(plotDimensions, margin)
+        const inPlot = mouseInPlotAreaFor(mouseX, mouseY, margin, dimensions)
+
+        context2D.save()
+        context2D.globalAlpha = inPlot ? 1 : 0
+        context2D.strokeStyle = style.color
+        context2D.lineWidth = style.lineWidth
+        context2D.beginPath()
+        context2D.moveTo(margin.left, mouseY)
+        context2D.lineTo(plotDimensions.width + margin.left, mouseY)
+        context2D.stroke()
+        context2D.restore()
+
+        type AxisAndLabelInfo = {
+            axis: ContinuousNumericAxis
+            text: string
+            labelWidth: number
+            labelHeight: number
+        }
+
+        // need to calculate each axis-label position separately, because at the plot edges, the axis-label
+        // positions depend on each other. For example, at the left edge, the left-axis label needs to move
+        // to the right of the mouse to remain in the plot area. Therefore, the right-axis label needs
+        // to move as well but needs to know the width of the left-axis label to do so.
+        //
+        // measure all the labels first, then position them (mirrors the old two-phase SVG approach,
+        // where text had to be set before `getBBox()` would return a meaningful size)
+        context2D.font = fontStringFor(labelFont.size, labelFont.family, labelFont.weight)
+        const boundingBoxes: Map<AxisLocation, AxisAndLabelInfo> = new Map(Array.from(label.entries())
+            .map(([axis, trackerLabel]) => {
+                const text = trackerLabel(axis.scale.invert(mouseY! - margin.top))
+                const {width: labelWidth, height: labelHeight} = textDimensions(context2D, text)
+                return [axis.location, {axis, text, labelWidth, labelHeight}]
+            }))
+
+        // place the labels so that they remain in the plot area
+        const space = 10
+        const rightLabelWidth = (boundingBoxes.get(AxisLocation.Right)?.labelWidth || -space) + space
+
+        const updateInfo: Array<[string, TrackerAxisInfo]> = Array.from(boundingBoxes.entries())
+            .map(([location, {axis, text, labelWidth, labelHeight}]) => {
+                if (labelStyle === TrackerLabelLocation.ByAxis) {
+                    const labelX = location === AxisLocation.Left ?
+                        margin.left + space :
+                        margin.left + plotDimensions.width - rightLabelWidth - space
+
+                    const yOffset = space
+                    const labelY = Math.max(mouseY! - yOffset, margin.top + yOffset + labelHeight)
+
+                    // label background
+                    const padding = 5
+                    context2D.save()
+                    context2D.globalAlpha = inPlot ? 0.8 : 0
+                    context2D.fillStyle = backgroundColor
+                    context2D.beginPath()
+                    context2D.roundRect(
+                        labelX - padding,
+                        labelY - labelHeight - 1,
+                        labelWidth + 2 * padding,
+                        labelHeight + 2 * padding,
+                        LABEL_BACKGROUND_RADIUS
+                    )
+                    context2D.fill()
+
+                    // label text
+                    context2D.globalAlpha = inPlot ? 1 : 0
+                    context2D.fillStyle = labelFont.color
+                    context2D.textAlign = 'left'
+                    context2D.textBaseline = 'alphabetic'
+                    context2D.fillText(text, labelX, labelY)
+                    context2D.restore()
+                }
+
+                const trackerInfo: TrackerAxisInfo = {
+                    x: axis.scale.invert(mouseY! - margin.top + margin.bottom),
+                    axisLocation: axis.location
+                }
+                return [axis.axisId, trackerInfo]
+            })
+
+        if (inPlot) {
+            onTrackerUpdate(new Map<string, TrackerAxisInfo>(updateInfo))
+        }
     }
-    //
-    // need to calculate each axis-label position separately, because at the plot edges, the axis-label
-    // positions depend on each other. For example, at the left edge, the left-axis label needs to move
-    // to the right of the mouse to remain in the plot area. Therefore, the right-axis label needs
-    // to move as well but needs to know the width of the left-axis label to do so.
-    //
-    // add the labels and calculate the bounding boxes
-    const boundingBoxes: Map<AxisLocation, AxisAndLabelInfo> = new Map(Array.from(label.entries())
-        .map(([axis, trackerLabel]) => {
-            // when the mouse is in the plot area, then set the opacity of the tracker line and label to 1,
-            // which means it is fully visible. when the mouse is not in the plot area, set the opacity to 0,
-            // which means the tracker line and label are invisible.
-            d3.select<SVGLineElement, Datum>(`#${horizontalTrackerLineId(chartId)}`)
-                .attr('y1', y)
-                .attr('y2', y)
-                .attr('stroke', trackerStyle.color)
-                .attr('stroke-width', trackerStyle.lineWidth)
-                .attr('opacity', () => inPlot ? 1 : 0)
 
-            const label = d3.select<SVGTextElement, any>(`#${trackerLabelId(chartId, axis.location)}`)
-                .attr('fill', labelFont.color)
-                .attr('font-family', labelFont.family)
-                .attr('font-size', labelFont.size)
-                .attr('font-weight', labelFont.weight)
-                .attr('opacity', () => inPlot ? 1 : 0)
-                .text(() => trackerLabel(axis.scale.invert(y - margin.top)))
+    cc.register(drawHandle, draw, 20)
 
-            const labelBackground = d3.select<SVGRectElement, any>(`#${trackerLabelId(chartId, axis.location)}-background`)
-                .attr('fill', backgroundColor)
-                .attr('opacity', () => inPlot && labelStyle !== TrackerLabelLocation.Nowhere ? 0.8 : 0)
-                .attr('rx', '5px')
+    const handleMouseMove = (event: MouseEvent) => {
+        const [x, y] = canvasLocalPoint(event, cc.canvas)
+        mouseX = x
+        mouseY = y
+        cc.requestRedraw()
+    }
+    const handleMouseLeave = () => {
+        mouseX = null
+        mouseY = null
+        cc.requestRedraw()
+    }
+    cc.canvas.addEventListener('mousemove', handleMouseMove)
+    cc.canvas.addEventListener('mouseleave', handleMouseLeave)
 
-            return [axis.location, {axis, labelSelection: label, labelBoundingBox: textDimensions(label), labelBackground}]
-        }))
-
-    // place the labels so that they remain in the plot area
-    const space = 10
-    const rightLabelWidth = (boundingBoxes.get(AxisLocation.Right)?.labelBoundingBox.width || -space) + space
-
-    const updateInfo: Array<[string, TrackerAxisInfo]> = Array.from(boundingBoxes.entries())
-        .map(([location, {axis, labelSelection, labelBoundingBox, labelBackground}]) => {
-            if (labelStyle === TrackerLabelLocation.ByAxis) {
-                const {width} = plotDimensionsFrom(dimensions.width, dimensions.height, margin)
-                const labelX = location === AxisLocation.Left ?
-                    margin.left + space :
-                    margin.left + width - rightLabelWidth - space
-                labelSelection.attr('x', labelX)
-
-                // adjust the label position when the tracker is at the right-most edges of the plot so that
-                // the label remains visible (i.e., doesn't get clipped)
-                const yOffset: number = labelStyle === TrackerLabelLocation.ByAxis ? space : 0
-                const labelY = Math.max(y - yOffset, margin.top + yOffset + labelBoundingBox.height)
-                labelSelection.attr('y', labelY)
-
-                // set the background location and width
-                const padding: number = 5
-                labelBackground
-                    .attr('x', labelX - padding)
-                    .attr('y', labelY - labelBoundingBox.height - 1)
-                    .attr('width', labelBoundingBox.width + 2 * padding)
-                    .attr('height', labelBoundingBox.height + 2 * padding)
-            }
-
-            const trackerInfo: TrackerAxisInfo = {
-                x: axis.scale.invert(y - margin.top + margin.bottom),
-                axisLocation: axis.location
-            }
-            return [axis.axisId, trackerInfo]
-        })
-
-    if (inPlot) {
-        onTrackerUpdate(new Map<string, TrackerAxisInfo>(updateInfo))
+    return () => {
+        cc.unregister(drawHandle)
+        cc.canvas.removeEventListener('mousemove', handleMouseMove)
+        cc.canvas.removeEventListener('mouseleave', handleMouseLeave)
     }
 }
-

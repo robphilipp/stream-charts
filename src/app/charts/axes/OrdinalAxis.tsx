@@ -1,21 +1,21 @@
 import {
-    addOrdinalStringAxis,
-    AxesFont,
+    type AxesFont,
     AxisLocation,
-    AxisTickStyle, ContinuousNumericAxis,
-    defaultAxesFont,
+    type AxisTickStyle, defaultAxesFont,
     defaultAxisTickStyle,
-    labelIdFor,
-    OrdinalStringAxis
+    addOrdinalStringAxis,
+    removeOrdinalXAxis,
+    removeOrdinalYAxis,
+    type OrdinalStringAxis,
+    type SeriesStyle
 } from "./axes"
-import * as d3 from "d3";
-import {ScaleBand} from "d3";
-import {useChart} from "../hooks/useChart";
+import type {ScaleBand} from "d3";
+import {type NoTooltipMetadata, useChart} from "../hooks/useChart";
 import {useEffect, useRef} from "react";
-import {Dimensions} from "../styling/margins";
+import type {Dimensions} from "../styling/margins";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import {OrdinalAxisRange} from "./OrdinalAxisRange";
-import {Datum} from "../series/timeSeries";
+import type {Datum} from "../series/timeSeries";
 import {AxisInterval} from "./AxisInterval";
 
 export interface Props {
@@ -56,17 +56,18 @@ export interface Props {
  * Category axis that represents the x-axis when its location is either on the bottom or the top.
  * When the axis location is left or right, then the category axis represents the y-axis. The category
  * axis requires a set of categories that will form the axis. Generally, these categories should
- * be the name of the series used to represent each category.
+ * be the name of the series used to represent each category. This component returns null, meaning
+ * React won't render it because we are drawing directly onto the chart's shared canvas.
  * @param props The properties for the component
  * @return null
  */
 export function OrdinalAxis(props: Props): null {
     const {
         chartId,
-        container,
+        canvasContext,
         axes,
         color,
-    } = useChart<Datum, any, any, OrdinalAxisRange, OrdinalStringAxis>()
+    } = useChart<Datum, SeriesStyle, NoTooltipMetadata, OrdinalAxisRange, OrdinalStringAxis>()
 
     const {
         xAxesState,
@@ -103,18 +104,16 @@ export function OrdinalAxis(props: Props): null {
     // handles plot size changes by updating the range of the axis and the original range of the axis
     useEffect(
         () => {
-            if (container) {
-                const svg = d3.select<SVGSVGElement, any>(container)
+            if (canvasContext) {
                 const font: AxesFont = {...defaultAxesFont(), color, ...props.font}
                 const axisTickStyle = {...defaultAxisTickStyle(), ...props.axisTickStyle}
-
 
                 // lambda that gets called when the axes need to be updated
                 const handleRangeUpdates = (updates: Map<string, OrdinalAxisRange>, plotDim: Dimensions): void => {
                     if (rangeUpdateHandlerIdRef.current && axis) {
                         const range = updates.get(axisId)
                         if (range) {
-                            axis.update(range.current, range.original, plotDim, margin)
+                            axis.update(categories, range.current, range.original, plotDim, margin)
                         }
                     }
                 }
@@ -126,13 +125,13 @@ export function OrdinalAxis(props: Props): null {
                         case AxisLocation.Top:
                         case AxisLocation.Bottom: {
                             const xAxis = addOrdinalStringAxis(
-                                chartId, axisId, svg, location, categories,
+                                canvasContext, axisId, location, categories,
                                 label, font, axisTickStyle, plotDimensions, margin,
                                 setAxisIntervalFor, setOriginalAxisIntervalFor
                             )
 
                             // add the x-axis to the chart context
-                            const [start, end] = AxisInterval.as(xAxis.scale.range()).asTuple()
+                            const [start, end] = AxisInterval.as(xAxis.scale.range() as [number, number]).asTuple()
                             addXAxis(xAxis, axisId, OrdinalAxisRange.from(start, end))
 
                             // add an update handler
@@ -144,12 +143,12 @@ export function OrdinalAxis(props: Props): null {
                         case AxisLocation.Left:
                         case AxisLocation.Right: {
                             const yAxis = addOrdinalStringAxis(
-                                chartId, axisId, svg, location, categories,
+                                canvasContext, axisId, location, categories,
                                 label, font, axisTickStyle, plotDimensions, margin,
                                 setAxisIntervalFor, setOriginalAxisIntervalFor
                             )
                             // add the y-axis to the chart context
-                            const [start, end] = AxisInterval.as(yAxis.scale.range()).asTuple()
+                            const [start, end] = AxisInterval.as(yAxis.scale.range() as [number, number]).asTuple()
                             addYAxis(yAxis, axisId, OrdinalAxisRange.from(start, end))
                             // add an update handler
                             rangeUpdateHandlerIdRef.current = `y-axis-${chartId}-${axisId}-${location.valueOf()}`
@@ -161,15 +160,20 @@ export function OrdinalAxis(props: Props): null {
                         .map(range => ([range.current, range.original]))
                         .getOrElse([AxisInterval.empty(), AxisInterval.empty()])
                     if (range && originalRange) {
-                        axis.update(range, originalRange, plotDimensions, margin)
+                        axis.update(categories, range, originalRange, plotDimensions, margin)
                     }
 
-                    svg.select(`#${labelIdFor(chartId, location)}`).attr('fill', color)
+                    // keep the axis *label's* color in sync with the chart's color (e.g. on theme
+                    // change), without recreating the axis or touching its domain. Note: tick label
+                    // color is intentionally NOT touched here -- it stays fixed at whatever
+                    // axisTickStyle.font was at creation, matching the original SVG version, which
+                    // only ever updated the label's `fill`, not the ticks'.
+                    axis.updateFont(font)
                 }
             }
         },
         [
-            container,
+            canvasContext,
             axis,
             addXAxis, addYAxis,
             addAxesRangesUpdateHandler,
@@ -193,7 +197,10 @@ export function OrdinalAxis(props: Props): null {
                         const {current, original} = OrdinalAxisRange
                             .from(start, end, 0, oldDimension.width)
                             .zoom(oldDimension.width, newDimension.width)
-                        axis.update(current, original, plotDimensions, margin)
+                        // a resize never changes the set of categories -- read the axis's own
+                        // current domain rather than `categories` from props, since `categories`
+                        // isn't in this effect's dependency array and so may be stale here
+                        axis.update(axis.scale.domain(), current, original, plotDimensions, margin)
                     }
                     if (location === AxisLocation.Left || location === AxisLocation.Right) {
                         const [start, end] = axisRangeFor(axisId)
@@ -202,7 +209,7 @@ export function OrdinalAxis(props: Props): null {
                         const {current, original} = OrdinalAxisRange
                             .from(start, end, 0, oldDimension.height)
                             .zoom(oldDimension.height, newDimension.height)
-                        axis.update(current, original, plotDimensions, margin)
+                        axis.update(axis.scale.domain(), current, original, plotDimensions, margin)
                     }
                 }
             })
@@ -229,6 +236,25 @@ export function OrdinalAxis(props: Props): null {
         [removeAxesRangesUpdateHandler]
     )
 
+    // unregister the axis' draw function when the axis unmounts
+    useEffect(
+        () => {
+            return () => {
+                if (canvasContext) {
+                    switch (location) {
+                        case AxisLocation.Top:
+                        case AxisLocation.Bottom:
+                            removeOrdinalXAxis(canvasContext, axisId)
+                            break
+                        case AxisLocation.Left:
+                        case AxisLocation.Right:
+                            removeOrdinalYAxis(canvasContext, axisId)
+                    }
+                }
+            }
+        },
+        [canvasContext, axisId, location]
+    )
+
     return null
 }
-

@@ -1,24 +1,23 @@
-import {Dimensions, dimensionsNotEqual, Margin, plotDimensionsFrom} from "../styling/margins";
-import {createContext, JSX, useContext, useEffect, useRef, useState} from "react";
+import {type Dimensions, type Margin} from "../styling/margins";
+import {createContext, useContext} from "react";
 
 /**
- * No operation function for use when a default function is needed
+ * Called when the plot's dimensions change
+ * @param previousDimensions The plot's dimensions before the change
+ * @param newDimensions The plot's new dimensions
  */
-const noop = () => {
-    /* empty on purpose */
-}
-
-export const defaultMargin: Margin = {top: 30, right: 20, bottom: 30, left: 50}
-
 export type PlotDimensionChangeHandler = (previousDimensions: Dimensions, newDimensions: Dimensions) => void
 
+/**
+ * The values exposed through the {@link usePlotDimensions} react hook
+ */
 export type UsePlotDimensionsValues = {
     /**
-     * The width and height (in pixels) of this chart
+     * The width and height (in pixels) of the plot area (the chart without its margins)
      */
     plotDimensions: Dimensions
     /**
-     * The plot margins for the border of main G
+     * The margins between the edges of the chart and the plot area (where the axes are drawn)
      */
     margin: Margin
     /**
@@ -26,93 +25,30 @@ export type UsePlotDimensionsValues = {
      * @param dimensions the new dimensions of the plot
      */
     updateDimensions: (dimensions: Dimensions) => void
+    /**
+     * Registers a handler that's called whenever the plot dimensions change
+     * @param handler The handler
+     * @return The handler's ID (for unregistering it)
+     */
     registerPlotDimensionChangeHandler: (handler: PlotDimensionChangeHandler) => string
+    /**
+     * Unregisters the plot-dimension change handler with the specified ID
+     * @param handlerId The handler's ID (from {@link registerPlotDimensionChangeHandler})
+     */
     unregisterPlotDimensionChangeHandler: (handlerId: string) => void
 }
 
-export const defaultPlotDimensions = (): UsePlotDimensionsValues => ({
-    plotDimensions: {width: 0, height: 0},
-    margin: defaultMargin,
-    updateDimensions: noop,
-    registerPlotDimensionChangeHandler: () => "",
-    unregisterPlotDimensionChangeHandler: noop
-})
-
-const PlotDimensionsContext = createContext<UsePlotDimensionsValues>(defaultPlotDimensions())
-
-export type Props = {
-    containerDimensions: Dimensions
-    margin: Margin
-    children: JSX.Element | Array<JSX.Element>
-}
-
-export default function PlotDimensionsProvider(props: Props): JSX.Element {
-    const {
-        containerDimensions,
-        margin,
-        children
-    } = props
-
-    const [dimensions, setDimensions] = useState<Dimensions>(defaultPlotDimensions().plotDimensions)
-    const plotDimensionChangeHandersRef = useRef<Map<string, PlotDimensionChangeHandler>>(new Map())
-
-    // update the plot dimensions when the container size or margin change
-    useEffect(
-        () => {
-            const newDimensions = plotDimensionsFrom(containerDimensions.width, containerDimensions.height, margin)
-            setDimensions(prevDimensions => {
-                if (dimensionsNotEqual(prevDimensions, newDimensions)) {
-                    for(const handler of plotDimensionChangeHandersRef.current.values()) {
-                        handler(prevDimensions, newDimensions)
-                    }
-                    return newDimensions
-                }
-                return prevDimensions
-            })
-        },
-        [containerDimensions, margin]
-    )
-
-    function updateDimensions(newDimensions: Dimensions) {
-        setDimensions(prevState => {
-            for(const handler of plotDimensionChangeHandersRef.current.values()) {
-                handler(prevState, newDimensions)
-            }
-            return newDimensions
-        })
-    }
-
-    function registerPlotDimensionChangeHandler(handler: PlotDimensionChangeHandler) {
-        const handlerId = crypto.randomUUID()
-        plotDimensionChangeHandersRef.current.set(handlerId, handler)
-        return handlerId
-    }
-
-    function unregisterPlotDimensionChangeHandler(handlerId: string): boolean {
-        return plotDimensionChangeHandersRef.current.delete(handlerId)
-    }
-
-    return <PlotDimensionsContext.Provider
-        value={{
-            plotDimensions: dimensions,
-            margin,
-            updateDimensions,
-            registerPlotDimensionChangeHandler,
-            unregisterPlotDimensionChangeHandler
-        }}
-    >
-        {children}
-    </PlotDimensionsContext.Provider>
-}
+export const PlotDimensionsContext = createContext<UsePlotDimensionsValues | undefined>(undefined)
 
 /**
- * React hook that sets up the React context for the plot-dimension values.
+ * React hook for the plot's dimensions and margins. Must be used within a
+ * `PlotDimensionsProvider` (i.e. within a `<Chart>`).
  * @return The {@link UsePlotDimensionsValues} held in the React context.
+ * @throws Error when used outside a `<PlotDimensionsProvider>`
  */
 export function usePlotDimensions(): UsePlotDimensionsValues {
-    const context = useContext<UsePlotDimensionsValues>(PlotDimensionsContext)
-    const {plotDimensions} = context
-    if (plotDimensions === undefined || plotDimensions === null) {
+    const context = useContext(PlotDimensionsContext)
+    if (context === undefined) {
         throw new Error("usePlotDimensions can only be used when the parent is a <PlotDimensionsProvider/>")
     }
     return context

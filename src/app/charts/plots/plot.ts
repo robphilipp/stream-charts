@@ -1,57 +1,141 @@
-import {Dimensions} from "../styling/margins";
-import * as d3 from "d3";
-import {GSelection} from "../d3types";
-
-export type Series<D> = Array<D>
+import type {Dimensions} from "../styling/margins";
+import type {CanvasContext, DrawFn, DrawHandle} from "../d3types";
+import type {FastShiftArray} from "fast-shift-array";
+import type {BaseAxisRange} from "../axes/BaseAxisRange";
+import type {AxisInterval} from "../axes/AxisInterval";
 
 /**
- * Creates the main SVG for holding the plot.
- * @param chartId A unique value identifying the chart.
- * @param container The SVG element interface
- * @param plotDimensions The dimensions of the plot
- * @param color The SVG `color` attribute used for the axis
+ * A series' data: a plain array, or the `FastShiftArray` that backs a {@link BaseSeries}
  */
-export function createPlotContainer(
-    chartId: number,
-    container: SVGSVGElement,
-    plotDimensions: Dimensions,
-    color: string
-): GSelection {
-    const {width, height} = plotDimensions
-    return d3.select<SVGSVGElement, any>(container)
-        .attr('width', Math.max(0, width))
-        .attr('height', Math.max(0, height))
-        .attr('color', color)
-        .append<SVGGElement>('g')
-        .attr('id', `main-container-${chartId}`)
+export type Series<D> = Array<D> | FastShiftArray<D>
+
+// a draw function registered with the canvas context, and where it falls in the drawing order
+interface RegisteredDraw {
+    draw: DrawFn
+    zIndex: number
 }
 
 /**
- * Adds a clip area for the chart to the specified SVG element. The clip-area is given
- * an `id` of `clip-series-<chart_id>`, which because the chart ID should be unique, makes
- * this unique as well.
- * @param chartId The ID of the chart to which the clip area is to be added.
- * @param plotGroup The SVG group element to which the clip area is to be added.
- * @param plotDimensions The dimensions of the plot.
- * @return The ID of the clip-path.
+ * Creates the {@link CanvasContext} for the chart -- the drawing context plus the redraw
+ * registration/scheduling API that axes, plots, and the tracker use to (re)paint themselves.
+ * Replaces the old `createPlotContainer`, which appended the root SVG `<g>`.
+ * Each redraw clears the canvas, and then calls every registered draw function in z-index order
+ * (lowest first); a draw function that throws is logged and skipped, so it doesn't blank the rest.
+ * The canvas isn't sized here: call {@link resizeCanvasTo} immediately after this with the actual
+ * container dimensions.
+ * @param chartId A unique value identifying the chart.
+ * @param canvas The `<canvas>` DOM element backing the chart.
+ * @param color The default `color` used for text/strokes when nothing more specific is set.
+ * @return The canvas context
+ * @throws Error when the canvas has no 2D rendering context
  */
-export function setClipPathG(chartId: number, plotGroup: GSelection, plotDimensions: Dimensions): string {
-    const clipPathId = `chart-clip-path-${chartId}`
+export function createCanvasContext(
+    chartId: number,
+    canvas: HTMLCanvasElement,
+    color: string
+): CanvasContext {
+    const context = canvas.getContext('2d')
+    if (!context) {
+        throw new Error(`Unable to acquire a 2D rendering context for chart ${chartId}`)
+    }
 
-    // remove the old clipping region and add a new one with the updated plot dimensions
-    plotGroup.select(`#${clipPathId}-defs`).remove();
-    plotGroup
-        .append('defs')
-            .attr('id', `${clipPathId}-defs`)
-        .append("clipPath")
-            .attr("id", clipPathId)
-        .append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", Math.max(0, plotDimensions.width))
-            .attr("height", Math.max(0, plotDimensions.height))
+    const dpr = window.devicePixelRatio || 1
+    context.textBaseline = 'alphabetic'
+    context.strokeStyle = color
+    context.fillStyle = color
 
-    return clipPathId
+    const drawFns = new Map<DrawHandle, RegisteredDraw>()
+    let animationFrameId: number | null = null
+
+    const redrawNow = (): void => {
+        animationFrameId = null
+
+        // clear the full backing-store (not just the CSS-pixel size, since the backing store is
+        // scaled by devicePixelRatio and the current transform includes that scale)
+        context.save()
+        context.setTransform(1, 0, 0, 1, 0, 0)
+        context.clearRect(0, 0, canvas.width, canvas.height)
+        context.restore()
+
+        Array.from(drawFns.entries())
+            .sort(([, a], [, b]) => a.zIndex - b.zIndex)
+            .forEach(([id, {draw}]) => {
+                try {
+                    draw(canvasContext)
+                } catch (error) {
+                    // one registrant's draw failure (e.g. a misconfigured axis assignment) must not
+                    // blank every other plot/axis/tracker sharing this canvas for the frame -- and
+                    // since this runs on every subsequent data tick too, an uncaught throw here would
+                    // otherwise wedge the chart's rendering permanently rather than just once
+                    console.error(`Error while drawing "${id}"; chart_id: ${chartId}`, error)
+                }
+            })
+    }
+
+    const canvasContext: CanvasContext = {
+        chartId,
+        canvas,
+        context2D: context,
+        dpr,
+        register: (id, draw, zIndex = 0) => {
+            drawFns.set(id, {draw, zIndex})
+            canvasContext.requestRedraw()
+        },
+        unregister: (id) => {
+            drawFns.delete(id)
+            canvasContext.requestRedraw()
+        },
+        requestRedraw: () => {
+            if (animationFrameId === null) {
+                animationFrameId = window.requestAnimationFrame(redrawNow)
+            }
+        }
+    }
+
+    return canvasContext
+}
+
+/**
+ * Resizes the canvas's backing store to match `dimensions` at the current devicePixelRatio, so
+ * that drawing stays crisp on high-DPI displays, and re-applies the dpr scale to the drawing
+ * context so that one drawing-unit equals one CSS pixel. Replaces the old SVG `width`/`height`
+ * attribute updates. Call this whenever the container's pixel dimensions change, before the next
+ * redraw.
+ * @param context The canvas context
+ * @param dimensions The new overall (plot + margin) dimensions, in CSS pixels
+ */
+export function resizeCanvasTo(context: CanvasContext, dimensions: Dimensions): void {
+    const {canvas, context2D, dpr} = context
+    const width = Math.max(0, dimensions.width)
+    const height = Math.max(0, dimensions.height)
+
+    canvas.style.width = `${width}px`
+    canvas.style.height = `${height}px`
+    canvas.width = Math.round(width * dpr)
+    canvas.height = Math.round(height * dpr)
+
+    context2D.setTransform(dpr, 0, 0, dpr, 0, 0)
+}
+
+/**
+ * Clips subsequent drawing to a rectangular area. Replaces the old SVG `<clipPath>`/
+ * `setClipPathG`/`setClipPath`. Canvas clip regions are stack-based: callers must `ctx.save()`
+ * before calling this and `ctx.restore()` once the clipped drawing is done, or the clip will leak
+ * into unrelated draw calls later in the same frame.
+ * @param context The canvas context
+ * @param dimensions The dimensions of the area to clip to
+ * @param origin The top-left corner of the clip area, in canvas drawing coordinates (defaults to
+ * `(0, 0)`; pass the margin's `(left, top)` when clipping to the plot area, which is offset from
+ * the canvas origin)
+ */
+export function clipToArea(
+    context: CanvasContext,
+    dimensions: Dimensions,
+    origin: {x: number, y: number} = {x: 0, y: 0}
+): void {
+    context.context2D.beginPath()
+    context.context2D.rect(origin.x, origin.y, Math.max(0, dimensions.width), Math.max(0, dimensions.height))
+    context.context2D.clip()
 }
 
 /**
@@ -72,4 +156,14 @@ export interface AxesAssignment {
  */
 export const assignAxes = (xAxis: string, yAxis: string): AxesAssignment => ({xAxis, yAxis})
 
-
+/**
+ * Converts a map holding the axes' ranges into a map holding the axes' current intervals. Used
+ * when reporting the axes' bounds to the code using the chart (see the plots' `onUpdateAxesInterval`).
+ * @param ranges A map associating an axis ID with that axis' range
+ * @return A map associating an axis ID with that axis' current interval
+ */
+export function currentIntervalsFrom(ranges: Map<string, BaseAxisRange>): Map<string, AxisInterval> {
+    const intervals = new Map<string, AxisInterval>()
+    ranges.forEach((range, axisId) => intervals.set(axisId, range.current))
+    return intervals
+}

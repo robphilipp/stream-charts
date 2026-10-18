@@ -1,10 +1,19 @@
-import {addEmptyXAxis, addEmptyYAxis, AxisLocation, ContinuousNumericAxis,} from "./axes";
-import {useChart} from "../hooks/useChart";
+import {
+    AxisLocation,
+    addEmptyXAxis,
+    addEmptyYAxis,
+    defaultAxesFont,
+    removeContinuousXAxis,
+    removeContinuousYAxis,
+    type ContinuousNumericAxis,
+    type SeriesStyle
+} from "./axes";
+import {type NoTooltipMetadata, useChart} from "../hooks/useChart";
 import {useEffect, useRef} from "react";
 import * as d3 from "d3";
-import {Margin} from "../styling/margins";
+import type {Margin} from "../styling/margins";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
-import {Datum} from "../series/timeSeries";
+import type {Datum} from "../series/timeSeries";
 import {AxisInterval} from "./AxisInterval";
 import {ContinuousAxisRange} from "./ContinuousAxisRange";
 
@@ -23,17 +32,20 @@ const EMPTY_AXIS_SCALE = d3.scaleLinear()
 const EMPTY_AXIS_DOMAIN: [min: number, max: number] = [0, 1]
 
 /**
- * Represents an empty axis (x or y) that can be place on the top, bottom,
+ * Represents an empty axis (x or y) that can be placed on the top, bottom,
  * left, or right of the chart. An empty axis is just a line where the axis
- * would be, without any ticks or labels.
+ * would be, without any ticks or labels. This component returns null, meaning React won't
+ * render it because we are drawing directly onto the chart's shared canvas.
  * @param props The properties for the axis
+ * @return `null` (the axis draws onto the chart's canvas)
  */
 export function EmptyAxis(props: Props): null {
     const {
         chartId,
-        container,
+        canvasContext,
         axes,
-    } = useChart<Datum, any, any, ContinuousAxisRange, ContinuousNumericAxis>()
+        color,
+    } = useChart<Datum, SeriesStyle, NoTooltipMetadata, ContinuousAxisRange, ContinuousNumericAxis>()
 
     const {
         addXAxis,
@@ -67,16 +79,14 @@ export function EmptyAxis(props: Props): null {
 
     useEffect(
         () => {
-            if (container) {
-                const svg = d3.select<SVGSVGElement, any>(container)
-
+            if (canvasContext) {
                 if (axisRef.current === undefined) {
                     switch (location) {
                         case AxisLocation.Bottom:
                         case AxisLocation.Top: {
                             axisRef.current = addEmptyXAxis(
-                                axisId, svg, plotDimensions, location, EMPTY_AXIS_SCALE,
-                                margin, setAxisIntervalFor, EMPTY_AXIS_DOMAIN
+                                canvasContext, axisId, plotDimensions, location, EMPTY_AXIS_SCALE,
+                                margin, setAxisIntervalFor, color, EMPTY_AXIS_DOMAIN
                             )
                             // add the x-axis to the chart context
                             const [start, end] = AxisInterval.as(EMPTY_AXIS_DOMAIN).asTuple()
@@ -88,8 +98,8 @@ export function EmptyAxis(props: Props): null {
                         case AxisLocation.Left:
                         case AxisLocation.Right: {
                             axisRef.current = addEmptyYAxis(
-                                axisId, svg, plotDimensions, location, EMPTY_AXIS_SCALE,
-                                margin, setAxisIntervalFor, EMPTY_AXIS_DOMAIN
+                                canvasContext, axisId, plotDimensions, location, EMPTY_AXIS_SCALE,
+                                margin, setAxisIntervalFor, color, EMPTY_AXIS_DOMAIN
                             )
                             // add the y-axis to the chart context
                             const [start, end] = AxisInterval.as(EMPTY_AXIS_DOMAIN).asTuple()
@@ -104,15 +114,40 @@ export function EmptyAxis(props: Props): null {
                     if (domain.isNotEmpty()) {
                         axisRef.current.update(domain, plotDimensions, margin)
                     }
+
+                    // keep the line color in sync with the chart's color (e.g. on theme change),
+                    // without recreating the axis or touching its domain
+                    axisRef.current.updateFont({...defaultAxesFont(), color})
                 }
             }
         },
         [
             chartId, axisId, location, addXAxis, addYAxis,
-            container, margin, plotDimensions, setAxisIntervalFor,
+            canvasContext, margin, plotDimensions, setAxisIntervalFor,
             axisRangeFor,
             setAxisRangeFor,
+            color,
         ]
+    )
+
+    // unregister the axis' draw function when the axis unmounts
+    useEffect(
+        () => {
+            return () => {
+                if (canvasContext) {
+                    switch (location) {
+                        case AxisLocation.Bottom:
+                        case AxisLocation.Top:
+                            removeContinuousXAxis(canvasContext, axisId)
+                            break
+                        case AxisLocation.Left:
+                        case AxisLocation.Right:
+                            removeContinuousYAxis(canvasContext, axisId)
+                    }
+                }
+            }
+        },
+        [canvasContext, axisId, location]
     )
 
     return null
