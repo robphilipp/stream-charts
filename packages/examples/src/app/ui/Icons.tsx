@@ -1,5 +1,5 @@
 import {type JSX, useId} from "react";
-import {lineColorScale} from "../charts/plots/colorizedLine.ts";
+import {lineColorScale} from "stream-charts";
 
 /**
  * A chevron pointing right (forward)

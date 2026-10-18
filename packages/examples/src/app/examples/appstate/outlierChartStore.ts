@@ -1,10 +1,12 @@
 import type {UseBoundStore} from "zustand";
 import {create, type StoreApi} from 'zustand';
 import {devtools} from "zustand/middleware";
-import type {OutlierChartData} from "../../charts/observables/outliers.ts";
-import type {OutlierSeries} from "../../charts/series/outlierSeries.ts";
-import {OutlierDataSource} from "../../charts/datasources/outlierDataSource.ts";
-import type {DataGenerator} from "../../charts/datasources/StreamingDataSource.ts";
+import {
+    OutlierDataSource,
+    type DataGenerator,
+    type OutlierChartData,
+    type OutlierSeries,
+} from "stream-charts";
 import {periodicWithSeveralBandsFn, randomOutlierDataObservable} from "../dataproviders/randomOutlierData.ts";
 import {DEFAULT_DROP_AFTER_100} from "../options/dropDataAfter.ts";
 import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceStateSlice.ts";

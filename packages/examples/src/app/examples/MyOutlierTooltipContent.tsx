@@ -1,5 +1,5 @@
 import {type JSX} from "react"
-import {useOutlierTooltip} from "../charts/tooltips/useOutlierTooltip.tsx"
+import {useOutlierTooltip} from "stream-charts";
 
 /**
  * Note: this is unused but serves as an additional example of a custom tooltip. To use

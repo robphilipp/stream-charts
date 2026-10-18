@@ -12,24 +12,30 @@ import {
     withFraction,
     withPixels
 } from "react-resizable-grid-layout";
-import type {Datum, TimeSeries} from "../charts/series/timeSeries";
-import {Chart} from "../charts/Chart";
-import {AxisLocation, defaultLineStyle} from '../charts/axes/axes';
-import {ContinuousAxis} from "../charts/axes/ContinuousAxis";
-import {Tracker} from "../charts/trackers/Tracker";
-import {Tooltip} from "../charts/tooltips/Tooltip";
-import {ScatterPlotTooltipContent} from "../charts/tooltips/ScatterPlotTooltipContent";
-import {formatNumber, noop} from '../charts/utils';
-import {ScatterPlot} from "../charts/plots/ScatterPlot";
-import {Legend} from "../charts/legends/Legend";
-import {assignAxes} from "../charts/plots/plot";
+import {
+    assignAxes,
+    AxisInterval,
+    AxisLocation,
+    Chart,
+    ContinuousAxis,
+    defaultLineStyle,
+    defaultMargin,
+    formatNumber,
+    Legend,
+    LegendLocation,
+    noop,
+    regexFilter,
+    ScatterPlot,
+    ScatterPlotTooltipContent,
+    seriesFrom,
+    Tooltip,
+    Tracker,
+    TrackerLabelLocation,
+    type Datum,
+    type TimeSeries,
+} from "stream-charts";
 import * as d3 from "d3";
 import {lightTheme, type Theme} from "../ui/Themes.ts";
-import {seriesFrom} from "../charts/series/baseSeries";
-import {AxisInterval, regexFilter} from "../charts";
-import {TrackerLabelLocation} from "../charts/trackers/trackerUtils.ts";
-import {LegendLocation} from "../charts/legends/constants";
-import {defaultMargin} from "../charts/hooks/defaultPlotDimensions";
 import {ExpandableControlBar} from "../ui/ExpandableControlBar.tsx";
 import {CommonControls} from "./controls/CommonControls.tsx";
 import {buttonStyle} from "../ui/utils.ts";

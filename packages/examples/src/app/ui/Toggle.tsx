@@ -1,5 +1,5 @@
 import {useState, type JSX} from "react";
-import {noop} from "../charts";
+import {noop} from "stream-charts";
 import {ToggleStatus} from "./toggleUtils.ts";
 
 export {ToggleStatus} from "./toggleUtils.ts";

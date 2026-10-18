@@ -1,7 +1,11 @@
-import {seriesFrom} from "../../charts/series/baseSeries";
-import {datumOf, type Datum} from "../../charts/series/timeSeries";
-import type {IterateDatum, IterateSeries} from "../../charts/series/iterateSeries";
-import {IteratesDataSource} from "../../charts/datasources/iteratesDataSource";
+import {
+    datumOf,
+    IteratesDataSource,
+    seriesFrom,
+    type Datum,
+    type IterateDatum,
+    type IterateSeries,
+} from "stream-charts";
 import {tentMapFn} from "../dataproviders/randomIterateData";
 import {iteratesGenerator, iterationStartsFor} from "./poincareChartStore";
 

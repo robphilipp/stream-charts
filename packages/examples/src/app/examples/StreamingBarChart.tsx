@@ -16,27 +16,33 @@ import {
 } from 'react-resizable-grid-layout';
 import {lightTheme, type Theme} from "../ui/Themes.ts";
 
-import type {Datum, TimeSeries} from "../charts/series/timeSeries";
-import {regexFilter} from "../charts/filters/regexFilter";
-import {Chart} from "../charts/Chart";
-import {AxisLocation, type OrdinalStringAxis} from '../charts/axes/axes';
-import {ContinuousAxis} from "../charts/axes/ContinuousAxis";
-import {OrdinalAxis} from "../charts/axes/OrdinalAxis";
-import {Tracker} from "../charts/trackers/Tracker";
-import {Tooltip} from "../charts/tooltips/Tooltip";
-import {type BaseSeries, seriesFrom} from "../charts/series/baseSeries";
-import {BarPlot} from "../charts/plots/BarPlot";
-import {BarPlotTooltipContent} from "../charts/tooltips/BarPlotTooltipContent";
-import {type OrdinalChartData} from "../charts/observables/ordinals";
-import {type OrdinalDatum} from "../charts/series/ordinalSeries";
-import {type BarSeriesStyle, defaultBarSeriesStyle} from "../charts/styling/barPlotStyle";
-import {type WindowedOrdinalStats} from "../charts/datasources/ordinalDataSource";
-import {noop} from "../charts/utils";
-import {assignAxes} from "../charts/plots/plot";
+import {
+    assignAxes,
+    AxisLocation,
+    BarPlot,
+    BarPlotTooltipContent,
+    Chart,
+    ContinuousAxis,
+    defaultBarSeriesStyle,
+    defaultMargin,
+    noop,
+    OrdinalAxis,
+    regexFilter,
+    seriesFrom,
+    Tooltip,
+    Tracker,
+    TrackerLabelLocation,
+    type BarSeriesStyle,
+    type BaseSeries,
+    type Datum,
+    type OrdinalAxisRange,
+    type OrdinalChartData,
+    type OrdinalDatum,
+    type OrdinalStringAxis,
+    type TimeSeries,
+    type WindowedOrdinalStats,
+} from "stream-charts";
 import {buttonStyle} from "../ui/utils";
-import type {OrdinalAxisRange} from "../charts/axes/OrdinalAxisRange.ts";
-import {TrackerLabelLocation} from "../charts/trackers/trackerUtils.ts";
-import {defaultMargin} from "../charts/hooks/defaultPlotDimensions";
 import {ExpandableControlBar} from "../ui/ExpandableControlBar.tsx";
 import {CommonExecutionControls} from "./controls/CommonExecutionControls.tsx";
 import {

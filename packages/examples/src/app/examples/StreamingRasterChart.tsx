@@ -14,26 +14,30 @@ import {
 } from 'react-resizable-grid-layout';
 import {lightTheme, type Theme} from "../ui/Themes.ts";
 
-import type {TimeSeries} from "../charts/series/timeSeries";
-import {regexFilter} from "../charts/filters/regexFilter";
-import {Chart} from "../charts/Chart";
-import {AxisLocation, defaultLineStyle} from '../charts/axes/axes';
-import {ContinuousAxis} from "../charts/axes/ContinuousAxis";
-import {OrdinalAxis} from "../charts/axes/OrdinalAxis";
-import {EmptyAxis} from "../charts/axes/EmptyAxis";
-import {Tracker} from "../charts/trackers/Tracker";
-import {Tooltip} from "../charts/tooltips/Tooltip";
-import {RasterPlotTooltipContent} from "../charts/tooltips/RasterPlotTooltipContent";
-import {formatNumber, noop} from '../charts/utils';
-import {RasterPlot} from "../charts/plots/RasterPlot";
-import {Legend} from "../charts/legends/Legend";
-import {seriesFrom} from "../charts/series/baseSeries";
-import {AxisInterval} from "../charts/axes/AxisInterval";
+import {
+    AxisInterval,
+    AxisLocation,
+    Chart,
+    ContinuousAxis,
+    defaultLineStyle,
+    defaultMargin,
+    EmptyAxis,
+    formatNumber,
+    Legend,
+    LegendLocation,
+    noop,
+    OrdinalAxis,
+    RasterPlot,
+    RasterPlotTooltipContent,
+    regexFilter,
+    seriesFrom,
+    Tooltip,
+    Tracker,
+    TrackerLabelLocation,
+    type TimeSeries,
+} from "stream-charts";
 import * as d3 from "d3";
 import {buttonStyle} from "../ui/utils";
-import {TrackerLabelLocation} from "../charts/trackers/trackerUtils.ts";
-import {LegendLocation} from "../charts/legends/constants";
-import {defaultMargin} from "../charts/hooks/defaultPlotDimensions";
 import {ExpandableControlBar} from "../ui/ExpandableControlBar.tsx";
 import {CommonExecutionControls} from "./controls/CommonExecutionControls.tsx";
 import {CommonControls} from "./controls/CommonControls.tsx";

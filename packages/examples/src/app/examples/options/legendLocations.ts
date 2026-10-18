@@ -1,4 +1,4 @@
-import {LegendLocation} from "../../charts/legends/constants.ts";
+import {LegendLocation} from "stream-charts";
 
 export const LEGEND_LOCATIONS = new Map<string, LegendLocation>([
     ['Top-Left', LegendLocation.TOP_LEFT],

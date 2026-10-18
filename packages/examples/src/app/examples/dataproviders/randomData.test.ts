@@ -1,9 +1,13 @@
 // import {initialChartData, seriesFromTuples} from "stream-charts";
 
-import {timeSeriesFromTuples} from "../../charts/series/timeSeries.ts";
-import {initialTimeSeriesChartData, type TimeSeriesChartData} from "../../charts/series/timeSeriesChartData.ts";
-import {seriesFrom} from "../../charts/series/baseSeries.ts";
-import {type OrdinalDatum, ordinalDatumOf} from "../../charts/series/ordinalSeries.ts";
+import {
+    initialTimeSeriesChartData,
+    ordinalDatumOf,
+    seriesFrom,
+    timeSeriesFromTuples,
+    type OrdinalDatum,
+    type TimeSeriesChartData,
+} from "stream-charts";
 import {barDanceDataObservable, initialBarDanceData} from "./randomOrdinalData.ts";
 import {initialRandomSpikeData, randomSpikeDataObservable} from "./randomSpikeData.ts";
 

@@ -1,9 +1,14 @@
-import {initialTimeSeriesChartData, type TimeSeriesChartData} from "../../charts/series/timeSeriesChartData.ts";
-import {type Datum, type TimeSeries} from "../../charts/series/timeSeries.ts";
+import {
+    DEFAULT_COMPACTING_SIZE,
+    initialTimeSeriesChartData,
+    seriesFrom,
+    type Datum,
+    type TimeSeries,
+    type TimeSeriesChartData,
+} from "stream-charts";
 import {interval, Observable} from "rxjs";
 import {map} from "rxjs/operators";
 import {FastShiftArray} from "fast-shift-array";
-import {DEFAULT_COMPACTING_SIZE, seriesFrom} from "../../charts/series/baseSeries.ts";
 
 const UPDATE_PERIOD_MS = 25;
 

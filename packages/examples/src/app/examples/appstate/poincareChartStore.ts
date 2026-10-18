@@ -2,19 +2,24 @@ import type {UseBoundStore} from "zustand";
 import {create, type StoreApi} from 'zustand';
 import {devtools} from "zustand/middleware";
 import {EMPTY} from "rxjs";
-import type {IterateChartData} from "../../charts/observables/iterates.ts";
-import {iteratesObservable} from "../../charts/observables/iterates.ts";
-import type {IterateSeries} from "../../charts/series/iterateSeries.ts";
-import {type Datum, datumOf, type TimeSeries} from "../../charts/series/timeSeries.ts";
-import {seriesFrom} from "../../charts/series/baseSeries.ts";
-import {IteratesDataSource} from "../../charts/datasources/iteratesDataSource.ts";
-import type {DataGenerator} from "../../charts/datasources/StreamingDataSource.ts";
+import {
+    datumOf,
+    DEFAULT_LINE_END_COLOR,
+    DEFAULT_LINE_START_COLOR,
+    IteratesDataSource,
+    iteratesObservable,
+    seriesFrom,
+    type DataGenerator,
+    type Datum,
+    type IterateChartData,
+    type IterateSeries,
+    type PoincarePlotZoomState,
+    type TimeSeries,
+} from "stream-charts";
 import {iterateFunctionObservable} from "../dataproviders/randomIterateData.ts";
 import {createInitialVisibility, type Visibility} from "../options/visibility.ts";
 import {DEFAULT_DROP_AFTER_20} from "../options/dropDataAfter.ts";
 import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceStateSlice.ts";
-import type {PoincarePlotZoomState} from "../../charts/plots/PoincarePlot.tsx";
-import {DEFAULT_LINE_END_COLOR, DEFAULT_LINE_START_COLOR} from "../../charts/plots/colorizedLine.ts";
 
 /**
  * An iterate function, `x[n+1] = f(x[n])`, as a function of the time and `x[n]`

@@ -1,5 +1,4 @@
-import type {StreamingDataSource} from "../../../charts/datasources/StreamingDataSource.ts";
-import type {ChartData} from "../../../charts/observables/ChartData.ts";
+import {type ChartData, type StreamingDataSource} from "stream-charts";
 
 /**
  * The part of a data source the store manages: its lifecycle and running state

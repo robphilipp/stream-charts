@@ -1,15 +1,15 @@
 import {interval, type Observable} from "rxjs";
-import type {OutlierChartData} from "../../charts/observables/outliers.ts";
 import {
-    type OutlierBounds,
+    datumOf,
     outlierBoundsFor,
-    type OutlierDatum,
     outlierDatumFor,
+    outlierSeriesFrom,
+    type OutlierBounds,
+    type OutlierChartData,
+    type OutlierDatum,
     type OutlierSeries,
-    outlierSeriesFrom
-} from "../../charts/series/outlierSeries.ts";
+} from "stream-charts";
 import {map} from "rxjs/operators";
-import {datumOf} from "../../charts/series/timeSeries.ts";
 
 /**
  * Creates the observable of outlier data for a single series: every update period, emits one datum,

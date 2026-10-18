@@ -1,13 +1,15 @@
 import type {UseBoundStore} from "zustand";
 import {create, type StoreApi} from 'zustand';
-import type {TimeSeries} from "../../charts/series/timeSeries.ts";
-import type {TimeSeriesChartData} from "../../charts/series/timeSeriesChartData.ts";
-import {TimeSeriesDataSource} from "../../charts/datasources/timeSeriesDataSource.ts";
-import type {DataGenerator} from "../../charts/datasources/StreamingDataSource.ts";
+import {
+    LegendLocation,
+    TimeSeriesDataSource,
+    type DataGenerator,
+    type TimeSeries,
+    type TimeSeriesChartData,
+} from "stream-charts";
 import {randomWeightDataObservable} from "../dataproviders/randomWeightData.ts";
 import {createInitialVisibility} from "../options/visibility.ts";
 import {devtools} from "zustand/middleware";
-import {LegendLocation} from "../../charts/legends/constants.ts";
 import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceStateSlice.ts";
 import {
     type VisibilitySlice,

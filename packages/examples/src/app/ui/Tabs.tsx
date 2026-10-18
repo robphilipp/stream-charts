@@ -1,7 +1,7 @@
 import React, {cloneElement, type CSSProperties, type JSX, useState} from "react"
 import {Button} from "./Button";
 import {defaultActiveTabStyle, defaultTabStyle} from "./tabStyles";
-import {noop} from "../charts";
+import {noop} from "stream-charts";
 import {
     Grid,
     gridArea,

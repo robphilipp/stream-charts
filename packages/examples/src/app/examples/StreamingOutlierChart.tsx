@@ -14,19 +14,24 @@ import {
 import * as d3 from "d3"
 
 import {initialOutlierData} from "./dataproviders/randomOutlierData.ts"
-import {Chart} from "../charts/Chart"
-import {ContinuousAxis} from "../charts/axes/ContinuousAxis"
-import {AxisLocation, defaultLineStyle} from "../charts/axes/axes"
-import {OutlierPlot} from "../charts/plots/OutlierPlot"
-import {Tooltip} from "../charts/tooltips/Tooltip"
-import {OutlierPlotTooltipContent} from "../charts/tooltips/OutlierPlotTooltipContent"
-import {type OutlierSeries, outlierSeriesFrom} from "../charts/series/outlierSeries"
+import {
+    AxisInterval,
+    AxisLocation,
+    Chart,
+    ContinuousAxis,
+    defaultLineStyle,
+    defaultMargin,
+    noop,
+    OutlierPlot,
+    OutlierPlotTooltipContent,
+    outlierSeriesFrom,
+    regexFilter,
+    Tooltip,
+    type OutlierSeries,
+} from "stream-charts";
 import {lightTheme, type Theme} from "../ui/Themes.ts"
 import Checkbox from "../ui/Checkbox"
 import {buttonStyle} from "../ui/utils"
-import {defaultMargin} from "../charts/hooks/defaultPlotDimensions"
-import {AxisInterval} from "../charts/axes/AxisInterval"
-import {regexFilter} from "../charts/filters/regexFilter"
 import {INTERPOLATIONS} from "./options/interpolations.ts";
 import {InterpolationControl} from "./controls/InterpolationControl.tsx";
 import {ExpandableControlBar} from "../ui/ExpandableControlBar.tsx";
@@ -41,7 +46,6 @@ import {DROP_AFTER_100_SEC, dropDataOptionForMs} from "./options/dropDataAfter.t
 import {CadenceControl} from "./controls/CadenceControl.tsx";
 import {BufferingControl} from "./controls/BufferingControl.tsx";
 import {DataUpdateRateControl} from "./controls/DataUpdateRateControl.tsx";
-import {noop} from "../charts/utils";
 import {
     baseDataFnFactory,
     DEFAULT_DATA_UPDATE_PERIOD,

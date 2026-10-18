@@ -1,5 +1,5 @@
 import {type JSX} from "react";
-import {formatTime} from "../../charts";
+import {formatTime} from "stream-charts";
 import type {Theme} from "../../ui/Themes.ts";
 
 type Props = {

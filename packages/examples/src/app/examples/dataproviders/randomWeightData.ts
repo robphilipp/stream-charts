@@ -1,8 +1,13 @@
 import {interval, Observable} from "rxjs";
 import {map, scan} from "rxjs/operators";
-import type {Datum, TimeSeries} from "../../charts/series/timeSeries.ts";
-import {initialTimeSeriesChartData, type TimeSeriesChartData} from "../../charts/series/timeSeriesChartData.ts";
-import {type BaseSeries, seriesFrom} from "../../charts/series/baseSeries.ts";
+import {
+    initialTimeSeriesChartData,
+    seriesFrom,
+    type BaseSeries,
+    type Datum,
+    type TimeSeries,
+    type TimeSeriesChartData,
+} from "stream-charts";
 // import {ChartData, Datum, initialChartData, Series, seriesFrom} from "stream-charts";
 
 /**

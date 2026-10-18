@@ -13,22 +13,28 @@ import {
     withFraction,
     withPixels
 } from "react-resizable-grid-layout";
-import type {Datum} from "../charts/series/timeSeries";
-import {type BaseSeries, seriesFrom} from "../charts/series/baseSeries";
-import {Chart} from "../charts/Chart";
-import {AxisLocation, defaultLineStyle} from '../charts/axes/axes';
-import {ContinuousAxis} from "../charts/axes/ContinuousAxis";
-import {Tracker} from "../charts/trackers/Tracker";
-import {Tooltip} from "../charts/tooltips/Tooltip";
-import {PoincarePlotTooltipContent} from "../charts/tooltips/PoincarePlotTooltipContent";
-import {formatNumber, noop} from '../charts/utils';
-import {PoincarePlot} from "../charts/plots/PoincarePlot";
-import type {IterateDatum, IterateSeries} from "../charts/series/iterateSeries";
+import {
+    AxisLocation,
+    Chart,
+    ContinuousAxis,
+    defaultLineStyle,
+    defaultMargin,
+    formatNumber,
+    noop,
+    PoincarePlot,
+    PoincarePlotTooltipContent,
+    seriesFrom,
+    Tooltip,
+    Tracker,
+    TrackerLabelLocation,
+    type BaseSeries,
+    type Datum,
+    type IterateDatum,
+    type IterateSeries,
+} from "stream-charts";
 import * as d3 from "d3";
 import {lightTheme, type Theme} from "../ui/Themes.ts";
 import {buttonStyle} from "../ui/utils";
-import {TrackerLabelLocation} from "../charts/trackers/trackerUtils.ts";
-import {defaultMargin} from "../charts/hooks/defaultPlotDimensions";
 import {DROP_AFTER_20_SEC, dropDataOptionForMs} from "./options/dropDataAfter.ts";
 import {DropDataControl} from "./controls/DropDataControl.tsx";
 import {InterpolationControl} from "./controls/InterpolationControl.tsx";

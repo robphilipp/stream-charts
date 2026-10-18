@@ -2,10 +2,14 @@
  * for the StreamingBarChart
  */
 
-import {type BaseSeries, seriesFrom} from "../../charts/series/baseSeries.ts";
-import {type Datum, datumOf} from "../../charts/series/timeSeries.ts";
-import type {TimeSeriesChartData} from "../../charts/series/timeSeriesChartData.ts";
-import type {OrdinalDatum} from "../../charts/series/ordinalSeries.ts"
+import {
+    datumOf,
+    seriesFrom,
+    type BaseSeries,
+    type Datum,
+    type OrdinalDatum,
+    type TimeSeriesChartData,
+} from "stream-charts";
 import {interval, Observable} from "rxjs";
 import {map, scan} from "rxjs/operators";
 

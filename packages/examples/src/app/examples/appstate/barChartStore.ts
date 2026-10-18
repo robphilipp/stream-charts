@@ -1,14 +1,18 @@
 import type {UseBoundStore} from "zustand";
 import {create, type StoreApi} from 'zustand';
-import type {BaseSeries} from "../../charts/series/baseSeries.ts";
-import {calculateOrdinalStats, type OrdinalDatum} from "../../charts/series/ordinalSeries.ts";
-import {type OrdinalChartData, ordinalsObservable} from "../../charts/observables/ordinals.ts";
+import {
+    calculateOrdinalStats,
+    OrdinalDataSource,
+    ordinalsObservable,
+    type BarPlotZoomState,
+    type BaseSeries,
+    type DataGenerator,
+    type OrdinalChartData,
+    type OrdinalDatum,
+} from "stream-charts";
 import {barDanceDataObservable} from "../dataproviders/randomOrdinalData.ts";
 import {createInitialVisibility} from "../options/visibility.ts";
 import {DEFAULT_DROP_AFTER_10} from "../options/dropDataAfter.ts";
-import type {BarPlotZoomState} from "../../charts/plots/BarPlot.tsx";
-import {OrdinalDataSource} from "../../charts/datasources/ordinalDataSource.ts";
-import type {DataGenerator} from "../../charts/datasources/StreamingDataSource.ts";
 import {devtools} from "zustand/middleware";
 import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceStateSlice.ts";
 import {
