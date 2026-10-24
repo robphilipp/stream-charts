@@ -20,7 +20,7 @@ const seeds = () => [seriesFrom<Datum>('s1', [datumOf(10, 0.3)])]
 function newDataSource(lag: number) {
     return new IteratesDataSource({
         initialData: [seriesFrom<IterateDatum>('s1', []) as IterateSeries],
-        generator: iteratesGenerator(tentMapFn(1.8), lag, seeds()),
+        generator: iteratesGenerator(tentMapFn(1.8), lag, seeds(), UPDATE_PERIOD),
     })
 }
 
@@ -65,7 +65,7 @@ describe('resuming the poincare iteration after a pause', () => {
         dataSource.stop()
         const last = iterates(dataSource).at(-1)!
 
-        dataSource.setGenerator(iteratesGenerator(tentMapFn(1.8), 2, seeds()))
+        dataSource.setGenerator(iteratesGenerator(tentMapFn(1.8), 2, seeds(), UPDATE_PERIOD))
         dataSource.start()
         jest.advanceTimersByTime(5 * UPDATE_PERIOD)
         dataSource.stop()

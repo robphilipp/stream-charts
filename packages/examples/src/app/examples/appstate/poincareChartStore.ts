@@ -26,7 +26,8 @@ import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceSta
  */
 export type IterateFunction = (time: number, xn: number) => Datum
 
-const UPDATE_PERIOD = 50
+// the default time (ms) between iterates
+const DEFAULT_DATA_UPDATE_PERIOD = 50
 
 /**
  * Finds where each series' iteration should start: from the latest iterate the series already
@@ -57,15 +58,17 @@ export function iterationStartsFor(currentSeries: Array<IterateSeries>, seeds: A
  * @param iterateFunction The iterate function
  * @param lagN The lag of the iterates plot (e.g. f[n](x) vs f[n+N](x), where N is the lag)
  * @param seeds The seed (initial) value for each series
+ * @param updatePeriod The time (ms) between iterates
  * @return The data generator
  */
 export const iteratesGenerator = (
     iterateFunction: IterateFunction,
     lagN: number,
-    seeds: Array<TimeSeries>
+    seeds: Array<TimeSeries>,
+    updatePeriod: number
 ): DataGenerator<IterateChartData, IterateSeries> =>
     currentSeries => iteratesObservable(
-        iterateFunctionObservable(iterateFunction, iterationStartsFor(currentSeries, seeds), UPDATE_PERIOD),
+        iterateFunctionObservable(iterateFunction, iterationStartsFor(currentSeries, seeds), updatePeriod),
         lagN
     )
 
@@ -86,6 +89,8 @@ const newDataSource = (initialData: Array<IterateSeries>, dropAfterMs: number): 
 
 type PoincareChartState = {
     dropAfterMs: number
+    // the time (ms) between iterates (picked up, like the function and the lag, on each run)
+    dataUpdatePeriod: number
     selectedInterpolationName: string
     selectedLagN: string
     selectedIterateFunction: string
@@ -105,6 +110,7 @@ type PoincareChartState = {
 
 const initialState: PoincareChartState = {
     dropAfterMs: DEFAULT_DROP_AFTER_20[1],
+    dataUpdatePeriod: DEFAULT_DATA_UPDATE_PERIOD,
     selectedInterpolationName: 'curveStepAfter',
     selectedLagN: 'lag = 1',
     selectedIterateFunction: 'Tent Map',
@@ -121,6 +127,7 @@ const initialState: PoincareChartState = {
 
 type PoincareChartActions = {
     setDropAfterMs: (dropAfterMs: number) => void
+    setDataUpdatePeriod: (dataUpdatePeriod: number) => void
     setSelectedInterpolationName: (name: string) => void
     setSelectedLagN: (name: string) => void
     setSelectedIterateFunction: (name: string) => void
@@ -158,6 +165,7 @@ export const usePoincareChartStore: UseBoundStore<StoreApi<PoincareChartStore>> 
             get().dataSource.setDropDataAfter(dropAfterMs)
             set({dropAfterMs})
         },
+        setDataUpdatePeriod: (dataUpdatePeriod: number) => set({dataUpdatePeriod}),
         setSelectedInterpolationName: (selectedInterpolationName: string) => set({selectedInterpolationName}),
         setSelectedLagN: (selectedLagN: string) => set({selectedLagN}),
         setSelectedIterateFunction: (selectedIterateFunction: string) => set({selectedIterateFunction}),

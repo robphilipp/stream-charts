@@ -37,6 +37,7 @@ import {lightTheme, type Theme} from "../ui/Themes.ts";
 import {buttonStyle} from "../ui/utils";
 import {DROP_AFTER_20_SEC, dropDataOptionForMs} from "./options/dropDataAfter.ts";
 import {DropDataControl} from "./controls/DropDataControl.tsx";
+import {DataUpdateRateControl} from "./controls/DataUpdateRateControl.tsx";
 import {InterpolationControl} from "./controls/InterpolationControl.tsx";
 import {interpolationFactoryFor} from "./options/interpolations.ts";
 import {iteratesGenerator, type IterateFunction, usePoincareChartStore} from "./appstate/poincareChartStore.ts";
@@ -210,6 +211,8 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
     const setSelectedInterpolationName = usePoincareChartStore(state => state.setSelectedInterpolationName)
     const dropAfterMs = usePoincareChartStore(state => state.dropAfterMs)
     const setDropAfterMs = usePoincareChartStore(state => state.setDropAfterMs)
+    const dataUpdatePeriod = usePoincareChartStore(state => state.dataUpdatePeriod)
+    const setDataUpdatePeriod = usePoincareChartStore(state => state.setDataUpdatePeriod)
     const selectedLagN = usePoincareChartStore(state => state.selectedLagN)
     const setSelectedLagN = usePoincareChartStore(state => state.setSelectedLagN)
     const selectedIterateFunction = usePoincareChartStore(state => state.selectedIterateFunction)
@@ -337,9 +340,9 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
 
     function handleRunPauseClick(): void {
         if (!running) {
-            // each run iterates the selected function, at the selected lag, continuing from where the
-            // iteration left off (or from the seeds, when there's no data yet)
-            dataSource.setGenerator(iteratesGenerator(iterateFunction, lagN, seeds))
+            // each run iterates the selected function, at the selected lag and update rate, continuing
+            // from where the iteration left off (or from the seeds, when there's no data yet)
+            dataSource.setGenerator(iteratesGenerator(iterateFunction, lagN, seeds, dataUpdatePeriod))
             startTimeRef.current = new Date().valueOf()
             setElapsed(0)
             intervalRef.current = setInterval(() => setElapsed(new Date().valueOf() - startTimeRef.current), 1000)
@@ -428,6 +431,12 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
                                 theme={theme}
                                 value={dropDataOptionForMs(dropAfterMs).getOrElse(DROP_AFTER_20_SEC)}
                                 handleDropAfterChange={setDropAfterMs}
+                                disabled={running}
+                            />
+                            <DataUpdateRateControl
+                                theme={theme}
+                                dataUpdatePeriod={dataUpdatePeriod}
+                                handleDataUpdatePeriodChange={setDataUpdatePeriod}
                                 disabled={running}
                             />
                             <LagDisplay
