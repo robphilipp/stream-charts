@@ -50,9 +50,9 @@ To state the obvious, you're in the **Intro** tab, which provides a series of pa
 You use the navigation bar to navigate between these pages. You can see the navigation bar up there **&#x2191;**, and it is shown in figure 1. 
 
 <figure>
-    <img src="./images/navigation-bar.png" alt="Navigation Bar" width="350px">
+    <img src="./images/navigation-bar.png" alt="Navigation Bar, with its drag handle and table-of-contents button highlighted" width="400px">
     <figcaption>
-        <b>Figure 1</b> The navigation bar. If it gets in the way, you can move it.
+        <b>Figure 1</b> The navigation bar. Its table-of-contents button takes you straight to any page. And if the bar gets in the way, drag it by its handle to move it.
     </figcaption>
 </figure>
 
