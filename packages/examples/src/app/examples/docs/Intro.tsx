@@ -38,6 +38,7 @@ import {
 } from "../../ui/Icons.tsx";
 import remarkGfm from "remark-gfm";
 import {useThemeStore} from "../appstate/themeStore.ts";
+import {useIntroStore} from "../appstate/introStore.ts";
 
 const pages = [
     intro_page,
@@ -127,6 +128,11 @@ export default function Intro() {
     const {page} = introRouteApi.useSearch()
     const pageNum = Math.min(Math.max(0, page), numPages - 1)
     const navigate = useNavigate()
+
+    // remembers the page, so that the Intro tab brings the user back to it after visiting another
+    // tab (however they got to the page: the navigation bar, the table of contents, or back/forward)
+    const setLastPage = useIntroStore(state => state.setPage)
+    useEffect(() => setLastPage(pageNum), [pageNum, setLastPage])
 
     const {height} = useGridCell()
     const cssStyle = style(theme, height)

@@ -22,6 +22,7 @@ import {StreamingPoincareChart} from "./examples/StreamingPoincareChart";
 import {StreamingBarChart} from "./examples/StreamingBarChart";
 import {StreamingOutlierChart} from "./examples/StreamingOutlierChart";
 import {useThemeStore} from "./examples/appstate/themeStore.ts";
+import {useIntroStore} from "./examples/appstate/introStore.ts";
 import {TABS, initialBarData, initialIterateData, initialScatterData, initialSpikeData} from "./routeData";
 
 /**
@@ -32,6 +33,8 @@ import {TABS, initialBarData, initialIterateData, initialScatterData, initialSpi
  */
 export function TabNav(): JSX.Element {
     const {theme} = useThemeStore()
+    // the intro page the user was last on, which the Intro tab goes back to
+    const introPage = useIntroStore(state => state.page)
     const styleOverride: CSSProperties = {
         backgroundColor: theme.backgroundColor,
         color: theme.color,
@@ -60,6 +63,7 @@ export function TabNav(): JSX.Element {
                 <Link
                     key={`tab-${tab.name}`}
                     to={tab.path}
+                    search={tab.path === "/intro" ? {page: introPage} : undefined}
                     // keep the tab active across all of its substates (e.g., /intro?page=2)
                     activeOptions={{includeSearch: false}}
                     style={isHovered === tab.name || isFocused === tab.name ?
