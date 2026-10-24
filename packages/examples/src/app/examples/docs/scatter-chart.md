@@ -4,6 +4,13 @@ The scatter chart is the workhorse of the bunch. It plots any number of time-ser
 
 #### what you're looking at
 
+<figure>
+    <img src="./images/scatter-chart.png" alt="The scatter chart example: ten random-walk series, with two x-axes, two y-axes, and an external legend">
+    <figcaption>
+        <b>Figure 4</b> The scatter chart, with its legend. Its four axes are the bottom "Time (ms)" and top "Expanded Time (ms)" x-axes, and the linear left and logarithmic right y-axes. The two thicker lines are "Series 2" and "Series 3", which use the top x-axis.
+    </figcaption>
+</figure>
+
 The example plots ten series of random data – each one a random walk, nudging its previous value up or down a bit with every new point. Think of them as, say, the weights of ten neurons drifting during learning. Or don't. They're random &#x1F937;.
 
 What's more interesting is the axes. The chart has *four* of them: two x-axes and two y-axes.
@@ -16,6 +23,13 @@ Each series is assigned to one x-axis and one y-axis. Most of the series use the
 Assigning series to axes is done through the plot's `axisAssignments` property – a map from the series name to its x- and y-axis IDs.
 
 #### controls just for this chart
+
+<figure>
+    <img src="./images/scatter-controls.png" alt="The scatter chart's expanded control panel, with the controls just for the scatter chart outlined: auto-scale y-axes, markers, interpolation, and legend" width="500px">
+    <figcaption>
+        <b>Figure 5</b> The scatter chart's control panel, opened with the expand button. The outlined controls are just for the scatter chart, and the rest are the common controls from the previous page.
+    </figcaption>
+</figure>
 
 - **markers** – Draws a small circle on each data point. When checked, a **hide while running** checkbox appears: markers on hundreds of fast-moving points can get busy, so by default they're only shown while the chart is paused. *Wired to:* the plot's `markerRadius` and `hideMarkersWhileRunning` properties.
 - **interpolation drop-down** – How the line gets from one point to the next: linear, natural, monotone, three flavors of step, bump, or no line at all (handy with markers). These are [d3 curves](https://d3js.org/d3-shape/curve), so you can use any d3 curve factory in your own code. *Wired to:* the plot's `interpolation` property.

@@ -88,7 +88,7 @@ export function ExpandableControlBar(props: Props): JSX.Element {
                 zIndex: 1000,
                 borderRadius: borderRadius,
 
-                backgroundColor: expanded ? `rgba(from ${backgroundColor}, r g b / 0.5)` : backgroundColor,
+                backgroundColor: expanded ? `rgb(from ${backgroundColor} r g b / 0.5)` : backgroundColor,
                 backdropFilter: expanded ? "blur(10px)" : "blur(2px)",
                 WebkitBackdropFilter: expanded ? "blur(10px)" : "blur(2px)",
                 // like the floating navigation bar: lying flat (a border, no shadow) until the mouse
