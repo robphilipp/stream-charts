@@ -30,7 +30,7 @@ A lot of the controls are disabled while the chart is running. Those change how 
 |--------------------|:-------:|:------:|:--------:|:---:|:-------:|
 | drop-after         |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |
 | Number of Series   |    ✓    |   ✓    |          |  ✓  |         |
-| Update Rate        |    ✓    |   ✓    |          |  ✓  |    ✓    |
+| Update Rate        |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |
 | Buffering          |    ✓    |   ✓    |          |  ✓  |    ✓    |
 | Cadence            |    ✓    |   ✓    |          |     |    ✓    |
 | Update Lag         |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |

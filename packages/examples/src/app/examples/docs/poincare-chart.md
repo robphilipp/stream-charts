@@ -24,9 +24,9 @@ The chart has a tracker on *both* axes, so with the tracker on, you get a crossh
 - **interpolation drop-down** – How the line gets from one point to the next, just like the scatter chart's. "No Line" leaves only the points, which shows the structure most clearly.
 - **colorize lines** – Colors the line by age, one step per point: it starts in the **from** color and sweeps through the colors of the spectrum to the **to** color over **steps** points, then sweeps back, and so on. Each point takes the color of the line leaving it, and keeps its color as old points are dropped, so you can follow the orbit's path – with a small number of steps, you'll see the colors cycle; with the starting 100,000, the color drifts slowly over a long run. Pick the two colors with the swatches beside the checkbox. Its header icon shows the line in your colors when it's on. *Wired to:* the plot's `colorizeLines`, `lineStartColor`, `lineEndColor`, and `lineColorSteps` properties.
 
-The function, its parameters, and the lag are all picked up when you click **Run** – the example hands the data source a new generator for them each time it starts. So pause, change them, and run again. The iteration carries on from where it left off, using the new settings.
+The function, its parameters, the lag, and the update rate are all picked up when you click **Run** – the example hands the data source a new generator for them each time it starts. So pause, change them, and run again. The iteration carries on from where it left off, using the new settings.
 
-You'll notice there's no **Number of Series**, **Update Rate**, or **Buffering** here: the example plots a single series of iterates.
+Like the other examples, the panel has an **Update Rate (ms)** field – here, it's the time between iterates (50 ms, or 20 iterates a second, to start with). Slow it down to watch the orbit hop from point to point, or speed it up to fill in the shape faster. You'll notice there's no **Number of Series** or **Buffering** here, though: the example plots a single series of iterates.
 
 #### where the code lives
 

@@ -76,6 +76,27 @@ describe('resuming the poincare iteration after a pause', () => {
         expect(next.iterateN).toBeCloseTo(last.iterateN_1, 12)
     })
 
+    it('continues at the new update rate when the rate changes while paused', () => {
+        const dataSource = newDataSource(1)
+        dataSource.start()
+        jest.advanceTimersByTime(6 * UPDATE_PERIOD)
+        dataSource.stop()
+        const count = iterates(dataSource).length
+
+        const slower = 4 * UPDATE_PERIOD
+        dataSource.setGenerator(iteratesGenerator(tentMapFn(1.8), 1, seeds(), slower))
+        dataSource.start()
+        jest.advanceTimersByTime(5 * slower)
+        dataSource.stop()
+
+        // one iterate per (new) update period, each one (new) update period after the one before
+        const resumed = iterates(dataSource).slice(count - 1)
+        expect(resumed.length).toBeGreaterThan(2)
+        resumed.slice(1).forEach((iterate, index) =>
+            expect(iterate.time - resumed[index].time).toBeCloseTo(slower, 9)
+        )
+    })
+
     it('starts from the seeds when a series has no iterates yet', () => {
         const starts = iterationStartsFor([seriesFrom<IterateDatum>('s1', []) as IterateSeries], seeds())
         expect(Array.from(starts[0].data)).toEqual([datumOf(10, 0.3)])
