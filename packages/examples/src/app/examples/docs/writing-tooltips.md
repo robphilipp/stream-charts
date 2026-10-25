@@ -300,3 +300,5 @@ The outlier chart also has a shortcut, which the tooltips page mentioned: put yo
 - **Copy what you need out of the series.** The series is the data source's live data, which keeps changing as data arrives (and gets dropped). That's why the tooltips above pull out the values they show, rather than keeping the series around.
 - **One tooltip per chart.** A chart has one content provider at a time, so put one tooltip component inside the `<Tooltip>`. When you need different content for different elements, switch on `providerId` (or on the metadata), as the bar and outlier tooltips do.
 - **The highlighting is the plot's job.** The hovered line, spike, or point is highlighted by the plot, whatever the tooltip shows.
+
+Next up: a full-featured scatter chart, from sensor data.
