@@ -6,6 +6,13 @@ Why would you want that? Because it shows you structure that a plain time-series
 
 #### what you're looking at
 
+<figure>
+    <img src="./images/poincare-chart.png" alt="The Poincaré chart example: ten seconds of the tent map at a lag of 1, with colorized lines">
+    <figcaption>
+        <b>Figure 8</b> The Poincaré chart after running the tent map for ten seconds (at a lag of 1), with <b>colorize lines</b> on. The orbit circles the map's fixed point (about 0.64, where the diagonal crosses the tent), and the line's color drifts as the iterates come in.
+    </figcaption>
+</figure>
+
 The example generates its time-series by *iterating* a function: start with some value `x`, compute `f(x)`, then `f(f(x))`, and so on. The example offers three classic functions, each with a parameter or two you can change:
 
 - **Tent Map** – `f(x) = µ · min(x, 1 - x)`, with `µ` between 0 and 2. With a lag of 1, every point lands on the graph of the map itself – the tent it's named for. Try a lag of 2 and the tent splits in two.
@@ -18,11 +25,18 @@ The chart has a tracker on *both* axes, so with the tracker on, you get a crossh
 
 #### controls just for this chart
 
+<figure>
+    <img src="./images/poincare-controls.png" alt="The Poincaré chart's expanded control panel, with the controls just for the Poincaré chart outlined: interpolation, colorize lines, lag, iterate function, and its parameter" width="500px">
+    <figcaption>
+        <b>Figure 9</b> The Poincaré chart's control panel, opened with the expand button. The outlined controls are just for the Poincaré chart, and the rest are the common controls from the previous page.
+    </figcaption>
+</figure>
+
 - **lag drop-down** – The lag, from 1 to 5. The y-axis label changes to match (`f[n+lag](x)`). Disabled while the chart is running.
 - **iterate-function drop-down** – Selects the Tent, Logistic, or Gauss map. Selecting a different function clears the chart, since the old points have nothing to do with the new function. Disabled while the chart is running.
-- **function parameters** – The fields next to the drop-down (`µ`, `r`, or `α` and `β`) set the selected function's parameters.
+- **function parameters** – The fields below the iterate-function drop-down (`µ`, `r`, or `α` and `β`) set the selected function's parameters.
 - **interpolation drop-down** – How the line gets from one point to the next, just like the scatter chart's. "No Line" leaves only the points, which shows the structure most clearly.
-- **colorize lines** – Colors the line by age, one step per point: it starts in the **from** color and sweeps through the colors of the spectrum to the **to** color over **steps** points, then sweeps back, and so on. Each point takes the color of the line leaving it, and keeps its color as old points are dropped, so you can follow the orbit's path – with a small number of steps, you'll see the colors cycle; with the starting 100,000, the color drifts slowly over a long run. Pick the two colors with the swatches beside the checkbox. Its header icon shows the line in your colors when it's on. *Wired to:* the plot's `colorizeLines`, `lineStartColor`, `lineEndColor`, and `lineColorSteps` properties.
+- **colorize lines** – Colors the line by age, one step per point: it starts in the **from** color and sweeps through the colors of the spectrum to the **to** color over **steps** points, then sweeps back, and so on. Each point takes the color of the line leaving it, and keeps its color as old points are dropped, so you can follow the orbit's path – with a small number of steps, you'll see the colors cycle; with the starting 1000 (about 50 seconds a sweep, at 20 iterates a second), the color drifts slowly over a long run. Pick the two colors with the swatches beside the checkbox. Its header icon shows the line in your colors when it's on. *Wired to:* the plot's `colorizeLines`, `lineStartColor`, `lineEndColor`, and `lineColorSteps` properties.
 
 The function, its parameters, the lag, and the update rate are all picked up when you click **Run** – the example hands the data source a new generator for them each time it starts. So pause, change them, and run again. The iteration carries on from where it left off, using the new settings.
 
