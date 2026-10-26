@@ -2,14 +2,12 @@
 
 Let's follow a data point from the moment it's created to the moment it shows up on the screen. Along the way, it passes from the example to the library – and knowing where that hand-off happens is most of what you need to know to build your own streaming chart.
 
-```
- the example                          the library
-───────────────────────────────────────────────────────────────────────────────
- data generator  ──────────▶  data source  ──────────▶  view driver  ──▶  plot
- (an RxJS observable)         (held by the example's    (one per mounted
-                               store; started and        plot)
-                               stopped by Run/Pause)
-```
+<figure>
+    <img src="./images/data-flow.png" alt="How the data flows: the example's data generator (an RxJS observable) feeds the library's data source (held by the example's store, started and stopped by Run/Pause), which feeds a view driver (one per mounted plot), which feeds the plot">
+    <figcaption>
+        <b>Figure 14</b> How the data flows, from the example's data generator, through the library's data source and view driver, to the plot.
+    </figcaption>
+</figure>
 
 #### 1. the data generator (the example)
 
