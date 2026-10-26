@@ -58,24 +58,6 @@ import {CommonControls} from "./controls/CommonControls.tsx";
 import {LagDisplay} from "./controls/LagDisplay.tsx";
 import {Divider} from "../ui/Divider.tsx";
 import {DropDown, type DropDownOption} from "../ui/DropDown.tsx";
-// import {
-//     assignAxes,
-//     AxisLocation,
-//     Chart,
-//     ChartData,
-//     ContinuousAxis,
-//     defaultLineStyle,
-//     defaultMargin,
-//     formatNumber, formatTime,
-//     regexFilter,
-//     PoincarePlot,
-//     PoincarePlotTooltipContent,
-//     Series,
-//     seriesFrom,
-//     Tooltip,
-//     Tracker,
-//     TrackerLabelLocation
-// } from "stream-charts";
 
 //
 // By default, the iterates plot shows f[n](x) versus f[n+1](x). Generally, given a lag "m",

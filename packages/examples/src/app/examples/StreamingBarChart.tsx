@@ -70,26 +70,6 @@ import {BufferingControl} from "./controls/BufferingControl.tsx";
 import {DataUpdateRateControl} from "./controls/DataUpdateRateControl.tsx";
 import {NumberOfSeriesControl} from "./controls/NumberOfSeriesControl.tsx";
 import {useBarChartStore} from "./appstate/barChartStore.ts";
-// import {
-//     AxisLocation,
-//     CategoryAxis,
-//     Chart,
-//     ChartData,
-//     ContinuousAxis,
-//     Datum,
-//     defaultLineStyle,
-//     defaultMargin,
-//     formatNumber,
-//     formatTime,
-//     RasterPlot,
-//     RasterPlotTooltipContent,
-//     regexFilter,
-//     Series,
-//     seriesFrom,
-//     Tooltip,
-//     Tracker,
-//     TrackerLabelLocation
-// } from "stream-charts"
 
 /**
  * The properties

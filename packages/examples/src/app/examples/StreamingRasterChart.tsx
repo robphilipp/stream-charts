@@ -54,26 +54,6 @@ import {DataUpdateRateControl} from "./controls/DataUpdateRateControl.tsx";
 import {NumberOfSeriesControl} from "./controls/NumberOfSeriesControl.tsx";
 import {initialRandomSpikeData} from "./dataproviders/randomSpikeData.ts";
 import {SPIKE_MEAN_VALUE, SPIKE_VALUE_SPREAD, useRasterChartStore} from "./appstate/rasterChartStore.ts";
-// import {
-//     AxisLocation,
-//     CategoryAxis,
-//     Chart,
-//     ChartData,
-//     ContinuousAxis,
-//     Datum,
-//     defaultLineStyle,
-//     defaultMargin,
-//     formatNumber,
-//     formatTime,
-//     RasterPlot,
-//     RasterPlotTooltipContent,
-//     regexFilter,
-//     Series,
-//     seriesFrom,
-//     Tooltip,
-//     Tracker,
-//     TrackerLabelLocation
-// } from "stream-charts"
 
 /**
  * The properties
