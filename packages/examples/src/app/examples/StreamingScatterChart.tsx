@@ -63,7 +63,7 @@ const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
 const X1_AXIS_ID = 'x-axis-1'
 const X2_AXIS_ID = 'x-axis-2'
 
-// The y-axes' domains. With auto-scaling on, they start out narrower, and grow (up to the limits)
+// The y-axes' domains. With auto-scaling on, they start out narrower and grow (up to the limits)
 // as the data wanders beyond them -- the example's data never leaves [10, 1000], so with the
 // usual domains, there would never be anything to grow for.
 const Y1_DOMAIN: [number, number] = [0, 1000]
