@@ -11,6 +11,7 @@ import {
     type BaseAxis,
     type ContinuousNumericAxis,
     AxisType,
+    checkAxisType,
     ordinalAxisIntervals,
     ordinalAxisRanges,
     ordinalAxisZoomHandler,
@@ -515,16 +516,10 @@ export function BarPlot(props: Props): null {
             cc.requestRedraw()
         },
         [
-            chartId, plotDimensions, margin,
-            axisAssignments, xAxesState, yAxesState,
-            barMargin, seriesStyles, barSeriesStyle,
-            seriesFilter,
-            showValueLines,
-            showMinMaxBars,
-            showMeanValueLines,
-            showWindowedMeanValueLines,
-            showWindowedMinMaxBars,
-            axisRangeFor, updateAxisRanges
+            chartId, plotDimensions, axisAssignments, xAxesState, yAxesState, barMargin, seriesStyles,
+            barSeriesStyle, seriesFilter, showValueLines, showMinMaxBars, showMeanValueLines,
+            showWindowedMeanValueLines, showWindowedMinMaxBars, axisRangeFor, updateAxisRanges,
+            margin.left, margin.top
         ]
     )
 
@@ -658,7 +653,7 @@ export function BarPlot(props: Props): null {
             })
             onZoomStateChange({k: d3.zoomTransform(cc.canvas).k, ranges})
         },
-        [onZoomStateChange, xAxesState]
+        [onZoomStateChange, xAxesState.axes]
     )
 
     // panning (dragging) and zooming (the mouse wheel) -- see `useCanvasZoomPan`. The ordinal zoom
@@ -1123,14 +1118,10 @@ function axesFor(
 ): [xAxis: OrdinalStringAxis, yAxis: ContinuousNumericAxis] {
     const axes = axisAssignments.get(seriesName)
     const xAxis = xAxisFor(axes?.xAxis || "")
-    if (xAxis && xAxis.axisType !== AxisType.OrdinalString) {
-        throw Error("Bar plot requires that x-axis be of type CategoryAxis")
-    }
+    checkAxisType("BarPlot", "x", xAxis, AxisType.OrdinalString)
     const xAxisCategory = xAxis as OrdinalStringAxis
     const yAxis = yAxisFor(axes?.yAxis || "")
-    if (yAxis && yAxis.axisType !== AxisType.ContinuousNumeric) {
-        throw Error("Bar plot requires that y-axis be of type ContinuousNumericAxis")
-    }
+    checkAxisType("BarPlot", "y", yAxis, AxisType.ContinuousNumeric)
     const yAxisContinuous = yAxis as ContinuousNumericAxis
     return [xAxisCategory, yAxisContinuous]
 }

@@ -5,16 +5,17 @@ import * as d3 from "d3";
 import {clipToArea} from "./plot";
 import {
     axesZoomHandler,
-    type BaseAxis,
     AxisType,
+    type BaseAxis,
+    checkAxisType,
     type ContinuousNumericAxis,
     defaultLineStyle,
     panHandler2D,
     type SeriesLineStyle
 } from "../axes/axes";
 import type {CanvasContext} from "../d3types";
-import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
-import {formatTime, fontStringFor, noop, textDimensions} from "../utils";
+import {canvasLocalPoint, seriesAt, type SeriesGeometry} from "./hitTesting";
+import {fontStringFor, formatTime, noop, textDimensions} from "../utils";
 import type {Dimensions} from "../styling/margins";
 import {iteratesViewDriverFor} from "../subscriptions/viewDrivers";
 import {useDataSource, useDataSourceRunning, useInitialData, useStreamingSettings} from "../hooks/useDataSource";
@@ -357,8 +358,12 @@ export function PoincarePlot(props: Props): null {
                 // todo only want to do this once, on the first plot, and then leave it,
                 //     unless the axes are updated, also needs to be removed/added when the
                 //     plot size changes
-                const xAxis = xAxesState.defaultAxis().getOrThrow(() => new Error('No default axis found')) as ContinuousNumericAxis
-                const yAxis = yAxesState.defaultAxis().getOrThrow(() => new Error('No default axis found')) as ContinuousNumericAxis
+                // (the same, checked axes as the series' below: the default x- and y-axes)
+                const [xAxis, yAxis] = axesFor(
+                    axisId => xAxesState.axisFor(axisId).getOrUndefined(),
+                    axisId => yAxesState.axisFor(axisId).getOrUndefined(),
+                )
+                if (xAxis === undefined || yAxis === undefined) throw new Error('No default axis found')
                 // ---
 
                 const [xStart, xEnd] = xAxesState.axisDefaultId()
@@ -453,8 +458,7 @@ export function PoincarePlot(props: Props): null {
                             } else if (isNeighborOfHovered) {
                                 // a neighbor of the hovered point: enlarged, brighter fill, stroked,
                                 // with a floating "n = i; t = X ms" label above it
-                                const brighterColor = d3.rgb(seriesLineStyle.highlightColor).brighter(0.7).toString()
-                                context2D.fillStyle = brighterColor
+                                context2D.fillStyle = d3.rgb(seriesLineStyle.highlightColor).brighter(0.7).toString()
                                 context2D.strokeStyle = seriesLineStyle.color
                                 context2D.lineWidth = seriesLineStyle.lineWidth
                                 context2D.beginPath()
@@ -506,11 +510,9 @@ export function PoincarePlot(props: Props): null {
             cc.requestRedraw()
         },
         [
-            chartId, onUpdateChartTime, plotDimensions, margin,
-            xAxesState, yAxesState,
-            seriesStyles, seriesFilter, showPoints,
-            interpolation, backgroundColor,
-            colorizeLines, lineStartColor, lineEndColor, lineColorSteps, dataSource,
+            chartId, onUpdateChartTime, plotDimensions, xAxesState, yAxesState, seriesStyles, seriesFilter,
+            showPoints, interpolation, backgroundColor, colorizeLines, lineStartColor, lineEndColor,
+            lineColorSteps, dataSource, margin.left, margin.top
         ]
     )
 
@@ -994,12 +996,8 @@ function axesFor(
 ): [xAxis: ContinuousNumericAxis, yAxis: ContinuousNumericAxis] {
     const xAxis = xAxisFor("")
     const yAxis = yAxisFor("")
-    if (xAxis && xAxis.axisType !== AxisType.ContinuousNumeric) {
-        throw Error("Poincare plot requires that x-axis be of type LinearAxis")
-    }
-    if (yAxis && yAxis.axisType !== AxisType.ContinuousNumeric) {
-        throw Error("Poincare plot requires that y-axis be of type LinearAxis")
-    }
+    checkAxisType("PoincarePlot", "x", xAxis, AxisType.ContinuousNumeric)
+    checkAxisType("PoincarePlot", "y", yAxis, AxisType.ContinuousNumeric)
     const xAxisLinear = xAxis as ContinuousNumericAxis
     const yAxisLinear = yAxis as ContinuousNumericAxis
     return [xAxisLinear, yAxisLinear]

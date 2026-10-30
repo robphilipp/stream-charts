@@ -16,6 +16,7 @@ import {growAutoScaledYAxes, useAutoScaleRestart} from "./autoScaleYAxes"
 import {
     type BaseAxis,
     AxisType,
+    checkAxisType,
     type ContinuousNumericAxis,
     defaultLineStyle,
     type SeriesLineStyle
@@ -381,13 +382,9 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
             cc.requestRedraw()
         },
         [
-            chartId, plotDimensions, margin,
-            axisAssignments,
-            xAxesState, yAxesState,
-            seriesStyles, seriesFilter, interpolation,
-            bandOpacity, bandOpacityStep, markerRadius, outlierMarkerColors, hoveredSeriesName,
-            running,
-            axisRangeFor, updateAxisRanges
+            chartId, plotDimensions, axisAssignments, xAxesState, yAxesState, seriesStyles, seriesFilter,
+            interpolation, bandOpacity, markerRadius, outlierMarkerColors, hoveredSeriesName, running,
+            axisRangeFor, updateAxisRanges, margin.left, margin.top
         ]
     )
 
@@ -616,12 +613,8 @@ function axesFor(
     const assigned = axisAssignments.get(seriesName)
     const xAxisRaw = xAxisFor(assigned?.xAxis || "")
     const yAxisRaw = yAxisFor(assigned?.yAxis || "")
-    if (xAxisRaw && xAxisRaw.axisType !== AxisType.ContinuousNumeric) {
-        throw Error("Outlier plot requires that x-axis be of type ContinuousNumericAxis")
-    }
-    if (yAxisRaw && yAxisRaw.axisType !== AxisType.ContinuousNumeric) {
-        throw Error("Outlier plot requires that y-axis be of type ContinuousNumericAxis")
-    }
+    checkAxisType("OutlierPlot", "x", xAxisRaw, AxisType.ContinuousNumeric)
+    checkAxisType("OutlierPlot", "y", yAxisRaw, AxisType.ContinuousNumeric)
     const xAxis = xAxisRaw as ContinuousNumericAxis | undefined
     const yAxis = yAxisRaw as ContinuousNumericAxis | undefined
     return [xAxis, yAxis]

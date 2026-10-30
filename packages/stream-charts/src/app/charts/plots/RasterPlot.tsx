@@ -9,6 +9,7 @@ import type {Datum, TimeSeries} from "../series/timeSeries";
 import {
     type BaseAxis,
     AxisType,
+    checkAxisType,
     type ContinuousNumericAxis,
     defaultLineStyle,
     type OrdinalStringAxis,
@@ -287,12 +288,8 @@ export function RasterPlot(props: Props): null {
             cc.requestRedraw()
         },
         [
-            axisAssignments, chartId, margin,
-            plotDimensions,
-            seriesFilter, seriesStyles,
-            xAxesState, yAxesState,
-            spikeMargin,
-            hoveredSeriesName,
+            axisAssignments, chartId, plotDimensions, seriesFilter, seriesStyles, xAxesState, yAxesState,
+            spikeMargin, hoveredSeriesName, margin.left, margin.top
         ]
     )
 
@@ -438,14 +435,10 @@ function axesFor(
 ): [xAxis: ContinuousNumericAxis, yAxis: OrdinalStringAxis] {
     const axes = axisAssignments.get(seriesName)
     const xAxis = xAxisFor(axes?.xAxis || "")
-    if (xAxis && xAxis.axisType !== AxisType.ContinuousNumeric) {
-        throw Error("Raster plot requires that x-axis be of type LinearAxis")
-    }
+    checkAxisType("RasterPlot", "x", xAxis, AxisType.ContinuousNumeric)
     const xAxisLinear = xAxis as ContinuousNumericAxis
     const yAxis = yAxisFor(axes?.yAxis || "")
-    if (yAxis && yAxis.axisType !== AxisType.OrdinalString) {
-        throw Error("Raster plot requires that y-axis be of type CategoryAxis")
-    }
+    checkAxisType("RasterPlot", "y", yAxis, AxisType.OrdinalString)
     const yAxisCategory = yAxis as OrdinalStringAxis
     return [xAxisLinear, yAxisCategory]
 }

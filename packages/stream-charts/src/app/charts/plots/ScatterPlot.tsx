@@ -14,6 +14,7 @@ import type {Datum, TimeSeries} from "../series/timeSeries";
 import {
     type BaseAxis,
     AxisType,
+    checkAxisType,
     type ContinuousNumericAxis,
     defaultLineStyle,
     type SeriesLineStyle
@@ -462,13 +463,9 @@ export function ScatterPlot(props: Props): null {
             cc.requestRedraw()
         },
         [
-            chartId, plotDimensions, margin,
-            axisAssignments,
-            xAxesState, yAxesState,
-            seriesStyles, seriesFilter, interpolation,
-            hoveredSeriesName, markerRadius, running, hideMarkersWhileRunning,
-            axisRangeFor, updateAxisRanges,
-            color, backgroundColor
+            chartId, plotDimensions, axisAssignments, xAxesState, yAxesState, seriesStyles, seriesFilter,
+            interpolation, hoveredSeriesName, markerRadius, running, hideMarkersWhileRunning, axisRangeFor,
+            updateAxisRanges, color, backgroundColor, margin.left, margin.top
         ]
     )
 
@@ -646,12 +643,8 @@ function axesFor(
     const axes = axisAssignments.get(seriesName)
     const xAxis = xAxisFor(axes?.xAxis || "")
     const yAxis = yAxisFor(axes?.yAxis || "")
-    if (xAxis && xAxis.axisType !== AxisType.ContinuousNumeric) {
-        throw Error("Scatter plot requires that x-axis be of type LinearAxis")
-    }
-    if (yAxis && yAxis.axisType !== AxisType.ContinuousNumeric) {
-        throw Error("Scatter plot requires that y-axis be of type LinearAxis")
-    }
+    checkAxisType("ScatterPlot", "x", xAxis, AxisType.ContinuousNumeric)
+    checkAxisType("ScatterPlot", "y", yAxis, AxisType.ContinuousNumeric)
     const xAxisLinear = xAxis as ContinuousNumericAxis
     const yAxisLinear = yAxis as ContinuousNumericAxis
     return [xAxisLinear, yAxisLinear]

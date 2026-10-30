@@ -114,6 +114,32 @@ export const AxisType = {
 export type AxisType = (typeof AxisType)[keyof typeof AxisType]
 
 /**
+ * The axis component that creates each type of axis (with its article), for messages about axes
+ */
+const AXIS_COMPONENTS: Record<AxisType, string> = {
+    [AxisType.ContinuousNumeric]: "a <ContinuousAxis> (or an <EmptyAxis>)",
+    [AxisType.OrdinalString]: "an <OrdinalAxis>",
+}
+
+/**
+ * Checks that a plot's axis is of the type the plot needs (e.g. a bar plot needs an ordinal x-axis).
+ * A missing axis passes, since the plots already skip the series whose axes aren't found.
+ * @param plotName The name of the plot's component (e.g. "RasterPlot")
+ * @param dimension Whether the axis is the plot's x-axis or its y-axis
+ * @param axis The axis (`undefined` when it isn't found)
+ * @param expected The axis type the plot needs
+ * @throws Error when the axis isn't of the expected type, naming the axis component it needs to be
+ */
+export function checkAxisType(plotName: string, dimension: 'x' | 'y', axis: BaseAxis | undefined, expected: AxisType): void {
+    if (axis !== undefined && axis.axisType !== expected) {
+        throw Error(
+            `<${plotName}> needs its ${dimension}-axis to be ${AXIS_COMPONENTS[expected]}, but the ` +
+            `${dimension}-axis "${axis.axisId}" is ${AXIS_COMPONENTS[axis.axisType]}`
+        )
+    }
+}
+
+/**
  * The base interface that all Axes must implement. Each axis must have a unique ID and a location
  * (top, bottom, left, right). Under the old SVG-backed implementation this also carried a
  * `selection`; that's gone now that axes draw onto a shared canvas instead of owning their own DOM

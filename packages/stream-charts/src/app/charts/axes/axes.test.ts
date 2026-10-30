@@ -9,7 +9,9 @@ import {
     axesZoomHandler,
     AxisLocation,
     AxisType,
+    type BaseAxis,
     calculateConstrainedZoomFor,
+    checkAxisType,
     calculateOrdinalConstrainedZoomFor,
     calculateOrdinalPanFor,
     calculatePanFor,
@@ -559,5 +561,27 @@ describe('continuousAxisIntervals/ordinalAxisIntervals', () => {
         const result = ordinalAxisIntervals(axes).get('x-1')
         expect(result?.interval.equalsInterval(0, 500)).toBe(true)
         expect(result?.categories).toEqual(['a', 'b'])
+    })
+})
+
+describe('checking that a plot has the axis types it needs', () => {
+    const axis = (axisId: string, axisType: AxisType): BaseAxis => ({axisId, location: AxisLocation.Left, axisType})
+
+    it('accepts an axis of the expected type', () => {
+        expect(() => checkAxisType('BarPlot', 'x', axis('x-1', AxisType.OrdinalString), AxisType.OrdinalString)).not.toThrow()
+        expect(() => checkAxisType('ScatterPlot', 'y', axis('y-1', AxisType.ContinuousNumeric), AxisType.ContinuousNumeric)).not.toThrow()
+    })
+
+    it('accepts a missing axis (the plots skip series whose axes are missing)', () => {
+        expect(() => checkAxisType('RasterPlot', 'y', undefined, AxisType.OrdinalString)).not.toThrow()
+    })
+
+    it('names the plot, the axis, and the axis components when the type is wrong', () => {
+        expect(() => checkAxisType('RasterPlot', 'y', axis('right', AxisType.ContinuousNumeric), AxisType.OrdinalString)).toThrow(
+            '<RasterPlot> needs its y-axis to be an <OrdinalAxis>, but the y-axis "right" is a <ContinuousAxis> (or an <EmptyAxis>)'
+        )
+        expect(() => checkAxisType('BarPlot', 'y', axis('y-1', AxisType.OrdinalString), AxisType.ContinuousNumeric)).toThrow(
+            '<BarPlot> needs its y-axis to be a <ContinuousAxis> (or an <EmptyAxis>), but the y-axis "y-1" is an <OrdinalAxis>'
+        )
     })
 })
