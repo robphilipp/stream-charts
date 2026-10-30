@@ -26,6 +26,7 @@ A redesign of how charts get their data and how they're drawn. Code written for 
 9. The chart takes a `dataUpdatePeriod`, which gives smoother scrolling when the data arrives at a known, regular period.
 10. Custom tooltip content can be built on the new `<TooltipContent>` component. The raster, bar, and Poincaré tooltips now include sparklines.
 11. Series filters are screened for regular expressions that risk catastrophic backtracking (`regexFilter`, `literalFilter`, `isSafeRegex`).
+12. A plot on the wrong kind of axis (for example, a bar plot whose x-axis is a `<ContinuousAxis>`) reports which plot, which axis, and which axis component it needs, rather than naming the old axis types. The Poincaré plot now checks its axes too. See "which axes each plot takes" in the [README](README.md).
 
 **Packaging and documentation**
 1. Dependencies are now declared correctly (in 1.x they were all listed only as development dependencies, so none were installed with the package). React 19, RxJS 7, and d3 7 are peer dependencies, so the library shares the application's copies (`npm install stream-charts react react-dom rxjs d3`). The small utilities the library uses internally (`result-fn`, `fast-shift-array`, `safe-regex`), and d3's type definitions, are installed with the package.

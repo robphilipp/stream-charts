@@ -27,7 +27,7 @@ Assigning series to axes is done through the plot's `axisAssignments` property â
 <figure>
     <img src="./images/scatter-controls.png" alt="The scatter chart's expanded control panel, with the controls just for the scatter chart outlined: auto-scale y-axes, markers, interpolation, and legend" width="500px">
     <figcaption>
-        <b>Figure 5</b> The scatter chart's control panel, opened with the expand button. The outlined controls are just for the scatter chart, and the rest are the common controls from the previous page.
+        <b>Figure 5</b> The scatter chart's control panel, opened with the expand button. The outlined controls are just for the scatter chart, and the rest are the common controls (see the common controls page).
     </figcaption>
 </figure>
 

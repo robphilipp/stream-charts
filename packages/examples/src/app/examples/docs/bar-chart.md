@@ -34,7 +34,7 @@ The tracker on this chart is horizontal, and labels the value on the y-axis – 
 <figure>
     <img src="./images/bar-controls.png" alt="The bar chart's two expanded control bars, with what's just for the bar chart outlined: the whole stats control bar, and the auto-scale y-axes checkbox" width="560px">
     <figcaption>
-        <b>Figure 11</b> The bar chart's two control bars, both opened with their expand buttons. The outlined controls are just for the bar chart – the whole stats control bar, and <b>auto-scale y-axes</b> – and the rest are the common controls from the previous page.
+        <b>Figure 11</b> The bar chart's two control bars, both opened with their expand buttons. The outlined controls are just for the bar chart – the whole stats control bar, and <b>auto-scale y-axes</b> – and the rest are the common controls (see the common controls page).
     </figcaption>
 </figure>
 

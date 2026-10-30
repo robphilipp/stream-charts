@@ -12,6 +12,7 @@ import raster_chart_page from "./raster-chart.md?raw";
 import poincare_chart_page from "./poincare-chart.md?raw";
 import bar_chart_page from "./bar-chart.md?raw";
 import outlier_chart_page from "./outlier-chart.md?raw";
+import axes_page from "./axes.md?raw";
 import legends_page from "./legends.md?raw";
 import theming_page from "./theming.md?raw";
 import tooltips_and_trackers_page from "./tooltips-and-trackers.md?raw";
@@ -52,6 +53,7 @@ const pages = [
     poincare_chart_page,
     bar_chart_page,
     outlier_chart_page,
+    axes_page,
     legends_page,
     theming_page,
     tooltips_and_trackers_page,

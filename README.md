@@ -440,7 +440,25 @@ All styles are exposed as props, so you can drive them from your theme provider,
 
 ### [&#10514;](#content) <span id="axes">axes</span>
 
-A chart has one or two x-axes (`AxisLocation.Bottom`, `AxisLocation.Top`) and one or two y-axes (`AxisLocation.Left`, `AxisLocation.Right`). Each axis has a unique `axisId`. When a chart has more than one x-axis or y-axis, you assign series to axes with the plot's [`axisAssignments`](#plot-common). A series without an assignment uses the default axes: the bottom x-axis and the left y-axis.
+A chart has one or two x-axes (`AxisLocation.Bottom`, `AxisLocation.Top`) and one or two y-axes (`AxisLocation.Left`, `AxisLocation.Right`). Each axis has a unique `axisId`. When a chart has more than one x-axis or y-axis, you assign series to axes with the plot's [`axisAssignments`](#plot-common). A series without an assignment uses the default axes: the first x-axis and the first y-axis in the chart's children, whatever their location.
+
+#### <span id="plot-axes">which axes each plot takes</span>
+
+Each plot needs particular kinds of axes:
+
+| plot | x-axis | y-axis |
+|---|---|---|
+| `<ScatterPlot>` | `<ContinuousAxis>` | `<ContinuousAxis>` |
+| `<RasterPlot>` | `<ContinuousAxis>` | `<OrdinalAxis>` |
+| `<PoincarePlot>` | `<ContinuousAxis>` | `<ContinuousAxis>` |
+| `<BarPlot>` | `<OrdinalAxis>` | `<ContinuousAxis>` |
+| `<OutlierPlot>` | `<ContinuousAxis>` | `<ContinuousAxis>` |
+
+- **An `<EmptyAxis>` counts as a continuous axis.** It's fine as a raster chart's top x-axis, but a raster chart's series can't use one as their y-axis.
+- **The order of the axes matters.** Unassigned series use the *first* x-axis and the *first* y-axis, so put the axes your series use before any `<EmptyAxis>`. In a raster chart with an `<EmptyAxis>` on the right, list the `<OrdinalAxis>` first; otherwise the empty (continuous) axis becomes the default y-axis.
+- **The Poincaré plot only uses the first x-axis and the first y-axis** (it has no `axisAssignments`). Any others just mirror them.
+- **A series assigned to an axis ID that doesn't exist isn't drawn.** It doesn't fall back to the default axes.
+- **The wrong kind of axis is reported when the plot draws.** The chart logs the error to the console, along the lines of `<RasterPlot> needs its y-axis to be an <OrdinalAxis>, but the y-axis "y-axis-2" is a <ContinuousAxis> (or an <EmptyAxis>)`, and skips that drawing. The axes are child components, so TypeScript can't catch the mismatch.
 
 #### <span id="continuous-axis">&lt;ContinuousAxis/&gt;</span>
 
@@ -489,7 +507,7 @@ A category axis (a d3 band scale). The raster plot uses one for its y-axis (one 
 
 #### <span id="empty-axis">&lt;EmptyAxis/&gt;</span>
 
-A plain line where an axis would be, without ticks or a label. Use it to frame the plot on a side that has no axis of its own.
+A plain line where an axis would be, without ticks or a label. Use it to frame the plot on a side that has no axis of its own. It counts as a continuous axis, so list it after the axes your series use (see [which axes each plot takes](#plot-axes)).
 
 ```tsx
 <EmptyAxis axisId="x-axis-2" location={AxisLocation.Top}/>
@@ -503,7 +521,7 @@ The plot draws the data. It reads the series from the chart's data source and th
 
 | prop | type | plots | description |
 |---|---|---|---|
-| `axisAssignments` | `Map<string, AxesAssignment>` | all but Poincaré | Assigns series to axes: `new Map([['kitchen', assignAxes('x-axis-2', 'y-axis-2')]])`. Unassigned series use the bottom x-axis and the left y-axis. |
+| `axisAssignments` | `Map<string, AxesAssignment>` | all but Poincaré | Assigns series to axes: `new Map([['kitchen', assignAxes('x-axis-2', 'y-axis-2')]])`. Unassigned series use the first x-axis and the first y-axis (see [which axes each plot takes](#plot-axes)). |
 | `panEnabled` | `boolean` | all | Lets the user drag the plot to pan (default `false`). |
 | `zoomEnabled` | `boolean` | all | Lets the user scroll to zoom (default `false`). |
 | `zoomKeyModifiersRequired` | `boolean` | all | When `true` (the default), zooming requires holding shift (or ctrl) while scrolling, so that zooming doesn't get in the way of scrolling the page. |

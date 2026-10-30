@@ -28,7 +28,7 @@ The chart has a tracker on *both* axes, so with the tracker on, you get a crossh
 <figure>
     <img src="./images/poincare-controls.png" alt="The Poincaré chart's expanded control panel, with the controls just for the Poincaré chart outlined: interpolation, colorize lines, lag, iterate function, and its parameter" width="500px">
     <figcaption>
-        <b>Figure 9</b> The Poincaré chart's control panel, opened with the expand button. The outlined controls are just for the Poincaré chart, and the rest are the common controls from the previous page.
+        <b>Figure 9</b> The Poincaré chart's control panel, opened with the expand button. The outlined controls are just for the Poincaré chart, and the rest are the common controls (see the common controls page).
     </figcaption>
 </figure>
 

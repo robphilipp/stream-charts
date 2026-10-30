@@ -22,11 +22,12 @@ The next pages describe:
 1. the anatomy of the example charts,
 2. common control bar functions,
 3. each chart type – what the chart represents, and the control bar functions specific to it (one page per chart type),
-4. legends,
-5. theming – how the charts change colors, how to add a theme, and what the limits are,
-6. tooltips and trackers,
-7. what's going on under the hood – which code is the example's and which is the library's, and how the data flows from one to the other, and
-8. three tutorials: one that walks you through adding your own data source, from the RxJS observable to the chart, one on writing your own tooltips for each chart type, and one that builds a full-featured scatter chart from (simulated) sensor data.
+4. axes – the kinds of axes, their options, and which plots take which,
+5. legends,
+6. theming – how the charts change colors, how to add a theme, and what the limits are,
+7. tooltips and trackers,
+8. what's going on under the hood – which code is the example's and which is the library's, and how the data flows from one to the other, and
+9. three tutorials: one that walks you through adding your own data source, from the RxJS observable to the chart, one on writing your own tooltips for each chart type, and one that builds a full-featured scatter chart from (simulated) sensor data.
 
 Click on the `Next` button in the navigation bar to continue. Or, if you're the impatient type, jump ahead using the table of contents (the button on the left of the navigation bar).
 

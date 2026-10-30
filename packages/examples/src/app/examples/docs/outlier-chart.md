@@ -26,7 +26,7 @@ Hover over a band (with the tooltip on) and the tooltip describes the band – f
 <figure>
     <img src="./images/outlier-controls.png" alt="The outlier chart's expanded control panel, with the controls just for the outlier chart outlined: markers, auto-scale y-axis, and interpolation" width="460px">
     <figcaption>
-        <b>Figure 13</b> The outlier chart's control panel, opened with the expand button. The outlined controls are just for the outlier chart, and the rest are the common controls from the previous page.
+        <b>Figure 13</b> The outlier chart's control panel, opened with the expand button. The outlined controls are just for the outlier chart, and the rest are the common controls (see the common controls page).
     </figcaption>
 </figure>
 

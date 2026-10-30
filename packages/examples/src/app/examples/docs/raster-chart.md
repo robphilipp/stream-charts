@@ -22,7 +22,7 @@ The chart's x-axis is time, and the y-axis is an *ordinal* (category) axis – o
 <figure>
     <img src="./images/raster-controls.png" alt="The raster chart's expanded control panel, with the one control just for the raster chart outlined: legend" width="460px">
     <figcaption>
-        <b>Figure 7</b> The raster chart's control panel, opened with the expand button. Only the outlined legend control is just for the raster chart – the rest are the common controls from the previous page.
+        <b>Figure 7</b> The raster chart's control panel, opened with the expand button. Only the outlined legend control is just for the raster chart – the rest are the common controls (see the common controls page).
     </figcaption>
 </figure>
 
