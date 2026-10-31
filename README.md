@@ -5,11 +5,11 @@
 This repository holds two things: **`stream-charts`**, a [React](https://react.dev) library for real-time charts of high-frequency streaming data, and a **demo app** that shows each of its charts at work and lets you explore them.
 
 <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/charts-collage-dark.png">
-    <img src="packages/examples/public/images/charts-collage-light.png" alt="the five stream-charts plots: a scatter chart with two x-axes, a linear and a logarithmic y-axis, and a legend; a raster chart of neuron spikes; a bar chart with windowed statistics; a Poincaré plot of an iterated map; and an outlier chart with confidence bands and flagged outliers">
+    <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/charts-collage-dark.gif">
+    <img src="packages/examples/public/images/charts-collage-light.gif" alt="the five stream-charts plots: a scatter chart streaming live, scrolling smoothly with a 25 ms cadence, with two x-axes, a linear and a logarithmic y-axis, and a legend; a raster chart of neuron spikes; a bar chart with windowed statistics; a Poincaré plot of an iterated map; and an outlier chart with confidence bands and flagged outliers">
 </picture>
 
-*Scatter (two x-axes, linear and log y-axes, legend) · raster · bar (running and windowed statistics) · Poincaré · outlier (confidence bands, flagged outliers)*
+*Scatter, streaming (two x-axes, linear and log y-axes, legend, 25 ms cadence) · raster · bar (running and windowed statistics) · Poincaré · outlier (confidence bands, flagged outliers)*
 
 **The library** charts data that never stops arriving. You hand it an [RxJS](https://rxjs.dev) observable of new data, and it buffers the updates, scrolls the time axes, and redraws – on a single canvas, so plotting new data for about 100 series every 25 ms isn't generally a problem. Along the way:
 
