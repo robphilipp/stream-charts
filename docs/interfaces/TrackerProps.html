@@ -15,7 +15,7 @@
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">TrackerProps</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#font">font</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">Partial</span><span class="tsd-signature-symbol">&lt;</span><a href="TrackerLabelFont.html" class="tsd-signature-type tsd-kind-interface">TrackerLabelFont</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#labelformatter">labelFormatter</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">value</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#labellocation">labelLocation</a><span class="tsd-signature-symbol">?:</span> <a href="../types/TrackerLabelLocation.html" class="tsd-signature-type tsd-kind-type-alias">TrackerLabelLocation</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#ontrackerupdate">onTrackerUpdate</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">update</span><span class="tsd-signature-symbol">:</span> <a href="../types/TrackerAxisUpdate.html" class="tsd-signature-type tsd-kind-type-alias">TrackerAxisUpdate</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#style">style</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">Partial</span><span class="tsd-signature-symbol">&lt;</span><a href="TrackerStyle.html" class="tsd-signature-type tsd-kind-interface">TrackerStyle</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#trackeraxis">trackerAxis</a><span class="tsd-signature-symbol">?:</span> <a href="../types/AxisLocation.html" class="tsd-signature-type tsd-kind-type-alias">AxisLocation</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#visible">visible</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/trackers/Tracker.tsx#L32">trackers/Tracker.tsx:32</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/trackers/Tracker.tsx#L32">trackers/Tracker.tsx:32</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -40,35 +40,35 @@
 <div class="tsd-comment tsd-typography"><p>the font of the tracker's labels</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/trackers/Tracker.tsx#L47">trackers/Tracker.tsx:47</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/trackers/Tracker.tsx#L47">trackers/Tracker.tsx:47</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="labelformatter"><code class="tsd-tag">Optional</code><span>label<wbr/>Formatter</span><a href="#labelformatter" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">labelFormatter</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">value</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>formats an axis' value for its label (defaults to a whole number, with thousands separators)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/trackers/Tracker.tsx#L43">trackers/Tracker.tsx:43</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/trackers/Tracker.tsx#L43">trackers/Tracker.tsx:43</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="labellocation"><code class="tsd-tag">Optional</code><span>label<wbr/>Location</span><a href="#labellocation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">labelLocation</span><span class="tsd-signature-symbol">?:</span> <a href="../types/TrackerLabelLocation.html" class="tsd-signature-type tsd-kind-type-alias">TrackerLabelLocation</a></div>
 <div class="tsd-comment tsd-typography"><p>where the tracker's labels are shown (by the axes, the default, or nowhere)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/trackers/Tracker.tsx#L41">trackers/Tracker.tsx:41</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/trackers/Tracker.tsx#L41">trackers/Tracker.tsx:41</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="ontrackerupdate"><code class="tsd-tag">Optional</code><span>on<wbr/>Tracker<wbr/>Update</span><a href="#ontrackerupdate" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">onTrackerUpdate</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">update</span><span class="tsd-signature-symbol">:</span> <a href="../types/TrackerAxisUpdate.html" class="tsd-signature-type tsd-kind-type-alias">TrackerAxisUpdate</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
 <div class="tsd-comment tsd-typography"><p>called with each (non-empty) axis' value at the mouse, as the mouse moves over the plot</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/trackers/Tracker.tsx#L49">trackers/Tracker.tsx:49</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/trackers/Tracker.tsx#L49">trackers/Tracker.tsx:49</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="style"><code class="tsd-tag">Optional</code><span>style</span><a href="#style" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">style</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">Partial</span><span class="tsd-signature-symbol">&lt;</span><a href="TrackerStyle.html" class="tsd-signature-type tsd-kind-interface">TrackerStyle</a><span class="tsd-signature-symbol">&gt;</span></div>
 <div class="tsd-comment tsd-typography"><p>the style of the tracker's line</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/trackers/Tracker.tsx#L45">trackers/Tracker.tsx:45</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/trackers/Tracker.tsx#L45">trackers/Tracker.tsx:45</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="trackeraxis"><code class="tsd-tag">Optional</code><span>tracker<wbr/>Axis</span><a href="#trackeraxis" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">trackerAxis</span><span class="tsd-signature-symbol">?:</span> <a href="../types/AxisLocation.html" class="tsd-signature-type tsd-kind-type-alias">AxisLocation</a></div>
@@ -76,14 +76,14 @@
 the x-axes (the default), left or right for a horizontal line that tracks the y-axes</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/trackers/Tracker.tsx#L39">trackers/Tracker.tsx:39</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/trackers/Tracker.tsx#L39">trackers/Tracker.tsx:39</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="visible"><span>visible</span><a href="#visible" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">visible</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 <div class="tsd-comment tsd-typography"><p>whether the tracker is shown</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/trackers/Tracker.tsx#L34">trackers/Tracker.tsx:34</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/trackers/Tracker.tsx#L34">trackers/Tracker.tsx:34</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -102,7 +102,7 @@ the x-axes (the default), left or right for a horizontal line that tracks the y-
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
 <div><a href="#font"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>font</span></a><a href="#labelformatter"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>label<wbr/>Formatter</span></a><a href="#labellocation"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>label<wbr/>Location</span></a><a href="#ontrackerupdate"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>Tracker<wbr/>Update</span></a><a href="#style"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>style</span></a><a href="#trackeraxis"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>tracker<wbr/>Axis</span></a><a href="#visible"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>visible</span></a></div></details></div></details></div>
 <div class="site-menu">
-<nav class="tsd-navigation"><a href="../modules.html">stream-charts</a>
+<nav class="tsd-navigation"><a href="../index.html">stream-charts</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">
 <li>Loading...</li></ul></nav></div></div></div><footer>
 <p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>

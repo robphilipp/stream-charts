@@ -15,7 +15,7 @@
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">ScatterPlotProps</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#axisassignments">axisAssignments</a><span class="tsd-signature-symbol">?:</span> <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map" class="tsd-signature-type external" target="_blank">Map</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <a href="AxesAssignment.html" class="tsd-signature-type tsd-kind-interface">AxesAssignment</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#hidemarkerswhilerunning">hideMarkersWhileRunning</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#highlightaxesonmouseover">highlightAxesOnMouseOver</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#interpolation">interpolation</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">CurveFactory</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#markerradius">markerRadius</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#onzoomreset">onZoomReset</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">resetZoom</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#panenabled">panEnabled</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#timewindowbehavior">timeWindowBehavior</a><span class="tsd-signature-symbol">?:</span> <a href="../types/TimeWindowBehavior.html" class="tsd-signature-type tsd-kind-type-alias">TimeWindowBehavior</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#withcadenceof">withCadenceOf</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#zoomenabled">zoomEnabled</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#zoomkeymodifiersrequired">zoomKeyModifiersRequired</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/ScatterPlot.tsx#L44">plots/ScatterPlot.tsx:44</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/plots/ScatterPlot.tsx#L45">plots/ScatterPlot.tsx:45</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -46,7 +46,7 @@ map's key holds the series name, and the value is an <a href="AxesAssignment.htm
 object holding the ID of the assigned x-axis and y-axis.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/ScatterPlot.tsx#L50">plots/ScatterPlot.tsx:50</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/plots/ScatterPlot.tsx#L51">plots/ScatterPlot.tsx:51</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="hidemarkerswhilerunning"><code class="tsd-tag">Optional</code><span>hide<wbr/>Markers<wbr/>While<wbr/>Running</span><a href="#hidemarkerswhilerunning" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">hideMarkersWhileRunning</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
@@ -55,7 +55,7 @@ once paused. Defaults to <code>true</code> (the previous, hard-coded behavior). 
 keep markers visible while running.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/ScatterPlot.tsx#L103">plots/ScatterPlot.tsx:103</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/plots/ScatterPlot.tsx#L104">plots/ScatterPlot.tsx:104</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="highlightaxesonmouseover"><code class="tsd-tag">Optional</code><span>highlight<wbr/>Axes<wbr/>On<wbr/>Mouse<wbr/>Over</span><a href="#highlightaxesonmouseover" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">highlightAxesOnMouseOver</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
@@ -63,7 +63,7 @@ keep markers visible while running.</p>
 against (in the series' own highlight color/width). Defaults to <code>false</code>.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/ScatterPlot.tsx#L108">plots/ScatterPlot.tsx:108</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/plots/ScatterPlot.tsx#L109">plots/ScatterPlot.tsx:109</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="interpolation"><code class="tsd-tag">Optional</code><span>interpolation</span><a href="#interpolation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">interpolation</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">CurveFactory</span></div>
@@ -71,7 +71,7 @@ against (in the series' own highlight color/width). Defaults to <code>false</cod
 <a href="https://github.com/d3/d3-shape#curves">https://github.com/d3/d3-shape#curves</a> for information on available interpolations</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/ScatterPlot.tsx#L55">plots/ScatterPlot.tsx:55</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/plots/ScatterPlot.tsx#L56">plots/ScatterPlot.tsx:56</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="markerradius"><code class="tsd-tag">Optional</code><span>marker<wbr/>Radius</span><a href="#markerradius" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">markerRadius</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
@@ -79,7 +79,7 @@ against (in the series' own highlight color/width). Defaults to <code>false</cod
 no markers are rendered.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/ScatterPlot.tsx#L97">plots/ScatterPlot.tsx:97</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/plots/ScatterPlot.tsx#L98">plots/ScatterPlot.tsx:98</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="onzoomreset"><code class="tsd-tag">Optional</code><span>on<wbr/>Zoom<wbr/>Reset</span><a href="#onzoomreset" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">onZoomReset</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">resetZoom</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
@@ -94,14 +94,14 @@ such a reset would compute its new scale against the stale, still-accumulated tr
 Only meaningful (called) while <code>zoomEnabled</code> is true.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/ScatterPlot.tsx#L121">plots/ScatterPlot.tsx:121</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/plots/ScatterPlot.tsx#L122">plots/ScatterPlot.tsx:122</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="panenabled"><code class="tsd-tag">Optional</code><span>pan<wbr/>Enabled</span><a href="#panenabled" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">panEnabled</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
 <div class="tsd-comment tsd-typography"><p>Enables panning (default is false)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/ScatterPlot.tsx#L59">plots/ScatterPlot.tsx:59</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/plots/ScatterPlot.tsx#L60">plots/ScatterPlot.tsx:60</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="timewindowbehavior"><code class="tsd-tag">Optional</code><span>time<wbr/>Window<wbr/>Behavior</span><a href="#timewindowbehavior" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">timeWindowBehavior</span><span class="tsd-signature-symbol">?:</span> <a href="../types/TimeWindowBehavior.html" class="tsd-signature-type tsd-kind-type-alias">TimeWindowBehavior</a></div>
@@ -118,7 +118,7 @@ Only meaningful (called) while <code>zoomEnabled</code> is true.</p>
 </ol>
 The default behavior is to `SCROLL`.</div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/ScatterPlot.tsx#L92">plots/ScatterPlot.tsx:92</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/plots/ScatterPlot.tsx#L93">plots/ScatterPlot.tsx:93</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="withcadenceof"><code class="tsd-tag">Optional</code><span>with<wbr/>Cadence<wbr/>Of</span><a href="#withcadenceof" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">withCadenceOf</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
@@ -130,14 +130,14 @@ at high update speeds, the cadence is unnecessary. Finally, using cadence, sets 
 to the current time.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/ScatterPlot.tsx#L77">plots/ScatterPlot.tsx:77</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/plots/ScatterPlot.tsx#L78">plots/ScatterPlot.tsx:78</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="zoomenabled"><code class="tsd-tag">Optional</code><span>zoom<wbr/>Enabled</span><a href="#zoomenabled" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">zoomEnabled</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
 <div class="tsd-comment tsd-typography"><p>Enables zooming (default is false)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/ScatterPlot.tsx#L63">plots/ScatterPlot.tsx:63</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/plots/ScatterPlot.tsx#L64">plots/ScatterPlot.tsx:64</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="zoomkeymodifiersrequired"><code class="tsd-tag">Optional</code><span>zoom<wbr/>Key<wbr/>Modifiers<wbr/>Required</span><a href="#zoomkeymodifiersrequired" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">zoomKeyModifiersRequired</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
@@ -145,7 +145,7 @@ to the current time.</p>
 in order to activate the zoom</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/plots/ScatterPlot.tsx#L68">plots/ScatterPlot.tsx:68</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/plots/ScatterPlot.tsx#L69">plots/ScatterPlot.tsx:69</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -164,7 +164,7 @@ in order to activate the zoom</p>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
 <div><a href="#axisassignments"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>axis<wbr/>Assignments</span></a><a href="#hidemarkerswhilerunning"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>hide<wbr/>Markers<wbr/>While<wbr/>Running</span></a><a href="#highlightaxesonmouseover"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>highlight<wbr/>Axes<wbr/>On<wbr/>Mouse<wbr/>Over</span></a><a href="#interpolation"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>interpolation</span></a><a href="#markerradius"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>marker<wbr/>Radius</span></a><a href="#onzoomreset"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>Zoom<wbr/>Reset</span></a><a href="#panenabled"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>pan<wbr/>Enabled</span></a><a href="#timewindowbehavior"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>time<wbr/>Window<wbr/>Behavior</span></a><a href="#withcadenceof"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>with<wbr/>Cadence<wbr/>Of</span></a><a href="#zoomenabled"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>zoom<wbr/>Enabled</span></a><a href="#zoomkeymodifiersrequired"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>zoom<wbr/>Key<wbr/>Modifiers<wbr/>Required</span></a></div></details></div></details></div>
 <div class="site-menu">
-<nav class="tsd-navigation"><a href="../modules.html">stream-charts</a>
+<nav class="tsd-navigation"><a href="../index.html">stream-charts</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">
 <li>Loading...</li></ul></nav></div></div></div><footer>
 <p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>

@@ -12,7 +12,7 @@
 <h1>Interface TimeSeriesDataSourceOptions</h1></div>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">TimeSeriesDataSourceOptions</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#dropdataafter">dropDataAfter</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#generator">generator</a><span class="tsd-signature-symbol">:</span> <a href="../types/DataGenerator.html" class="tsd-signature-type tsd-kind-type-alias">DataGenerator</a><span class="tsd-signature-symbol">&lt;</span><a href="TimeSeriesChartData.html" class="tsd-signature-type tsd-kind-interface">TimeSeriesChartData</a><span class="tsd-signature-symbol">,</span> <a href="../types/TimeSeries.html" class="tsd-signature-type tsd-kind-type-alias">TimeSeries</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#initialdata">initialData</a><span class="tsd-signature-symbol">:</span> <a href="../types/TimeSeries.html" class="tsd-signature-type tsd-kind-type-alias">TimeSeries</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#onupdatedata">onUpdateData</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">seriesName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">data</span><span class="tsd-signature-symbol">:</span> <a href="Datum.html" class="tsd-signature-type tsd-kind-interface">Datum</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#timegroupfor">timeGroupFor</a><span class="tsd-signature-symbol">?:</span> <a href="../types/TimeGroupFor.html" class="tsd-signature-type tsd-kind-type-alias">TimeGroupFor</a><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in datasources/timeSeriesDataSource.ts:38</li></ul></aside>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/timeSeriesDataSource.ts#L38">datasources/timeSeriesDataSource.ts:38</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -36,28 +36,28 @@
 data arrives. Defaults to <code>Infinity</code> (never drop).</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in datasources/timeSeriesDataSource.ts:51</li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/timeSeriesDataSource.ts#L51">datasources/timeSeriesDataSource.ts:51</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="generator"><span>generator</span><a href="#generator" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">generator</span><span class="tsd-signature-symbol">:</span> <a href="../types/DataGenerator.html" class="tsd-signature-type tsd-kind-type-alias">DataGenerator</a><span class="tsd-signature-symbol">&lt;</span><a href="TimeSeriesChartData.html" class="tsd-signature-type tsd-kind-interface">TimeSeriesChartData</a><span class="tsd-signature-symbol">,</span> <a href="../types/TimeSeries.html" class="tsd-signature-type tsd-kind-type-alias">TimeSeries</a><span class="tsd-signature-symbol">&gt;</span></div>
 <div class="tsd-comment tsd-typography"><p>Creates the observable of chart data each time the source starts</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in datasources/timeSeriesDataSource.ts:46</li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/timeSeriesDataSource.ts#L46">datasources/timeSeriesDataSource.ts:46</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="initialdata"><span>initial<wbr/>Data</span><a href="#initialdata" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">initialData</span><span class="tsd-signature-symbol">:</span> <a href="../types/TimeSeries.html" class="tsd-signature-type tsd-kind-type-alias">TimeSeries</a><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>The initial series, owned (and mutated in place) by the source from here on</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in datasources/timeSeriesDataSource.ts:42</li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/timeSeriesDataSource.ts#L42">datasources/timeSeriesDataSource.ts:42</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="onupdatedata"><code class="tsd-tag">Optional</code><span>on<wbr/>Update<wbr/>Data</span><a href="#onupdatedata" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">onUpdateData</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">seriesName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">data</span><span class="tsd-signature-symbol">:</span> <a href="Datum.html" class="tsd-signature-type tsd-kind-interface">Datum</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
 <div class="tsd-comment tsd-typography"><p>Called with each series' new data as it arrives</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in datasources/timeSeriesDataSource.ts:60</li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/timeSeriesDataSource.ts#L60">datasources/timeSeriesDataSource.ts:60</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="timegroupfor"><code class="tsd-tag">Optional</code><span>time<wbr/>Group<wbr/>For</span><a href="#timegroupfor" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">timeGroupFor</span><span class="tsd-signature-symbol">?:</span> <a href="../types/TimeGroupFor.html" class="tsd-signature-type tsd-kind-type-alias">TimeGroupFor</a></div>
@@ -65,7 +65,7 @@ data arrives. Defaults to <code>Infinity</code> (never drop).</p>
 all series.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in datasources/timeSeriesDataSource.ts:56</li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/timeSeriesDataSource.ts#L56">datasources/timeSeriesDataSource.ts:56</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -84,7 +84,7 @@ all series.</p>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
 <div><a href="#dropdataafter"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>drop<wbr/>Data<wbr/>After</span></a><a href="#generator"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>generator</span></a><a href="#initialdata"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>initial<wbr/>Data</span></a><a href="#onupdatedata"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>Update<wbr/>Data</span></a><a href="#timegroupfor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>time<wbr/>Group<wbr/>For</span></a></div></details></div></details></div>
 <div class="site-menu">
-<nav class="tsd-navigation"><a href="../modules.html">stream-charts</a>
+<nav class="tsd-navigation"><a href="../index.html">stream-charts</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">
 <li>Loading...</li></ul></nav></div></div></div><footer>
 <p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>

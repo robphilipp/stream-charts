@@ -381,9 +381,11 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
             cc.register(`outlier-plot-${chartId}`, draw, 10)
             cc.requestRedraw()
         },
+        // note: my WebStorm claims that bandOpacityStep is not a dependency, but it is and the
+        // linter flags is as missing when it is removed
         [
             chartId, plotDimensions, axisAssignments, xAxesState, yAxesState, seriesStyles, seriesFilter,
-            interpolation, bandOpacity, markerRadius, outlierMarkerColors, hoveredSeriesName, running,
+            interpolation, bandOpacity, bandOpacityStep, markerRadius, outlierMarkerColors, hoveredSeriesName, running,
             axisRangeFor, updateAxisRanges, margin.left, margin.top
         ]
     )

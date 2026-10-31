@@ -17,7 +17,7 @@ and scheduling redraws. This is what gets threaded through <code>useChart()</cod
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">CanvasContext</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#canvas">canvas</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">HTMLCanvasElement</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#chartid">chartId</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#context2d">context2D</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">CanvasRenderingContext2D</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#dpr">dpr</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#register">register</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">id</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">draw</span><span class="tsd-signature-symbol">:</span> <a href="../types/DrawFn.html" class="tsd-signature-type tsd-kind-type-alias">DrawFn</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">zIndex</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#requestredraw">requestRedraw</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#unregister">unregister</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">id</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/d3types.ts#L10">d3types.ts:10</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/d3types.ts#L10">d3types.ts:10</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -42,28 +42,28 @@ and scheduling redraws. This is what gets threaded through <code>useChart()</cod
 <div class="tsd-comment tsd-typography"><p>the backing <code>&lt;canvas&gt;</code> DOM element</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/d3types.ts#L14">d3types.ts:14</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/d3types.ts#L14">d3types.ts:14</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="chartid"><span>chart<wbr/>Id</span><a href="#chartid" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">chartId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>unique id for the chart; mirrors the old <code>chartId</code> used to namespace SVG element ids</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/d3types.ts#L12">d3types.ts:12</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/d3types.ts#L12">d3types.ts:12</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="context2d"><span>context2<wbr/>D</span><a href="#context2d" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">context2D</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">CanvasRenderingContext2D</span></div>
 <div class="tsd-comment tsd-typography"><p>the 2D drawing context for the canvas (already scaled for devicePixelRatio)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/d3types.ts#L16">d3types.ts:16</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/d3types.ts#L16">d3types.ts:16</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="dpr"><span>dpr</span><a href="#dpr" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">dpr</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>the current device-pixel-ratio scaling applied to the context</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/d3types.ts#L18">d3types.ts:18</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/d3types.ts#L18">d3types.ts:18</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="register"><span>register</span><a href="#register" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">register</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">id</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">draw</span><span class="tsd-signature-symbol">:</span> <a href="../types/DrawFn.html" class="tsd-signature-type tsd-kind-type-alias">DrawFn</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">zIndex</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
@@ -93,7 +93,7 @@ the tracker drawing on top of the series, which draw on top of the axes.</p>
 </div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4></li></ul></li></ul></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/d3types.ts#L28">d3types.ts:28</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/d3types.ts#L28">d3types.ts:28</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="requestredraw"><span>request<wbr/>Redraw</span><a href="#requestredraw" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">requestRedraw</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
@@ -101,7 +101,7 @@ the tracker drawing on top of the series, which draw on top of the axes.</p>
 within the same frame/tick -- calls are coalesced into a single <code>requestAnimationFrame</code>.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/d3types.ts#L38">d3types.ts:38</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/d3types.ts#L38">d3types.ts:38</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="unregister"><span>unregister</span><a href="#unregister" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">unregister</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">id</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
@@ -109,7 +109,7 @@ within the same frame/tick -- calls are coalesced into a single <code>requestAni
 is redrawn.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/b25cbaabd050a59d60d3b41b5fdb930ccd698282/src/app/charts/d3types.ts#L33">d3types.ts:33</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/d3types.ts#L33">d3types.ts:33</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -128,7 +128,7 @@ is redrawn.</p>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
 <div><a href="#canvas"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>canvas</span></a><a href="#chartid"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>chart<wbr/>Id</span></a><a href="#context2d"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>context2<wbr/>D</span></a><a href="#dpr"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>dpr</span></a><a href="#register"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>register</span></a><a href="#requestredraw"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>request<wbr/>Redraw</span></a><a href="#unregister"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>unregister</span></a></div></details></div></details></div>
 <div class="site-menu">
-<nav class="tsd-navigation"><a href="../modules.html">stream-charts</a>
+<nav class="tsd-navigation"><a href="../index.html">stream-charts</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">
 <li>Loading...</li></ul></nav></div></div></div><footer>
 <p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
