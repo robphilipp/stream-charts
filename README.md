@@ -620,7 +620,7 @@ Values over time, drawn as lines, with optional markers. Both axes are `<Continu
     <img src="packages/examples/public/images/scatter-chart-light.png" alt="the scatter chart example: ten random walks on two x-axes and two y-axes, with an external legend">
 </picture>
 
-[▶ watch it stream](https://github.com/robphilipp/stream-charts/blob/develop/images/scatter-chart-video.gif) (animated)
+[▶ watch it stream](packages/examples/public/images/scatter-chart-streaming.gif) (animated)
 
 | prop | type | description |
 |---|---|---|
