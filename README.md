@@ -1,8 +1,10 @@
+[![npm (next)](https://img.shields.io/npm/v/stream-charts/next?label=npm%40next)](https://www.npmjs.com/package/stream-charts?activeTab=versions) [![build](https://github.com/robphilipp/stream-charts/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/robphilipp/stream-charts/actions/workflows/main.yml) [![license: MIT](https://img.shields.io/npm/l/stream-charts)](https://www.npmjs.com/package/stream-charts)
+
 [Homepage](https://robphilipp.github.io/stream-charts/) •
 [API Docs](https://robphilipp.github.io/stream-charts/docs/modules.html) •
 [Change History](changes.md)
 
-This repository holds two things: **`stream-charts`**, a [React](https://react.dev) library for real-time charts of high-frequency streaming data, and a **demo app** that shows each of its charts at work and lets you explore them.
+**`stream-charts`** is a [React](https://react.dev) library for real-time charts of high-frequency streaming data. This repository holds the library, and a **demo app** that shows each of its charts at work and lets you explore them.
 
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/charts-collage-dark.gif">
@@ -36,10 +38,11 @@ Five plot types are available:
 **[getting started](#getting-started)**
 - [using the library in your application](#installation)
 - [quick start](#quick-start)
-- [running the demo app](#run-demo)
 - [how it works](#how-it-works)
-- [working on the library](#contributing)
 - [migrating from 1.x](#migrating)
+- [this repository: the library and the demo app](#repository)
+- [running the demo app](#run-demo)
+- [working on the library](#contributing)
 
 **[data](#data)**
 - [data sources](#data-sources)
@@ -172,33 +175,6 @@ Click **Run** and the three sensors start drawing. When the data reaches the end
 
 From here you can add [colors](#chart-styling), a [tooltip](#tooltip), a [tracker](#tracker), a [legend](#legend), and [zooming and panning](#plot-common). The [demo app](#run-demo), in this repository's `packages/examples`, has a complete, working example of each plot type. Its tutorial, [adding your own data source](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/adding-a-data-source.md), builds this quick start one step at a time.
 
-### <span id="run-demo">running the demo app</span> [↑](#content "back to contents")
-
-The demo app, in `packages/examples`, has one tab for each plot type, with a control bar for trying out the plots' options, and an intro made of guide pages and tutorials. You'll need [Node.js](https://nodejs.org) 22 (or 20.19+) and npm 7+. Clone the repository and start the app:
-
-```shell
-git clone https://github.com/robphilipp/stream-charts.git
-cd stream-charts
-npm install        # installs both packages (one node_modules, one lockfile, at the root)
-npm run dev        # starts the demo app (Vite), at http://localhost:5173
-```
-
-<picture>
-    <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/intro-example-parts-dark.png">
-    <img src="packages/examples/public/images/intro-example-parts-light.png" alt="the anatomy of an example chart: the tabs and control bar are the demo app's, and the chart and its legend are the library's">
-</picture>
-
-Each tab runs one chart: click **Run**, and open its control bar to try the options while the data streams. The **Intro** tab walks through the charts and how they work. The tabs and control bars are the demo app's; the chart and its legend are the library's.
-
-To try out an idea, change an example in `packages/examples/src/app/examples` (for example, `StreamingScatterChart.tsx`), and the app reloads as you save. The tutorial [your own scatter chart, from sensor data](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/scatter-chart-from-sensor-data.md) builds a new chart from scratch. To give a new example its own tab:
-
-1. Put the example component in `packages/examples/src/app/examples`.
-2. Add a route component for it in `packages/examples/src/app/routeComponents.tsx`.
-3. Add a route for it to the route tree in `packages/examples/src/app/router.tsx`.
-4. Add `{name, path}` for the tab to `TABS` in `packages/examples/src/app/routeData.ts`.
-
-The demo app imports everything from `"stream-charts"`, just as your application would, so the chart code carries over to your application. The app's stores (zustand), control bars, and routing are its own.
-
 ### <span id="how-it-works">how it works</span> [↑](#content "back to contents")
 
 <picture>
@@ -228,39 +204,6 @@ The chart is composed from React components, so you pick the pieces you need: up
 </Chart>
 ```
 
-### <span id="contributing">working on the library</span> [↑](#content "back to contents")
-
-This repository is a monorepo (npm workspaces) holding two packages: the library, and a demo app that uses it.
-
-| where | what |
-|---|---|
-| `packages/stream-charts` | **The library**, published to npm as `stream-charts`. Its code is in `src/app/charts`, and its public API – everything you can import from `"stream-charts"` – is `src/index.ts`. |
-| `packages/examples` | **The demo app** (not published). The examples are in `src/app/examples`, and the guide pages shown in its intro are the markdown files in `src/app/examples/docs`. |
-| `docs/` | The API docs, generated from the library's source, and served at [robphilipp.github.io/stream-charts/docs](https://robphilipp.github.io/stream-charts/docs/modules.html). |
-| `README.md`, `changes.md` | This page and the change history – the library's, copied into its package when it's published. |
-
-While you're working in this repository, the demo app's `"stream-charts"` import resolves to the library's TypeScript *source* (through a `source` condition in the library's `exports`), so a change to the library shows up in the running app right away, with no build step. Published copies of the library don't use that condition, and get the compiled `dist/`.
-
-To add a chart or a feature to the library:
-
-1. **Fork the repository** on GitHub, clone your fork (instead of this repository), and make a branch from `develop` for your change. You'll need the same Node.js and npm as for [running the demo app](#run-demo).
-2. **Run the demo app** (`npm run dev`), and change the library in `packages/stream-charts/src/app/charts`. The demo app runs on the library's source, so your change shows up as you save. Add or change an example in the demo app to show it off.
-3. **Add tests** next to the code you changed: the library's tests are the `*.test.ts` files in `packages/stream-charts/src/app/charts`, and the demo app's are the `*.test.ts` files in `packages/examples/src`. Check that everything passes: `npm test`, `npm run lint`, and `npm run build`.
-4. **Update the docs**: this README for anything that changes the library's API, and `changes.md` for the change history. Leave the `version` in `packages/stream-charts/package.json` alone: a merge to `master` with a new version publishes the library to npm.
-5. **Open a pull request** against `develop`.
-
-The commands, all from the repository's root:
-
-```shell
-npm run dev        # runs the demo app, on the library's source
-npm run build      # compiles the library to packages/stream-charts/dist, then builds the demo app
-npm test           # runs both packages' tests
-npm run lint       # lints both packages
-npm run docs       # regenerates the API docs into docs/
-```
-
-To work on one package, add `-w` and its name: for example, `npm test -w stream-charts` runs only the library's tests, and `npm run preview -w stream-charts-examples` serves the demo app's production build (after `npm run build`). To see what would be published, `npm pack -w stream-charts --dry-run`.
-
 ### <span id="migrating">migrating from 1.x</span> [↑](#content "back to contents")
 
 This version is a substantial redesign, and code written for 1.x needs updating.
@@ -279,6 +222,68 @@ This version is a substantial redesign, and code written for 1.x needs updating.
 | deep imports, such as `stream-charts/dist/app/charts/...` | import everything from `stream-charts`. Anything not exported from the package root is internal and may change. |
 
 New in this version: the [&lt;OutlierPlot/&gt;](#outlier-plot), [&lt;EmptyAxis/&gt;](#empty-axis), [auto-scaling y-axes](#continuous-axis-autoscale), markers on the scatter plot, axis highlighting on hover, colorized lines in the Poincaré plot, zoom state that survives remounting (bar and Poincaré plots), [custom tooltip content](#custom-tooltip) built on `<TooltipContent>`, and data that keeps streaming while the chart is unmounted.
+
+### <span id="repository">this repository: the library and the demo app</span> [↑](#content "back to contents")
+
+This repository is a monorepo (npm workspaces) holding two packages: the library, and a demo app that uses it.
+
+| where | what |
+|---|---|
+| `packages/stream-charts` | **The library**, published to npm as `stream-charts`. Its code is in `src/app/charts`, and its public API – everything you can import from `"stream-charts"` – is `src/index.ts`. |
+| `packages/examples` | **The demo app** (not published). The examples are in `src/app/examples`, and the guide pages shown in its intro are the markdown files in `src/app/examples/docs`. |
+| `docs/` | The API docs, generated from the library's source, and served at [robphilipp.github.io/stream-charts/docs](https://robphilipp.github.io/stream-charts/docs/modules.html). |
+| `README.md`, `changes.md` | This page and the change history – the library's, copied into its package when it's published. |
+
+While you're working in this repository, the demo app's `"stream-charts"` import resolves to the library's TypeScript *source* (through a `source` condition in the library's `exports`), so a change to the library shows up in the running app right away, with no build step. Published copies of the library don't use that condition, and get the compiled `dist/`.
+
+### <span id="run-demo">running the demo app</span> [↑](#content "back to contents")
+
+The demo app, in `packages/examples`, has one tab for each plot type, with a control bar for trying out the plots' options, and an intro made of guide pages and tutorials. You'll need [Node.js](https://nodejs.org) 22.12+ (or 20.19+) and npm 7+. Clone the repository and start the app:
+
+```shell
+git clone https://github.com/robphilipp/stream-charts.git
+cd stream-charts
+npm install        # installs both packages (one node_modules, one lockfile, at the root)
+npm run dev        # starts the demo app (Vite), at http://localhost:5173
+```
+
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/intro-example-parts-dark.png">
+    <img src="packages/examples/public/images/intro-example-parts-light.png" alt="the anatomy of an example chart: the tabs and control bar are the demo app's, and the chart and its legend are the library's">
+</picture>
+
+Each tab runs one chart: click **Run**, and open its control bar to try the options while the data streams. The **Intro** tab walks through the charts and how they work. The tabs and control bars are the demo app's; the chart and its legend are the library's.
+
+To try out an idea, change an example in `packages/examples/src/app/examples` (for example, `StreamingScatterChart.tsx`), and the app reloads as you save. The tutorial [your own scatter chart, from sensor data](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/scatter-chart-from-sensor-data.md) builds a new chart from scratch. To give a new example its own tab:
+
+1. Put the example component in `packages/examples/src/app/examples`.
+2. Add a route component for it in `packages/examples/src/app/routeComponents.tsx`.
+3. Add a route for it to the route tree in `packages/examples/src/app/router.tsx`.
+4. Add `{name, path}` for the tab to `TABS` in `packages/examples/src/app/routeData.ts`.
+
+The demo app imports everything from `"stream-charts"`, just as your application would, so the chart code carries over to your application. The app's stores (zustand), control bars, and routing are its own.
+
+### <span id="contributing">working on the library</span> [↑](#content "back to contents")
+
+To add a chart or a feature to the library (see [this repository](#repository) for where everything is):
+
+1. **Fork the repository** on GitHub, clone your fork (instead of this repository), and make a branch from `develop` for your change. You'll need the same Node.js and npm as for [running the demo app](#run-demo).
+2. **Run the demo app** (`npm run dev`), and change the library in `packages/stream-charts/src/app/charts`. The demo app runs on the library's source, so your change shows up as you save. Add or change an example in the demo app to show it off.
+3. **Add tests** next to the code you changed: the library's tests are the `*.test.ts` files in `packages/stream-charts/src/app/charts`, and the demo app's are the `*.test.ts` files in `packages/examples/src`. Check that everything passes: `npm test`, `npm run lint`, and `npm run build`.
+4. **Update the docs**: this README for anything that changes the library's API, and `changes.md` for the change history. Leave the `version` in `packages/stream-charts/package.json` alone: a merge to `master` with a new version publishes the library to npm.
+5. **Open a pull request** against `develop`. The repository's CI runs only for `master` (where the releases are), not for pull requests to `develop`, so run the checks in step 3 yourself before you open it.
+
+The commands, all from the repository's root:
+
+```shell
+npm run dev        # runs the demo app, on the library's source
+npm run build      # compiles the library to packages/stream-charts/dist, then builds the demo app
+npm test           # runs both packages' tests
+npm run lint       # lints both packages
+npm run docs       # regenerates the API docs into docs/
+```
+
+To work on one package, add `-w` and its name: for example, `npm test -w stream-charts` runs only the library's tests, and `npm run preview -w stream-charts-examples` serves the demo app's production build (after `npm run build`). To see what would be published, `npm pack -w stream-charts --dry-run`.
 
 ---
 
@@ -659,7 +664,7 @@ Events over time: each series is a row, and each datum is a short vertical line 
     <img src="packages/examples/public/images/raster-chart-light.png" alt="the raster chart example: fifty neurons, one row each, with a spike for each event">
 </picture>
 
-[▶ watch it stream](https://github.com/robphilipp/stream-charts/blob/develop/images/raster-chart-video.gif) (animated)
+[▶ watch it stream](packages/examples/public/images/raster-chart-streaming.gif) (animated)
 
 | prop | type | description |
 |---|---|---|
@@ -688,7 +693,7 @@ One bar per category, showing the category's latest value and its statistics, bo
     <img src="packages/examples/public/images/bar-chart-light.png" alt="the bar chart example: fifty categories, each with its value, min/max, and mean">
 </picture>
 
-[▶ watch it stream](https://github.com/robphilipp/stream-charts/blob/develop/images/bar-chart-video.gif) (animated)
+[▶ watch it stream](packages/examples/public/images/bar-chart-streaming.gif) (animated)
 
 | prop | type | description |
 |---|---|---|
@@ -737,7 +742,7 @@ A Poincaré (iterates) plot shows each value of a sequence against a later value
     <img src="packages/examples/public/images/poincare-chart-light.png" alt="the Poincaré chart example: the tent map at a lag of 1, with colorized lines">
 </picture>
 
-[▶ watch it stream](https://github.com/robphilipp/stream-charts/blob/develop/images/poincare-video.gif) (animated)
+[▶ watch it stream](packages/examples/public/images/poincare-chart-streaming.gif) (animated)
 
 | prop | type | description |
 |---|---|---|
@@ -746,7 +751,7 @@ A Poincaré (iterates) plot shows each value of a sequence against a later value
 | `colorizeLines` | `boolean` | Colors the line along its length, one step per point, so that its direction and age can be seen (default `false`). |
 | `lineStartColor`, `lineEndColor` | `string` | The colors the colorized line sweeps between (defaults `DEFAULT_LINE_START_COLOR`, a blue, and `DEFAULT_LINE_END_COLOR`, a red). |
 | `lineColorSteps` | `number` | The number of points it takes the color to sweep from start to end, and as many to sweep back (default `DEFAULT_LINE_COLOR_STEPS`, 1,000). |
-| `zoomMinScaleFactor`, `zoomMaxScaleFactor` | `number` | Limit how far the user can zoom in and out (defaults 0 and 1). |
+| `zoomMinScaleFactor`, `zoomMaxScaleFactor` | `number` | Limit how far the user can zoom in and out. The plot starts at a scale factor of 1; smaller factors zoom in, and larger ones zoom out (2 shows twice the range). The defaults, 0 and 1, let the user zoom in as far as they like, but not out past the starting view. |
 | `zoomState`, `onZoomStateChange` | `PoincarePlotZoomState`, `(state) => void` | Keep the zoom across remounts, as for the bar plot. |
 
 ```tsx
@@ -771,6 +776,8 @@ Values over time, like the scatter plot, with a translucent band for each confid
     <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/outlier-chart-dark.png">
     <img src="packages/examples/public/images/outlier-chart-light.png" alt="the outlier chart example: a price index inside its 1σ, 2σ, and 3σ bands, with the points outside the bands marked">
 </picture>
+
+[▶ watch it stream](packages/examples/public/images/outlier-chart-streaming.gif) (animated)
 
 | prop | type | description |
 |---|---|---|
@@ -864,13 +871,13 @@ The tooltip shows information about the *data* under the mouse: a line, a spike,
 
 Each content component also takes a `style` that overrides parts of the `<Tooltip>`'s style.
 
-**&lt;ScatterPlotTooltipContent/&gt;** shows a table of the points around the mouse: the point before and the point after (or the point under the mouse, when it's on one), and the change between them.
+**&lt;ScatterPlotTooltipContent/&gt;** shows a table of the points around the mouse – the point before and the point after (or the point under the mouse, when it's on one), and the change between them – followed by statistics of the series (its number of points, mean value, standard deviation, and mean interval between points) and a sparkline of its autocorrelation.
 
 | prop | description |
 |---|---|
 | `xLabel`, `yLabel` | **Required.** The row headers for the x-values and y-values. |
 | `beforeHeader`, `pointHeader`, `afterHeader`, `deltaHeader` | The column headers (defaults: before, point, after, ∆). |
-| `xValueFormatter`, `yValueFormatter` | Format the values (defaults `formatTime` and `formatValue`). |
+| `xValueFormatter`, `yValueFormatter` | Format the values (defaults `formatTime` and `formatValue`). The `xValueFormatter` also formats the mean interval, a duration, so a formatter that turns times into, say, the time of day makes the interval read as one too. |
 | `xChangeFormatter`, `yChangeFormatter` | Format the change, `(value1, value2) => string` (defaults `formatTimeChange` and `formatValueChange`). |
 
 **&lt;RasterPlotTooltipContent/&gt;** shows the spike under the mouse (its series, time, and value) along with statistics of the series' spikes: their count, the mean and standard deviation of their values, and the mean time between them, with a sparkline of their values.
