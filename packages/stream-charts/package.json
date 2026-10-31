@@ -32,10 +32,10 @@
     "build": "npm run clean && tsc -p tsconfig.build.json",
     "test": "jest src/app/charts",
     "lint": "eslint src",
-    "prepack": "node -e \"for (const f of ['README.md','changes.md']) require('fs').copyFileSync('../../'+f, f)\" && npm run build",
+    "prepack": "node -e \"for (const f of ['README.md','changes.md','LICENSE']) require('fs').copyFileSync('../../'+f, f)\" && npm run build",
     "prepublishOnly": "npm test",
     "gen-docs": "typedoc",
-    "postpack": "node -e \"for (const f of ['README.md','changes.md']) require('fs').rmSync(f,{force:true})\""
+    "postpack": "node -e \"for (const f of ['README.md','changes.md','LICENSE']) require('fs').rmSync(f,{force:true})\""
   },
   "peerDependencies": {
     "react": "^19.0.0",

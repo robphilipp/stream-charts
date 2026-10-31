@@ -1,3 +1,4 @@
 # copied from the repo root when packing (see the prepack and postpack scripts)
 /README.md
 /changes.md
+/LICENSE

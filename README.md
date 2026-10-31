@@ -1,4 +1,4 @@
-[![npm (next)](https://img.shields.io/npm/v/stream-charts/next?label=npm%40next)](https://www.npmjs.com/package/stream-charts?activeTab=versions) [![build](https://github.com/robphilipp/stream-charts/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/robphilipp/stream-charts/actions/workflows/main.yml) [![license: MIT](https://img.shields.io/npm/l/stream-charts)](https://www.npmjs.com/package/stream-charts)
+[![npm (next)](https://img.shields.io/npm/v/stream-charts/next?label=npm%40next)](https://www.npmjs.com/package/stream-charts?activeTab=versions) [![build](https://github.com/robphilipp/stream-charts/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/robphilipp/stream-charts/actions/workflows/main.yml) [![license: MIT](https://img.shields.io/npm/l/stream-charts)](LICENSE)
 
 [Homepage](https://robphilipp.github.io/stream-charts/) •
 [API Docs](https://robphilipp.github.io/stream-charts/docs/modules.html) •
