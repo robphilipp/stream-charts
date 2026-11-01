@@ -23,6 +23,7 @@ import {
     defaultMargin,
     EmptyAxis,
     formatNumber,
+    formatTime,
     Legend,
     LegendLocation,
     noop,
@@ -564,6 +565,7 @@ export function StreamingRasterChart(props: Props): JSX.Element {
                         <RasterPlotTooltipContent
                             xFormatter={value => formatNumber(value, " ,.0f") + ' ms'}
                             yFormatter={value => formatNumber(value, " ,.1f") + ' mV'}
+                            intervalFormatter={interval => formatTime(interval, "ms")}
                         />
                     </Tooltip>
                     <Legend

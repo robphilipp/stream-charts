@@ -885,8 +885,9 @@ Each content component also takes a `style` that overrides parts of the `<Toolti
 
 | prop | description |
 |---|---|
-| `xFormatter` | Formats the times (the spike's time, and the mean time between spikes). |
+| `xFormatter` | Formats the spike's time. |
 | `yFormatter` | Formats the values (the spike's value, and the mean and standard deviation of the values). |
+| `intervalFormatter` | Formats the mean time between spikes, a duration (defaults to the `xFormatter`). Give it its own formatter when the times aren't formatted as durations, for example as the time of day. |
 
 **&lt;BarPlotTooltipContent/&gt;** shows the category under the mouse, with its value and statistics, and a sparkline of its values over the data the chart holds.
 

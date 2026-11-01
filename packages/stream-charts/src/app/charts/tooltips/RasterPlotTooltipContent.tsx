@@ -41,12 +41,20 @@ import type {Series} from "../plots/plot";
  * series name
  * xFormatter, yFormatter
  * ```
+ * Below that, the spikes' statistics: the mean value and standard deviation (formatted by
+ * `yFormatter`), and the mean time between spikes (formatted by `intervalFormatter`).
  */
 export interface Props {
-    /** formats the times (the spike's time, and the mean time between spikes) */
+    /** formats the spike's time */
     xFormatter?: (value: number) => string
     /** formats the values (the spike's value, and the mean and standard deviation of the values) */
     yFormatter?: (value: number) => string
+    /**
+     * formats the mean time between spikes (a duration, in the times' units). Defaults to the
+     * `xFormatter`, so give it its own formatter when the times are formatted as something that isn't
+     * a duration, such as the time of day
+     */
+    intervalFormatter?: (interval: number) => string
     /** the style of the tooltip */
     style?: Partial<TooltipStyle>
 }
@@ -94,6 +102,7 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
     const {
         xFormatter = formatTime,
         yFormatter = formatValue,
+        intervalFormatter = xFormatter,
         style,
     } = props
 
@@ -129,7 +138,7 @@ export function RasterPlotTooltipContent(props: Props): ReactElement | null {
                                 ['Spikes', formatNumber(tooltipContent.statistics.count, " ,.0f")],
                                 ['Mean value', valueOrMissing(tooltipContent.statistics.meanValue, yFormatter)],
                                 ['Std. deviation', valueOrMissing(tooltipContent.statistics.valueStandardDeviation, yFormatter)],
-                                ['Mean interval', valueOrMissing(tooltipContent.statistics.meanInterval, xFormatter)],
+                                ['Mean interval', valueOrMissing(tooltipContent.statistics.meanInterval, intervalFormatter)],
                             ].map(([label, value]) => (
                                 <tr key={label}>
                                     <td style={{padding: '1px 12px 1px 0', textAlign: 'left', border: 'none'}}>{label}</td>
