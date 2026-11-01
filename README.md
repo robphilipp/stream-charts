@@ -1,4 +1,4 @@
-[![npm (next)](https://img.shields.io/npm/v/stream-charts/next?label=npm%40next)](https://www.npmjs.com/package/stream-charts?activeTab=versions) [![build](https://github.com/robphilipp/stream-charts/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/robphilipp/stream-charts/actions/workflows/main.yml) [![license: MIT](https://img.shields.io/npm/l/stream-charts)](LICENSE)
+[![npm](https://img.shields.io/npm/v/stream-charts)](https://www.npmjs.com/package/stream-charts) [![build](https://github.com/robphilipp/stream-charts/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/robphilipp/stream-charts/actions/workflows/main.yml) [![license: MIT](https://img.shields.io/npm/l/stream-charts)](LICENSE)
 
 [Homepage](https://robphilipp.github.io/stream-charts/) •
 [API Docs](https://robphilipp.github.io/stream-charts/docs/modules.html) •
@@ -31,7 +31,7 @@ Five plot types are available:
 | [&lt;PoincarePlot/&gt;](#poincare-plot) | a sequence plotted against itself (`f[n+m](x)` vs `f[n](x)`) | iterated maps, chaotic systems |
 | [&lt;OutlierPlot/&gt;](#outlier-plot) | values over time, with confidence bands that flag outliers | a price index with 1σ, 2σ, 3σ bands |
 
-> Try it on codesandbox: [stream-charts](https://codesandbox.io/p/sandbox/n7c8jm)
+> Try the demo app on CodeSandbox: [stream-charts demo](https://codesandbox.io/p/github/robphilipp/stream-charts/master). It opens this repository, installs it, and runs the demo app (it takes a minute or so to start).
 
 ## <span id="content">content</span>
 
@@ -87,10 +87,10 @@ What to install depends on what you'd like to do:
 ### <span id="installation">using the library in your application</span> [↑](#content "back to contents")
 
 ```shell
-npm install stream-charts@next react react-dom rxjs d3
+npm install stream-charts react react-dom rxjs d3
 ```
 
-> This README describes version 2, which is a pre-release, published under npm's `next` tag. A plain `npm install stream-charts` installs version 1.2.1, whose API is different (see [migrating from 1.x](#migrating)).
+> This README describes version 2, whose API is different from version 1's. To upgrade from 1.x, see [migrating from 1.x](#migrating).
 
 `stream-charts` has four peer dependencies: React 19 (`react`, `react-dom`), [RxJS](https://rxjs.dev) 7, and [d3](https://d3js.org) 7. Your application uses them directly – to render the components, create the observables that feed the charts, and pass d3 scales and curves to the axes and plots – so the library shares your copies rather than bringing its own. TypeScript users get d3's type definitions (`@types/d3`) with the library.
 
