@@ -120,7 +120,10 @@ const initialState: PoincareChartState = {
     colorizeLines: false,
     lineStartColor: DEFAULT_LINE_START_COLOR,
     lineEndColor: DEFAULT_LINE_END_COLOR,
-    // (a slow sweep: at the example's 20 iterates a second, 1000 steps take well over an hour)
+    // the colors take one step per point (iterate), so how long a sweep from the start color to the
+    // end color takes depends on the update period: steps x period. At the default update period of
+    // 50 ms (20 iterates a second), 1000 steps take 50 seconds (and as long again to sweep back); at
+    // 5 ms, ten times faster, 5 seconds
     lineColorSteps: 1000,
     zoomState: undefined,
 }
