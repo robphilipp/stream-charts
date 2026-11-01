@@ -21,6 +21,7 @@ import {
     defaultLineStyle,
     defaultMargin,
     formatNumber,
+    formatTime,
     Legend,
     LegendLocation,
     noop,
@@ -684,9 +685,10 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                     >
                         <ScatterPlotTooltipContent
                             xLabel="t (ms)"
-                            yLabel="count"
-                            yValueFormatter={value => formatNumber(value, " ,.0f")}
-                            yChangeFormatter={(y1, y2) => formatNumber(y2 - y1, " ,.0f")}
+                            yLabel="distance"
+                            yValueFormatter={value => formatNumber(value, " ,.0f") + " µm"}
+                            yChangeFormatter={(y1, y2) => formatNumber(y2 - y1, " ,.0f") + " µm"}
+                            intervalFormatter={interval => formatTime(interval, "ms")}
                         />
                     </Tooltip>
                     <Legend
