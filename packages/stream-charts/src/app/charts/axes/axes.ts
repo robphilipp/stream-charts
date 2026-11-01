@@ -412,7 +412,8 @@ function addOrdinalStringXAxis(
         context2D.fillStyle = axisColor
         context2D.font = fontStringFor(currentFont.size, currentFont.family, currentFont.weight)
         context2D.textAlign = 'center'
-        context2D.textBaseline = location === AxisLocation.Top ? 'hanging' : 'alphabetic'
+        // (a bottom label sits on the canvas' bottom edge, so it's drawn above it, descenders and all)
+        context2D.textBaseline = location === AxisLocation.Top ? 'hanging' : 'bottom'
         const labelX = ordinalLabelXTranslation(location, currentDimensions, currentMargin, currentFont) - currentMargin.left
         const labelY = ordinalLabelYTranslation(location, currentDimensions, currentMargin) - yTranslation(location, currentDimensions, currentMargin)
         context2D.fillText(axisLabel, labelX, labelY)
@@ -933,7 +934,8 @@ export function addContinuousNumericXAxis(
         context2D.fillStyle = axisColor
         context2D.font = fontStringFor(currentFont.size, currentFont.family, currentFont.weight)
         context2D.textAlign = 'center'
-        context2D.textBaseline = location === AxisLocation.Top ? 'hanging' : 'alphabetic'
+        // (a bottom label sits on the canvas' bottom edge, so it's drawn above it, descenders and all)
+        context2D.textBaseline = location === AxisLocation.Top ? 'hanging' : 'bottom'
         const labelY = continuousLabelYTranslation(location, currentDimensions, currentMargin) - yTranslation(location, currentDimensions, currentMargin)
         context2D.fillText(currentLabel, currentDimensions.width / 2, labelY)
 
