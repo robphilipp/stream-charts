@@ -1,0 +1,71 @@
+/*
+    The colors of the intro pages' highlighted code (the `hljs-*` classes that rehype-highlight adds
+    to the code's tokens), one set for each theme -- GitHub's light and dark palettes. The code
+    block (see `MarkdownPre` in `Intro.tsx`) says which theme it's in with its `data-theme`.
+ */
+
+.markdown-code[data-theme="light"] {
+    --code-keyword: #cf222e;
+    --code-string: #0a3069;
+    --code-number: #0550ae;
+    --code-title: #8250df;
+    --code-type: #953800;
+    --code-comment: #6e7781;
+    --code-tag: #116329;
+    --code-attribute: #0550ae;
+}
+
+.markdown-code[data-theme="dark"] {
+    --code-keyword: #ff7b72;
+    --code-string: #a5d6ff;
+    --code-number: #79c0ff;
+    --code-title: #d2a8ff;
+    --code-type: #ffa657;
+    --code-comment: #8b949e;
+    --code-tag: #7ee787;
+    --code-attribute: #79c0ff;
+}
+
+.markdown-code .hljs-keyword,
+.markdown-code .hljs-meta,
+.markdown-code .hljs-built_in {
+    color: var(--code-keyword);
+}
+
+.markdown-code .hljs-string,
+.markdown-code .hljs-regexp {
+    color: var(--code-string);
+}
+
+.markdown-code .hljs-number,
+.markdown-code .hljs-literal,
+.markdown-code .hljs-variable.language_ {
+    color: var(--code-number);
+}
+
+.markdown-code .hljs-title,
+.markdown-code .hljs-title.function_ {
+    color: var(--code-title);
+}
+
+.markdown-code .hljs-title.class_,
+.markdown-code .hljs-type,
+.markdown-code .hljs-params {
+    color: var(--code-type);
+}
+
+.markdown-code .hljs-comment {
+    color: var(--code-comment);
+    font-style: italic;
+}
+
+.markdown-code .hljs-tag,
+.markdown-code .hljs-name {
+    color: var(--code-tag);
+}
+
+.markdown-code .hljs-attr,
+.markdown-code .hljs-attribute,
+.markdown-code .hljs-property {
+    color: var(--code-attribute);
+}

@@ -1,78 +1,19 @@
 {
-  "name": "stream-charts",
-  "version": "1.2.1",
-  "description": "Charts for steaming data",
-  "author": "Rob Philipp",
-  "homepage": "https://robphilipp.github.io/stream-charts/",
-  "license": "MIT",
-  "repository": "github:robphilipp/stream-charts",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "name": "stream-charts-monorepo",
+  "private": true,
+  "description": "The stream-charts library (packages/stream-charts) and its example app (packages/examples)",
+  "workspaces": [
+    "packages/stream-charts",
+    "packages/examples"
+  ],
   "scripts": {
-    "test": "jest src/app/charts/**/*.test.ts*",
-    "build": "tsc",
-    "prepare": "npm run build",
-    "gen-docs": "npx typedoc src/app/charts/ --out docs/ --entryPoints src/index.ts --entryPointStrategy expand"
-  },
-  "eslintConfig": {
-    "extends": "react-app"
-  },
-  "typedocOptions": {
-    "externalSymbolLinkMappings": {
-      "result-fn": {
-        "Optional": "https://github.com/robphilipp/result-fn/blob/master/docs/Optional.md"
-      },
-      "typescript": {
-        "Set": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set",
-        "Map": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
-      }
-    }
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "dev": "npm run dev -w stream-charts-examples",
+    "build": "npm run build -w stream-charts && npm run build -w stream-charts-examples",
+    "test": "npm test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "docs": "npm run gen-docs -w stream-charts"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.4",
-    "@babel/preset-env": "^7.28.3",
-    "@babel/preset-typescript": "^7.27.1",
-    "@jest/globals": "^30.2.0",
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.8.0",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/d3": "^7.4.3",
-    "@types/jest": "^30.0.0",
-    "@types/node": "^24.6.0",
-    "@types/react": "^19.1.15",
-    "@types/react-dom": "^19.1.9",
-    "d3": "^7.9.0",
-    "data-frame-ts": "^1.0.3",
-    "jest": "^30.2.0",
-    "jest-util": "^30.2.0",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "result-fn": "^0.5.0",
-    "rxjs": "^7.8.2",
-    "svg-table": "^0.1.2",
-    "ts-jest": "^29.4.4",
-    "typescript": "^5.9.2"
-  },
-  "files": [
-    "package.json",
-    "README.md",
-    "changes.md",
-    "dist/app",
-    "dist/index.*",
-    "src/app/charts/**",
-    "src/index.ts"
-  ]
+    "@babel/preset-react": "^7.27.1"
+  }
 }

@@ -1,28 +1,66 @@
-# This is a basic workflow to help you get started with Actions
+name: build, test, and publish
 
-name: publish to npm
-
-# build when master branch is pushed
+# builds and tests both packages (the library and the example app) on every push and pull request
+# to master; stages the library on npm when a push to master carries a version that isn't
+# published yet.
+#
+# The release is *staged*, not published: it only goes public once a maintainer approves it, with
+# 2FA, on npmjs.com (the package's "Staged Packages" tab) or with `npm stage approve <stage-id>`.
+# Staging uses npm's trusted publishing: npm trusts this workflow (as set up in the package's
+# settings on npmjs.com), and the workflow proves who it is with a short-lived OIDC token from
+# GitHub, so there's no npm token stored anywhere. npm adds a provenance statement, linking the
+# package to this repository and run.
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
 
+permissions:
+  # lets the workflow ask GitHub for the OIDC token that trusted publishing uses
+  id-token: write
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      - name: use node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
+      - name: use node.js 22
+        uses: actions/setup-node@v4
         with:
-          node-version: '12.x'
+          node-version: '22.x'
           registry-url: 'https://registry.npmjs.org'
-      - run: npm install
+      - run: npm ci
+      # builds the library (its dist, which is what's published), then the example app
       - run: npm run build
+      - run: npm run lint
       - run: npm test
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: check whether this version of the library is already published
+        id: version
+        if: github.event_name == 'push'
+        run: |
+          VERSION=$(node -p "require('./packages/stream-charts/package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if npm view "stream-charts@$VERSION" version > /dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # staged publishing needs npm 11.15.0 or later (node 22 comes with npm 10)
+      - name: update npm
+        if: github.event_name == 'push' && steps.version.outputs.published == 'false'
+        run: npm install -g npm@latest
+
+      # pre-release versions (e.g. 2.0.0-snapshot) go out under the "next" tag, so that they
+      # don't become what `npm install stream-charts` installs
+      - name: stage the library (for a maintainer to approve)
+        if: github.event_name == 'push' && steps.version.outputs.published == 'false'
+        run: |
+          case "${{ steps.version.outputs.version }}" in
+            *-*) npm stage publish -w stream-charts --tag next ;;
+            *)   npm stage publish -w stream-charts ;;
+          esac
