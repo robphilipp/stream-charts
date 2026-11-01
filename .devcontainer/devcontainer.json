@@ -1,0 +1,18 @@
+{
+  // runs the demo app in a GitHub codespace (the README's "Open in GitHub Codespaces" link):
+  // installs the repository once, then starts the demo app each time the codespace is opened
+  "name": "stream-charts demo",
+  // Node 22, which the demo app's Vite needs (22.12+, or 20.19+)
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "postCreateCommand": "npm ci",
+  // (the codespace serves the forwarded port on a *.app.github.dev host, which Vite's host check
+  // has to allow)
+  "postAttachCommand": "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=.app.github.dev npm run dev -w stream-charts-examples -- --port 5173 --strictPort",
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "demo app",
+      "onAutoForward": "openBrowser"
+    }
+  }
+}

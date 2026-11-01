@@ -31,7 +31,9 @@ Five plot types are available:
 | [&lt;PoincarePlot/&gt;](#poincare-plot) | a sequence plotted against itself (`f[n+m](x)` vs `f[n](x)`) | iterated maps, chaotic systems |
 | [&lt;OutlierPlot/&gt;](#outlier-plot) | values over time, with confidence bands that flag outliers | a price index with 1σ, 2σ, 3σ bands |
 
-> Try the demo app on CodeSandbox: [stream-charts demo](https://codesandbox.io/p/github/robphilipp/stream-charts/master). It opens this repository, installs it, and runs the demo app (it takes a minute or so to start).
+> Try the demo app online: [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/robphilipp/stream-charts?quickstart=1)
+>
+> This opens the repository in a GitHub codespace, installs it, and starts the demo app, which opens in a new browser tab (the first start takes a few minutes). You'll need a GitHub account, and the codespace counts against your account's free monthly Codespaces hours.
 
 ## <span id="content">content</span>
 
