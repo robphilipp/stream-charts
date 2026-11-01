@@ -877,8 +877,9 @@ Each content component also takes a `style` that overrides parts of the `<Toolti
 |---|---|
 | `xLabel`, `yLabel` | **Required.** The row headers for the x-values and y-values. |
 | `beforeHeader`, `pointHeader`, `afterHeader`, `deltaHeader` | The column headers (defaults: before, point, after, ∆). |
-| `xValueFormatter`, `yValueFormatter` | Format the values (defaults `formatTime` and `formatValue`). The `xValueFormatter` also formats the mean interval, a duration, so a formatter that turns times into, say, the time of day makes the interval read as one too. |
+| `xValueFormatter`, `yValueFormatter` | Format the values (defaults `formatTime` and `formatValue`). |
 | `xChangeFormatter`, `yChangeFormatter` | Format the change, `(value1, value2) => string` (defaults `formatTimeChange` and `formatValueChange`). |
+| `intervalFormatter` | Formats the statistics' mean interval between points, a duration (defaults to the `xValueFormatter`). Give it its own formatter when the x-values aren't formatted as durations, for example as the time of day. |
 
 **&lt;RasterPlotTooltipContent/&gt;** shows the spike under the mouse (its series, time, and value) along with statistics of the series' spikes: their count, the mean and standard deviation of their values, and the mean time between them, with a sparkline of their values.
 

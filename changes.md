@@ -28,6 +28,7 @@ A redesign of how charts get their data and how they're drawn. Code written for 
 11. Series filters are screened for regular expressions that risk catastrophic backtracking (`regexFilter`, `literalFilter`, `isSafeRegex`).
 12. A plot on the wrong kind of axis (for example, a bar plot whose x-axis is a `<ContinuousAxis>`) reports which plot, which axis, and which axis component it needs, rather than naming the old axis types. The Poincaré plot now checks its axes too. See "which axes each plot takes" in the [README](README.md).
 13. The bar plot zooms in the same direction as the other plots for the same wheel or trackpad gesture (it used to zoom the opposite way).
+14. `<ScatterPlotTooltipContent>` takes an `intervalFormatter` for the mean interval between points, a duration, which used to be formatted by the `xValueFormatter` (and still is, by default).
 
 **Packaging and documentation**
 1. Dependencies are now declared correctly (in 1.x they were all listed only as development dependencies, so none were installed with the package). React 19, RxJS 7, and d3 7 are peer dependencies, so the library shares the application's copies (`npm install stream-charts react react-dom rxjs d3`). The small utilities the library uses internally (`result-fn`, `fast-shift-array`, `safe-regex`), and d3's type definitions, are installed with the package.

@@ -233,8 +233,9 @@ const seconds = (ms: number): string => `${(ms / 1000).toFixed(1)} s`
     <ScatterPlotTooltipContent
         xLabel="time"
         yLabel="reading"
-        xValueFormatter={seconds}
+        xValueFormatter={clockTime}
         xChangeFormatter={(x1, x2) => seconds(x2 - x1)}
+        intervalFormatter={seconds}
         yValueFormatter={value => value.toFixed(1)}
         yChangeFormatter={(y1, y2) => (y2 - y1).toFixed(1)}
     />
@@ -243,10 +244,10 @@ const seconds = (ms: number): string => `${(ms / 1000).toFixed(1)} s`
 
 - **The legend** lists the sensors in their colors, over the top-left corner of the plot. Hovering over an entry highlights its line. (It can also go outside the chart – see the legends page.)
 - **The tracker** follows the mouse, and labels its time on the x-axis. Its `labelFormatter` turns the chart's time back into the time of day – "2:14:05 PM" means a lot more to a person than "754,021".
-- **The tooltip** shows a reading's neighbors, the change between them, and some statistics about the sensor's data. Here, its time formatters show seconds since the start, and its value formatters round the readings to a tenth.
+- **The tooltip** shows a reading's neighbors, the change between them, and some statistics about the sensor's data. Here, it shows the readings' times as the time of day (like the tracker), the time between them in seconds, and the readings rounded to a tenth.
 - **`visible={!running}`** shows the tracker and the tooltip only while the chart is paused (the `running` state from the data-source tutorial's button). Chasing a moving line with the mouse isn't much fun.
 
-Why does the tooltip show seconds, rather than the time of day, like the tracker? Because its **Mean interval** – the average time between readings – is a duration, and the tooltip formats it with `xValueFormatter` too. With `clockTime`, a mean interval of one second would read as a time of day. With `seconds`, it reads "1.0 s", and so do the times and their change.
+Notice the tooltip's three time formatters. The times themselves (`xValueFormatter`) are moments, so they read best as the time of day. The change between two readings (`xChangeFormatter`) and the statistics' **Mean interval** – the average time between readings (`intervalFormatter`) – are durations, so they read best in seconds: "1.0 s", rather than a time of day one second after midnight. (Without its own `intervalFormatter`, the mean interval uses the `xValueFormatter`, which is fine when the times are plain numbers, but not when they're times of day.)
 
 One thing the tooltip can't do out of the box: show each sensor's units. `yLabel` is the same for every series. For "23.4 °C" on the temperatures and "61 %" on the humidities, write your own tooltip content, which can look at the series' name – the previous tutorial shows how.
 
@@ -376,8 +377,9 @@ export function GreenhouseChart(): JSX.Element {
                     <ScatterPlotTooltipContent
                         xLabel="time"
                         yLabel="reading"
-                        xValueFormatter={seconds}
+                        xValueFormatter={clockTime}
                         xChangeFormatter={(x1, x2) => seconds(x2 - x1)}
+                        intervalFormatter={seconds}
                         yValueFormatter={value => value.toFixed(1)}
                         yChangeFormatter={(y1, y2) => (y2 - y1).toFixed(1)}
                     />

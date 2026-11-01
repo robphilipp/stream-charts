@@ -56,6 +56,8 @@ interface TooltipOptions {
  * xLabel   xValueFormatter   xValueFormatter    xValueFormatter
  * yLabel   yValueFormatter   yValueFormatter    yValueFormatter
  * ```
+ * Below the table, the series' statistics: the mean value and standard deviation (formatted by
+ * `yValueFormatter`), and the mean interval between points (formatted by `intervalFormatter`).
  */
 export interface Props {
     // label for the x-values (x-value row header)
@@ -78,6 +80,10 @@ export interface Props {
     xChangeFormatter?: (value1: number, value2: number) => string,
     // formats the change in the y-values (from the first value to the second)
     yChangeFormatter?: (value1: number, value2: number) => string,
+    // formats the mean interval between the series' points (a duration, in the x-values' units).
+    // Defaults to the `xValueFormatter`, so give it its own formatter when the x-values are
+    // formatted as something that isn't a duration, such as the time of day
+    intervalFormatter?: (interval: number) => string
     // the style of the tooltip
     style?: Partial<TooltipStyle>
 }
@@ -162,6 +168,7 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
         yValueFormatter = formatValue,
         xChangeFormatter = formatTimeChange,
         yChangeFormatter = formatValueChange,
+        intervalFormatter = xValueFormatter,
         style,
     } = props
 
@@ -227,7 +234,7 @@ export function ScatterPlotTooltipContent(props: Props): ReactElement | null {
                                 ['Points', formatNumber(tooltipContent.statistics.count, " ,.0f")],
                                 ['Mean value', valueOrMissing(tooltipContent.statistics.meanValue, yValueFormatter)],
                                 ['Std. deviation', valueOrMissing(tooltipContent.statistics.valueStandardDeviation, yValueFormatter)],
-                                ['Mean interval', valueOrMissing(tooltipContent.statistics.meanInterval, xValueFormatter)],
+                                ['Mean interval', valueOrMissing(tooltipContent.statistics.meanInterval, intervalFormatter)],
                             ].map(([label, value]) => (
                                 <tr key={label}>
                                     <td style={{padding: '1px 12px 1px 0', textAlign: 'left', border: 'none'}}>{label}</td>
