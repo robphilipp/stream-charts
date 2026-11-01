@@ -1,13 +1,25 @@
 name: build, test, and publish
 
 # builds and tests both packages (the library and the example app) on every push and pull request
-# to master; publishes the library to npm when a push to master carries a version that isn't
-# published yet
+# to master; stages the library on npm when a push to master carries a version that isn't
+# published yet.
+#
+# The release is *staged*, not published: it only goes public once a maintainer approves it, with
+# 2FA, on npmjs.com (the package's "Staged Packages" tab) or with `npm stage approve <stage-id>`.
+# Staging uses npm's trusted publishing: npm trusts this workflow (as set up in the package's
+# settings on npmjs.com), and the workflow proves who it is with a short-lived OIDC token from
+# GitHub, so there's no npm token stored anywhere. npm adds a provenance statement, linking the
+# package to this repository and run.
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+
+permissions:
+  # lets the workflow ask GitHub for the OIDC token that trusted publishing uses
+  id-token: write
+  contents: read
 
 jobs:
   build:
@@ -38,14 +50,17 @@ jobs:
             echo "published=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # staged publishing needs npm 11.15.0 or later (node 22 comes with npm 10)
+      - name: update npm
+        if: github.event_name == 'push' && steps.version.outputs.published == 'false'
+        run: npm install -g npm@latest
+
       # pre-release versions (e.g. 2.0.0-snapshot) go out under the "next" tag, so that they
       # don't become what `npm install stream-charts` installs
-      - name: publish the library
+      - name: stage the library (for a maintainer to approve)
         if: github.event_name == 'push' && steps.version.outputs.published == 'false'
         run: |
           case "${{ steps.version.outputs.version }}" in
-            *-*) npm publish -w stream-charts --tag next ;;
-            *)   npm publish -w stream-charts ;;
+            *-*) npm stage publish -w stream-charts --tag next ;;
+            *)   npm stage publish -w stream-charts ;;
           esac
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

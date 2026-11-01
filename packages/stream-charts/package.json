@@ -5,7 +5,10 @@
   "author": "Rob Philipp",
   "homepage": "https://robphilipp.github.io/stream-charts/",
   "license": "MIT",
-  "repository": "github:robphilipp/stream-charts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robphilipp/stream-charts.git"
+  },
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",

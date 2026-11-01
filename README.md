@@ -270,7 +270,7 @@ To add a chart or a feature to the library (see [this repository](#repository) f
 1. **Fork the repository** on GitHub, clone your fork (instead of this repository), and make a branch from `develop` for your change. You'll need the same Node.js and npm as for [running the demo app](#run-demo).
 2. **Run the demo app** (`npm run dev`), and change the library in `packages/stream-charts/src/app/charts`. The demo app runs on the library's source, so your change shows up as you save. Add or change an example in the demo app to show it off.
 3. **Add tests** next to the code you changed: the library's tests are the `*.test.ts` files in `packages/stream-charts/src/app/charts`, and the demo app's are the `*.test.ts` files in `packages/examples/src`. Check that everything passes: `npm test`, `npm run lint`, and `npm run build`.
-4. **Update the docs**: this README for anything that changes the library's API, and `changes.md` for the change history. Leave the `version` in `packages/stream-charts/package.json` alone: a merge to `master` with a new version publishes the library to npm.
+4. **Update the docs**: this README for anything that changes the library's API, and `changes.md` for the change history. Leave the `version` in `packages/stream-charts/package.json` alone: a merge to `master` with a new version stages the library on npm, for a maintainer to approve and release.
 5. **Open a pull request** against `develop`. The repository's CI runs only for `master` (where the releases are), not for pull requests to `develop`, so run the checks in step 3 yourself before you open it.
 
 The commands, all from the repository's root:
