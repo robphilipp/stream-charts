@@ -45,6 +45,15 @@ export interface CanvasZoomPanOptions {
      */
     scaleExtent: [min: number, max: number]
     /**
+     * Whether the wheel changes d3-zoom's scale the opposite way to d3-zoom's default, so that all
+     * the plots zoom the same way for the same gesture. Plots differ in which way their axes move
+     * with the scale: a continuous axis's range *widens* as the scale goes up (an incremental factor
+     * above 1 grows it), while an ordinal axis's (pixel) range widens its bands as the scale goes
+     * up. So the continuous-axis plots use d3-zoom's default, and the bar plot (with its ordinal
+     * axis) inverts the wheel to match them. Defaults to `false`.
+     */
+    invertWheel?: boolean
+    /**
      * The plot's margin and dimensions, which bound the zoom's translation
      */
     translateExtent: [[left: number, top: number], [right: number, bottom: number]]
@@ -98,6 +107,16 @@ export interface CanvasZoomPanControls {
 }
 
 /**
+ * How far a wheel event scrolls (positive when scrolling down, toward you), scaled as d3-zoom's
+ * default `wheelDelta` scales it (which negates it, so that scrolling up raises the scale)
+ * @param event The wheel event
+ * @return The scroll amount, in d3-zoom's units
+ */
+function wheelDeltaOf(event: WheelEvent): number {
+    return event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002) * (event.ctrlKey ? 10 : 1)
+}
+
+/**
  * Sets up panning (dragging) and zooming (the mouse wheel) on a plot's canvas, with d3's drag and
  * zoom behaviors, and detaches them when the plot unmounts (or the canvas, or the settings they
  * depend on, change).
@@ -119,6 +138,7 @@ export function useCanvasZoomPan(canvasContext: CanvasContext | null, options: C
         zoomEnabled,
         keyModifiersRequired,
         scaleExtent: [minScale, maxScale],
+        invertWheel = false,
         translateExtent: [[left, top], [right, bottom]],
         onZoomReset,
     } = options
@@ -179,6 +199,8 @@ export function useCanvasZoomPan(canvasContext: CanvasContext | null, options: C
                 const zoom = d3.zoom<HTMLCanvasElement, unknown>()
                     // wheel events only -- see the doc comment above
                     .filter(event => event.type === 'wheel' && (!keyModifiersRequired || event.shiftKey || event.ctrlKey))
+                    // (the same gesture zooms every plot the same way -- see `invertWheel`)
+                    .wheelDelta(event => (invertWheel ? 1 : -1) * wheelDeltaOf(event))
                     .scaleExtent([minScale, maxScale])
                     .translateExtent([[left, top], [right, bottom]])
                     .on("zoom", (event: D3ZoomEvent<HTMLCanvasElement, unknown>) => {
@@ -209,7 +231,7 @@ export function useCanvasZoomPan(canvasContext: CanvasContext | null, options: C
             }
         },
         [
-            canvasContext, panEnabled, zoomEnabled, keyModifiersRequired,
+            canvasContext, panEnabled, zoomEnabled, keyModifiersRequired, invertWheel,
             minScale, maxScale, left, top, right, bottom, onZoomReset, resetZoomTransform
         ]
     )

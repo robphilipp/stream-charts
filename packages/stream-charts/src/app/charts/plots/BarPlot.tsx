@@ -664,6 +664,9 @@ export function BarPlot(props: Props): null {
         zoomEnabled,
         keyModifiersRequired: zoomKeyModifiersRequired,
         scaleExtent: [1, 10],
+        // (an ordinal axis zooms in as d3-zoom's scale goes up, the opposite way to the other
+        // plots' continuous axes, so the wheel is inverted to zoom the same way as they do)
+        invertWheel: true,
         translateExtent: [[margin.left, margin.top], [plotDimensions.width, plotDimensions.height]],
         // (tooltips are suppressed while panning, so that one isn't left behind)
         onPanStart: () => {
