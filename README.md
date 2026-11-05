@@ -1,7 +1,7 @@
 [![npm](https://img.shields.io/npm/v/stream-charts)](https://www.npmjs.com/package/stream-charts) [![build](https://github.com/robphilipp/stream-charts/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/robphilipp/stream-charts/actions/workflows/main.yml) [![license: MIT](https://img.shields.io/npm/l/stream-charts)](LICENSE)
 
 [Homepage](https://robphilipp.github.io/stream-charts/) •
-[API Docs](https://robphilipp.github.io/stream-charts/docs/modules.html) •
+[API Docs](https://robphilipp.github.io/stream-charts/docs/) •
 [Change History](changes.md)
 
 **`stream-charts`** is a [React](https://react.dev) library for real-time charts of high-frequency streaming data. This repository holds the library, and a **demo app** that shows each of its charts at work and lets you explore them.
@@ -233,7 +233,7 @@ This repository is a monorepo (npm workspaces) holding two packages: the library
 |---|---|
 | `packages/stream-charts` | **The library**, published to npm as `stream-charts`. Its code is in `src/app/charts`, and its public API – everything you can import from `"stream-charts"` – is `src/index.ts`. |
 | `packages/examples` | **The demo app** (not published). The examples are in `src/app/examples`, and the guide pages shown in its intro are the markdown files in `src/app/examples/docs`. |
-| `docs/` | The API docs, generated from the library's source, and served at [robphilipp.github.io/stream-charts/docs](https://robphilipp.github.io/stream-charts/docs/modules.html). |
+| `docs/` | The API docs, generated from the library's source, and served at [robphilipp.github.io/stream-charts/docs](https://robphilipp.github.io/stream-charts/docs/). |
 | `README.md`, `changes.md` | This page and the change history – the library's, copied into its package when it's published. |
 
 While you're working in this repository, the demo app's `"stream-charts"` import resolves to the library's TypeScript *source* (through a `source` condition in the library's `exports`), so a change to the library shows up in the running app right away, with no build step. Published copies of the library don't use that condition, and get the compiled `dist/`.
@@ -1001,7 +1001,7 @@ For advanced use, such as building your own components inside a `<Chart>`:
 | `useTooltipStyle()` | The enclosing tooltip's style (inside a tooltip's content). |
 | `useOutlierTooltip()` | The hovered point and band, the style, and the formatters (inside an `<OutlierPlotTooltipContent>`). |
 
-The full API, including the formatting helpers (`formatNumber`, `formatTime`, `formatValue`, and friends), is in the [API docs](https://robphilipp.github.io/stream-charts/docs/modules.html).
+The full API, including the formatting helpers (`formatNumber`, `formatTime`, `formatValue`, and friends), is in the [API docs](https://robphilipp.github.io/stream-charts/docs/).
 
 ### <span id="further-reading">further reading</span> [↑](#content "back to contents")
 
