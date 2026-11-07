@@ -12,6 +12,7 @@ import {withAlpha} from "../styling/canvasStyle"
 import {geoViewDriverFor} from "../subscriptions/viewDrivers"
 import {useDataSource, useDataSourceRunning, useStreamingSettings} from "../hooks/useDataSource"
 import type {GeoChartData} from "../observables/geo"
+import type {GeoAggregate} from "../datasources/geoRollups"
 import type {GeoDatum, GeoSeries} from "../series/geoSeries"
 import {usePlotDimensions} from "../hooks/usePlotDimensions"
 import {type TooltipData, useTooltip} from "../hooks/useTooltip"
@@ -22,6 +23,7 @@ import {
     type GeoTooltipMetadata,
     isGlobe,
     panView,
+    placeUnder,
     setUpProjection,
     viewCenteredOn,
     zoomViewAbout,
@@ -102,10 +104,75 @@ export interface Props<P> {
      */
     colorOf?: (datum: GeoDatum<P>, seriesName: string) => string | undefined
     /**
+     * What the plot shows: each event (`points`, the default), or the aggregates of one of the data
+     * source's roll-ups (`aggregates`, see `rollup`, and the {@link GeoDataSource}'s `rollups`)
+     */
+    mode?: 'points' | 'aggregates'
+    /**
+     * The name of the data source's roll-up to show in the `aggregates` mode
+     */
+    rollup?: string
+    /**
+     * What an aggregate's size shows: `count` (the default, its number of events), or the name of
+     * one of the roll-up's measures. The circles' areas are proportional to it.
+     */
+    sizeBy?: string
+    /**
+     * What an aggregate's color shows: `count`, or the name of one of the roll-up's measures
+     * (colored by `colorScheme`, over `colorDomain`). Without it, aggregates are drawn in
+     * `aggregateColor`.
+     */
+    colorBy?: string
+    /**
+     * The fixed `[0, largest]` range of the `sizeBy` values that the sizes span (an aggregate at the
+     * largest value gets `maxAggregateRadius`). Defaults to the largest value shown, so the sizes
+     * are relative to the largest aggregate.
+     */
+    sizeDomain?: [number, number]
+    /**
+     * The fixed `[lowest, highest]` range of the `colorBy` values that the colors span. Defaults to
+     * the range of the values shown.
+     */
+    colorDomain?: [number, number]
+    /**
+     * The colors for the `colorBy` values: maps 0 (the lowest) to 1 (the highest) to a color.
+     * Defaults to d3's yellow-orange-red (`d3.interpolateYlOrRd`).
+     */
+    colorScheme?: (t: number) => string
+    /**
+     * The color of the aggregates when they aren't colored by a value (see `colorBy`). Defaults to
+     * a blue.
+     */
+    aggregateColor?: string
+    /**
+     * The opacity of the aggregates (0 to 1). Defaults to 0.6.
+     */
+    aggregateOpacity?: number
+    /**
+     * How aggregates are drawn: as circles (`circles`, the default), sized by `sizeBy`, or as their
+     * cells (`cells`, for a roll-up whose cells are areas, see `byGridCell`), colored by `colorBy`
+     * (or by `sizeBy`, without one). A roll-up whose cells aren't areas is drawn as circles.
+     */
+    aggregateShape?: 'circles' | 'cells'
+    /**
+     * The radius (px) of the largest aggregate's circle. Defaults to 20.
+     */
+    maxAggregateRadius?: number
+    /**
+     * The radius (px) of the smallest aggregate's circle. Defaults to 2.
+     */
+    minAggregateRadius?: number
+    /**
+     * Whether to draw the keys (in the bottom-right corner) for the aggregates' sizes and colors.
+     * Defaults to `true`.
+     */
+    showKeys?: boolean
+    /**
      * When set, events fade as they age: from `markerOpacity`, when they arrive, to
      * `markerOpacity * fadedOpacity` once they're this old (ms), so that the newest events stand
      * out. An event's age is measured from the data source's latest event (the stream's clock), so
-     * nothing fades while the data source is paused. Defaults to no fading.
+     * nothing fades while the data source is paused. Aggregates fade by the age of their latest
+     * event. Defaults to no fading.
      */
     fadeDuration?: number
     /**
@@ -159,13 +226,155 @@ export interface Props<P> {
     onZoomReset?: (resetZoom: () => void) => void
 }
 
-// a drawn event's marker, for hit-testing the mouse (in canvas coordinates)
+// a drawn marker (an event's, or an aggregate's circle), for hit-testing the mouse (in canvas
+// coordinates), and what it shows
 type DrawnMarker<P> = {
     x: number
     y: number
     hitRadius: number
-    seriesName: string
-    datum: GeoDatum<P>
+    target: GeoTooltipMetadata<P>
+}
+
+/**
+ * @param target What's under the mouse
+ * @return What identifies it from one redraw to the next: the event itself, or the aggregate's
+ * roll-up and cell (an aggregate is a new object each time its cell changes)
+ */
+const keyOf = <P, >(target: GeoTooltipMetadata<P>): unknown =>
+    target.kind === 'event' ? target.datum : `${target.rollup}::${target.aggregate.id}`
+
+/**
+ * @param target What's under the mouse
+ * @return The name the tooltip's handlers get: the event's series, or the aggregate's roll-up
+ */
+const nameOf = <P, >(target: GeoTooltipMetadata<P>): string =>
+    target.kind === 'event' ? target.seriesName : target.rollup
+
+/**
+ * @param dataSource The chart's data source
+ * @param rollup The name of a roll-up
+ * @return The roll-up's aggregates, when the data source keeps roll-ups (a {@link GeoDataSource}
+ * does); otherwise none
+ */
+function aggregatesOf(dataSource: unknown, rollup: string): Array<GeoAggregate> {
+    return dataSource !== null && typeof dataSource === 'object' && 'aggregates' in dataSource ?
+        (dataSource as {aggregates: (name: string) => Array<GeoAggregate>}).aggregates(rollup) :
+        []
+}
+
+/**
+ * @param aggregate An aggregate
+ * @param name `count`, or the name of one of the roll-up's measures
+ * @return The aggregate's count, or the measure's value (`NaN` for an unknown measure)
+ */
+const valueOf = (aggregate: GeoAggregate, name: string): number =>
+    name === 'count' ? aggregate.count : (aggregate.values[name] ?? NaN)
+
+/**
+ * @param value A value for a key
+ * @return The value, briefly (e.g. 1.2k, 3.45)
+ */
+const keyLabel = (value: number): string => Math.abs(value) >= 1000 ? d3.format('.3~s')(value) : d3.format(',.3~g')(value)
+
+/**
+ * The keys for the aggregates (in the bottom-right corner of the plot area): nested circles for
+ * the sizes, and a color bar for the colors
+ * @param context2D The canvas' context (translated to the plot area)
+ * @param width The width of the plot area
+ * @param height The height of the plot area
+ * @param color The chart's color (for the text and outlines)
+ * @param backgroundColor The chart's background color
+ * @param size The size key: its label, the largest value, and the radius for a value
+ * @param colors The color key: its label, the range of values, and the color for a value
+ */
+function drawKeys(
+    context2D: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    color: string,
+    backgroundColor: string,
+    size: {label: string, largest: number, radiusOf: (value: number) => number} | undefined,
+    colors: {label: string, domain: [number, number], colorOf: (value: number) => string} | undefined,
+): void {
+    if (size === undefined && colors === undefined) return
+    const padding = 8
+    const lineHeight = 14
+    const largestRadius = size !== undefined ? size.radiusOf(size.largest) : 0
+    // the key's values: the largest, a quarter of it, and a sixteenth (each about half the radius
+    // of the one before), to two significant digits
+    const sizeValues = size !== undefined ?
+        Array.from(new Set([size.largest, size.largest / 4, size.largest / 16].map(value => Number(value.toPrecision(2))))) :
+        []
+    // each value's label is at the top of its circle, but at least a line below the one before
+    const labelYs = sizeValues.reduce<Array<number>>((ys, value) => {
+        const top = 2 * largestRadius - 2 * (size?.radiusOf(value) ?? 0)
+        return [...ys, ys.length === 0 ? top : Math.max(top, ys[ys.length - 1] + 11)]
+    }, [])
+    const sizeHeight = size !== undefined ?
+        lineHeight + Math.max(2 * largestRadius, labelYs[labelYs.length - 1] ?? 0) + 6 :
+        0
+    const colorHeight = colors !== undefined ? 2 * lineHeight + 10 : 0
+    const boxWidth = Math.max(140, 2 * largestRadius + 80)
+    const boxHeight = 2 * padding + sizeHeight + colorHeight + (size !== undefined && colors !== undefined ? 6 : 0)
+    const left = width - boxWidth - 10
+    let top = height - boxHeight - 10
+
+    context2D.globalAlpha = 1
+    context2D.fillStyle = withAlpha(backgroundColor, 0.85)
+    context2D.strokeStyle = withAlpha(color, 0.3)
+    context2D.lineWidth = 1
+    context2D.beginPath()
+    context2D.rect(left, top, boxWidth, boxHeight)
+    context2D.fill()
+    context2D.stroke()
+
+    context2D.font = '11px sans-serif'
+    context2D.textBaseline = 'middle'
+    context2D.fillStyle = color
+    top += padding
+
+    if (size !== undefined) {
+        context2D.textAlign = 'left'
+        context2D.fillText(size.label, left + padding, top + lineHeight / 2)
+        // nested circles, sitting on the same baseline, each with a leader line to its label
+        const centerX = left + padding + largestRadius
+        const circlesTop = top + lineHeight + 2
+        const baseY = circlesTop + 2 * largestRadius
+        sizeValues.forEach((value, index) => {
+            const radius = size.radiusOf(value)
+            const labelY = circlesTop + labelYs[index]
+            context2D.strokeStyle = withAlpha(color, 0.7)
+            context2D.beginPath()
+            context2D.arc(centerX, baseY - radius, radius, 0, 2 * Math.PI)
+            context2D.stroke()
+            context2D.beginPath()
+            context2D.moveTo(centerX, baseY - 2 * radius)
+            context2D.lineTo(centerX + largestRadius + 4, baseY - 2 * radius)
+            context2D.lineTo(centerX + largestRadius + 8, labelY)
+            context2D.strokeStyle = withAlpha(color, 0.35)
+            context2D.stroke()
+            context2D.fillText(keyLabel(value), centerX + largestRadius + 12, labelY)
+        })
+        top += sizeHeight + 6
+    }
+
+    if (colors !== undefined) {
+        context2D.textAlign = 'left'
+        context2D.fillText(colors.label, left + padding, top + lineHeight / 2)
+        const barLeft = left + padding
+        const barWidth = boxWidth - 2 * padding
+        const [lowest, highest] = colors.domain
+        const gradient = context2D.createLinearGradient(barLeft, 0, barLeft + barWidth, 0)
+        for (let stop = 0; stop <= 10; stop++) {
+            gradient.addColorStop(stop / 10, colors.colorOf(lowest + (highest - lowest) * stop / 10))
+        }
+        context2D.fillStyle = gradient
+        context2D.fillRect(barLeft, top + lineHeight, barWidth, 8)
+        context2D.fillStyle = color
+        context2D.fillText(keyLabel(lowest), barLeft, top + lineHeight + 8 + lineHeight / 2 + 2)
+        context2D.textAlign = 'right'
+        context2D.fillText(keyLabel(highest), barLeft + barWidth, top + lineHeight + 8 + lineHeight / 2 + 2)
+    }
 }
 
 const DEFAULT_CENTER: [number, number] = [0, 20]
@@ -207,6 +416,7 @@ export function GeoPlot<P>(props: Props<P>): null {
         chartId,
         canvasContext,
         color,
+        backgroundColor,
         seriesStyles,
         seriesFilter,
         mouse,
@@ -238,6 +448,19 @@ export function GeoPlot<P>(props: Props<P>): null {
         markerOpacity = 0.85,
         radiusOf,
         colorOf,
+        mode = 'points',
+        rollup,
+        sizeBy = 'count',
+        colorBy,
+        sizeDomain,
+        colorDomain,
+        colorScheme = d3.interpolateYlOrRd,
+        aggregateColor = '#4e79a7',
+        aggregateOpacity = 0.6,
+        aggregateShape = 'circles',
+        maxAggregateRadius = 20,
+        minAggregateRadius = 2,
+        showKeys = true,
         fadeDuration,
         fadedOpacity = 0.15,
         rotateEnabled = true,
@@ -286,11 +509,13 @@ export function GeoPlot<P>(props: Props<P>): null {
     // whether the view is being dragged (which pauses the auto-rotation)
     const draggingRef = useRef<boolean>(false)
 
-    // the last-drawn markers, for finding the one under the mouse, and the largest hit radius
+    // the last-drawn markers, for finding the one under the mouse, and the largest hit radius; and
+    // the last-drawn cells (in the `cells` shape), for finding the one under the mouse
     const markersRef = useRef<d3.Quadtree<DrawnMarker<P>>>(d3.quadtree<DrawnMarker<P>>())
     const maxHitRadiusRef = useRef<number>(0)
-    // the event under the mouse
-    const hoveredRef = useRef<{seriesName: string, datum: GeoDatum<P>} | undefined>(undefined)
+    const cellsRef = useRef<Array<GeoAggregate>>([])
+    // what's under the mouse (an event, or an aggregate)
+    const hoveredRef = useRef<GeoTooltipMetadata<P> | undefined>(undefined)
 
     const updatePlot = useCallback(
         /**
@@ -339,83 +564,185 @@ export function GeoPlot<P>(props: Props<P>): null {
                 context2D.lineWidth = 1
                 context2D.stroke()
 
-                // the events: a globe hides the far side, beyond its clip angle from the view's center
+                // a globe hides the far side, beyond its clip angle from the view's center
                 const [lambda, phi] = projection.rotate()
                 const viewCenter: [number, number] = [-lambda, -phi]
                 const maxDistance = isGlobe(projection) ? (projection.clipAngle() ?? 0) / DEGREES : Infinity
-                // an event's opacity, by its age (relative to the latest event), when fading
+                /**
+                 * @param latitude A latitude
+                 * @param longitude A longitude
+                 * @return Where the place is drawn in the plot area, or `undefined` when it isn't shown
+                 */
+                const shownAt = (latitude: number, longitude: number): [number, number] | undefined => {
+                    const location: [number, number] = [longitude, latitude]
+                    if (maxDistance !== Infinity && d3.geoDistance(location, viewCenter) > maxDistance) return undefined
+                    const projected = projection(location)
+                    if (projected === null || !Number.isFinite(projected[0]) || !Number.isFinite(projected[1])) return undefined
+                    const [x, y] = projected
+                    return x < 0 || y < 0 || x > width || y > height ? undefined : [x, y]
+                }
+
+                // an event's (or an aggregate's) fading, by the age of its time relative to the
+                // latest event: from 0 (new) to FADE_LEVELS - 1 (faded)
                 const latestTime = dataSource?.latestTime() ?? 0
                 const fades = fadeDuration !== undefined && fadeDuration > 0
-                const fadeLevelOf = (datum: GeoDatum<P>): number => fades ?
-                    Math.round(Math.min(1, Math.max(0, (latestTime - datum.time) / fadeDuration)) * (FADE_LEVELS - 1)) :
+                const fadeLevelOf = (time: number): number => fades ?
+                    Math.round(Math.min(1, Math.max(0, (latestTime - time) / fadeDuration)) * (FADE_LEVELS - 1)) :
                     0
-                const opacityOf = (level: number): number =>
-                    markerOpacity * (1 - (1 - fadedOpacity) * level / (FADE_LEVELS - 1))
+                const fadingOf = (level: number): number => 1 - (1 - fadedOpacity) * level / (FADE_LEVELS - 1)
 
                 const markers: Array<DrawnMarker<P>> = []
-                let hoveredMarker: DrawnMarker<P> | undefined = undefined
-                const hovered = hoveredRef.current
+                const cells: Array<GeoAggregate> = []
+                const hoveredKey = hoveredRef.current !== undefined ? keyOf(hoveredRef.current) : undefined
+                let highlighted: DrawnMarker<P> | undefined = undefined
 
-                dataSource?.seriesList().forEach(series => {
-                    if (!series.name.match(seriesFilter)) return
-                    const style = seriesStyles.get(series.name) ?? defaultLineStyle()
-                    // the markers, a path per color and opacity, so that a series in one color is
-                    // a few fills
-                    const paths = new Map<string, {fill: string, level: number, path: Path2D}>()
+                if (mode === 'aggregates') {
+                    const aggregates = rollup !== undefined ? aggregatesOf(dataSource, rollup) : []
 
-                    series.data.forEach(datum => {
-                        const location: [number, number] = [datum.longitude, datum.latitude]
-                        if (maxDistance !== Infinity && d3.geoDistance(location, viewCenter) > maxDistance) return
-                        const projected = projection(location)
-                        if (projected === null || !Number.isFinite(projected[0]) || !Number.isFinite(projected[1])) return
-                        const [x, y] = projected
-                        if (x < 0 || y < 0 || x > width || y > height) return
+                    // the sizes: the circles' areas are proportional to the `sizeBy` values
+                    const largest = sizeDomain?.[1] ?? aggregates.reduce(
+                        (max, aggregate) => Math.max(max, Number.isFinite(valueOf(aggregate, sizeBy)) ? valueOf(aggregate, sizeBy) : 0),
+                        0
+                    )
+                    const radiusOfValue = (value: number): number => !Number.isFinite(value) || largest <= 0 ?
+                        minAggregateRadius :
+                        minAggregateRadius + (maxAggregateRadius - minAggregateRadius) * Math.sqrt(Math.max(0, Math.min(1, value / largest)))
 
-                        const radius = Math.max(radiusOf?.(datum, series.name) ?? markerRadius, 0.5)
-                        const fill = colorOf?.(datum, series.name) ?? style.color
-                        const level = fadeLevelOf(datum)
-                        const key = `${fill}|${level}`
-                        let markerPath = paths.get(key)
-                        if (markerPath === undefined) {
-                            markerPath = {fill, level, path: new Path2D()}
-                            paths.set(key, markerPath)
-                        }
-                        markerPath.path.moveTo(x + radius, y)
-                        markerPath.path.arc(x, y, radius, 0, 2 * Math.PI)
+                    // the colors: by `colorBy` (or, for cells, by `sizeBy` without one)
+                    const asCells = (aggregate: GeoAggregate): boolean => aggregateShape === 'cells' && aggregate.bounds !== undefined
+                    const colorKey = colorBy ?? (aggregateShape === 'cells' ? sizeBy : undefined)
+                    const colorValues = colorKey === undefined ? [] :
+                        aggregates.map(aggregate => valueOf(aggregate, colorKey)).filter(Number.isFinite)
+                    const [lowest, highest] = colorDomain ?? [
+                        colorValues.reduce((min, value) => Math.min(min, value), Infinity),
+                        colorValues.reduce((max, value) => Math.max(max, value), -Infinity),
+                    ]
+                    const colorOfValue = (value: number): string => !Number.isFinite(value) || !Number.isFinite(lowest) ?
+                        aggregateColor :
+                        colorScheme(highest > lowest ? Math.max(0, Math.min(1, (value - lowest) / (highest - lowest))) : 1)
+                    const fillOf = (aggregate: GeoAggregate): string =>
+                        colorKey === undefined ? aggregateColor : colorOfValue(valueOf(aggregate, colorKey))
 
-                        const marker = {
-                            x: x + margin.left, y: y + margin.top,
-                            hitRadius: Math.max(radius + 3, 6),
-                            seriesName: series.name, datum
-                        }
-                        markers.push(marker)
-                        if (hovered?.datum === datum) hoveredMarker = marker
+                    // the cells (areas), then the circles, the largest first, so that small ones
+                    // aren't hidden under large ones
+                    aggregates.filter(asCells).forEach(aggregate => {
+                        const {west, south, east, north} = aggregate.bounds!
+                        const outline = d3.geoGraticule().extent([[west, south], [east, north]]).precision(2).outline()
+                        context2D.globalAlpha = aggregateOpacity * fadingOf(fadeLevelOf(aggregate.lastTime))
+                        context2D.beginPath()
+                        path(outline)
+                        context2D.fillStyle = fillOf(aggregate)
+                        context2D.fill()
+                        const hovered = hoveredKey === `${rollup}::${aggregate.id}`
+                        context2D.globalAlpha = hovered ? 1 : 0.5
+                        context2D.strokeStyle = hovered ? color : withAlpha(color, 0.3)
+                        context2D.lineWidth = hovered ? 2 : 0.5
+                        context2D.stroke()
+                        cells.push(aggregate)
                     })
-
-                    // the faintest first, so that the newest events are drawn over the older ones
-                    Array.from(paths.values())
-                        .sort((a, b) => b.level - a.level)
-                        .forEach(({fill, level, path: markerPath}) => {
-                            context2D.globalAlpha = opacityOf(level)
+                    aggregates
+                        .filter(aggregate => !asCells(aggregate))
+                        .map(aggregate => ({aggregate, radius: radiusOfValue(valueOf(aggregate, sizeBy))}))
+                        .sort((a, b) => b.radius - a.radius)
+                        .forEach(({aggregate, radius}) => {
+                            const at = shownAt(aggregate.latitude, aggregate.longitude)
+                            if (at === undefined) return
+                            const [x, y] = at
+                            const fill = fillOf(aggregate)
+                            context2D.globalAlpha = aggregateOpacity * fadingOf(fadeLevelOf(aggregate.lastTime))
+                            context2D.beginPath()
+                            context2D.arc(x, y, radius, 0, 2 * Math.PI)
                             context2D.fillStyle = fill
-                            context2D.fill(markerPath)
+                            context2D.fill()
+                            context2D.strokeStyle = d3.color(fill)?.darker(0.8).formatRgb() ?? color
+                            context2D.lineWidth = 1
+                            context2D.stroke()
+                            const marker: DrawnMarker<P> = {
+                                x: x + margin.left, y: y + margin.top, hitRadius: Math.max(radius, 5),
+                                target: {kind: 'aggregate', rollup: rollup ?? '', aggregate}
+                            }
+                            markers.push(marker)
+                            if (hoveredKey === keyOf(marker.target)) highlighted = marker
                         })
-                })
 
-                // the hovered event: enlarged, in its series' highlight color, with a ring
-                const highlighted = hoveredMarker as DrawnMarker<P> | undefined
-                if (highlighted !== undefined) {
-                    const style = seriesStyles.get(highlighted.seriesName) ?? defaultLineStyle()
+                    if (showKeys && aggregates.length > 0) {
+                        drawKeys(
+                            context2D, width, height, color, backgroundColor,
+                            aggregates.some(aggregate => !asCells(aggregate)) ?
+                                {label: sizeBy, largest, radiusOf: radiusOfValue} :
+                                undefined,
+                            colorKey !== undefined && Number.isFinite(lowest) ?
+                                {label: colorKey, domain: [lowest, highest], colorOf: colorOfValue} :
+                                undefined,
+                        )
+                    }
+                } else {
+                    dataSource?.seriesList().forEach(series => {
+                        if (!series.name.match(seriesFilter)) return
+                        const style = seriesStyles.get(series.name) ?? defaultLineStyle()
+                        // the markers, a path per color and fading, so that a series in one color
+                        // is a few fills
+                        const paths = new Map<string, {fill: string, level: number, path: Path2D}>()
+
+                        series.data.forEach(datum => {
+                            const at = shownAt(datum.latitude, datum.longitude)
+                            if (at === undefined) return
+                            const [x, y] = at
+                            const radius = Math.max(radiusOf?.(datum, series.name) ?? markerRadius, 0.5)
+                            const fill = colorOf?.(datum, series.name) ?? style.color
+                            const level = fadeLevelOf(datum.time)
+                            const key = `${fill}|${level}`
+                            let markerPath = paths.get(key)
+                            if (markerPath === undefined) {
+                                markerPath = {fill, level, path: new Path2D()}
+                                paths.set(key, markerPath)
+                            }
+                            markerPath.path.moveTo(x + radius, y)
+                            markerPath.path.arc(x, y, radius, 0, 2 * Math.PI)
+
+                            const marker: DrawnMarker<P> = {
+                                x: x + margin.left, y: y + margin.top,
+                                hitRadius: Math.max(radius + 3, 6),
+                                target: {kind: 'event', seriesName: series.name, datum}
+                            }
+                            markers.push(marker)
+                            if (hoveredKey === datum) highlighted = marker
+                        })
+
+                        // the faintest first, so that the newest events are drawn over the older ones
+                        Array.from(paths.values())
+                            .sort((a, b) => b.level - a.level)
+                            .forEach(({fill, level, path: markerPath}) => {
+                                context2D.globalAlpha = markerOpacity * fadingOf(level)
+                                context2D.fillStyle = fill
+                                context2D.fill(markerPath)
+                            })
+                    })
+                }
+
+                // the hovered event (enlarged, in its series' highlight color, with a ring), or the
+                // hovered aggregate (with a ring)
+                const shown = highlighted as DrawnMarker<P> | undefined
+                if (shown !== undefined) {
+                    const x = shown.x - margin.left
+                    const y = shown.y - margin.top
                     context2D.globalAlpha = 1
-                    context2D.fillStyle = style.highlightColor
-                    context2D.beginPath()
-                    context2D.arc(highlighted.x - margin.left, highlighted.y - margin.top, highlighted.hitRadius - 1, 0, 2 * Math.PI)
-                    context2D.fill()
                     context2D.strokeStyle = color
-                    context2D.lineWidth = 1
+                    context2D.beginPath()
+                    if (shown.target.kind === 'event') {
+                        const style = seriesStyles.get(shown.target.seriesName) ?? defaultLineStyle()
+                        context2D.arc(x, y, shown.hitRadius - 1, 0, 2 * Math.PI)
+                        context2D.fillStyle = style.highlightColor
+                        context2D.fill()
+                        context2D.lineWidth = 1
+                    } else {
+                        context2D.arc(x, y, shown.hitRadius + 1, 0, 2 * Math.PI)
+                        context2D.lineWidth = 2
+                    }
                     context2D.stroke()
                 }
 
+                cellsRef.current = cells
                 markersRef.current = d3.quadtree<DrawnMarker<P>>().x(marker => marker.x).y(marker => marker.y).addAll(markers)
                 maxHitRadiusRef.current = markers.reduce((max, marker) => Math.max(max, marker.hitRadius), 0)
                 context2D.restore()
@@ -429,7 +756,9 @@ export function GeoPlot<P>(props: Props<P>): null {
             chartId, projection, width, height, plotDimensions, margin.left, margin.top, graticule,
             showGraticule, basemap, borders, oceanColor, landColor, borderColor, graticuleColor,
             outlineColor, markerRadius, markerOpacity, radiusOf, colorOf, fadeDuration, fadedOpacity,
-            seriesStyles, seriesFilter, color, dataSource, onUpdateChartTime,
+            seriesStyles, seriesFilter, color, backgroundColor, dataSource, onUpdateChartTime, mode, rollup,
+            sizeBy, colorBy, sizeDomain, colorDomain, colorScheme, aggregateColor, aggregateOpacity,
+            aggregateShape, maxAggregateRadius, minAggregateRadius, showKeys,
         ]
     )
 
@@ -535,7 +864,8 @@ export function GeoPlot<P>(props: Props<P>): null {
         [autoRotate, canvasContext, reportView]
     )
 
-    // hovering an event shows its tooltip (see `GeoPlotTooltipContent`) and highlights its marker
+    // hovering an event (or an aggregate) shows its tooltip (see `GeoPlotTooltipContent`) and
+    // highlights it
     useEffect(
         () => {
             if (canvasContext === null) return
@@ -545,9 +875,30 @@ export function GeoPlot<P>(props: Props<P>): null {
             const leave = (): void => {
                 const previous = hoveredRef.current
                 if (previous === undefined) return
-                mouseLeaveHandlerFor(tooltipId)?.(previous.seriesName)
+                mouseLeaveHandlerFor(tooltipId)?.(nameOf(previous))
                 hoveredRef.current = undefined
                 canvasContext.requestRedraw()
+            }
+
+            /**
+             * @param x The mouse's x (canvas coordinates)
+             * @param y The mouse's y (canvas coordinates)
+             * @return What's under the mouse: the nearest marker within its reach, or else the cell
+             * (in the `cells` shape) holding the place under the mouse
+             */
+            const targetAt = (x: number, y: number): GeoTooltipMetadata<P> | undefined => {
+                const nearest = markersRef.current.find(x, y, maxHitRadiusRef.current)
+                if (nearest !== undefined && Math.hypot(nearest.x - x, nearest.y - y) <= nearest.hitRadius) return nearest.target
+                if (cellsRef.current.length === 0 || rollup === undefined) return undefined
+
+                setUpProjection(projection, viewRef.current, width, height)
+                const place = placeUnder(projection, [x - margin.left, y - margin.top])
+                if (place === undefined) return undefined
+                const [longitude, latitude] = place
+                const cell = cellsRef.current.find(({bounds}) => bounds !== undefined &&
+                    latitude >= bounds.south && latitude <= bounds.north &&
+                    longitude >= bounds.west && longitude <= bounds.east)
+                return cell !== undefined ? {kind: 'aggregate', rollup, aggregate: cell} : undefined
             }
 
             const handleMove = (event: MouseEvent): void => {
@@ -556,20 +907,18 @@ export function GeoPlot<P>(props: Props<P>): null {
                     return
                 }
                 const [x, y] = canvasLocalPoint(event, canvas)
-                const nearest = markersRef.current.find(x, y, maxHitRadiusRef.current)
-                const hit = nearest !== undefined && Math.hypot(nearest.x - x, nearest.y - y) <= nearest.hitRadius ?
-                    nearest :
-                    undefined
-                if (hit !== undefined && hoveredRef.current?.datum === hit.datum) return
+                const target = targetAt(x, y)
+                if (target !== undefined && hoveredRef.current !== undefined && keyOf(hoveredRef.current) === keyOf(target)) return
 
                 leave()
-                if (hit === undefined) return
-                hoveredRef.current = {seriesName: hit.seriesName, datum: hit.datum}
+                if (target === undefined) return
+                hoveredRef.current = target
                 const tooltipData: TooltipData<GeoDatum<P>, GeoTooltipMetadata<P>> = {
-                    series: [hit.datum],
-                    metadata: {seriesName: hit.seriesName, datum: hit.datum}
+                    series: target.kind === 'event' ? [target.datum] : [],
+                    metadata: target
                 }
-                mouseOverHandlerFor(tooltipId)?.(hit.seriesName, hit.datum.time, tooltipData, [x, y])
+                const time = target.kind === 'event' ? target.datum.time : target.aggregate.lastTime
+                mouseOverHandlerFor(tooltipId)?.(nameOf(target), time, tooltipData, [x, y])
                 canvasContext.requestRedraw()
             }
 
@@ -580,7 +929,10 @@ export function GeoPlot<P>(props: Props<P>): null {
                 canvas.removeEventListener('mouseleave', leave)
             }
         },
-        [canvasContext, chartId, mouseOverHandlerFor, mouseLeaveHandlerFor, tooltipVisible]
+        [
+            canvasContext, chartId, mouseOverHandlerFor, mouseLeaveHandlerFor, tooltipVisible, rollup,
+            projection, width, height, margin.left, margin.top
+        ]
     )
 
     // creates the view driver that redraws the plot as events arrive, with the current settings

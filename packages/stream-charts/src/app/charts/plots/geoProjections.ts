@@ -1,5 +1,6 @@
 import * as d3 from "d3"
 import type {GeoDatum} from "../series/geoSeries"
+import type {GeoAggregate} from "../datasources/geoRollups"
 
 /**
  * The map projections a {@link GeoPlot} can show by name (see its `projection` property). Any other
@@ -25,10 +26,12 @@ export const GeoProjections = {
 export type GeoProjectionName = keyof typeof GeoProjections
 
 /**
- * What the tooltip gets about the event under the mouse (see {@link GeoPlotTooltipContent})
+ * What the tooltip gets about what's under the mouse (see {@link GeoPlotTooltipContent}): an event
+ * (in the `points` mode), or a roll-up's aggregate (in the `aggregates` mode)
  * @template P The type of the events' payload
  */
-export interface GeoTooltipMetadata<P> {
+export type GeoTooltipMetadata<P> = {
+    kind: 'event'
     /**
      * The name of the event's series
      */
@@ -37,6 +40,16 @@ export interface GeoTooltipMetadata<P> {
      * The event under the mouse
      */
     datum: GeoDatum<P>
+} | {
+    kind: 'aggregate'
+    /**
+     * The name of the roll-up
+     */
+    rollup: string
+    /**
+     * The aggregate under the mouse
+     */
+    aggregate: GeoAggregate
 }
 
 /**

@@ -40,7 +40,8 @@ import {DROP_AFTER_100_SEC, dropDataOptionForMs} from "./options/dropDataAfter.t
 import {BufferingControl} from "./controls/BufferingControl.tsx"
 import {DataUpdateRateControl} from "./controls/DataUpdateRateControl.tsx"
 import {ProjectionControl} from "./controls/ProjectionControl.tsx"
-import {DEFAULT_DATA_UPDATE_PERIOD, useGeoChartStore} from "./appstate/geoChartStore.ts"
+import {GeoAggregateControls} from "./controls/GeoAggregateControls.tsx"
+import {BY_GRID_CELL, DEFAULT_DATA_UPDATE_PERIOD, ROLLUP_NAMES, useGeoChartStore} from "./appstate/geoChartStore.ts"
 import {initialGeoData, type SensorReading, SEISMIC, VESSELS, WEATHER} from "./dataproviders/randomGeoData.ts"
 import {COUNTRY_BORDERS, LAND} from "./dataproviders/worldMap.ts"
 
@@ -163,6 +164,12 @@ export function StreamingGeoChart(props: Props): JSX.Element {
     const autoRotate = useGeoChartStore(state => state.autoRotate)
     const setAutoRotate = useGeoChartStore(state => state.setAutoRotate)
     const setGeoView = useGeoChartStore(state => state.setGeoView)
+    const mode = useGeoChartStore(state => state.mode)
+    const setMode = useGeoChartStore(state => state.setMode)
+    const rollupName = useGeoChartStore(state => state.rollupName)
+    const setRollupName = useGeoChartStore(state => state.setRollupName)
+    const colorBy = useGeoChartStore(state => state.colorBy)
+    const setColorBy = useGeoChartStore(state => state.setColorBy)
     // the view to restore when the chart mounts: read once, rather than subscribed to, since the
     // plot only reads it when it mounts (and reports every change of view to the store)
     const [geoView] = useState(() => useGeoChartStore.getState().geoView)
@@ -303,6 +310,18 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 onChange={() => setColorByStatus(!colorByStatusOn)}
                             />
                             <Divider theme={theme}/>
+                            <GeoAggregateControls
+                                theme={theme}
+                                mode={mode}
+                                handleModeChange={setMode}
+                                rollupNames={ROLLUP_NAMES}
+                                rollupName={rollupName}
+                                handleRollupNameChange={setRollupName}
+                                measureNames={["peak reading", "mean reading"]}
+                                colorBy={colorBy}
+                                handleColorByChange={setColorBy}
+                            />
+                            <Divider theme={theme}/>
                             <ProjectionControl
                                 theme={theme}
                                 projection={projection}
@@ -366,13 +385,17 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         radiusOf={sizeByMagnitude ? radiusByMagnitude : undefined}
                         colorOf={colorByStatusOn ? colorByStatus : undefined}
                         fadeDuration={fadeOlder ? FADE_DURATION : undefined}
+                        mode={mode}
+                        rollup={rollupName}
+                        colorBy={colorBy === 'none' ? undefined : colorBy}
+                        aggregateShape={rollupName === BY_GRID_CELL ? 'cells' : 'circles'}
                         autoRotate={autoRotate ? AUTO_ROTATE_SPEED : undefined}
                         viewState={geoView}
                         onViewChange={setGeoView}
                         onZoomReset={handleZoomReset}
                     />
                     <Legend
-                        visible={showLegend}
+                        visible={showLegend && mode === 'points'}
                         location={LegendLocation.TOP_LEFT}
                         style={{
                             fontColor: theme.color,

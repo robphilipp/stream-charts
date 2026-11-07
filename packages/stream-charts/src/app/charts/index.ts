@@ -139,6 +139,23 @@ export {
 export {IteratesDataSource, type IteratesDataSourceOptions} from "./datasources/iteratesDataSource"
 export {GeoDataSource, type GeoDataSourceOptions} from "./datasources/geoDataSource"
 export {
+    byGridCell,
+    byLocation,
+    bySensor,
+    countOf,
+    latestOf,
+    maxOf,
+    meanOf,
+    minOf,
+    sumOf,
+    type GeoAggregate,
+    type GeoAggregateGroup,
+    type GeoBinning,
+    type GeoCellBounds,
+    type GeoMeasure,
+    type GeoRollup,
+} from "./datasources/geoRollups"
+export {
     OrdinalDataSource,
     type OrdinalDataSourceOptions,
     type WindowedOrdinalStats,

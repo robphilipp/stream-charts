@@ -2,18 +2,60 @@ import type {UseBoundStore} from "zustand";
 import {create, type StoreApi} from 'zustand';
 import {devtools} from "zustand/middleware";
 import {
+    byGridCell,
+    byLocation,
+    bySensor,
     type DataGenerator,
     GeoDataSource,
     type GeoChartData,
+    type GeoDatum,
     type GeoPlotViewState,
     type GeoProjectionName,
-    type GeoSeries
+    type GeoRollup,
+    type GeoSeries,
+    maxOf,
+    meanOf,
 } from "stream-charts";
 import {randomGeoDataObservable, type SensorReading} from "../dataproviders/randomGeoData.ts";
 import {DEFAULT_DROP_AFTER_100} from "../options/dropDataAfter.ts";
 import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceStateSlice.ts";
 
 export const DEFAULT_DATA_UPDATE_PERIOD = 50
+
+/*
+    The roll-ups the data source keeps (see the GeoPlot's "aggregates" mode)
+ */
+export const BY_LOCATION = "Events by location"
+export const BY_SENSOR = "Events by sensor"
+export const ALERTS_BY_LOCATION = "Alarms and warnings by location"
+export const BY_GRID_CELL = "10° grid"
+export const ROLLUP_NAMES = [BY_LOCATION, BY_SENSOR, ALERTS_BY_LOCATION, BY_GRID_CELL]
+
+const reading = (datum: GeoDatum<SensorReading>): number => datum.payload.magnitude
+
+// each roll-up's measures: the peak and the mean reading (a quake's magnitude, a wind speed, or a
+// vessel's speed)
+const MEASURES = {
+    "peak reading": maxOf(reading),
+    "mean reading": meanOf(reading),
+}
+
+const ROLLUPS: Record<string, GeoRollup<SensorReading>> = {
+    // all the events at a place, whichever sensor reported them, broken down by sensor (a seismic
+    // site has several sensors at the same place)
+    [BY_LOCATION]: {cellOf: byLocation(0.01), groupBy: datum => datum.sensorId, measures: MEASURES},
+    // each sensor's events, where the sensor last was (the vessels move)
+    [BY_SENSOR]: {cellOf: bySensor({position: 'latest'}), measures: MEASURES},
+    // only the warnings and alarms, by place, broken down by status
+    [ALERTS_BY_LOCATION]: {
+        cellOf: byLocation(0.01),
+        filter: datum => datum.payload.status !== 'ok',
+        groupBy: datum => datum.payload.status,
+        measures: MEASURES,
+    },
+    // all the events in each 10° cell of a grid, broken down by series
+    [BY_GRID_CELL]: {cellOf: byGridCell(10), groupBy: (_datum, seriesName) => seriesName, measures: MEASURES},
+}
 
 /**
  * @param seriesList The series
@@ -47,7 +89,12 @@ const newDataSource = (
     dataUpdatePeriod: number,
     dropAfterMs: number
 ): GeoDataSource<SensorReading> =>
-    new GeoDataSource<SensorReading>({initialData, generator: randomData(dataUpdatePeriod), dropDataAfter: dropAfterMs})
+    new GeoDataSource<SensorReading>({
+        initialData,
+        generator: randomData(dataUpdatePeriod),
+        dropDataAfter: dropAfterMs,
+        rollups: ROLLUPS,
+    })
 
 type GeoChartState = {
     filterValue: string
@@ -70,6 +117,12 @@ type GeoChartState = {
     // the plot's view (rotation and zoom), kept so that it survives navigating away and back
     // (undefined until the view has changed)
     geoView: GeoPlotViewState | undefined
+    // whether the plot shows each event, or a roll-up's aggregates
+    mode: 'points' | 'aggregates'
+    // the roll-up shown in the aggregates mode
+    rollupName: string
+    // what colors the aggregates ('none', or a measure's name)
+    colorBy: string
 }
 
 const initialState: GeoChartState = {
@@ -87,6 +140,9 @@ const initialState: GeoChartState = {
     fadeOlder: true,
     autoRotate: false,
     geoView: undefined,
+    mode: 'points',
+    rollupName: BY_LOCATION,
+    colorBy: 'peak reading',
 }
 
 type GeoChartActions = {
@@ -104,6 +160,9 @@ type GeoChartActions = {
     setFadeOlder: (fadeOlder: boolean) => void
     setAutoRotate: (autoRotate: boolean) => void
     setGeoView: (geoView: GeoPlotViewState) => void
+    setMode: (mode: 'points' | 'aggregates') => void
+    setRollupName: (rollupName: string) => void
+    setColorBy: (colorBy: string) => void
 }
 
 type GeoChartStore = GeoChartState & GeoChartActions &
@@ -150,4 +209,7 @@ export const useGeoChartStore: UseBoundStore<StoreApi<GeoChartStore>> = create<G
         setFadeOlder: (fadeOlder: boolean): void => set({fadeOlder}),
         setAutoRotate: (autoRotate: boolean): void => set({autoRotate}),
         setGeoView: (geoView: GeoPlotViewState): void => set({geoView}),
+        setMode: (mode: 'points' | 'aggregates'): void => set({mode}),
+        setRollupName: (rollupName: string): void => set({rollupName}),
+        setColorBy: (colorBy: string): void => set({colorBy}),
     })));
