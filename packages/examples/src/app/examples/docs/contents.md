@@ -9,13 +9,14 @@ Each of the tabs in the tabs presents an example of a particular chart type.
     </figcaption>
 </figure>
 
-Currently, there are five chart types available, each presented as an example in one of the tabs.
+Currently, there are six chart types available, each presented as an example in one of the tabs.
 
 1. **Scatter** – Used for plotting multiple time-series. The data are connected by a line and can have markers.
 2. **Raster** – Used for plotting time-events (such as the firing of a neuron).
 3. **Poincare** – Used when looking for auto-correlations in a time-series. Accepts a time-series as input and plots `d[i+n]` (y-axis) against `d[i]` (x-axis) where `n` is the lag. Provides the Tent map, Gaussian map, and the Logistic map as examples.
 4. **Bar** – Used for plotting multiple time-series as bars that show the current value, min/max, and mean values.
 5. **Outlier** – Used for displaying a single time-series that is annotated with model bounds.
+6. **Geo** – Used for plotting events from sensors at places on the earth, on a globe or a map, either one by one or rolled up by place.
 
 
 The next pages describe:

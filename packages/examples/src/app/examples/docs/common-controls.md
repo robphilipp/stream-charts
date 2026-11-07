@@ -20,23 +20,23 @@ A lot of the controls are disabled while the chart is running. Those change how 
 - **Cadence** – When checked, the time axis moves on every frame of the display, whether or not new data has arrived, so it scrolls smoothly instead of jumping forward with each batch. That's especially handy when the data arrives slowly. When the data arrives quickly, cadence is generally unnecessary. *Wired to:* the plot's `withCadence` property.
 - **Update Lag** – Not a control, but a read-out: how far the chart's time has fallen behind real time since you clicked **Run**. If the chart can't keep up with the data (too many series, arriving too often, with too little buffering), the lag grows – and the lag icon in the header turns red. This is a good way to find the limits of what a chart can handle. *Computed by:* the example, from the time the chart reports through its `onUpdateAxesBounds` (or `onUpdateChartTime`) callback.
 - **RegEx filter** – Type a regular expression and only the series whose names match it are shown. For example, `1$` shows only the series whose names end in "1". An invalid expression (say, while you're still typing it) shows all the series. This one works while the chart is running. *Wired to:* the `<Chart>`'s `seriesFilter` property.
-- **tooltip** – Shows a tooltip with details about the series (or data point) under the mouse. The tooltips are only available while the chart is paused – chasing a moving line with the mouse isn't much fun anyway. More on tooltips a few pages from now. *Wired to:* the `<Tooltip>`'s `visible` property.
+- **tooltip** – Shows a tooltip with details about the series (or data point) under the mouse. The tooltips are only available while the chart is paused – chasing a moving line with the mouse isn't much fun anyway. (The geo chart is the exception: its places don't move, so its tooltip works while it runs, too.) More on tooltips a few pages from now. *Wired to:* the `<Tooltip>`'s `visible` property.
 - **tracker** – Shows a line that follows the mouse, with a label for its value on the axis. Also only available while the chart is paused. *Wired to:* the `<Tracker>`'s `visible` property.
 - **highlight axes** – When checked, hovering over a series also highlights the axes it's plotted against. That's handy when a chart has more than one x- or y-axis (the scatter chart, for example, has two of each). *Wired to:* the plot's `highlightAxesOnMouseOver` property.
 
 #### which example has which
 
-|                    | Scatter | Raster | Poincare | Bar | Outlier |
-|--------------------|:-------:|:------:|:--------:|:---:|:-------:|
-| drop-after         |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |
-| Number of Series   |    ✓    |   ✓    |          |  ✓  |         |
-| Update Rate        |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |
-| Buffering          |    ✓    |   ✓    |          |  ✓  |    ✓    |
-| Cadence            |    ✓    |   ✓    |          |     |    ✓    |
-| Update Lag         |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |
-| RegEx filter       |    ✓    |   ✓    |          |  ✓  |    ✓    |
-| tooltip            |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |
-| tracker            |    ✓    |   ✓    |    ✓     |  ✓  |         |
-| highlight axes     |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |
+|                    | Scatter | Raster | Poincare | Bar | Outlier | Geo |
+|--------------------|:-------:|:------:|:--------:|:---:|:-------:|:---:|
+| drop-after         |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |  ✓  |
+| Number of Series   |    ✓    |   ✓    |          |  ✓  |         |     |
+| Update Rate        |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |  ✓  |
+| Buffering          |    ✓    |   ✓    |          |  ✓  |    ✓    |  ✓  |
+| Cadence            |    ✓    |   ✓    |          |     |    ✓    |     |
+| Update Lag         |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |     |
+| RegEx filter       |    ✓    |   ✓    |          |  ✓  |    ✓    |  ✓  |
+| tooltip            |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |  ✓  |
+| tracker            |    ✓    |   ✓    |    ✓     |  ✓  |         |     |
+| highlight axes     |    ✓    |   ✓    |    ✓     |  ✓  |    ✓    |     |
 
 The next pages go through the examples one at a time – what each chart shows, and the controls that are specific to it.

@@ -293,9 +293,37 @@ export function MyOutlierTooltip(): ReactElement {
 
 The outlier chart also has a shortcut, which the tooltips page mentioned: put your own component inside the library's `<OutlierPlotTooltipContent>`, and it renders that instead of its own content. Your component gets what the tooltip shows, and the formatters, from the `useOutlierTooltip()` hook (see `MyOutlierTooltipContent` in `src/app/examples`).
 
+#### the geo chart
+
+The geo plot has two kinds of things to hover over, depending on its `mode`: the events, and a roll-up's aggregates. Its `metadata` says which, with its `kind`:
+
+- `{kind: 'event', seriesName, datum}` – the event under the mouse: its `sensorId`, `latitude`, `longitude`, `time`, and `payload`.
+- `{kind: 'aggregate', rollup, aggregate}` – the aggregate under the mouse, and its roll-up's name. The aggregate has its `count`, `sensorCount`, `values` (the measures, by name), `groups`, position, and time span.
+
+```tsx
+import {type ReactElement} from "react";
+import {TooltipContent, type GeoDatum, type GeoTooltipMetadata} from "stream-charts";
+import type {SensorReading} from "./dataproviders/randomGeoData";
+
+export function MyGeoTooltip(): ReactElement {
+    return (
+        <TooltipContent<GeoDatum<SensorReading>, GeoTooltipMetadata<SensorReading>, GeoTooltipMetadata<SensorReading>>
+            capture={(_seriesName, _time, {metadata}) => metadata}
+        >
+            {target => target.kind === 'event' ?
+                <div>{target.datum.sensorId}: {target.datum.payload.magnitude}</div> :
+                <div>{target.aggregate.count} events from {target.aggregate.sensorCount} sensors</div>
+            }
+        </TooltipContent>
+    )
+}
+```
+
+The library's `<GeoPlotTooltipContent>` takes formatters for the position, the time, the payload, and the measures – and an `aggregateFormatter` that replaces its whole content for an aggregate – so you'll often not need your own.
+
 #### things to know
 
-- **Most tooltips only show while the chart is paused.** The scatter, raster, Poincaré, and bar plots don't hit-test while their data source is running, so there's nothing for a tooltip to do. (Chasing a moving line with the mouse isn't much fun anyway.) The outlier plot is the exception: its bands can be hovered while it streams, too.
+- **Most tooltips only show while the chart is paused.** The scatter, raster, Poincaré, and bar plots don't hit-test while their data source is running, so there's nothing for a tooltip to do. (Chasing a moving line with the mouse isn't much fun anyway.) The outlier plot is one exception: its bands can be hovered while it streams, too. The geo plot is the other: its places don't move, so its events and aggregates can be hovered while it streams, and an open tooltip keeps up with the aggregate under a resting mouse.
 - **The capture function runs on every mouse move.** Keep it quick. The series can hold thousands of points, so a loop over them is fine, but anything slower adds up.
 - **Copy what you need out of the series.** The series is the data source's live data, which keeps changing as data arrives (and gets dropped). That's why the tooltips above pull out the values they show, rather than keeping the series around.
 - **One tooltip per chart.** A chart has one content provider at a time, so put one tooltip component inside the `<Tooltip>`. When you need different content for different elements, switch on `providerId` (or on the metadata), as the bar and outlier tooltips do.

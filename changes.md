@@ -6,7 +6,8 @@
 1. With cadence, the time axes of the scatter, raster, and outlier plots scrolled unevenly: they moved on each cadence tick (e.g. every 25 ms), which rarely lines up with the display's frames, so on a 60 Hz display they moved on two frames out of three. They now move on every frame of the display.
 
 **New**
-1. The scatter, raster, outlier, and Poincaré plots take `withCadence` (`boolean`) to turn cadence on. `withCadenceOf` (a period, in ms) is deprecated: any value still turns cadence on, but the period is no longer used.
+1. The scatter, raster, outlier, and Poincaré plots take `withCadence` (`boolean`) to turn cadence on.
+2. Added the `<GeoPlot>`, which plots events from sensors at places on the earth (`GeoDatum`: a sensor ID, latitude, longitude, time, and payload) on a globe or a map, in any d3-geo projection, with an application-supplied basemap. It draws each event, or, with `mode="aggregates"`, the aggregates of a `GeoDataSource`'s roll-ups (`byLocation`, `bySensor`, `byGridCell`, with `countOf`, `sumOf`, `meanOf`, `minOf`, `maxOf`, `latestOf`), kept up to date incrementally as events arrive and are dropped. Dragging turns the globe, the wheel zooms about the mouse, events can fade with age, the globe can turn by itself, and the view can be kept across remounts. Includes `GeoDataSource` and `<GeoPlotTooltipContent>`, whose tooltips also show while the data source runs. `withCadenceOf` (a period, in ms) is deprecated: any value still turns cadence on, but the period is no longer used.
 
 ## version 2.0.0 (data sources, canvas rendering, outlier plot)
 

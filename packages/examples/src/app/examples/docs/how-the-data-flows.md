@@ -5,7 +5,7 @@ Let's follow a data point from the moment it's created to the moment it shows up
 <figure>
     <img src="./images/data-flow.png" alt="How the data flows: the example's data generator (an RxJS observable) feeds the library's data source (held by the example's store, started and stopped by Run/Pause), which feeds a view driver (one per mounted plot), which feeds the plot">
     <figcaption>
-        <b>Figure 14</b> How the data flows, from the example's data generator, through the library's data source and view driver, to the plot.
+        <b>Figure 17</b> How the data flows, from the example's data generator, through the library's data source and view driver, to the plot.
     </figcaption>
 </figure>
 
@@ -61,4 +61,4 @@ To build your own streaming chart, you need to:
 3. **Start and stop the data source** when it makes sense – on a button click, when a connection opens, or right away.
 4. **Hand the data source to a `<Chart>`**, along with the axes and the plot you want. The library takes it from there.
 
-The five examples do exactly this, so pick the one closest to what you're building, and use it as your starting point. Or, to see each step on its own, turn to the next page, where we build one from scratch.
+The six examples do exactly this, so pick the one closest to what you're building, and use it as your starting point. Or, to see each step on its own, turn to the next page, where we build one from scratch.
