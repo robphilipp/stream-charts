@@ -54,6 +54,8 @@ export {RasterPlot, type Props as RasterPlotProps} from "./plots/RasterPlot"
 export {PoincarePlot, type Props as PoincarePlotProps, type PoincarePlotZoomState} from "./plots/PoincarePlot"
 export {BarPlot, type Props as BarPlotProps, type BarPlotZoomState, type BarChartElementId} from "./plots/BarPlot"
 export {OutlierPlot, type Props as OutlierPlotProps, type OutlierBandTooltipMetadata} from "./plots/OutlierPlot"
+export {GeoPlot, type Props as GeoPlotProps} from "./plots/GeoPlot"
+export {GeoProjections, type GeoProjectionName, type GeoTooltipMetadata} from "./plots/geoProjections"
 export {assignAxes, type AxesAssignment, type Series} from "./plots/plot"
 export {NoCurveFactory, BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./plots/constants"
 export {
@@ -90,6 +92,7 @@ export {RasterPlotTooltipContent, type Props as RasterPlotTooltipContentProps} f
 export {PoincarePlotTooltipContent, type Props as PoincarePlotTooltipContentProps} from "./tooltips/PoincarePlotTooltipContent"
 export {BarPlotTooltipContent, type Props as BarPlotTooltipContentProps} from "./tooltips/BarPlotTooltipContent"
 export {OutlierPlotTooltipContent, type Props as OutlierPlotTooltipContentProps} from "./tooltips/OutlierPlotTooltipContent"
+export {GeoPlotTooltipContent, type Props as GeoPlotTooltipContentProps} from "./tooltips/GeoPlotTooltipContent"
 export {DefaultOutlierTooltipContent} from "./tooltips/DefaultOutlierTooltipContent"
 export {
     useOutlierTooltip,
@@ -134,6 +137,7 @@ export {
     type TimeSeriesDataSourceOptions,
 } from "./datasources/timeSeriesDataSource"
 export {IteratesDataSource, type IteratesDataSourceOptions} from "./datasources/iteratesDataSource"
+export {GeoDataSource, type GeoDataSourceOptions} from "./datasources/geoDataSource"
 export {
     OrdinalDataSource,
     type OrdinalDataSourceOptions,
@@ -198,12 +202,17 @@ export {
 } from "./series/outlierSeries"
 export type {OutlierChartData} from "./observables/outliers"
 
+// geo (sensor events at places on the earth)
+export {geoDatumOf, geoSeriesFrom, type GeoDatum, type GeoSeries} from "./series/geoSeries"
+export {geoChartDataOf, type GeoChartData} from "./observables/geo"
+
 /*
  | FILTERS AND FORMATTING
  */
 export {isSafeRegex, literalFilter, regexFilter} from "./filters/regexFilter"
 export {
     formatChange,
+    formatLatLon,
     formatNumber,
     formatTime,
     formatTimeChange,

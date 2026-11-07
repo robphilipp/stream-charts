@@ -21,6 +21,7 @@ import {StreamingScatterChart} from "./examples/StreamingScatterChart";
 import {StreamingPoincareChart} from "./examples/StreamingPoincareChart";
 import {StreamingBarChart} from "./examples/StreamingBarChart";
 import {StreamingOutlierChart} from "./examples/StreamingOutlierChart";
+import {StreamingGeoChart} from "./examples/StreamingGeoChart";
 import {useThemeStore} from "./examples/appstate/themeStore.ts";
 import {useIntroStore} from "./examples/appstate/introStore.ts";
 import {TABS, initialBarData, initialIterateData, initialScatterData, initialSpikeData} from "./routeData";
@@ -268,4 +269,13 @@ export function BarRoute(): JSX.Element {
 export function OutlierRoute(): JSX.Element {
     const {theme} = useThemeStore()
     return <StreamingOutlierChart theme={theme} timeWindow={2500}/>
+}
+
+/**
+ * The route for the geo example: the example, in the current theme
+ * @return The geo example
+ */
+export function GeoRoute(): JSX.Element {
+    const {theme} = useThemeStore()
+    return <StreamingGeoChart theme={theme}/>
 }

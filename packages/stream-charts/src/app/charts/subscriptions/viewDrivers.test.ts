@@ -2,6 +2,7 @@ import {scaleLinear} from "d3";
 import {Subject} from "rxjs";
 import {
     iteratesViewDriverFor,
+    geoViewDriverFor,
     ordinalViewDriverFor,
     outlierAxisTimes,
     timeAxisViewDriverFor,
@@ -21,6 +22,8 @@ import type {OutlierDatum} from "../series/outlierSeries";
 import {defaultOrdinalStats, type OrdinalChartData} from "../observables/ordinals";
 import {ordinalDatumOf} from "../series/ordinalSeries";
 import type {IterateChartData} from "../observables/iterates";
+import {type GeoChartData, geoChartDataOf} from "../observables/geo";
+import {geoDatumOf} from "../series/geoSeries";
 import {TimeSeriesDataSource} from "../datasources/timeSeriesDataSource";
 
 /**
@@ -501,6 +504,36 @@ describe('ordinalViewDriverFor', () => {
 
         expect(setCurrentTime).toHaveBeenCalledWith(750)
         expect(updateTimingAndPlot).toHaveBeenCalled()
+    })
+})
+
+describe('geoViewDriverFor', () => {
+    beforeEach(() => jest.useFakeTimers())
+
+    it('reports the time of the latest event and redraws once per batch', () => {
+        const source = fakeSource<GeoChartData<{magnitude: number}>>()
+        const updatePlot = jest.fn()
+        const setCurrentTime = jest.fn()
+        track(geoViewDriverFor(source, 100, updatePlot, setCurrentTime))
+
+        source.chartDataUpdatesObservable.next(geoChartDataOf(new Map([
+            ['seismic', [geoDatumOf('s1', 10, 20, 400, {magnitude: 2}), geoDatumOf('s2', -5, 30, 750, {magnitude: 3})]],
+        ])))
+        source.chartDataUpdatesObservable.next(geoChartDataOf(new Map([
+            ['weather', [geoDatumOf('w1', 50, -100, 900, {magnitude: 1})]],
+        ])))
+        jest.advanceTimersByTime(100)
+
+        expect(setCurrentTime).toHaveBeenLastCalledWith(900)
+        expect(updatePlot).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not redraw when no events arrived', () => {
+        const source = fakeSource<GeoChartData<{magnitude: number}>>()
+        const updatePlot = jest.fn()
+        track(geoViewDriverFor(source, 100, updatePlot, jest.fn()))
+        jest.advanceTimersByTime(300)
+        expect(updatePlot).not.toHaveBeenCalled()
     })
 })
 
