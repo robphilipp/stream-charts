@@ -1,7 +1,14 @@
 import type {UseBoundStore} from "zustand";
 import {create, type StoreApi} from 'zustand';
 import {devtools} from "zustand/middleware";
-import {type DataGenerator, GeoDataSource, type GeoChartData, type GeoProjectionName, type GeoSeries} from "stream-charts";
+import {
+    type DataGenerator,
+    GeoDataSource,
+    type GeoChartData,
+    type GeoPlotViewState,
+    type GeoProjectionName,
+    type GeoSeries
+} from "stream-charts";
 import {randomGeoDataObservable, type SensorReading} from "../dataproviders/randomGeoData.ts";
 import {DEFAULT_DROP_AFTER_100} from "../options/dropDataAfter.ts";
 import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceStateSlice.ts";
@@ -56,6 +63,13 @@ type GeoChartState = {
     sizeByMagnitude: boolean
     // whether the markers' color follows the reading's status (rather than the series' color)
     colorByStatus: boolean
+    // whether older readings fade
+    fadeOlder: boolean
+    // whether the globe turns by itself
+    autoRotate: boolean
+    // the plot's view (rotation and zoom), kept so that it survives navigating away and back
+    // (undefined until the view has changed)
+    geoView: GeoPlotViewState | undefined
 }
 
 const initialState: GeoChartState = {
@@ -70,6 +84,9 @@ const initialState: GeoChartState = {
     showLegend: true,
     sizeByMagnitude: true,
     colorByStatus: false,
+    fadeOlder: true,
+    autoRotate: false,
+    geoView: undefined,
 }
 
 type GeoChartActions = {
@@ -84,6 +101,9 @@ type GeoChartActions = {
     setShowLegend: (show: boolean) => void
     setSizeByMagnitude: (sizeByMagnitude: boolean) => void
     setColorByStatus: (colorByStatus: boolean) => void
+    setFadeOlder: (fadeOlder: boolean) => void
+    setAutoRotate: (autoRotate: boolean) => void
+    setGeoView: (geoView: GeoPlotViewState) => void
 }
 
 type GeoChartStore = GeoChartState & GeoChartActions &
@@ -127,4 +147,7 @@ export const useGeoChartStore: UseBoundStore<StoreApi<GeoChartStore>> = create<G
         setShowLegend: (showLegend: boolean): void => set({showLegend}),
         setSizeByMagnitude: (sizeByMagnitude: boolean): void => set({sizeByMagnitude}),
         setColorByStatus: (colorByStatus: boolean): void => set({colorByStatus}),
+        setFadeOlder: (fadeOlder: boolean): void => set({fadeOlder}),
+        setAutoRotate: (autoRotate: boolean): void => set({autoRotate}),
+        setGeoView: (geoView: GeoPlotViewState): void => set({geoView}),
     })));

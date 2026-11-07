@@ -1,4 +1,4 @@
-import {type JSX, useCallback, useMemo, useRef} from "react"
+import {type JSX, useCallback, useMemo, useRef, useState} from "react"
 import {
     Grid,
     gridArea,
@@ -48,6 +48,12 @@ const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
 
 // how much history (ms) the example starts with
 const INITIAL_HISTORY = 10_000
+
+// how long (ms) readings take to fade (when fading older readings)
+const FADE_DURATION = 30_000
+
+// how fast (degrees per second) the globe turns (when it turns by itself)
+const AUTO_ROTATE_SPEED = 6
 
 // the readings' colors by status (when coloring by status; "ok" readings keep their series' color)
 const STATUS_COLORS: Record<SensorReading['status'], string | undefined> = {
@@ -152,6 +158,14 @@ export function StreamingGeoChart(props: Props): JSX.Element {
     const setSizeByMagnitude = useGeoChartStore(state => state.setSizeByMagnitude)
     const colorByStatusOn = useGeoChartStore(state => state.colorByStatus)
     const setColorByStatus = useGeoChartStore(state => state.setColorByStatus)
+    const fadeOlder = useGeoChartStore(state => state.fadeOlder)
+    const setFadeOlder = useGeoChartStore(state => state.setFadeOlder)
+    const autoRotate = useGeoChartStore(state => state.autoRotate)
+    const setAutoRotate = useGeoChartStore(state => state.setAutoRotate)
+    const setGeoView = useGeoChartStore(state => state.setGeoView)
+    // the view to restore when the chart mounts: read once, rather than subscribed to, since the
+    // plot only reads it when it mounts (and reports every change of view to the store)
+    const [geoView] = useState(() => useGeoChartStore.getState().geoView)
     //
     // ----------------------------------------------------------------
 
@@ -310,6 +324,22 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 labelColor={theme.color}
                                 onChange={() => setShowBorders(!showBorders)}
                             />
+                            <Checkbox
+                                checked={fadeOlder}
+                                label="fade older"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setFadeOlder(!fadeOlder)}
+                            />
+                            <Checkbox
+                                checked={autoRotate}
+                                label="auto-rotate"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setAutoRotate(!autoRotate)}
+                            />
                         </CommonControls>
                     </ExpandableControlBar>
                 </div>
@@ -335,6 +365,10 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         showGraticule={showGraticule}
                         radiusOf={sizeByMagnitude ? radiusByMagnitude : undefined}
                         colorOf={colorByStatusOn ? colorByStatus : undefined}
+                        fadeDuration={fadeOlder ? FADE_DURATION : undefined}
+                        autoRotate={autoRotate ? AUTO_ROTATE_SPEED : undefined}
+                        viewState={geoView}
+                        onViewChange={setGeoView}
                         onZoomReset={handleZoomReset}
                     />
                     <Legend
