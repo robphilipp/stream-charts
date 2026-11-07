@@ -19,4 +19,13 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // functions write out their return types, except callbacks that take theirs from where they're
+    // passed or assigned (the rule's defaults), and the tests' helpers and fakes
+    files: ['**/*.{ts,tsx}'],
+    ignores: ['**/*.test.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'warn',
+    },
+  },
 ])

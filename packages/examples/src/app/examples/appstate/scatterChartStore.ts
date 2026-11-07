@@ -142,7 +142,7 @@ export const useScatterChartStore: UseBoundStore<StoreApi<ScatterChartStore>> = 
         setSelectedInterpolationName: name => set({selectedInterpolationName: name}),
 
         // data retention belongs to the data source, so keep it in step
-        setDropAfterMs: (dropAfterMs: number) => {
+        setDropAfterMs: (dropAfterMs: number): void => {
             get().dataSource.setDropDataAfter(dropAfterMs)
             set({dropAfterMs})
         },
@@ -161,14 +161,14 @@ export const useScatterChartStore: UseBoundStore<StoreApi<ScatterChartStore>> = 
 
         // the update period is baked into the generator, so give the data source a new one (only
         // possible while stopped, which is the only time the control is enabled)
-        setDataUpdatePeriod: (dataUpdatePeriod: number) => {
+        setDataUpdatePeriod: (dataUpdatePeriod: number): void => {
             get().dataSource.setGenerator(randomData(dataUpdatePeriod))
             set({dataUpdatePeriod})
         },
 
         // resets the settings, and replaces the data source with an empty one (which disposes of,
         // and so stops, the current one) -- the chart re-seeds it with its initial data
-        reset: () => {
+        reset: (): void => {
             set({...initialState, ...initialVisibilityState})
             get().setInitialData([])
         }

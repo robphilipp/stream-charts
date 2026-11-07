@@ -114,7 +114,7 @@ export function Tracker(props: Props): null {
                             .filter(axis => !axis.isEmpty)
                             .map(axis => {
                                 const formatter = labelFormatter ??
-                                    ((value: number) => labelLocation === TrackerLabelLocation.Nowhere ?
+                                    ((value: number): string => labelLocation === TrackerLabelLocation.Nowhere ?
                                         "" :
                                         `${d3.format(",.0f")(value)}`
                                     )
@@ -149,7 +149,7 @@ export function Tracker(props: Props): null {
     // unregister the tracker when this component unmounts
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (trackerCleanupRef.current !== undefined) {
                     trackerCleanupRef.current()
                     trackerCleanupRef.current = undefined

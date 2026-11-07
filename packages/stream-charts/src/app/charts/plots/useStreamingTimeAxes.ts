@@ -172,7 +172,7 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
     useEffect(() => {
         notifyIntervalsRef.current = onUpdateAxesInterval === undefined ?
             noop :
-            ranges => {
+            (ranges): void => {
                 pendingRangesRef.current = ranges
                 if (notifyFrameRef.current !== 0) return
                 notifyFrameRef.current = requestAnimationFrame(() => {
@@ -182,7 +182,7 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
             }
     }, [onUpdateAxesInterval])
     // don't leave a scheduled notification pointing at an unmounted plot
-    useEffect(() => () => {
+    useEffect(() => (): void => {
         if (notifyFrameRef.current !== 0) {
             cancelAnimationFrame(notifyFrameRef.current)
             notifyFrameRef.current = 0
@@ -204,7 +204,7 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
         const {highlightColor, highlightWidth} = seriesStyles.get(hoveredSeriesName) || defaultLineStyle()
         xAxis?.setHighlighted(true, highlightColor, highlightWidth)
         yAxis?.setHighlighted(true, highlightColor, highlightWidth)
-        return () => {
+        return (): void => {
             xAxis?.setHighlighted(false)
             yAxis?.setHighlighted(false)
         }
@@ -277,8 +277,8 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
     const zoomPivotFor = useCallback(
         (offsetX: number): (axisId: string, axis: ContinuousNumericAxis) => number =>
             running ?
-                (axisId, axis) => currentTimeRef.current.get(axisId) ?? axis.scale.domain()[1] :
-                (_axisId, axis) => axis.scale.invert(offsetX - margin.left),
+                (axisId, axis): number => currentTimeRef.current.get(axisId) ?? axis.scale.domain()[1] :
+                (_axisId, axis): number => axis.scale.invert(offsetX - margin.left),
         [running, margin]
     )
 
@@ -376,7 +376,7 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
         if (dataSource === undefined || !running || canvasContext === null || !hasXAxes) return
         if (allowTooltipRef !== undefined) allowTooltipRef.current = false
         const driver = createViewDriver(dataSource)
-        return () => {
+        return (): void => {
             driver.unsubscribe()
             if (allowTooltipRef !== undefined) allowTooltipRef.current = true
         }

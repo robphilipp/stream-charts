@@ -292,8 +292,8 @@ function captureTooltipContent(
             MISSING_VALUE :
             formatter(value(shown.before), value(shown.after))
 
-    const xOf = (datum: Datum) => datum.x
-    const yOf = (datum: Datum) => datum.y
+    const xOf = (datum: Datum): number => datum.x
+    const yOf = (datum: Datum): number => datum.y
     return {
         seriesName,
         xLabel: labels.x,
@@ -336,7 +336,7 @@ const MISSING_VALUE = '–'
  */
 function segmentAround(series: Series<Datum>, time: number): ScatterTooltipPoints {
     const [before, after] = boundingPoints(series, time, value => value.x, () => emptyDatum())
-    const orUndefined = (datum: Datum) => isNaN(datum.x) ? undefined : datum
+    const orUndefined = (datum: Datum): Datum | undefined => isNaN(datum.x) ? undefined : datum
     return {kind: 'segment', before: orUndefined(before), after: orUndefined(after)}
 }
 
@@ -380,8 +380,8 @@ function AutocorrelationChart(props: {
     // where a lag, and a correlation, are within the plot area (as `sparklineFor` places them)
     const innerWidth = SPARKLINE_WIDTH - 2 * SPARKLINE_PADDING
     const innerHeight = SPARKLINE_HEIGHT - 2 * SPARKLINE_PADDING
-    const xOf = (lag: number) => SPARKLINE_PADDING + lag / maxLag * innerWidth
-    const yOf = (correlation: number) => SPARKLINE_PADDING + (1 - correlation) / 2 * innerHeight
+    const xOf = (lag: number): number => SPARKLINE_PADDING + lag / maxLag * innerWidth
+    const yOf = (correlation: number): number => SPARKLINE_PADDING + (1 - correlation) / 2 * innerHeight
     // (the y-axis sits just left of lag 0, so it doesn't cover the line's start)
     const yAxisX = SPARKLINE_PADDING - TICK_LENGTH
     const lagTicks = d3.ticks(0, maxLag, Math.min(LAG_TICK_COUNT, maxLag)).filter(Number.isInteger)

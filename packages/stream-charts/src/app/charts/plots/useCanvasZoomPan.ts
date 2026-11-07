@@ -222,7 +222,7 @@ export function useCanvasZoomPan(canvasContext: CanvasContext | null, options: C
                 })
             }
 
-            return () => {
+            return (): void => {
                 if (panEnabled) canvasSelection.on(".drag", null)
                 if (zoomEnabled) {
                     canvasSelection.on(".zoom", null)

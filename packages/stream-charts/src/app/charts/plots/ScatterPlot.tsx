@@ -252,7 +252,7 @@ export function ScatterPlot(props: Props): null {
          * @param cc The canvas context to register the draw function with
          */
         (cc: CanvasContext) => {
-            const draw = (context: CanvasContext) => {
+            const draw = (context: CanvasContext): void => {
                 // const __drawStart = performance.now()
                 // let __totalRetained = 0
                 // let __totalProcessed = 0
@@ -503,7 +503,7 @@ export function ScatterPlot(props: Props): null {
 
             const canvas = canvasContext.canvas
 
-            const handleMove = (event: MouseEvent) => {
+            const handleMove = (event: MouseEvent): void => {
                 if (!allowTooltip.current) return
 
                 const [x, y] = canvasLocalPoint(event, canvas)
@@ -575,7 +575,7 @@ export function ScatterPlot(props: Props): null {
                 canvasContext.requestRedraw()
             }
 
-            const handleLeaveCanvas = () => {
+            const handleLeaveCanvas = (): void => {
                 if (lastHoveredRef.current !== undefined) {
                     handleMouseLeaveSeries(lastHoveredRef.current, mouseLeaveHandlerFor(`tooltip-${chartId}`))
                     lastHoveredRef.current = undefined
@@ -585,7 +585,7 @@ export function ScatterPlot(props: Props): null {
 
             canvas.addEventListener('mousemove', handleMove)
             canvas.addEventListener('mouseleave', handleLeaveCanvas)
-            return () => {
+            return (): void => {
                 canvas.removeEventListener('mousemove', handleMove)
                 canvas.removeEventListener('mouseleave', handleLeaveCanvas)
             }
@@ -606,7 +606,7 @@ export function ScatterPlot(props: Props): null {
     // unregister this plot's draw function (and its auto-scaling step) on unmount
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (canvasContext) {
                     canvasContext.unregister(`scatter-plot-autoscale-${chartId}`)
                     canvasContext.unregister(`scatter-plot-${chartId}`)

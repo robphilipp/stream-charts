@@ -35,23 +35,23 @@ export default function InteractionProvider<D, TM>(props: Props): JSX.Element {
 
     const mouse = useMemo<UseMouseValues<D, TM>>(
         () => ({
-            registerMouseOverHandler: (handlerId, handler) => {
+            registerMouseOverHandler: (handlerId, handler): string => {
                 mouseOverHandlersRef.current.set(handlerId, handler)
                 return handlerId
             },
-            unregisterMouseOverHandler: handlerId => mouseOverHandlersRef.current.delete(handlerId),
+            unregisterMouseOverHandler: (handlerId): boolean => mouseOverHandlersRef.current.delete(handlerId),
             mouseOverHandlerFor: (_handlerId, providerId) =>
-                (seriesName, time, tooltipData, mouseCoords) => {
+                (seriesName, time, tooltipData, mouseCoords): void => {
                     setHoveredSeriesName(seriesName)
                     mouseOverHandlersRef.current.forEach(handler => handler(seriesName, time, tooltipData, mouseCoords, providerId))
                 },
-            registerMouseLeaveHandler: (handlerId, handler: TooltipMouseLeaveHandlerFn) => {
+            registerMouseLeaveHandler: (handlerId, handler: TooltipMouseLeaveHandlerFn): string => {
                 mouseLeaveHandlersRef.current.set(handlerId, handler)
                 return handlerId
             },
-            unregisterMouseLeaveHandler: handlerId => mouseLeaveHandlersRef.current.delete(handlerId),
+            unregisterMouseLeaveHandler: (handlerId): boolean => mouseLeaveHandlersRef.current.delete(handlerId),
             mouseLeaveHandlerFor: (_handlerId, providerId) =>
-                seriesName => {
+                (seriesName): void => {
                     setHoveredSeriesName(null)
                     mouseLeaveHandlersRef.current.forEach(handler => handler(seriesName, providerId))
                 },
@@ -61,10 +61,10 @@ export default function InteractionProvider<D, TM>(props: Props): JSX.Element {
 
     const tooltip = useMemo<UseTooltipValues<D, TM>>(
         () => ({
-            registerTooltipContentProvider: provider => {
+            registerTooltipContentProvider: (provider): void => {
                 tooltipContentProviderRef.current = provider
             },
-            tooltipContentProvider: () => tooltipContentProviderRef.current,
+            tooltipContentProvider: (): TooltipContentProvider<D, TM> | undefined => tooltipContentProviderRef.current,
             setVisibilityState: setTooltipVisible,
             visibilityState: tooltipVisible,
         }),

@@ -214,7 +214,7 @@ export function RasterPlot(props: Props): null {
      */
     const updatePlot = useCallback(
         (cc: CanvasContext) => {
-            const draw = (context: CanvasContext) => {
+            const draw = (context: CanvasContext): void => {
                 const {context2D} = context
 
                 context2D.save()
@@ -334,7 +334,7 @@ export function RasterPlot(props: Props): null {
 
             const canvas = canvasContext.canvas
 
-            const handleMove = (event: MouseEvent) => {
+            const handleMove = (event: MouseEvent): void => {
                 if (!allowTooltipRef.current) return
 
                 const [x, y] = canvasLocalPoint(event, canvas)
@@ -372,7 +372,7 @@ export function RasterPlot(props: Props): null {
                 lastHoveredRef.current = hit?.name
             }
 
-            const handleLeaveCanvas = () => {
+            const handleLeaveCanvas = (): void => {
                 if (lastHoveredRef.current !== undefined) {
                     handleMouseLeaveSeries(lastHoveredRef.current, mouseLeaveHandlerFor(`tooltip-${chartId}`))
                     lastHoveredRef.current = undefined
@@ -381,7 +381,7 @@ export function RasterPlot(props: Props): null {
 
             canvas.addEventListener('mousemove', handleMove)
             canvas.addEventListener('mouseleave', handleLeaveCanvas)
-            return () => {
+            return (): void => {
                 canvas.removeEventListener('mousemove', handleMove)
                 canvas.removeEventListener('mouseleave', handleLeaveCanvas)
             }
@@ -402,7 +402,7 @@ export function RasterPlot(props: Props): null {
     // unregister this plot's draw function on unmount
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (canvasContext) {
                     canvasContext.unregister(`raster-plot-${chartId}`)
                 }

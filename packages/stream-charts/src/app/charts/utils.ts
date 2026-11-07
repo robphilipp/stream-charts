@@ -4,7 +4,7 @@ import * as d3 from "d3";
 /**
  * No operation function for use when a default function is needed
  */
-export const noop = () => {
+export const noop = (): void => {
     /* empty on purpose */
 }
 

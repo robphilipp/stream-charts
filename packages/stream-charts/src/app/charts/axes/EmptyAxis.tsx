@@ -133,7 +133,7 @@ export function EmptyAxis(props: Props): null {
     // unregister the axis' draw function when the axis unmounts
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (canvasContext) {
                     switch (location) {
                         case AxisLocation.Bottom:

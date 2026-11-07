@@ -331,7 +331,7 @@ export function PoincarePlot(props: Props): null {
             // series (see `colorizeLines`)
             const lineColorOf = pointColorScale(lineStartColor, lineEndColor, lineColorSteps)
 
-            const draw = (context: CanvasContext) => {
+            const draw = (context: CanvasContext): void => {
                 const {context2D} = context
 
                 // create a map associating series-names to their time-series.
@@ -710,7 +710,7 @@ export function PoincarePlot(props: Props): null {
         () => {
             addAxesBoundsUpdateHandlerRef.current(`handler-${chartId}`, updatedBoundsHandler)
             const removeHandler = removeAxesBoundsUpdateHandlerRef.current
-            return () => {
+            return (): void => {
                 // closure on the function to remove the handler from this chart
                 removeHandler(`handler-${chartId}`)
             }
@@ -756,7 +756,7 @@ export function PoincarePlot(props: Props): null {
      */
     const snapToOriginalRanges = useCallback(
         (): void => {
-            const snap = (ranges: Map<string, ContinuousAxisRange>, axesState: typeof xAxesState) =>
+            const snap = (ranges: Map<string, ContinuousAxisRange>, axesState: typeof xAxesState): void =>
                 ranges.forEach((range, axisId) => {
                     ranges.set(axisId, range.update(range.original.start, range.original.end))
                     setAxisIntervalFor(axisId, range.original)
@@ -839,7 +839,7 @@ export function PoincarePlot(props: Props): null {
                 yAxis?.setHighlighted(isHighlighted, highlightColor, highlightWidth)
             }
 
-            const handleMove = (event: MouseEvent) => {
+            const handleMove = (event: MouseEvent): void => {
                 if (!allowTooltip.current || !tooltipVisible) return
 
                 const [x, y] = canvasLocalPoint(event, canvas)
@@ -883,7 +883,7 @@ export function PoincarePlot(props: Props): null {
                 canvasContext.requestRedraw()
             }
 
-            const handleLeaveCanvas = () => {
+            const handleLeaveCanvas = (): void => {
                 const previous = hoveredPointRef.current
                 if (previous !== undefined) {
                     handleMouseLeavePoint(previous.seriesName, mouseLeaveHandlerFor(`tooltip-${chartId}`))
@@ -895,7 +895,7 @@ export function PoincarePlot(props: Props): null {
 
             canvas.addEventListener('mousemove', handleMove)
             canvas.addEventListener('mouseleave', handleLeaveCanvas)
-            return () => {
+            return (): void => {
                 canvas.removeEventListener('mousemove', handleMove)
                 canvas.removeEventListener('mouseleave', handleLeaveCanvas)
             }
@@ -937,7 +937,7 @@ export function PoincarePlot(props: Props): null {
             if (dataSource === undefined || !running || canvasContext === null) return
             allowTooltip.current = false
             const driver = createViewDriver(dataSource)
-            return () => {
+            return (): void => {
                 driver.unsubscribe()
                 allowTooltip.current = true
             }
@@ -958,7 +958,7 @@ export function PoincarePlot(props: Props): null {
     // unregister this plot's draw function on unmount
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (canvasContext) {
                     canvasContext.unregister(`poincare-plot-${chartId}`)
                 }

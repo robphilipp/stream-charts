@@ -287,7 +287,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
         }
 
         animationFrameId = requestAnimationFrame(animate)
-        return () => cancelAnimationFrame(animationFrameId)
+        return (): void => cancelAnimationFrame(animationFrameId)
     }, [shouldShowExternalLegend])
 
     /**

@@ -123,7 +123,7 @@ const introRouteApi = getRouteApi("/intro")
  * between pages.
  * @return The intro pages
  */
-export default function Intro() {
+export default function Intro(): JSX.Element {
     const {theme} = useThemeStore()
     const numPages = pages.length
 
@@ -412,7 +412,7 @@ function MarkdownPre(props: ComponentProps<'pre'> & ExtraProps): JSX.Element {
         () => {
             if (copyState === 'idle') return
             const timeout = setTimeout(() => setCopyState('idle'), COPIED_DURATION_MS)
-            return () => clearTimeout(timeout)
+            return (): void => clearTimeout(timeout)
         },
         [copyState]
     )
@@ -535,7 +535,7 @@ function MarkdownImage(props: ComponentProps<'img'> & ExtraProps): JSX.Element {
         <img
             src={showThemed ? themedSrc : src}
             alt={alt}
-            onError={showThemed ? () => setFailedSrc(themedSrc) : undefined}
+            onError={showThemed ? (): void => setFailedSrc(themedSrc) : undefined}
             width={width}
             height={height}
             style={{...style, maxWidth: "100%", height: "auto", borderRadius: 10}}

@@ -366,7 +366,7 @@ function addOrdinalStringXAxis(
 
     const drawHandle: DrawHandle = `x-axis-ordinal-${cc.chartId}-${axisId}`
 
-    const draw = (context: CanvasContext) => {
+    const draw = (context: CanvasContext): void => {
         const {context2D} = context
         context2D.save()
         context2D.translate(currentMargin.left, yTranslation(location, currentDimensions, currentMargin))
@@ -423,7 +423,7 @@ function addOrdinalStringXAxis(
 
     cc.register(drawHandle, draw, 0)
 
-    const categorySize = () => scale.bandwidth()
+    const categorySize = (): number => scale.bandwidth()
 
     return {
         axisId,
@@ -431,7 +431,7 @@ function addOrdinalStringXAxis(
         axisType: AxisType.OrdinalString,
         scale,
         categorySize: categorySize(),
-        update: (updatedCategories, range, originalRange, plotDimensions, margin) => {
+        update: (updatedCategories, range, originalRange, plotDimensions, margin): number => {
             // reassign the closed-over `categories` (not just a local variable) so `draw`'s own
             // `categories.forEach(...)` picks up the change on the next redraw too
             categories = updatedCategories
@@ -447,13 +447,13 @@ function addOrdinalStringXAxis(
             cc.requestRedraw()
             return categorySize()
         },
-        setHighlighted: (isHighlighted, color, lineWidth) => {
+        setHighlighted: (isHighlighted, color, lineWidth): void => {
             highlighted = isHighlighted
             if (color !== undefined) highlightColor = color
             if (lineWidth !== undefined) highlightLineWidth = lineWidth
             cc.requestRedraw()
         },
-        updateFont: (font) => {
+        updateFont: (font): void => {
             // the font's color is used for the label, the axis line, the ticks, and the tick
             // labels; the tick labels' size, family, and weight stay at axisTickStyle.font's
             currentFont = font
@@ -504,7 +504,7 @@ function addOrdinalStringYAxis(
 
     const drawHandle: DrawHandle = `y-axis-ordinal-${cc.chartId}-${axisId}`
 
-    const draw = (context: CanvasContext) => {
+    const draw = (context: CanvasContext): void => {
         const {context2D} = context
         context2D.save()
         context2D.translate(xTranslation(location, currentDimensions, currentMargin), currentMargin.top)
@@ -574,7 +574,7 @@ function addOrdinalStringYAxis(
 
     cc.register(drawHandle, draw, 0)
 
-    const categorySize = () => scale.bandwidth()
+    const categorySize = (): number => scale.bandwidth()
 
     return {
         axisId,
@@ -582,7 +582,7 @@ function addOrdinalStringYAxis(
         axisType: AxisType.OrdinalString,
         scale,
         categorySize: categorySize(),
-        update: (updatedCategories, range, originalRange, plotDimensions, margin) => {
+        update: (updatedCategories, range, originalRange, plotDimensions, margin): number => {
             // reassign the closed-over `categories` (not just a local variable) so `draw`'s own
             // `categories.forEach(...)` picks up the change on the next redraw too
             categories = updatedCategories
@@ -598,13 +598,13 @@ function addOrdinalStringYAxis(
             cc.requestRedraw()
             return categorySize()
         },
-        setHighlighted: (isHighlighted, color, lineWidth) => {
+        setHighlighted: (isHighlighted, color, lineWidth): void => {
             highlighted = isHighlighted
             if (color !== undefined) highlightColor = color
             if (lineWidth !== undefined) highlightLineWidth = lineWidth
             cc.requestRedraw()
         },
-        updateFont: (font) => {
+        updateFont: (font): void => {
             // the font's color is used for the label, the axis line, the ticks, and the tick
             // labels; the tick labels' size, family, and weight stay at axisTickStyle.font's
             currentFont = font
@@ -731,7 +731,7 @@ export function addEmptyXAxis(
 
     const drawHandle: DrawHandle = `x-axis-empty-${canvasContext.chartId}-${axisId}`
 
-    const draw = (context: CanvasContext) => {
+    const draw = (context: CanvasContext): void => {
         const {context2D} = context
         context2D.save()
         context2D.translate(currentMargin.left, yTranslation(location, currentDimensions, currentMargin))
@@ -752,7 +752,7 @@ export function addEmptyXAxis(
         axisType: AxisType.ContinuousNumeric,
         isEmpty: true,
         scale,
-        update: (domain, plotDimensions, margin) => {
+        update: (domain, plotDimensions, margin): void => {
             scale.domain(domain.asTuple()).range([0, plotDimensions.width])
             currentDimensions = plotDimensions
             currentMargin = margin
@@ -762,11 +762,11 @@ export function addEmptyXAxis(
         // an empty axis has no ticks or label text but does have a colored line -- reuse
         // updateFont's color field to keep that line in sync with the chart's color (e.g., on a
         // theme change), matching the pattern used by the other axis types
-        updateFont: (font) => {
+        updateFont: (font): void => {
             currentColor = font.color
             canvasContext.requestRedraw()
         },
-        setHighlighted: (isHighlighted, color, lineWidth) => {
+        setHighlighted: (isHighlighted, color, lineWidth): void => {
             highlighted = isHighlighted
             if (color !== undefined) highlightColor = color
             if (lineWidth !== undefined) highlightLineWidth = lineWidth
@@ -810,7 +810,7 @@ export function addEmptyYAxis(
 
     const drawHandle: DrawHandle = `y-axis-empty-${cc.chartId}-${axisId}`
 
-    const draw = (context: CanvasContext) => {
+    const draw = (context: CanvasContext): void => {
         const {context2D} = context
         context2D.save()
         context2D.translate(xTranslation(location, currentDimensions, currentMargin), currentMargin.top)
@@ -831,7 +831,7 @@ export function addEmptyYAxis(
         axisType: AxisType.ContinuousNumeric,
         isEmpty: true,
         scale,
-        update: (domain, plotDimensions, margin) => {
+        update: (domain, plotDimensions, margin): void => {
             scale.domain(domain.asTuple()).range([plotDimensions.height, 0])
             currentDimensions = plotDimensions
             currentMargin = margin
@@ -841,11 +841,11 @@ export function addEmptyYAxis(
         // an empty axis has no ticks or label text but does have a colored line -- reuse
         // updateFont's color field to keep that line in sync with the chart's color (e.g., on a
         // theme change), matching the pattern used by the other axis types
-        updateFont: (font) => {
+        updateFont: (font): void => {
             currentColor = font.color
             cc.requestRedraw()
         },
-        setHighlighted: (isHighlighted, color, lineWidth) => {
+        setHighlighted: (isHighlighted, color, lineWidth): void => {
             highlighted = isHighlighted
             if (color !== undefined) highlightColor = color
             if (lineWidth !== undefined) highlightLineWidth = lineWidth
@@ -892,7 +892,7 @@ export function addContinuousNumericXAxis(
 
     const drawHandle: DrawHandle = `x-axis-${cc.chartId}-${axisId}`
 
-    const draw = (context: CanvasContext) => {
+    const draw = (context: CanvasContext): void => {
         const {context2D} = context
         context2D.save()
         context2D.translate(currentMargin.left, yTranslation(location, currentDimensions, currentMargin))
@@ -949,18 +949,18 @@ export function addContinuousNumericXAxis(
         location,
         axisType: AxisType.ContinuousNumeric,
         scale,
-        update: (domain, plotDimensions, margin) => {
+        update: (domain, plotDimensions, margin): void => {
             scale.domain(domain.asTuple()).range([0, plotDimensions.width])
             currentDimensions = plotDimensions
             currentMargin = margin
             setAxisRangeFor(axisId, domain)
             cc.requestRedraw()
         },
-        updateFont: (font) => {
+        updateFont: (font): void => {
             currentFont = font
             cc.requestRedraw()
         },
-        setHighlighted: (isHighlighted, color, lineWidth) => {
+        setHighlighted: (isHighlighted, color, lineWidth): void => {
             highlighted = isHighlighted
             if (color !== undefined) highlightColor = color
             if (lineWidth !== undefined) highlightLineWidth = lineWidth
@@ -1009,7 +1009,7 @@ export function addContinuousNumericYAxis(
 
     const drawHandle: DrawHandle = `y-axis-${cc.chartId}-${axisId}`
 
-    const draw = (context: CanvasContext) => {
+    const draw = (context: CanvasContext): void => {
         const {context2D} = context
         context2D.save()
         context2D.translate(xTranslation(location, currentDimensions, currentMargin), currentMargin.top)
@@ -1068,18 +1068,18 @@ export function addContinuousNumericYAxis(
         location,
         axisType: AxisType.ContinuousNumeric,
         scale,
-        update: (domain, plotDimensions, margin) => {
+        update: (domain, plotDimensions, margin): void => {
             scale.domain(domain.asTuple()).range([Math.max(margin.bottom, plotDimensions.height), 0])
             currentDimensions = plotDimensions
             currentMargin = margin
             setAxisRangeFor(axisId, domain)
             cc.requestRedraw()
         },
-        updateFont: (font) => {
+        updateFont: (font): void => {
             currentFont = font
             cc.requestRedraw()
         },
-        setHighlighted: (isHighlighted, color, lineWidth) => {
+        setHighlighted: (isHighlighted, color, lineWidth): void => {
             highlighted = isHighlighted
             if (color !== undefined) highlightColor = color
             if (lineWidth !== undefined) highlightLineWidth = lineWidth

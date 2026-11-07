@@ -67,7 +67,7 @@ export function Tooltip<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, 
                     providerId?: string
                 ) => tooltipContentProvider()?.(seriesName, time, tooltipData, mouseCoords, providerId)
             )
-            return () => unregisterMouseOverHandler(handlerId)
+            return (): void => unregisterMouseOverHandler(handlerId)
         },
         [chartId, visible, tooltipContentProvider, setVisibilityState, registerMouseOverHandler, unregisterMouseOverHandler]
     )

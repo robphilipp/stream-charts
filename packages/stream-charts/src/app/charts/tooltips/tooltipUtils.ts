@@ -370,9 +370,9 @@ export function sparklineFor(
     }
     const innerWidth = width - 2 * padding
     const innerHeight = height - 2 * padding
-    const xOf = (time: number) => padding + (timeSpan > 0 ? (time - startTime) / timeSpan * innerWidth : innerWidth / 2)
+    const xOf = (time: number): number => padding + (timeSpan > 0 ? (time - startTime) / timeSpan * innerWidth : innerWidth / 2)
     // (a flat line sits in the middle)
-    const yOf = (value: number) => padding + (maxValue > minValue ?
+    const yOf = (value: number): number => padding + (maxValue > minValue ?
         (maxValue - Math.min(maxValue, Math.max(minValue, value))) / (maxValue - minValue) * innerHeight :
         innerHeight / 2)
 
@@ -380,7 +380,7 @@ export function sparklineFor(
     const reduced: Array<{ time: number, value: number }> = []
     let column: Array<{ index: number, point: { time: number, value: number } }> = []
     let columnX = Math.floor(xOf(points[0].time))
-    const flushColumn = () => {
+    const flushColumn = (): void => {
         if (column.length === 0) return
         const lowest = column.reduce((low, entry) => entry.point.value < low.point.value ? entry : low)
         const highest = column.reduce((high, entry) => entry.point.value > high.point.value ? entry : high)
@@ -399,7 +399,7 @@ export function sparklineFor(
     flushColumn()
 
     const coordinates = reduced.map(({time, value}) => [xOf(time), yOf(value)] as [number, number])
-    const round = (value: number) => Math.round(value * 100) / 100
+    const round = (value: number): number => Math.round(value * 100) / 100
     const marked = markedTime === undefined ? undefined : points.find(point => point.time === markedTime)
     return {
         path: coordinates.map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${round(x)},${round(y)}`).join(' '),

@@ -92,11 +92,11 @@ export function FloatingBar(props: Props): JSX.Element {
         () => {
             const element = panelContentRef.current
             if (element === null) return
-            const updateHeight = () => setPanelContentHeight(element.scrollHeight)
+            const updateHeight = (): void => setPanelContentHeight(element.scrollHeight)
             updateHeight()
             const observer = new ResizeObserver(updateHeight)
             observer.observe(element)
-            return () => observer.disconnect()
+            return (): void => observer.disconnect()
         },
         [panel]
     )
@@ -105,7 +105,7 @@ export function FloatingBar(props: Props): JSX.Element {
     useEffect(
         () => {
             if (!panelExpanded) return
-            return () => clearTimeout(collapseTimeoutRef.current)
+            return (): void => clearTimeout(collapseTimeoutRef.current)
         },
         [panelExpanded]
     )

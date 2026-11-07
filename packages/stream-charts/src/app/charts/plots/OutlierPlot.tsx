@@ -238,7 +238,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
      */
     const updatePlot = useCallback(
         (cc: CanvasContext) => {
-            const draw = (context: CanvasContext) => {
+            const draw = (context: CanvasContext): void => {
                 const {context2D} = context
 
                 context2D.save()
@@ -429,7 +429,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
             const canvas = canvasContext.canvas
             const {context2D, dpr} = canvasContext
 
-            const handleMove = (event: MouseEvent) => {
+            const handleMove = (event: MouseEvent): void => {
                 const [x, y] = canvasLocalPoint(event, canvas)
 
                 // check outlier markers first (drawn on top of the bands)
@@ -512,7 +512,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
                 lastHoveredRef.current = current
             }
 
-            const handleLeaveCanvas = () => {
+            const handleLeaveCanvas = (): void => {
                 const previous = lastHoveredRef.current
                 if (previous !== undefined) {
                     mouseLeaveHandlerFor(`tooltip-${chartId}`)?.(previous.seriesName)
@@ -522,7 +522,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
 
             canvas.addEventListener('mousemove', handleMove)
             canvas.addEventListener('mouseleave', handleLeaveCanvas)
-            return () => {
+            return (): void => {
                 canvas.removeEventListener('mousemove', handleMove)
                 canvas.removeEventListener('mouseleave', handleLeaveCanvas)
             }
@@ -540,7 +540,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
     // unregister this plot's draw function on unmount
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (canvasContext) {
                     canvasContext.unregister(`outlier-plot-autoscale-${chartId}`)
                     canvasContext.unregister(`outlier-plot-${chartId}`)
@@ -635,7 +635,7 @@ function calcPointsInBand<M extends readonly number[]>(
     subtractLowerBandCount: boolean = true
 ): number {
     // function to count the points in a specific outlier band
-    const countPointsInBand = (bandIndex: number) =>
+    const countPointsInBand = (bandIndex: number): number =>
         plotData
             .filter(datum => {
                     if (bandIndex < datum.bounds.length) {

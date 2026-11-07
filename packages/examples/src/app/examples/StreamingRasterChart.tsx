@@ -229,7 +229,7 @@ export function StreamingRasterChart(props: Props): JSX.Element {
         }
 
         animationFrameId = requestAnimationFrame(animate)
-        return () => cancelAnimationFrame(animationFrameId)
+        return (): void => cancelAnimationFrame(animationFrameId)
     }, [shouldShowExternalLegend])
 
     function initialDataFrom(data: Array<TimeSeries>): Array<TimeSeries> {

@@ -144,7 +144,7 @@ function verticalTrackerControlInstance(
     let mouseX: number | null = null
     let mouseY: number | null = null
 
-    const draw = (context: CanvasContext) => {
+    const draw = (context: CanvasContext): void => {
         if (mouseX === null || mouseY === null) return
         const {context2D} = context
         const dimensions = containerDimensionsFrom(plotDimensions, margin)
@@ -214,13 +214,13 @@ function verticalTrackerControlInstance(
 
     cc.register(drawHandle, draw, 20)
 
-    const handleMouseMove = (event: MouseEvent) => {
+    const handleMouseMove = (event: MouseEvent): void => {
         const [x, y] = canvasLocalPoint(event, cc.canvas)
         mouseX = x
         mouseY = y
         cc.requestRedraw()
     }
-    const handleMouseLeave = () => {
+    const handleMouseLeave = (): void => {
         mouseX = null
         mouseY = null
         cc.requestRedraw()
@@ -269,7 +269,7 @@ function horizontalTrackerControlInstance(
     let mouseX: number | null = null
     let mouseY: number | null = null
 
-    const draw = (context: CanvasContext) => {
+    const draw = (context: CanvasContext): void => {
         if (mouseX === null || mouseY === null) return
         const {context2D} = context
         const dimensions = containerDimensionsFrom(plotDimensions, margin)
@@ -359,13 +359,13 @@ function horizontalTrackerControlInstance(
 
     cc.register(drawHandle, draw, 20)
 
-    const handleMouseMove = (event: MouseEvent) => {
+    const handleMouseMove = (event: MouseEvent): void => {
         const [x, y] = canvasLocalPoint(event, cc.canvas)
         mouseX = x
         mouseY = y
         cc.requestRedraw()
     }
-    const handleMouseLeave = () => {
+    const handleMouseLeave = (): void => {
         mouseX = null
         mouseY = null
         cc.requestRedraw()

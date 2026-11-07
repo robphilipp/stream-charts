@@ -246,7 +246,7 @@ export function DropDown<V extends string>(props: Props<V>): JSX.Element {
                 // through the list's scroll event)
                 if (boxRef.current !== null) setScrollHints(scrollHintsFor(boxRef.current, list, size))
             })
-            return () => cancelAnimationFrame(frame)
+            return (): void => cancelAnimationFrame(frame)
         },
         [open, placement]
     )
@@ -263,7 +263,7 @@ export function DropDown<V extends string>(props: Props<V>): JSX.Element {
                 },
                 animationDuration
             )
-            return () => clearTimeout(timeout)
+            return (): void => clearTimeout(timeout)
         },
         [open, placement, animationDuration]
     )
@@ -273,21 +273,21 @@ export function DropDown<V extends string>(props: Props<V>): JSX.Element {
     useEffect(
         () => {
             if (!open) return
-            const handlePointerDown = (event: PointerEvent) => {
+            const handlePointerDown = (event: PointerEvent): void => {
                 const target = event.target as Node
                 if (buttonRef.current?.contains(target) || boxRef.current?.contains(target)) return
                 setOpen(false)
             }
-            const handleScroll = (event: Event) => {
+            const handleScroll = (event: Event): void => {
                 // scrolling the list itself is fine
                 if (event.target instanceof Node && boxRef.current?.contains(event.target)) return
                 setOpen(false)
             }
-            const handleResize = () => setOpen(false)
+            const handleResize = (): void => setOpen(false)
             document.addEventListener('pointerdown', handlePointerDown, true)
             window.addEventListener('scroll', handleScroll, true)
             window.addEventListener('resize', handleResize)
-            return () => {
+            return (): void => {
                 document.removeEventListener('pointerdown', handlePointerDown, true)
                 window.removeEventListener('scroll', handleScroll, true)
                 window.removeEventListener('resize', handleResize)

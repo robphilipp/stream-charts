@@ -149,7 +149,7 @@ export const useOutlierChartStore: UseBoundStore<StoreApi<OutlierChartStore>> = 
         setFilterValue: filterValue => set({filterValue}),
 
         // data retention belongs to the data source, so keep it in step
-        setDropAfterMs: (dropAfterMs: number) => {
+        setDropAfterMs: (dropAfterMs: number): void => {
             get().dataSource.setDropDataAfter(dropAfterMs)
             set({dropAfterMs})
         },
@@ -160,7 +160,7 @@ export const useOutlierChartStore: UseBoundStore<StoreApi<OutlierChartStore>> = 
 
         // the update period is baked into the generator, so give the data source a new one (only
         // possible while stopped, which is the only time the control is enabled)
-        setDataUpdatePeriod: (dataUpdatePeriod: number) => {
+        setDataUpdatePeriod: (dataUpdatePeriod: number): void => {
             get().dataSource.setGenerator(randomData(dataUpdatePeriod))
             set({dataUpdatePeriod})
         },

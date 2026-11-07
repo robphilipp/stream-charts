@@ -164,7 +164,7 @@ export const usePoincareChartStore: UseBoundStore<StoreApi<PoincareChartStore>> 
         ),
 
         // data retention belongs to the data source, so keep it in step
-        setDropAfterMs: (dropAfterMs: number) => {
+        setDropAfterMs: (dropAfterMs: number): void => {
             get().dataSource.setDropDataAfter(dropAfterMs)
             set({dropAfterMs})
         },

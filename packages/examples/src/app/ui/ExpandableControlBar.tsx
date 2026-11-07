@@ -64,14 +64,14 @@ export function ExpandableControlBar(props: Props): JSX.Element {
         if (!contentRef.current) return
 
         const element = contentRef.current
-        const updateHeight = () => setContentHeight(element.scrollHeight)
+        const updateHeight = (): void => setContentHeight(element.scrollHeight)
 
         updateHeight()
 
         const observer = new ResizeObserver(() => updateHeight())
         observer.observe(element)
 
-        return () => observer.disconnect()
+        return (): void => observer.disconnect()
     }, [children])
 
     return (

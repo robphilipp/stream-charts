@@ -130,7 +130,7 @@ export function TooltipContent<D, M, C>(props: TooltipContentProps<D, M, C>): Re
                 const placeTop = topForRef.current
                 const anchor = tooltipAnchorFor(
                     mouseCoords, canvas,
-                    placeTop !== undefined ? height => placeTop(content, height) : undefined
+                    placeTop !== undefined ? (height): number => placeTop(content, height) : undefined
                 )
                 setShown({content, anchor})
             })
@@ -143,7 +143,7 @@ export function TooltipContent<D, M, C>(props: TooltipContentProps<D, M, C>): Re
         () => {
             const handlerId = `tooltip-content-leave-${chartId}`
             registerMouseLeaveHandler(handlerId, () => setShown(null))
-            return () => unregisterMouseLeaveHandler(handlerId)
+            return (): void => unregisterMouseLeaveHandler(handlerId)
         },
         [chartId, registerMouseLeaveHandler, unregisterMouseLeaveHandler]
     )

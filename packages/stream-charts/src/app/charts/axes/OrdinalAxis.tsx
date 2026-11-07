@@ -213,7 +213,7 @@ export function OrdinalAxis(props: Props): null {
                     }
                 }
             })
-            return () => {
+            return (): void => {
                 unregisterPlotDimensionChangeHandler(handlerId)
             }
         },
@@ -227,7 +227,7 @@ export function OrdinalAxis(props: Props): null {
 
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (rangeUpdateHandlerIdRef.current) {
                     removeAxesRangesUpdateHandler(rangeUpdateHandlerIdRef.current)
                 }
@@ -239,7 +239,7 @@ export function OrdinalAxis(props: Props): null {
     // unregister the axis' draw function when the axis unmounts
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (canvasContext) {
                     switch (location) {
                         case AxisLocation.Top:
