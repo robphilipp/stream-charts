@@ -277,8 +277,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 handleFilterUpdate={setFilterValue}
                             />
                             <Checkbox
-                                checked={showTooltip && !running}
-                                disabled={running}
+                                checked={showTooltip}
                                 label="tooltip"
                                 backgroundColor={theme.backgroundColor}
                                 borderColor={theme.color}

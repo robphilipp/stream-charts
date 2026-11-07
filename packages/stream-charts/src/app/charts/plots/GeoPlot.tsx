@@ -504,8 +504,11 @@ export function GeoPlot<P>(props: Props<P>): null {
     // the time of the latest event, reported to the chart's `onUpdateChartTime`
     const currentTimeRef = useRef<number>(0)
 
-    // tooltips are only shown while the data source is paused (and not while dragging)
-    const allowTooltipRef = useRef<boolean>(!(dataSource?.running ?? false))
+    // tooltips are shown whether or not the data source is running, but not while dragging
+    const allowTooltipRef = useRef<boolean>(true)
+    // where the mouse last was over the canvas (canvas coordinates), for updating the tooltip of
+    // what's under it as the data changes
+    const mouseRef = useRef<[x: number, y: number]>([0, 0])
     // whether the view is being dragged (which pauses the auto-rotation)
     const draggingRef = useRef<boolean>(false)
 
@@ -582,6 +585,20 @@ export function GeoPlot<P>(props: Props<P>): null {
                     return x < 0 || y < 0 || x > width || y > height ? undefined : [x, y]
                 }
 
+                // the markers are circles on the sphere, drawn through the projection, so that the
+                // projection shapes them as it shapes the map (e.g. flattened toward a globe's edge, or
+                // stretched toward the poles of a Mercator map). A marker's radius is in pixels at the
+                // view's center, where the projection's scale is the pixels per radian, so the markers
+                // keep their size as the view zooms. (Small circles get fewer points: they're drawn
+                // for every event, on every redraw.)
+                const degreesPerPixel = DEGREES / projection.scale()
+                const circle = d3.geoCircle()
+                const circleAt = (latitude: number, longitude: number, radius: number): d3.GeoPermissibleObjects =>
+                    circle
+                        .center([longitude, latitude])
+                        .radius(radius * degreesPerPixel)
+                        .precision(radius < 4 ? 30 : radius < 10 ? 15 : 6)()
+
                 // an event's (or an aggregate's) fading, by the age of its time relative to the
                 // latest event: from 0 (new) to FADE_LEVELS - 1 (faded)
                 const latestTime = dataSource?.latestTime() ?? 0
@@ -651,7 +668,7 @@ export function GeoPlot<P>(props: Props<P>): null {
                             const fill = fillOf(aggregate)
                             context2D.globalAlpha = aggregateOpacity * fadingOf(fadeLevelOf(aggregate.lastTime))
                             context2D.beginPath()
-                            context2D.arc(x, y, radius, 0, 2 * Math.PI)
+                            path(circleAt(aggregate.latitude, aggregate.longitude, radius))
                             context2D.fillStyle = fill
                             context2D.fill()
                             context2D.strokeStyle = d3.color(fill)?.darker(0.8).formatRgb() ?? color
@@ -682,7 +699,7 @@ export function GeoPlot<P>(props: Props<P>): null {
                         const style = seriesStyles.get(series.name) ?? defaultLineStyle()
                         // the markers, a path per color and fading, so that a series in one color
                         // is a few fills
-                        const paths = new Map<string, {fill: string, level: number, path: Path2D}>()
+                        const paths = new Map<string, {fill: string, level: number, path: Path2D, geoPath: d3.GeoPath}>()
 
                         series.data.forEach(datum => {
                             const at = shownAt(datum.latitude, datum.longitude)
@@ -694,11 +711,14 @@ export function GeoPlot<P>(props: Props<P>): null {
                             const key = `${fill}|${level}`
                             let markerPath = paths.get(key)
                             if (markerPath === undefined) {
-                                markerPath = {fill, level, path: new Path2D()}
+                                // (a Path2D has no `beginPath`, which d3's context type asks for, but
+                                // which d3 never calls when it draws polygons into a context)
+                                const markersPath = new Path2D()
+                                const geoPath = d3.geoPath(projection, markersPath as unknown as d3.GeoContext)
+                                markerPath = {fill, level, path: markersPath, geoPath}
                                 paths.set(key, markerPath)
                             }
-                            markerPath.path.moveTo(x + radius, y)
-                            markerPath.path.arc(x, y, radius, 0, 2 * Math.PI)
+                            markerPath.geoPath(circleAt(datum.latitude, datum.longitude, radius))
 
                             const marker: DrawnMarker<P> = {
                                 x: x + margin.left, y: y + margin.top,
@@ -724,22 +744,45 @@ export function GeoPlot<P>(props: Props<P>): null {
                 // hovered aggregate (with a ring)
                 const shown = highlighted as DrawnMarker<P> | undefined
                 if (shown !== undefined) {
-                    const x = shown.x - margin.left
-                    const y = shown.y - margin.top
                     context2D.globalAlpha = 1
                     context2D.strokeStyle = color
                     context2D.beginPath()
                     if (shown.target.kind === 'event') {
-                        const style = seriesStyles.get(shown.target.seriesName) ?? defaultLineStyle()
-                        context2D.arc(x, y, shown.hitRadius - 1, 0, 2 * Math.PI)
+                        const {seriesName, datum} = shown.target
+                        const style = seriesStyles.get(seriesName) ?? defaultLineStyle()
+                        path(circleAt(datum.latitude, datum.longitude, shown.hitRadius - 1))
                         context2D.fillStyle = style.highlightColor
                         context2D.fill()
                         context2D.lineWidth = 1
                     } else {
-                        context2D.arc(x, y, shown.hitRadius + 1, 0, 2 * Math.PI)
+                        const {aggregate} = shown.target
+                        path(circleAt(aggregate.latitude, aggregate.longitude, shown.hitRadius + 1))
                         context2D.lineWidth = 2
                     }
                     context2D.stroke()
+                }
+
+                // while the data changes under a resting mouse (the data source running), keep the
+                // tooltip current: close it when what it shows is gone (e.g. dropped as too old, or
+                // out of view), and update it when the aggregate it shows has changed
+                const hoveredTarget = hoveredRef.current
+                if (hoveredTarget !== undefined) {
+                    const tooltipId = `tooltip-${chartId}`
+                    const current = hoveredTarget.kind === 'aggregate' && aggregateShape === 'cells' ?
+                        cells.find(cell => `${rollup}::${cell.id}` === hoveredKey) :
+                        undefined
+                    const now: GeoTooltipMetadata<P> | undefined = shown !== undefined ? shown.target :
+                        current !== undefined ? {kind: 'aggregate', rollup: rollup ?? '', aggregate: current} :
+                            undefined
+                    if (now === undefined) {
+                        hoveredRef.current = undefined
+                        mouseLeaveHandlerFor(tooltipId)?.(nameOf(hoveredTarget))
+                    } else if (now.kind === 'aggregate' && hoveredTarget.kind === 'aggregate' && now.aggregate !== hoveredTarget.aggregate) {
+                        hoveredRef.current = now
+                        mouseOverHandlerFor(tooltipId)?.(
+                            nameOf(now), now.aggregate.lastTime, {series: [], metadata: now}, mouseRef.current
+                        )
+                    }
                 }
 
                 cellsRef.current = cells
@@ -758,7 +801,8 @@ export function GeoPlot<P>(props: Props<P>): null {
             outlineColor, markerRadius, markerOpacity, radiusOf, colorOf, fadeDuration, fadedOpacity,
             seriesStyles, seriesFilter, color, backgroundColor, dataSource, onUpdateChartTime, mode, rollup,
             sizeBy, colorBy, sizeDomain, colorDomain, colorScheme, aggregateColor, aggregateOpacity,
-            aggregateShape, maxAggregateRadius, minAggregateRadius, showKeys,
+            aggregateShape, maxAggregateRadius, minAggregateRadius, showKeys, mouseOverHandlerFor,
+            mouseLeaveHandlerFor,
         ]
     )
 
@@ -791,7 +835,7 @@ export function GeoPlot<P>(props: Props<P>): null {
             canvasContext?.requestRedraw()
         },
         onPanEnd: () => {
-            allowTooltipRef.current = !(dataSource?.running ?? false)
+            allowTooltipRef.current = true
             draggingRef.current = false
             reportView()
         },
@@ -907,6 +951,7 @@ export function GeoPlot<P>(props: Props<P>): null {
                     return
                 }
                 const [x, y] = canvasLocalPoint(event, canvas)
+                mouseRef.current = [x, y]
                 const target = targetAt(x, y)
                 if (target !== undefined && hoveredRef.current !== undefined && keyOf(hoveredRef.current) === keyOf(target)) return
 
@@ -954,12 +999,8 @@ export function GeoPlot<P>(props: Props<P>): null {
     useEffect(
         () => {
             if (dataSource === undefined || !running || canvasContext === null) return
-            allowTooltipRef.current = false
             const driver = createViewDriver(dataSource)
-            return (): void => {
-                driver.unsubscribe()
-                allowTooltipRef.current = true
-            }
+            return (): void => driver.unsubscribe()
         },
         [dataSource, running, canvasContext]
     )
