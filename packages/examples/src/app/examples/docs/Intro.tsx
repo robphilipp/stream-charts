@@ -1,5 +1,14 @@
 import type {Theme} from "../../ui/Themes.ts";
-import {type ComponentProps, type CSSProperties, type JSX, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
+import {
+    type ComponentProps,
+    type CSSProperties,
+    type JSX,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState
+} from "react";
 import {getRouteApi, useElementScrollRestoration, useNavigate} from "@tanstack/react-router";
 import {Button} from "../../ui/Button.tsx"
 import intro_page from "./intro.md?raw"
@@ -365,7 +374,13 @@ function TableOfContents(props: TableOfContentsProps): JSX.Element {
  */
 
 const hoverLinkStyle: CSSProperties = {textDecoration: 'underline', textDecorationStyle: 'solid'}
-const linkStyle: CSSProperties = {textDecoration: 'underline', textDecorationStyle: 'dashed'}
+const linkStyle: (theme: Theme) => CSSProperties =
+    (theme: Theme) => ({
+        textDecoration: 'underline',
+        textDecorationStyle: 'dotted',
+        textDecorationThickness: '1px',
+        textDecorationColor: theme.disabledColor
+    })
 
 /**
  * A link, which opens in a new tab, and whose underline goes from dashed to solid while hovered
@@ -383,7 +398,7 @@ function MarkdownLink(props: ComponentProps<'a'> & ExtraProps): JSX.Element {
             rel="noopener noreferrer"
             onMouseOver={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            style={{...style, color: theme.color, ...(hovered ? hoverLinkStyle : linkStyle)}}
+            style={{...style, color: theme.color, ...(hovered ? hoverLinkStyle : linkStyle(theme))}}
         >
             {children}
         </a>
