@@ -80,7 +80,8 @@ function installRafPolyfill(): void {
         requestAnimationFrame: (cb: (t: number) => void) => number
         cancelAnimationFrame: (id: number) => void
     }
-    g.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 0) as unknown as number
+    // a frame every 16 ms (60 Hz), like a display
+    g.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 16) as unknown as number
     g.cancelAnimationFrame = (id) => clearTimeout(id)
 }
 
@@ -145,11 +146,10 @@ function timeSeriesCadenceDriver(
     xAxesState: AxesState<ContinuousNumericAxis>,
     updateTimingAndPlot: RangesHandler,
     setCurrentTime: CurrentTimeHandler,
-    cadencePeriod: number,
 ) {
     return timeAxisViewDriverFor(
         source, xAxesState, timeSeriesAxisTimes(axisAssignments, xAxesState), updateTimingAndPlot, setCurrentTime,
-        {windowingTime, cadencePeriod}
+        {windowingTime, cadence: true}
     )
 }
 
@@ -160,11 +160,11 @@ function outlierDriver(
     xAxesState: AxesState<ContinuousNumericAxis>,
     updateTimingAndPlot: RangesHandler,
     setCurrentTime: CurrentTimeHandler,
-    cadencePeriod?: number,
+    cadence: boolean = false,
 ) {
     return timeAxisViewDriverFor(
         source, xAxesState, outlierAxisTimes<readonly [number]>(axisAssignments, xAxesState), updateTimingAndPlot, setCurrentTime,
-        {windowingTime, cadencePeriod}
+        {windowingTime, cadence}
     )
 }
 
@@ -287,7 +287,7 @@ describe('timeAxisViewDriverFor, for time series, with cadence', () => {
     } = {}) {
         return track(timeSeriesCadenceDriver(
             source, 100, new Map(), axesStateWith('x-axis-1'),
-            options.updateTimingAndPlot ?? jest.fn(), options.setCurrentTime ?? jest.fn(), 50,
+            options.updateTimingAndPlot ?? jest.fn(), options.setCurrentTime ?? jest.fn(),
         ))
     }
 
@@ -334,10 +334,32 @@ describe('timeAxisViewDriverFor, for time series, with cadence', () => {
         jest.advanceTimersByTime(20)
         source.chartDataUpdatesObservable.next(chartDataFor(new Map([['series-a', [datumOf(50_000, 1)]]]), 50_000))
         jest.advanceTimersByTime(100)
-        expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBe(50_000)
+        // the frames since the data arrived have projected the axis on from the data's time
+        expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBeGreaterThanOrEqual(50_000)
+        expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBeLessThanOrEqual(50_100)
 
         jest.advanceTimersByTime(50)
         expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBeGreaterThan(50_000)
+    })
+
+    it('moves the axis on animation frames only, not when data arrives between them', () => {
+        const source = fakeSource<TimeSeriesChartData>(1000)
+        const updateTimingAndPlot = jest.fn()
+        drive(source, {updateTimingAndPlot})
+        jest.advanceTimersByTime(40)
+        // data well ahead of the axis, which the driver's 100 ms batching hands over at t = 100,
+        // between the frames at t = 96 and t = 112
+        source.chartDataUpdatesObservable.next(chartDataFor(new Map([['series-a', [datumOf(3000, 1)]]]), 3000))
+        jest.advanceTimersByTime(59)
+        const before = lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end
+
+        // the data has arrived (t = 101), but the axis stays put...
+        jest.advanceTimersByTime(2)
+        expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBe(before)
+
+        // ...until the next frame moves it to the (corrected) projected time
+        jest.advanceTimersByTime(16)
+        expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBeGreaterThanOrEqual(3000)
     })
 
     it('treats real data that carries a current time as data, not as a cadence tick', () => {
@@ -349,7 +371,8 @@ describe('timeAxisViewDriverFor, for time series, with cadence', () => {
             ...chartDataFor(new Map([['series-a', [datumOf(20_000, 1)]]]), 20_000),
             currentTime: 0,
         })
-        jest.advanceTimersByTime(100)
+        // the batching hands the data over at t = 100, and the next frame moves the axis
+        jest.advanceTimersByTime(120)
         expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBeGreaterThanOrEqual(20_000)
     })
 
@@ -445,14 +468,15 @@ describe('timeAxisViewDriverFor, for outliers', () => {
         installRafPolyfill()
         const source = fakeSource<OutlierChartData<readonly [number]>>(1000)
         const updateTimingAndPlot = jest.fn()
-        track(outlierDriver(source, 100, new Map(), axesStateWith('x-axis-1'), updateTimingAndPlot, jest.fn(), 50))
+        track(outlierDriver(source, 100, new Map(), axesStateWith('x-axis-1'), updateTimingAndPlot, jest.fn(), true))
 
         jest.advanceTimersByTime(200)
         expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBeGreaterThanOrEqual(1150)
 
         const datum = (x: number): OutlierDatum<readonly [number]> => ({datum: {x, y: 1}, bounds: [{lower: 0, upper: 1}]})
         source.chartDataUpdatesObservable.next({seriesNames: new Set(['a']), newPoints: new Map([['a', [datum(9000)]]])})
-        jest.advanceTimersByTime(100)
+        // the batching hands the data over, and the next frame moves the axis
+        jest.advanceTimersByTime(120)
         expect(lastRanges(updateTimingAndPlot).get('x-axis-1')!.current.end).toBeGreaterThanOrEqual(9000)
     })
 })

@@ -66,7 +66,8 @@ type RasterChartState = {
     dropAfterMs: number
     numberOfSeries: number
     windowingTime: number
-    cadence: number
+    // whether the time axes scroll smoothly between data updates (the plot's `withCadence`)
+    cadence: boolean
     dataUpdatePeriod: number
     // where the legend goes (kept here, so that it's still there when returning to the chart)
     legendLocation: LegendLocation
@@ -78,7 +79,7 @@ const initialState: RasterChartState = {
     dropAfterMs: 20_000,
     numberOfSeries: 50,
     windowingTime: 50,
-    cadence: 25,
+    cadence: true,
     dataUpdatePeriod: DEFAULT_DATA_UPDATE_PERIOD,
     legendLocation: LegendLocation.EXTERNAL_CONTAINER,
 }
@@ -89,7 +90,7 @@ type RasterChartActions = {
     setDropAfterMs: (dropAfterMs: number) => void
     setNumberOfSeries: (numberOfSeries: number) => void
     setWindowingTime: (windowingTime: number) => void
-    setCadence: (cadence: number) => void
+    setCadence: (cadence: boolean) => void
     setDataUpdatePeriod: (dataUpdatePeriod: number) => void
     setLegendLocation: (legendLocation: LegendLocation) => void
     reset: () => void
@@ -132,7 +133,7 @@ export const useRasterChartStore: UseBoundStore<StoreApi<RasterChartStore>> = cr
 
         setWindowingTime: (windowingTime: number) => set({windowingTime}),
 
-        setCadence: (cadence: number) => set({cadence}),
+        setCadence: (cadence: boolean) => set({cadence}),
 
         // the update period is baked into the generator, so give the data source a new one (only
         // possible while stopped, which is the only time the control is enabled)

@@ -643,7 +643,7 @@ export function StreamingBarChart(props: Props): JSX.Element {
                         panEnabled={true}
                         zoomEnabled={true}
                         zoomKeyModifiersRequired={true}
-                        // withCadenceOf={50}
+                        // withCadence
 
                         // to have the upper axis zoom when the series zoom, we must have at
                         // least one series assigned to this axis.

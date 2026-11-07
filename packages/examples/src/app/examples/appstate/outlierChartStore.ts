@@ -85,7 +85,8 @@ type OutlierChartState = {
     filterValue: string
     dropAfterMs: number
     windowingTime: number
-    cadence: number
+    // whether the time axes scroll smoothly between data updates (the plot's `withCadence`)
+    cadence: boolean
     dataUpdatePeriod: number
     selectedInterpolationName: string
     showMarkers: boolean
@@ -104,7 +105,7 @@ const initialState: OutlierChartState = {
     dropAfterMs: DEFAULT_DROP_AFTER_100[1],
     windowingTime: 25,
     // 0 means disabled
-    cadence: 0,
+    cadence: false,
     dataUpdatePeriod: DEFAULT_DATA_UPDATE_PERIOD,
     selectedInterpolationName: 'curveLinear',
     showMarkers: true,
@@ -119,7 +120,7 @@ type OutlierChartActions = {
     setFilterValue: (filterValue: string) => void
     setDropAfterMs: (dropAfterMs: number) => void
     setWindowingTime: (windowingTime: number) => void
-    setCadence: (cadence: number) => void
+    setCadence: (cadence: boolean) => void
     setDataUpdatePeriod: (dataUpdatePeriod: number) => void
     setSelectedInterpolationName: (name: string) => void
     setShowMarkers: (show: boolean) => void
@@ -160,7 +161,7 @@ export const useOutlierChartStore: UseBoundStore<StoreApi<OutlierChartStore>> = 
 
         setWindowingTime: (windowingTime: number) => set({windowingTime}),
 
-        setCadence: (cadence: number) => set({cadence}),
+        setCadence: (cadence: boolean) => set({cadence}),
 
         // the update period is baked into the generator, so give the data source a new one (only
         // possible while stopped, which is the only time the control is enabled)

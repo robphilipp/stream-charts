@@ -68,12 +68,15 @@ export interface Props {
      */
     zoomKeyModifiersRequired?: boolean
     /**
-     * When set, uses a cadence with the specified refresh period (in milliseconds). For plots
-     * where the updates are slow (> 100 ms) using a cadence of 10 to 25 ms smooths out the
-     * updates and makes the plot updates look cleaner. When updates are around 25 ms or less,
-     * then setting the cadence period too small will result in poor update performance. Generally
-     * at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time
-     * to the current time.
+     * When true, the time axes scroll smoothly between data updates: on every animation frame they
+     * move to the current time, projected from the latest data, rather than only when data arrives.
+     * Use it when the data arrives slowly or unevenly (e.g. every 50 ms or more), so the plot
+     * doesn't scroll in steps. Sets the time axes' end to the current time. Defaults to `false`.
+     */
+    withCadence?: boolean
+    /**
+     * @deprecated Use `withCadence` instead. Any value turns cadence on: the time axes now move on
+     * every animation frame, so the period is no longer used.
      */
     withCadenceOf?: number
     /**
@@ -194,6 +197,7 @@ export function ScatterPlot(props: Props): null {
         panEnabled = false,
         zoomEnabled = false,
         zoomKeyModifiersRequired = true,
+        withCadence,
         withCadenceOf,
         timeWindowBehavior = TimeWindowBehavior.SCROLL,
         markerRadius,
@@ -489,7 +493,8 @@ export function ScatterPlot(props: Props): null {
         zoomEnabled,
         zoomKeyModifiersRequired,
         onZoomReset,
-        withCadenceOf,
+        // (`withCadenceOf` is the deprecated way of turning cadence on)
+        withCadence: withCadence ?? withCadenceOf !== undefined,
         timeWindowBehavior,
         highlightAxesOnMouseOver,
     })

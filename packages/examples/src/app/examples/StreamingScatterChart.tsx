@@ -339,13 +339,12 @@ export function StreamingScatterChart(props: Props): JSX.Element {
     }
 
     /**
-     * Called when the user changes the plot's update-cadence period -- a periodic redraw tick
-     * that keeps the plot scrolling even without new data (only available while the chart isn't
-     * running). A value of `0` disables the cadence.
-     * @param ms The cadence period, in milliseconds (`0` disables it)
+     * Called when the user turns the plot's cadence on or off -- with cadence, the time axes
+     * scroll smoothly between data updates (only available while the chart isn't running)
+     * @param enabled Whether cadence is on
      */
-    function handleCadenceChange(ms: number): void {
-        setCadence(ms)
+    function handleCadenceChange(enabled: boolean): void {
+        setCadence(enabled)
     }
 
     function interpolationFactoryFor(interpolationName: string): Optional<d3.CurveFactory> {
@@ -713,7 +712,7 @@ export function StreamingScatterChart(props: Props): JSX.Element {
                         zoomKeyModifiersRequired={true}
                         markerRadius={visibility.markers ? 2 : undefined}
                         hideMarkersWhileRunning={visibility.hideMarkersWhileRunning}
-                        withCadenceOf={cadence > 0 ? cadence : undefined}
+                        withCadence={cadence}
                         highlightAxesOnMouseOver={visibility.highlightAxes}
                         // timeWindowBehavior={TimeWindowBehavior.SQUEEZE}
                         onZoomReset={handleZoomReset}

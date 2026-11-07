@@ -275,8 +275,8 @@ export function StreamingRasterChart(props: Props): JSX.Element {
         setWindowingTime(ms)
     }
 
-    function handleCadenceChange(ms: number): void {
-        setCadence(ms)
+    function handleCadenceChange(enabled: boolean): void {
+        setCadence(enabled)
     }
 
     function handleDataUpdatePeriodChange(ms: number): void {
@@ -595,7 +595,7 @@ export function StreamingRasterChart(props: Props): JSX.Element {
                         panEnabled={true}
                         zoomEnabled={true}
                         zoomKeyModifiersRequired={true}
-                        withCadenceOf={cadence > 0 ? cadence : undefined}
+                        withCadence={cadence}
                         highlightAxesOnMouseOver={visibility.highlightAxes}
                         onZoomReset={handleZoomReset}
                     />

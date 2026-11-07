@@ -160,8 +160,7 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
 
     const windowingTime = useOutlierChartStore(state => state.windowingTime)
     const setWindowingTime = useOutlierChartStore(state => state.setWindowingTime)
-    // 0 means disabled (unchecked); CadenceControl's own default of 25ms is what appears once
-    // the checkbox is checked
+    // whether the time axes scroll smoothly between data updates
     const cadence = useOutlierChartStore(state => state.cadence)
     const setCadence = useOutlierChartStore(state => state.setCadence)
     const dataUpdatePeriod = useOutlierChartStore(state => state.dataUpdatePeriod)
@@ -244,8 +243,8 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
         setWindowingTime(ms)
     }
 
-    function handleCadenceChange(ms: number): void {
-        setCadence(ms)
+    function handleCadenceChange(enabled: boolean): void {
+        setCadence(enabled)
     }
 
     function handleDataUpdatePeriodChange(ms: number): void {
@@ -486,7 +485,7 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
                         bandOpacityStep={0.14}
                         markerRadius={showMarkers ? 2 : 0}
                         outlierMarkerColors={['#f4c542', '#f08a3b', '#d62728']}
-                        withCadenceOf={cadence > 0 ? cadence : undefined}
+                        withCadence={cadence}
                         highlightAxesOnMouseOver={highlightAxes}
                         onZoomReset={handleZoomReset}
                     />

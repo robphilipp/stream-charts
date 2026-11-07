@@ -54,17 +54,21 @@ export interface Props {
     zoomKeyModifiersRequired?: boolean
     /**
      * Behavior for time windowing (see {@link TimeWindowBehavior}). Defaults to `SCROLL`. Ignored
-     * when `withCadenceOf` is set.
+     * with cadence (`withCadence`).
      */
     timeWindowBehavior?: TimeWindowBehavior
     /**
-     * When set, uses a cadence with the specified refresh period (in milliseconds). For plots
-     * where the updates are slow (> 100 ms) using a cadence of 10 to 25 ms smooths out the
-     * updates and makes the plot updates look cleaner. When updates are around 25 ms or less,
-     * then setting the cadence period too small will result in poor update performance. Generally
-     * at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time
-     * to the current time -- this is what causes the x-axis to keep scrolling once the data
-     * reaches the right-hand edge, even if new data hasn't arrived yet.
+     * When true, the time axes scroll smoothly between data updates: on every animation frame they
+     * move to the current time, projected from the latest data, rather than only when data arrives.
+     * Use it when the data arrives slowly or unevenly (e.g. every 50 ms or more), so the plot
+     * doesn't scroll in steps. Sets the time axes' end to the current time, which is what keeps
+     * the x-axis scrolling once the data reaches the right-hand edge, even if new data hasn't
+     * arrived yet. Defaults to `false`.
+     */
+    withCadence?: boolean
+    /**
+     * @deprecated Use `withCadence` instead. Any value turns cadence on: the time axes now move on
+     * every animation frame, so the period is no longer used.
      */
     withCadenceOf?: number
     /**
@@ -197,6 +201,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
         zoomEnabled = false,
         zoomKeyModifiersRequired = true,
         timeWindowBehavior = TimeWindowBehavior.SCROLL,
+        withCadence,
         withCadenceOf,
         bandOpacity = 0.15,
         bandOpacityStep = 0.12,
@@ -411,7 +416,8 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
         zoomEnabled,
         zoomKeyModifiersRequired,
         onZoomReset,
-        withCadenceOf,
+        // (`withCadenceOf` is the deprecated way of turning cadence on)
+        withCadence: withCadence ?? withCadenceOf !== undefined,
         timeWindowBehavior,
         highlightAxesOnMouseOver,
     })

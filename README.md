@@ -8,10 +8,10 @@
 
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/charts-collage-dark.gif">
-    <img src="packages/examples/public/images/charts-collage-light.gif" alt="the five stream-charts plots: a scatter chart streaming live, scrolling smoothly with a 25 ms cadence, with two x-axes, a linear and a logarithmic y-axis, and a legend whose hovered entry highlights its series; a raster chart of neuron spikes with a legend and a tooltip; a bar chart with windowed statistics and a tooltip; a Poincaré plot of an iterated map with a tooltip; and an outlier chart with confidence bands, flagged outliers, and a tooltip">
+    <img src="packages/examples/public/images/charts-collage-light.gif" alt="the five stream-charts plots: a scatter chart streaming live, scrolling smoothly with cadence, with two x-axes, a linear and a logarithmic y-axis, and a legend whose hovered entry highlights its series; a raster chart of neuron spikes with a legend and a tooltip; a bar chart with windowed statistics and a tooltip; a Poincaré plot of an iterated map with a tooltip; and an outlier chart with confidence bands, flagged outliers, and a tooltip">
 </picture>
 
-*Scatter, streaming (two x-axes, linear and log y-axes, hovering the legend highlights a series, 25 ms cadence) · raster (legend, tooltip) · bar (running and windowed statistics, tooltip) · Poincaré (tooltip) · outlier (confidence bands, flagged outliers, tooltip)*
+*Scatter, streaming (two x-axes, linear and log y-axes, hovering the legend highlights a series, cadence) · raster (legend, tooltip) · bar (running and windowed statistics, tooltip) · Poincaré (tooltip) · outlier (confidence bands, flagged outliers, tooltip)*
 
 **The library** charts data that never stops arriving. You hand it an [RxJS](https://rxjs.dev) observable of new data, and it buffers the updates, scrolls the time axes, and redraws – on a single canvas, so plotting new data for about 100 series every 25 ms isn't generally a problem. Along the way:
 
@@ -447,7 +447,7 @@ There are limits, of course. When a chart starts to stutter, you have these leve
 1. **Drop old data (`dropDataAfter`, on the data source).** Without it, the data that scrolls off the chart is kept, and processed, forever. With it, a scrolling chart can run indefinitely. The TTL is measured in data time, not wall-clock time. To keep the dropped data, store it with the data source's `onUpdateData` callback (or a separate subscription to your observable).
 2. **Batch the updates (`windowingTime`, on the chart).** The chart collects incoming data for this long (ms) before redrawing. Longer windows mean fewer redraws, and so better performance, at the cost of choppier scrolling.
 3. **Tell the chart your update period (`dataUpdatePeriod`, on the chart).** When your data arrives at a known, regular period, the chart buffers a fixed number of updates rather than a fixed amount of time, which makes scrolling smoother. Leave it out when your data arrives at irregular times.
-4. **Use a cadence for slow data (`withCadenceOf`, on the plot).** When updates are slow (more than about 100 ms apart), a cadence of 10–25 ms advances the time axis smoothly between updates. At high update rates it's unnecessary, and a cadence that's too short hurts performance.
+4. **Use cadence for slow data (`withCadence`, on the plot).** When updates are slow (about 50 ms apart or more), cadence moves the time axis on every frame of the display, so it scrolls smoothly between updates instead of jumping forward with each one. It redraws the plot on every frame while it runs, so it's unnecessary when the data already arrives that often.
 5. **Shorten the time window (the x-axis `domain`).** A shorter window holds less data, though the data streams by faster.
 
 ---
@@ -614,7 +614,8 @@ The plot draws the data. It reads the series from the chart's data source and th
 | `panEnabled` | `boolean` | all | Lets the user drag the plot to pan (default `false`). |
 | `zoomEnabled` | `boolean` | all | Lets the user scroll to zoom (default `false`). |
 | `zoomKeyModifiersRequired` | `boolean` | all | When `true` (the default), zooming requires holding shift (or ctrl) while scrolling, so that zooming doesn't get in the way of scrolling the page. |
-| `withCadenceOf` | `number` (ms) | all | Advances the time axis on this cadence, between data updates, for smooth scrolling of slow data. See [performance](#performance). (The Poincaré plot accepts it, but doesn't use it, since its axes don't show time.) |
+| `withCadence` | `boolean` | all | Moves the time axis on every frame of the display, between data updates, for smooth scrolling of slow data. See [performance](#performance). (The Poincaré plot accepts it, but doesn't use it, since its axes don't show time.) |
+| `withCadenceOf` | `number` | all | Deprecated: use `withCadence`. Any value turns cadence on (the period isn't used). |
 | `highlightAxesOnMouseOver` | `boolean` | all | When `true`, hovering over a series also highlights the axes it's plotted against (default `false`). |
 | `onZoomReset` | `(resetZoom: () => void) => void` | all | Hands you a `resetZoom` function, to call when you reset the axes yourself (for example, from a **Reset** button). The zoom keeps its own state, separate from the axes' ranges. Without `resetZoom`, the next zoom gesture after such a reset jumps back to the old zoom. |
 

@@ -82,9 +82,9 @@ export interface StreamingTimeAxesOptions<CD extends ChartData, D> {
      */
     onZoomReset?: (resetZoom: () => void) => void
     /**
-     * The time (ms) between cadence ticks (none, when undefined -- see `timeAxisViewDriverFor`)
+     * Whether the time axes move on every animation frame (see `timeAxisViewDriverFor`)
      */
-    withCadenceOf?: number
+    withCadence?: boolean
     /**
      * Whether the time axes scroll or squeeze as data passes their ends (defaults to SCROLL)
      */
@@ -125,7 +125,7 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
         canvasContext, dataSource, running, initialData, timeOf, axisTimesFor, axisAssignments,
         updatePlot, onDataReset, allowTooltipRef,
         panEnabled, zoomEnabled, zoomKeyModifiersRequired, onZoomReset,
-        withCadenceOf, timeWindowBehavior = TimeWindowBehavior.SCROLL,
+        withCadence = false, timeWindowBehavior = TimeWindowBehavior.SCROLL,
         highlightAxesOnMouseOver,
     } = options
 
@@ -362,7 +362,7 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
             {
                 windowingTime,
                 dataUpdatePeriod,
-                cadencePeriod: withCadenceOf,
+                cadence: withCadence,
                 timeWindowBehavior,
                 initialTimes: initialTimesRef.current,
             }

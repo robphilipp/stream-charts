@@ -1,5 +1,13 @@
 # change history
 
+## next release
+
+**Fixed**
+1. With cadence, the time axes of the scatter, raster, and outlier plots scrolled unevenly: they moved on each cadence tick (e.g. every 25 ms), which rarely lines up with the display's frames, so on a 60 Hz display they moved on two frames out of three. They now move on every frame of the display.
+
+**New**
+1. The scatter, raster, outlier, and Poincaré plots take `withCadence` (`boolean`) to turn cadence on. `withCadenceOf` (a period, in ms) is deprecated: any value still turns cadence on, but the period is no longer used.
+
 ## version 2.0.0 (data sources, canvas rendering, outlier plot)
 
 A redesign of how charts get their data and how they're drawn. Code written for 1.x needs updating; see "migrating from 1.x" in the [README](README.md).

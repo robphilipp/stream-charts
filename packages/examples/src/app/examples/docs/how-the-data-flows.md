@@ -46,7 +46,7 @@ The example hands the data source to the chart:
 </Chart>
 ```
 
-The chart and its plots *read* from the data source, but they never subscribe to the stream themselves. Instead, when a plot appears on the screen, it creates a *view driver*. The view driver listens to the data source's updates, batches them up (the buffering setting), moves the time axis along as new data arrives (and on each cadence tick, when there is one), and asks the plot to redraw. When the plot goes away – say, you switch tabs – its view driver goes away with it. Nothing is left running in the background but the data source itself.
+The chart and its plots *read* from the data source, but they never subscribe to the stream themselves. Instead, when a plot appears on the screen, it creates a *view driver*. The view driver listens to the data source's updates, batches them up (the buffering setting), moves the time axis along as new data arrives (and on every frame of the display, with cadence), and asks the plot to redraw. When the plot goes away – say, you switch tabs – its view driver goes away with it. Nothing is left running in the background but the data source itself.
 
 #### 4. the plot (the library)
 

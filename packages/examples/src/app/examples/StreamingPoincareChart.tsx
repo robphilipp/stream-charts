@@ -599,7 +599,7 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
                         panEnabled={true}
                         zoomEnabled={true}
                         zoomKeyModifiersRequired={true}
-                        // withCadenceOf={30}
+                        // withCadence
                         highlightAxesOnMouseOver={highlightAxes}
                         colorizeLines={colorizeLines}
                         lineStartColor={lineStartColor}

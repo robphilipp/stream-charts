@@ -162,14 +162,14 @@ export interface Props {
      */
     onZoomReset?: (resetZoom: () => void) => void
     /**
-     * When set, uses a cadence with the specified refresh period (in milliseconds). For plots
-     * where the updates are slow (> 100 ms) using a cadence of 10 to 25 ms smooths out the
-     * updates and makes the plot updates look cleaner. When updates are around 25 ms or less,
-     * then setting the cadence period too small will result in poor update performance. Generally
-     * at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time
-     * to the current time.
+     * When true, the time axes scroll smoothly between data updates (see the scatter plot's
+     * `withCadence`).
      *
      * Note: the Poincaré plot accepts this, but doesn't (yet) use it -- its axes don't follow time.
+     */
+    withCadence?: boolean
+    /**
+     * @deprecated Use `withCadence` instead.
      */
     withCadenceOf?: number
     /**
