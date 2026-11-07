@@ -25,7 +25,7 @@ export default defineConfig([
     files: ['**/*.{ts,tsx}'],
     ignores: ['**/*.test.{ts,tsx}'],
     rules: {
-      '@typescript-eslint/explicit-function-return-type': 'warn',
+      '@typescript-eslint/explicit-function-return-type': 'error',
     },
   },
 ])
