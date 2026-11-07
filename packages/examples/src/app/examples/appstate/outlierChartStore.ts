@@ -7,7 +7,11 @@ import {
     type OutlierChartData,
     type OutlierSeries,
 } from "stream-charts";
-import {periodicWithSeveralBandsFn, randomOutlierDataObservable} from "../dataproviders/randomOutlierData.ts";
+import {
+    type BaseDataFn,
+    periodicWithSeveralBandsFn,
+    randomOutlierDataObservable
+} from "../dataproviders/randomOutlierData.ts";
 import {DEFAULT_DROP_AFTER_100} from "../options/dropDataAfter.ts";
 import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceStateSlice.ts";
 
@@ -26,7 +30,7 @@ const PERIOD_MAGNITUDE = 30
 /**
  * @return The base data function (a sum of periodic functions with noise bands) for the example
  */
-export function baseDataFnFactory() {
+export function baseDataFnFactory(): BaseDataFn<Measures> {
     return periodicWithSeveralBandsFn<Measures>(PERIODS, PERIOD_MAGNITUDE)
 }
 

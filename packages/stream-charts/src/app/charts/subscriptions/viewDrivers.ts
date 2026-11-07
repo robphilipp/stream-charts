@@ -179,16 +179,30 @@ function withCadence<CD>(updates$: Observable<CD>, windowingTime: number, cadenc
 }
 
 /**
+ * A cadence driver's estimate of the current stream time (see {@link cadenceAnchor})
+ */
+interface CadenceAnchor {
+    /** @return The current stream time, projected from the last known time and the time since */
+    now: () => number
+    /** @return `true` when there's a known stream time to project from */
+    isKnown: () => boolean
+    /**
+     * Moves the anchor forward to a real (data) time when that's later than the projection
+     * @param realTime The latest real stream time
+     */
+    correctTo: (realTime: number) => void
+}
+
+/**
  * Tracks the best-known stream time and when it was measured, so a cadence tick can project the
  * current stream time as `knownTime + (now - measuredAt)`. Seeded from the data source -- which
  * kept ingesting while the plot was unmounted, so this is the true current time even right after
  * a remount -- and corrected forward whenever real data overtakes the projection (but never
  * backward, which would make cadence stutter by the data's processing latency on every tick).
  * @param seedTime The best-known stream time to start from (`-Infinity` when there's no data yet)
- * @return The anchor: `now()` projects the current stream time, `isKnown()` says whether there's a
- * stream time to project from, and `correctTo(time)` moves the anchor forward to a later real time
+ * @return The anchor
  */
-function cadenceAnchor(seedTime: number) {
+function cadenceAnchor(seedTime: number): CadenceAnchor {
     let knownTime = seedTime
     let measuredAt = performance.now()
     const now = (): number => knownTime + (performance.now() - measuredAt)
