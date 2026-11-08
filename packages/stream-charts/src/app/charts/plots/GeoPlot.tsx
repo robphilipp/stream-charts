@@ -22,7 +22,9 @@ import {
     GeoProjections,
     type GeoTooltipMetadata,
     bearingOf,
+    type DrawnMarker,
     isGlobe,
+    markerAt,
     panView,
     placeUnder,
     setUpProjection,
@@ -127,9 +129,10 @@ export interface Props<P> {
      */
     colorBy?: string
     /**
-     * The fixed `[0, largest]` range of the `sizeBy` values that the sizes span (an aggregate at the
-     * largest value gets `maxAggregateRadius`). Defaults to the largest value shown, so the sizes
-     * are relative to the largest aggregate.
+     * The fixed `[lowest, largest]` range of the `sizeBy` values that the sizes span: an aggregate at
+     * (or below) the lowest value gets `minAggregateRadius`, and one at (or above) the largest gets
+     * `maxAggregateRadius`, with the circles' areas growing in proportion in between. Defaults to
+     * `[0, the largest value shown]`, so the sizes are relative to the largest aggregate.
      */
     sizeDomain?: [number, number]
     /**
@@ -166,8 +169,8 @@ export interface Props<P> {
     aggregateShape?: 'circles' | 'pies' | 'cells'
     /**
      * The color of a group's wedges (with the `pies` shape, without `colorBy`); `undefined` means one
-     * of d3's categorical colors, chosen by the group's name, so a group keeps its color as the data
-     * changes
+     * of d3's ten categorical colors, handed out in the order the groups first show up, so a group
+     * keeps its color as the data changes (beyond ten groups, the colors repeat)
      * @param group The group's name
      * @return The group's color
      */
@@ -220,7 +223,9 @@ export interface Props<P> {
     zoomMaxScaleFactor?: number
     /**
      * When set, the view turns westward (the earth spins eastward) at this many degrees per second,
-     * pausing while the view is dragged and while an event is hovered. Defaults to no rotation.
+     * pausing while the view is dragged and while an event is hovered. Defaults to no rotation. The
+     * plot redraws on every animation frame while it turns, so with many thousands of events held,
+     * show a roll-up's aggregates instead, or keep fewer events (the data source's `dropDataAfter`).
      */
     autoRotate?: number
     /**
@@ -244,15 +249,6 @@ export interface Props<P> {
     onZoomReset?: (resetZoom: () => void) => void
 }
 
-// a drawn marker (an event's, or an aggregate's circle), for hit-testing the mouse (in canvas
-// coordinates), and what it shows
-type DrawnMarker<P> = {
-    x: number
-    y: number
-    hitRadius: number
-    target: GeoTooltipMetadata<P>
-}
-
 /**
  * @param target What's under the mouse
  * @return What identifies it from one redraw to the next: the event itself, or the aggregate's
@@ -270,13 +266,18 @@ const markerKeyOf = <P, >(target: GeoTooltipMetadata<P>): unknown =>
     target.kind === 'event' ? target.datum : `${target.rollup}::${target.aggregate.id}`
 
 /**
+ * @param colors The colors handed out so far, by group (added to)
  * @param name A group's name
- * @return One of d3's categorical colors, chosen by the name (so a group always gets the same one)
+ * @return The group's color: one of d3's ten categorical colors, handed out in the order the groups
+ * first show up, so that the first ten groups each get their own, and a group keeps its color
  */
-function categoricalColorOf(name: string): string {
-    let hash = 0
-    for (let k = 0; k < name.length; k++) hash = (hash * 31 + name.charCodeAt(k)) | 0
-    return d3.schemeTableau10[Math.abs(hash) % d3.schemeTableau10.length]
+function categoricalColorOf(colors: Map<string, string>, name: string): string {
+    let color = colors.get(name)
+    if (color === undefined) {
+        color = d3.schemeTableau10[colors.size % d3.schemeTableau10.length]
+        colors.set(name, color)
+    }
+    return color
 }
 
 /**
@@ -351,8 +352,9 @@ const keyLabel = (value: number): string => Math.abs(value) >= 1000 ? d3.format(
  * @param height The height of the plot area
  * @param color The chart's color (for the text and outlines)
  * @param backgroundColor The chart's background color
- * @param size The size key: its label, the largest value, and the radius for a value
- * @param colors The color key: its label, the range of values, and the color for a value
+ * @param size The size key: its label, the range of values, and the radius for a value
+ * @param colors The color key: its label, the range of values, the color for a value, and the color
+ * of the aggregates without a value (shown as "no value", when there are any)
  */
 function drawKeys(
     context2D: CanvasRenderingContext2D,
@@ -360,18 +362,18 @@ function drawKeys(
     height: number,
     color: string,
     backgroundColor: string,
-    size: {label: string, largest: number, radiusOf: (value: number) => number, format?: (value: number) => string} | undefined,
-    colors: {label: string, domain: [number, number], colorOf: (value: number) => string, format?: (value: number) => string} | undefined,
+    size: {label: string, smallest: number, largest: number, radiusOf: (value: number) => number, format?: (value: number) => string} | undefined,
+    colors: {label: string, domain: [number, number], colorOf: (value: number) => string, format?: (value: number) => string, missingColor?: string} | undefined,
     groups?: {groups: Array<{label: string, color: string}>, more: number},
 ): void {
     if (size === undefined && colors === undefined && groups === undefined) return
     const padding = 8
     const lineHeight = 14
     const largestRadius = size !== undefined ? size.radiusOf(size.largest) : 0
-    // the key's values: the largest, a quarter of it, and a sixteenth (each about half the radius
-    // of the one before), to two significant digits
+    // the key's values: the largest, a quarter of the way up from the smallest, and a sixteenth
+    // (each about half the radius of the one before), to two significant digits
     const sizeValues = size !== undefined ?
-        Array.from(new Set([size.largest, size.largest / 4, size.largest / 16].map(value => Number(value.toPrecision(2))))) :
+        Array.from(new Set([1, 1 / 4, 1 / 16].map(share => Number((size.smallest + (size.largest - size.smallest) * share).toPrecision(2))))) :
         []
     // each value's label is at the top of its circle, but at least a line below the one before
     const labelYs = sizeValues.reduce<Array<number>>((ys, value) => {
@@ -381,7 +383,7 @@ function drawKeys(
     const sizeHeight = size !== undefined ?
         lineHeight + Math.max(2 * largestRadius, labelYs[labelYs.length - 1] ?? 0) + 6 :
         0
-    const colorHeight = colors !== undefined ? 2 * lineHeight + 10 : 0
+    const colorHeight = colors !== undefined ? 2 * lineHeight + 10 + (colors.missingColor !== undefined ? lineHeight : 0) : 0
     const groupLines = groups !== undefined ? groups.groups.length + (groups.more > 0 ? 1 : 0) : 0
     const groupsHeight = groupLines * lineHeight
     const boxWidth = Math.max(140, 2 * largestRadius + 80)
@@ -445,6 +447,15 @@ function drawKeys(
         context2D.fillText((colors.format ?? keyLabel)(lowest), barLeft, top + lineHeight + 8 + lineHeight / 2 + 2)
         context2D.textAlign = 'right'
         context2D.fillText((colors.format ?? keyLabel)(highest), barLeft + barWidth, top + lineHeight + 8 + lineHeight / 2 + 2)
+        if (colors.missingColor !== undefined) {
+            // the color of the aggregates without a value (e.g. a place without the measured kind of sensor)
+            const y = top + 2 * lineHeight + 10 + lineHeight / 2
+            context2D.fillStyle = colors.missingColor
+            context2D.fillRect(barLeft, y - 5, 10, 10)
+            context2D.fillStyle = color
+            context2D.textAlign = 'left'
+            context2D.fillText('no value', barLeft + 16, y)
+        }
         top += colorHeight + 6
     }
 
@@ -604,6 +615,8 @@ export function GeoPlot<P>(props: Props<P>): null {
     const markersRef = useRef<d3.Quadtree<DrawnMarker<P>>>(d3.quadtree<DrawnMarker<P>>())
     const maxHitRadiusRef = useRef<number>(0)
     const cellsRef = useRef<Array<GeoAggregate>>([])
+    // the categorical colors handed out to the groups (see `groupColors`), by group
+    const groupColorsRef = useRef<Map<string, string>>(new Map())
     // what's under the mouse (an event, or an aggregate)
     const hoveredRef = useRef<GeoTooltipMetadata<P> | undefined>(undefined)
 
@@ -706,13 +719,15 @@ export function GeoPlot<P>(props: Props<P>): null {
                     const aggregates = rollup !== undefined ? aggregatesOf(dataSource, rollup) : []
 
                     // the sizes: the circles' areas are proportional to the `sizeBy` values
+                    const smallest = sizeDomain?.[0] ?? 0
                     const largest = sizeDomain?.[1] ?? aggregates.reduce(
                         (max, aggregate) => Math.max(max, Number.isFinite(valueOf(aggregate, sizeBy)) ? valueOf(aggregate, sizeBy) : 0),
                         0
                     )
-                    const radiusOfValue = (value: number): number => !Number.isFinite(value) || largest <= 0 ?
+                    const radiusOfValue = (value: number): number => !Number.isFinite(value) || largest <= smallest ?
                         minAggregateRadius :
-                        minAggregateRadius + (maxAggregateRadius - minAggregateRadius) * Math.sqrt(Math.max(0, Math.min(1, value / largest)))
+                        minAggregateRadius + (maxAggregateRadius - minAggregateRadius) *
+                            Math.sqrt(Math.max(0, Math.min(1, (value - smallest) / (largest - smallest))))
 
                     // the colors: by `colorBy` (or, for cells, by `sizeBy` without one)
                     const asCells = (aggregate: GeoAggregate): boolean => aggregateShape === 'cells' && aggregate.bounds !== undefined
@@ -723,10 +738,13 @@ export function GeoPlot<P>(props: Props<P>): null {
                         aggregates.flatMap(aggregate => asPie(aggregate) ?
                             aggregate.groups.map(group => group.count > 0 ? groupValueOf(group, colorKey) : NaN) :
                             [valueOf(aggregate, colorKey)]
-                        ).filter(Number.isFinite)
+                        )
+                    // (whether any are drawn without a value, in the `aggregateColor`, for the key)
+                    const missingColorValue = colorValues.some(value => !Number.isFinite(value))
+                    const colorValuesShown = colorValues.filter(Number.isFinite)
                     const [lowest, highest] = colorDomain ?? [
-                        colorValues.reduce((min, value) => Math.min(min, value), Infinity),
-                        colorValues.reduce((max, value) => Math.max(max, value), -Infinity),
+                        colorValuesShown.reduce((min, value) => Math.min(min, value), Infinity),
+                        colorValuesShown.reduce((max, value) => Math.max(max, value), -Infinity),
                     ]
                     const colorOfValue = (value: number): string => !Number.isFinite(value) || !Number.isFinite(lowest) ?
                         aggregateColor :
@@ -737,7 +755,7 @@ export function GeoPlot<P>(props: Props<P>): null {
                     const outlineOf = (fill: string): string => d3.color(fill)?.darker(0.8).formatRgb() ?? color
                     const wedgeFillOf = (group: GeoAggregateGroup): string => colorKey !== undefined ?
                         colorOfValue(groupValueOf(group, colorKey)) :
-                        groupColors?.(group.group) ?? categoricalColorOf(group.group)
+                        groupColors?.(group.group) ?? categoricalColorOf(groupColorsRef.current, group.group)
 
                     // the cells (areas), then the circles, the largest first, so that small ones
                     // aren't hidden under large ones
@@ -849,10 +867,13 @@ export function GeoPlot<P>(props: Props<P>): null {
                         drawKeys(
                             context2D, width, height, color, backgroundColor,
                             aggregates.some(aggregate => !asCells(aggregate)) ?
-                                {label: keyLabelOf(sizeBy), largest, radiusOf: radiusOfValue, format: keyFormatOf(sizeBy)} :
+                                {label: keyLabelOf(sizeBy), smallest, largest, radiusOf: radiusOfValue, format: keyFormatOf(sizeBy)} :
                                 undefined,
                             colorKey !== undefined && Number.isFinite(lowest) ?
-                                {label: keyLabelOf(colorKey), domain: [lowest, highest], colorOf: colorOfValue, format: keyFormatOf(colorKey)} :
+                                {
+                                    label: keyLabelOf(colorKey), domain: [lowest, highest], colorOf: colorOfValue, format: keyFormatOf(colorKey),
+                                    missingColor: missingColorValue ? aggregateColor : undefined,
+                                } :
                                 undefined,
                             colorKey === undefined && aggregates.some(asPie) ? groupKeyOf(aggregates, wedgeFillOf) : undefined,
                         )
@@ -1092,9 +1113,9 @@ export function GeoPlot<P>(props: Props<P>): null {
              * (in the `cells` shape) holding the place under the mouse
              */
             const targetAt = (x: number, y: number): GeoTooltipMetadata<P> | undefined => {
-                const nearest = markersRef.current.find(x, y, maxHitRadiusRef.current)
-                if (nearest !== undefined && Math.hypot(nearest.x - x, nearest.y - y) <= nearest.hitRadius) {
-                    const target = nearest.target
+                const hit = markerAt(markersRef.current, maxHitRadiusRef.current, x, y)
+                if (hit !== undefined) {
+                    const target = hit.target
                     if (target.kind !== 'aggregate' || aggregateShape !== 'pies' || target.aggregate.groups.length === 0) return target
                     // the wedge under the mouse: by the bearing, from the circle's center, of the
                     // place under the mouse

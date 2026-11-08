@@ -1,10 +1,12 @@
 import * as d3 from "d3";
 import {
     bearingOf,
+    type DrawnMarker,
     type GeoPlotViewState,
     GeoProjections,
     type GeoProjectionName,
     isGlobe,
+    markerAt,
     panView,
     placeUnder,
     setUpProjection,
@@ -13,6 +15,8 @@ import {
     wedgeOf,
     zoomViewAbout,
 } from "./geoProjections";
+import type {GeoAggregate} from "../datasources/geoRollups";
+import {geoDatumOf} from "../series/geoSeries";
 
 const WIDTH = 800
 const HEIGHT = 500
@@ -170,3 +174,51 @@ describe('pie wedges', () => {
     })
 })
 
+describe('hit-testing the markers', () => {
+    /**
+     * @param id The aggregate's (cell's) ID
+     * @param x The x of its circle's center
+     * @param y The y of its circle's center
+     * @param radius The radius of its circle
+     * @return The aggregate's drawn marker
+     */
+    const aggregateMarker = (id: string, x: number, y: number, radius: number): DrawnMarker<unknown> => ({
+        x, y, hitRadius: radius,
+        target: {kind: 'aggregate', rollup: 'r', aggregate: {id} as GeoAggregate},
+    })
+    const eventMarker = (sensorId: string, x: number, y: number, hitRadius: number): DrawnMarker<unknown> => ({
+        x, y, hitRadius,
+        target: {kind: 'event', seriesName: 's', datum: geoDatumOf(sensorId, 0, 0, 0, {})},
+    })
+    const markersOf = (markers: Array<DrawnMarker<unknown>>): d3.Quadtree<DrawnMarker<unknown>> =>
+        d3.quadtree<DrawnMarker<unknown>>().x(marker => marker.x).y(marker => marker.y).addAll(markers)
+    const maxRadiusOf = (markers: Array<DrawnMarker<unknown>>): number => Math.max(...markers.map(marker => marker.hitRadius))
+    const idAt = (markers: Array<DrawnMarker<unknown>>, x: number, y: number): string | undefined => {
+        const target = markerAt(markersOf(markers), maxRadiusOf(markers), x, y)?.target
+        return target === undefined ? undefined : target.kind === 'aggregate' ? target.aggregate.id : target.datum.sensorId
+    }
+
+    it('finds a large circle under the mouse, even when a small circle\'s center is nearer', () => {
+        // the mouse is inside the large circle, and nearer the small one's center, but out of its reach
+        const markers = [aggregateMarker('large', 100, 100, 30), aggregateMarker('small', 125, 100, 5)]
+        expect(idAt(markers, 115, 100)).toBe('large')
+    })
+
+    it('finds the small circle, drawn over a large one, when the mouse is over both', () => {
+        const markers = [aggregateMarker('large', 100, 100, 30), aggregateMarker('small', 110, 100, 5)]
+        expect(idAt(markers, 108, 100)).toBe('small')
+        expect(idAt(markers, 100, 100)).toBe('large')
+    })
+
+    it('finds the nearest event that reaches the mouse', () => {
+        const markers = [eventMarker('far', 100, 100, 12), eventMarker('near', 106, 100, 6)]
+        expect(idAt(markers, 104, 100)).toBe('near')
+        expect(idAt(markers, 95, 100)).toBe('far')
+    })
+
+    it('finds nothing where no marker reaches the mouse', () => {
+        const markers = [aggregateMarker('a', 100, 100, 10), eventMarker('b', 200, 200, 6)]
+        expect(idAt(markers, 150, 150)).toBeUndefined()
+        expect(markerAt(markersOf([]), 0, 10, 10)).toBeUndefined()
+    })
+})

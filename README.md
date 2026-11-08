@@ -884,16 +884,16 @@ const borders = mesh(countries, countries.objects.countries, (a, b) => a !== b)
 | `rotateEnabled`, `zoomEnabled` | `boolean` | Whether dragging moves the view, and the wheel zooms it (both default `true`). |
 | `zoomKeyModifiersRequired` | `boolean` | Whether zooming needs shift or ctrl held down (default `true`). |
 | `zoomMaxScaleFactor` | `number` | How far the view can zoom in (default 20×). |
-| `autoRotate` | `number` | Turns the globe by itself, at this many degrees per second, pausing while it's dragged or an event is hovered. |
+| `autoRotate` | `number` | Turns the globe by itself, at this many degrees per second, pausing while it's dragged or an event is hovered. The plot redraws on every frame while it turns, so with many thousands of events held, show a roll-up instead, or keep fewer events. |
 | `viewState`, `onViewChange` | `GeoPlotViewState`, `(view) => void` | Keep the view (rotation, zoom, and a flat map's offset) across remounts: store what `onViewChange` hands you, and pass it back as `viewState`. |
 | `onZoomReset` | `(resetZoom: () => void) => void` | Hands you a function that resets the view, for example for a **Reset** button. |
 | `mode` | `'points' \| 'aggregates'` | Each event (the default), or a roll-up's aggregates. |
 | `rollup` | `string` | The name of the data source's roll-up to show, in the aggregates mode. |
 | `sizeBy`, `colorBy` | `string` | What an aggregate's size (`count`, the default, or a measure's name) and color (a measure's name, or `count`) show. The circles' areas are proportional to `sizeBy`. |
-| `sizeDomain`, `colorDomain` | `[number, number]` | Fixed ranges for the sizes and colors (default: the range of the values shown). |
+| `sizeDomain`, `colorDomain` | `[number, number]` | Fixed ranges for the sizes and colors. The sizes span `sizeDomain` (default: 0 to the largest value shown), from `minAggregateRadius` to `maxAggregateRadius`; the colors span `colorDomain` (default: the range of the values shown). Aggregates without a `colorBy` value are drawn in `aggregateColor`, which the key shows as "no value". |
 | `colorScheme`, `aggregateColor`, `aggregateOpacity` | | The colors of the `colorBy` values (default `d3.interpolateYlOrRd`), the color without `colorBy`, and the opacity (default 0.6). |
 | `aggregateShape` | `'circles' \| 'pies' \| 'cells'` | `circles` (the default): a circle per cell. `pies`: a circle per cell, divided into a wedge per group (the roll-up's `groupBy`), each wedge's angle its group's share of the cell's events, and its color the group's own `colorBy` value – for example, each sensor's mean delay, within each area. `cells`: a grid roll-up's cells, as filled areas. |
-| `groupColors` | `(group) => string \| undefined` | The color of a group's wedges, with `pies` and no `colorBy` (default: one of d3's categorical colors, chosen by the group's name). |
+| `groupColors` | `(group) => string \| undefined` | The color of a group's wedges, with `pies` and no `colorBy` (default: one of d3's ten categorical colors, handed out in the order the groups first show up, so a group keeps its color; beyond ten groups, the colors repeat). |
 | `minAggregateRadius`, `maxAggregateRadius` | `number` | The circles' smallest and largest radii (px, default 2 and 20). |
 | `showKeys` | `boolean` | Draws keys for the aggregates' sizes and colors in the bottom-right corner (default `true`). |
 
@@ -920,9 +920,9 @@ const dataSource = new GeoDataSource<Reading>({
 | roll-up option | description |
 |---|---|
 | `cellOf` | **Required.** How events are put into cells: `byLocation(precision)` (events at the same place, the latitude and longitude rounded to `precision` degrees, whichever sensor reported them), `bySensor({position})` (each sensor's events, drawn at the sensor's `'latest'` or `'mean'` position), `byGridCell(degrees)` (the cells of a latitude-longitude grid, which can be drawn as areas), or a function `datum => ({id, latitude, longitude})`. |
-| `filter` | `(datum, seriesName) => boolean`: which events are rolled up (all, by default). |
+| `filter` | `(datum, seriesName) => boolean`: which events are rolled up (all, by default). Like `cellOf` and `groupBy`, it's called once for each event, as it arrives; when the event is dropped, it's taken out of the cell and group it went into then. |
 | `groupBy` | `(datum, seriesName) => string`: a group for each event, for a breakdown of each cell (for example by sensor, by series, or by a payload field). |
-| `measures` | The measures of each cell (and group), by name: `countOf()`, `sumOf(of)`, `meanOf(of)`, `minOf(of)`, `maxOf(of)`, or `latestOf(of)`, where `of` gives an event's value, for example `d => d.payload.magnitude`; or one of your own (see below). Each takes its units and format as its last argument (see below). |
+| `measures` | The measures of each cell (and group), by name: `countOf()`, `sumOf(of)`, `meanOf(of)`, `minOf(of)`, `maxOf(of)`, or `latestOf(of)`, where `of` gives an event's value, for example `d => d.payload.magnitude` (a value that isn't a finite number, such as a missing reading's `NaN`, is left out of the sum, mean, minimum, and maximum); or one of your own (see below). Each takes its units and format as its last argument (see below). |
 
 **Measures of your own.** When none of the library's measures is what you need, write your own, in one of two ways. Both are measures like any other: the tooltip lists them, the groups have them, and `sizeBy` and `colorBy` can use them.
 

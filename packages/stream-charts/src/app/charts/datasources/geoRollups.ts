@@ -216,7 +216,8 @@ export const countOf = <P>(options?: GeoMeasureOptions): GeoMeasure<P> => ({kind
 /**
  * @param of The value of an event (e.g. `datum => datum.payload.magnitude`)
  * @param options The measure's units and format (see {@link GeoMeasureOptions})
- * @return The measure that sums the events' values
+ * @return The measure that sums the events' values (leaving out values that aren't finite numbers,
+ * e.g. a missing reading's `NaN`)
  * @template P The type of the events' payload
  */
 export const sumOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasureOptions): GeoMeasure<P> =>
@@ -224,7 +225,8 @@ export const sumOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasur
 /**
  * @param of The value of an event
  * @param options The measure's units and format (see {@link GeoMeasureOptions})
- * @return The measure that averages the events' values (`NaN` for no events)
+ * @return The measure that averages the events' values (`NaN` for no events), leaving out values that
+ * aren't finite numbers (e.g. a missing reading's `NaN`)
  * @template P The type of the events' payload
  */
 export const meanOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasureOptions): GeoMeasure<P> =>
@@ -232,7 +234,8 @@ export const meanOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasu
 /**
  * @param of The value of an event
  * @param options The measure's units and format (see {@link GeoMeasureOptions})
- * @return The measure that gives the smallest of the events' values
+ * @return The measure that gives the smallest of the events' values (leaving out values that aren't
+ * finite numbers, e.g. a missing reading's `NaN`)
  * @template P The type of the events' payload
  */
 export const minOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasureOptions): GeoMeasure<P> =>
@@ -240,7 +243,8 @@ export const minOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasur
 /**
  * @param of The value of an event
  * @param options The measure's units and format (see {@link GeoMeasureOptions})
- * @return The measure that gives the largest of the events' values (e.g. the peak magnitude)
+ * @return The measure that gives the largest of the events' values (e.g. the peak magnitude), leaving
+ * out values that aren't finite numbers (e.g. a missing reading's `NaN`)
  * @template P The type of the events' payload
  */
 export const maxOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasureOptions): GeoMeasure<P> =>
@@ -306,7 +310,9 @@ export interface GeoRollup<P> {
      */
     cellOf: GeoBinning<P> | ((datum: GeoDatum<P>) => {id: string, latitude: number, longitude: number})
     /**
-     * Which events are rolled up (e.g. only the alarms); all of them when not set
+     * Which events are rolled up (e.g. only the alarms); all of them when not set. Like `cellOf` and
+     * `groupBy`, it's called once for each event, as it arrives: when the event is dropped, it's taken
+     * out of the cell and group it was put in then.
      * @param datum The event
      * @param seriesName The name of the event's series
      * @return `true` when the event is rolled up
@@ -409,6 +415,9 @@ class Tally<P> {
     private events: Array<GeoDatum<P>> = []
     private head = 0
     private readonly sums = new Map<string, number>()
+    // the number of finite values in each sum (a value that isn't finite, e.g. a missing reading's
+    // NaN, is left out, rather than spoiling the sum until the tally empties)
+    private readonly finiteCounts = new Map<string, number>()
     private readonly extremes = new Map<string, number | undefined>()
     // the reducers' states, and the measures of all the events (undefined until recalculated)
     private readonly states = new Map<string, unknown>()
@@ -470,8 +479,10 @@ class Tally<P> {
                 return
             }
             const value = measure.of(datum)
+            if (!Number.isFinite(value)) return
             if (measure.kind === 'sum' || measure.kind === 'mean') {
                 this.sums.set(name, (this.sums.get(name) ?? 0) + value)
+                this.finiteCounts.set(name, (this.finiteCounts.get(name) ?? 0) + 1)
             } else if (this.extremes.has(name)) {
                 // (a known extreme only moves when the new value is beyond it; an unknown one is
                 // re-found when it's next read)
@@ -516,8 +527,12 @@ class Tally<P> {
                 return
             }
             const value = measure.of(datum)
+            if (!Number.isFinite(value)) return
             if (measure.kind === 'sum' || measure.kind === 'mean') {
-                this.sums.set(name, this.count > 0 ? (this.sums.get(name) ?? 0) - value : 0)
+                // (back to 0 once the last value leaves, so that rounding errors don't pile up)
+                const finiteCount = (this.finiteCounts.get(name) ?? 1) - 1
+                this.finiteCounts.set(name, finiteCount)
+                this.sums.set(name, finiteCount > 0 ? (this.sums.get(name) ?? 0) - value : 0)
             } else if (this.extremes.get(name) === value) {
                 // the extreme left: re-found when it's next read
                 this.extremes.set(name, undefined)
@@ -540,7 +555,9 @@ class Tally<P> {
                     values[name] = this.sums.get(name) ?? 0
                     break
                 case 'mean':
-                    values[name] = this.count > 0 ? (this.sums.get(name) ?? 0) / this.count : NaN
+                    values[name] = (this.finiteCounts.get(name) ?? 0) > 0 ?
+                        (this.sums.get(name) ?? 0) / (this.finiteCounts.get(name) ?? 1) :
+                        NaN
                     break
                 case 'latest':
                     values[name] = this.last !== undefined ? measure.of(this.last) : NaN
@@ -567,7 +584,8 @@ class Tally<P> {
     /**
      * @param name The measure's name
      * @param measure The (min or max) measure
-     * @return The smallest or largest value of the events (`NaN` for no events), re-found when unknown
+     * @return The smallest or largest (finite) value of the events (`NaN` when there's none), re-found
+     * when unknown
      */
     private extremeOf(name: string, measure: GeoMeasure<P>): number {
         if (this.count === 0 || (measure.kind !== 'min' && measure.kind !== 'max')) return NaN
@@ -576,11 +594,12 @@ class Tally<P> {
             extreme = measure.kind === 'min' ? Infinity : -Infinity
             for (let i = this.head; i < this.events.length; i++) {
                 const value = measure.of(this.events[i])
+                if (!Number.isFinite(value)) continue
                 extreme = measure.kind === 'min' ? Math.min(extreme, value) : Math.max(extreme, value)
             }
             this.extremes.set(name, extreme)
         }
-        return extreme
+        return Number.isFinite(extreme) ? extreme : NaN
     }
 }
 
@@ -735,6 +754,10 @@ export class GeoRollupState<P> {
     // the measures' units and formats, by name (handed to every aggregate)
     private readonly measureOptions: Readonly<Record<string, GeoMeasureOptions>>
     private readonly cells = new Map<string, Cell<P>>()
+    // where each rolled-up event was put (its cell, and its group), so that removing it takes it out
+    // of the same cell and group, even when the roll-up's functions would now answer differently
+    // (e.g. a filter that reads a setting the user has since changed)
+    private readonly placements = new Map<GeoDatum<P>, {cellId: string, group: string | undefined}>()
     // the aggregates, as last read, until the cells change
     private cached: Array<GeoAggregate> | undefined = undefined
     private readonly rollup: GeoRollup<P>
@@ -762,22 +785,25 @@ export class GeoRollupState<P> {
             cell = new Cell<P>(id, this.measures, this.binning.cellPositionOf?.(datum), this.binning.cellBoundsOf?.(datum))
             this.cells.set(id, cell)
         }
-        cell.add(datum, this.rollup.groupBy?.(datum, seriesName))
+        const group = this.rollup.groupBy?.(datum, seriesName)
+        cell.add(datum, group)
+        this.placements.set(datum, {cellId: id, group})
         this.cached = undefined
     }
 
     /**
-     * Removes an event (e.g. one that's been dropped as too old)
+     * Removes an event (e.g. one that's been dropped as too old) from the cell and group it was put
+     * in when it was added (a no-op for an event that wasn't rolled up)
      * @param datum The event
-     * @param seriesName The name of the event's series
      */
-    remove(datum: GeoDatum<P>, seriesName: string): void {
-        if (this.rollup.filter !== undefined && !this.rollup.filter(datum, seriesName)) return
-        const id = this.binning.cellIdOf(datum)
-        const cell = this.cells.get(id)
+    remove(datum: GeoDatum<P>): void {
+        const placement = this.placements.get(datum)
+        if (placement === undefined) return
+        this.placements.delete(datum)
+        const cell = this.cells.get(placement.cellId)
         if (cell === undefined) return
-        cell.remove(datum, this.rollup.groupBy?.(datum, seriesName))
-        if (cell.all.count === 0) this.cells.delete(id)
+        cell.remove(datum, placement.group)
+        if (cell.all.count === 0) this.cells.delete(placement.cellId)
         this.cached = undefined
     }
 

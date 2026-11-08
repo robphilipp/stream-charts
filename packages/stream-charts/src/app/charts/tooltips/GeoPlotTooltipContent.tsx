@@ -263,6 +263,8 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
                 const {rollup, aggregate, group: hoveredGroup} = target
                 if (aggregateFormatter !== undefined) return aggregateFormatter(aggregate, rollup, hoveredGroup)
                 const {count, sensorCount, bounds, values, groups, firstTime, lastTime} = aggregate
+                // (the hovered group is always listed, even when it isn't one of the largest)
+                const shownGroups = listedGroups(groups, maxGroups, hoveredGroup)
                 // a measure's value: as the application formats it, or in the measure's own format and units
                 const formatValue = (name: string, value: number): ReactNode => valueFormatter !== undefined ?
                     valueFormatter(name, value) :
@@ -282,7 +284,7 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
                     {/* a one-sensor cell's readings over time */}
                     {sparkline !== undefined && <SparklineSvg sparkline={sparkline} size={SPARKLINE} color={tooltipStyle.fontColor}/>}
                     {groups.length > 0 && <hr/>}
-                    {listedGroups(groups, maxGroups, hoveredGroup).map(group => group.group === hoveredGroup ?
+                    {shownGroups.map(group => group.group === hoveredGroup ?
                         // the group whose wedge is under the mouse: highlighted, with its own measures
                         <div key={group.group} style={{margin: '2px 0'}}>
                             <div><b>{group.group}: {group.count.toLocaleString()}</b></div>
@@ -303,7 +305,7 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
                             }
                         </div>
                     )}
-                    {groups.length > maxGroups && <div><em>+{groups.length - maxGroups} more</em></div>}
+                    {groups.length > shownGroups.length && <div><em>+{groups.length - shownGroups.length} more</em></div>}
                 </>
             }}
         </TooltipContent>

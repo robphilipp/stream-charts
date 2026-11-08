@@ -21,7 +21,7 @@ Each group is a series, with its own color and legend entry. Every event's paylo
 
 Drag the globe to turn it, and hold shift while scrolling to zoom – about the mouse, so the place under it stays put. On a flat map, dragging pans the map instead (north and south, too, once you've zoomed in). The view stays where you left it when you switch to another tab and back.
 
-Hover over a marker, with the tooltip on, and the tooltip shows the event's series and sensor, where and when it happened, and its reading and status – and a sparkline of the sensor's readings over time, with this one marked. Unlike the other charts, the geo chart's tooltip also works *while the chart is running* – the places don't move, so there's nothing to chase.
+Hover over a marker, with the tooltip on, and the tooltip shows the event's series and sensor, where and when it happened, and its reading and status – and a sparkline of the sensor's readings over time, with this one marked. Unlike the other charts, the geo chart's tooltip also works *while the chart is running*: hovering pauses the auto-rotation, and an event's marker stays where it is – even a vessel's, since each report is its own event at its own place.
 
 The markers are circles on the earth, drawn through the projection, so the projection shapes them just like the land: they flatten toward the edge of the globe, and stretch toward the poles of a Mercator map.
 
@@ -30,7 +30,7 @@ The markers are circles on the earth, drawn through the projection, so the proje
 <figure>
     <img src="./images/geo-aggregates.png" alt="The geo chart showing aggregates: circles at the sensor sites, sized by their number of events, the seismic sites colored by their peak magnitude, with a key for the sizes and the colors in the bottom-right corner">
     <figcaption>
-        <b>Figure 15</b> The same data, rolled up "by location": one circle per place, its area showing how many events happened there. The seismic sites are colored by their peak magnitude; the other places, which measure something else, are in the default blue. The key, in the corner, says what the sizes and colors mean.
+        <b>Figure 15</b> The same data, rolled up "by location": one circle per place, its area showing how many events happened there. The seismic sites are colored by their peak magnitude; the other places, which measure something else, have no value, and are in the default blue (the key's "no value"). The key, in the corner, says what the sizes and colors mean.
     </figcaption>
 </figure>
 
@@ -42,7 +42,7 @@ Switch **Show** to *Aggregates* and, instead of the events, the chart shows one 
 - **10° grid** – all the events in each 10° by 10° cell of a grid, drawn as the cells themselves, broken down by series.
 - **Sensors in 10° areas** – the same 10° cells, but broken down by sensor: each sensor's events, and its own measures, within each area.
 
-Switch **Show** to *Aggregates, by group*, and each circle is divided into a wedge per group – per sensor, per series, or per status, depending on the roll-up. A wedge's angle is its group's share of the cell's events, and its color is the group's own measure (picked in **Color by**) – so in "Sensors in 10° areas", each area's circle shows which of its sensors reported the most, and what each of them read. With **Color by** set to *Nothing*, the wedges get their group's color instead: the series' colors, orange and red for warnings and alarms, and a color of its own for each sensor. Hover over a wedge, and the tooltip highlights its group, with the group's own measures. A group that's one sensor's readings – and a cell that's one sensor's, in "Events by sensor" – gets a sparkline of them over time (the hovered group's on its own line, the others' on theirs). *Wired to:* the tooltip content's `sparklineValueOf` property.
+Switch **Show** to *Aggregates, by group*, and each circle is divided into a wedge per group – per sensor, per series, or per status, depending on the roll-up. A wedge's angle is its group's share of the cell's events, and its color is the group's own measure (picked in **Color by**) – so in "Sensors in 10° areas", each area's circle shows which of its sensors reported the most, and what each of them read. With **Color by** set to *Nothing*, the wedges get their group's color instead: the series' colors, orange and red for warnings and alarms, and, for the sensors, the plot's ten categorical colors, handed out in the order the sensors first show up (so a cell with more than ten sensors repeats some). Hover over a wedge, and the tooltip highlights its group, with the group's own measures. A group that's one sensor's readings – and a cell that's one sensor's, in "Events by sensor" – gets a sparkline of them over time (the hovered group's on its own line, the others' on theirs). *Wired to:* the tooltip content's `sparklineValueOf` property.
 
 Each roll-up has three measures, one for each kind of reading, so that each has its own units: the quakes' *peak magnitude*, the weather stations' *mean wind speed* (in m/s), and the vessels' *mean vessel speed* (in knots). A place without any of one kind of sensor has no value for its measure. (A measure that mixed them – a "peak reading" of quake magnitudes, wind speeds, and vessel speeds – would compare things that can't be compared; the library shows whatever you measure, so it's up to you to keep each measure to one quantity.) A circle's area shows its number of events, and its color the measure picked in **Color by**. The tooltip lists the counts of events and sensors, the time span, the measures (in their units), and the breakdown.
 
@@ -80,6 +80,6 @@ The example (yours to copy, change, or ignore):
 
 The library (what you'd use in your own application):
 - `<Chart>`, `<GeoPlot>`, `<Legend>`, `<Tooltip>` with `<GeoPlotTooltipContent>`
-- `GeoDataSource` – holds the events, and keeps the roll-ups (made with `byLocation`, `bySensor`, `byGridCell`, and measures like `maxOf` and `meanOf`)
+- `GeoDataSource` – holds the events, and keeps the roll-ups (made with `byLocation`, `bySensor`, and `byGridCell`, and, in the example, measures of its own: `reduceOf` for the mean readings, and `measureOf` for the peaks; the library's `meanOf`, `maxOf`, and the rest cover the simpler cases)
 
 The library doesn't come with a map: you hand the plot the land and borders you want, at the level of detail you want, as GeoJSON.

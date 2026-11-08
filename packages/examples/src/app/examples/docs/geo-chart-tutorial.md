@@ -107,13 +107,15 @@ A geo chart's data is a stream of `GeoChartData`: chunks of *events*, by series.
 export type AirQuality = {
     pm25: number
     city?: string
-    level: 'good' | 'moderate' | 'unhealthy'
+    level: 'good' | 'moderate' | 'unhealthy' | 'unknown'
 }
 
 export const CITY_MONITORS = "City monitors"
 export const TRAIN_MONITORS = "Train monitors"
 
-const levelOf = (pm25: number): AirQuality['level'] => pm25 <= 15 ? 'good' : pm25 <= 35 ? 'moderate' : 'unhealthy'
+// (a missing reading -- not a finite number -- has no level, rather than failing every test below)
+const levelOf = (pm25: number): AirQuality['level'] =>
+    !Number.isFinite(pm25) ? 'unknown' : pm25 <= 15 ? 'good' : pm25 <= 35 ? 'moderate' : 'unhealthy'
 ```
 
 A series is a group of sensors, with its own color and legend entry. We'll have two: the city monitors and the train monitors. Each event's sensor ID says which monitor in the group reported it.
@@ -159,24 +161,27 @@ The data source holds the events, and drops them once they're ten minutes old. I
 
 ```ts
 import * as d3 from "d3";
-import {byGridCell, bySensor, GeoDataSource, geoSeriesFrom, maxOf, meanOf, measureOf, reduceOf} from "stream-charts";
+import {byGridCell, bySensor, GeoDataSource, type GeoMeasureOptions, geoSeriesFrom, maxOf, meanOf, measureOf, reduceOf} from "stream-charts";
 
 const pm25 = (datum: GeoDatum<AirQuality>): number => datum.payload.pm25
 
+// how the PM2.5 measures are shown: in µg/m³, to one decimal
+const PM25: GeoMeasureOptions = {units: 'µg/m³', format: ',.1f'}
+
 // a measure of our own, from all of a cell's readings at once: the median (which, unlike a sum,
 // can't take a reading back out, so it's recalculated from the readings when they've changed)
-const medianPm25 = measureOf<AirQuality>(readings => d3.median(readings, pm25) ?? NaN)
+const medianPm25 = measureOf<AirQuality>(readings => d3.median(readings, pm25) ?? NaN, PM25)
 
 // a measure of our own that can take a reading back out, so it's kept as readings come and go:
-// the share of the readings that are unhealthy
+// the share of the readings that are unhealthy (of those with a level: a missing reading doesn't count)
+const isMeasured = (datum: GeoDatum<AirQuality>): number => datum.payload.level !== 'unknown' ? 1 : 0
+const isUnhealthy = (datum: GeoDatum<AirQuality>): number => datum.payload.level === 'unhealthy' ? 1 : 0
 const unhealthyShare = reduceOf<AirQuality, {readings: number, unhealthy: number}>({
     initial: () => ({readings: 0, unhealthy: 0}),
-    add: ({readings, unhealthy}, datum) =>
-        ({readings: readings + 1, unhealthy: unhealthy + (datum.payload.level === 'unhealthy' ? 1 : 0)}),
-    remove: ({readings, unhealthy}, datum) =>
-        ({readings: readings - 1, unhealthy: unhealthy - (datum.payload.level === 'unhealthy' ? 1 : 0)}),
+    add: (state, datum) => ({readings: state.readings + isMeasured(datum), unhealthy: state.unhealthy + isUnhealthy(datum)}),
+    remove: (state, datum) => ({readings: state.readings - isMeasured(datum), unhealthy: state.unhealthy - isUnhealthy(datum)}),
     value: ({readings, unhealthy}) => readings > 0 ? unhealthy / readings : NaN,
-})
+}, {format: '.0%'})
 
 export const airQualityDataSource = new GeoDataSource<AirQuality>({
     initialData: [geoSeriesFrom<AirQuality>(CITY_MONITORS), geoSeriesFrom<AirQuality>(TRAIN_MONITORS)],
@@ -192,22 +197,22 @@ export const airQualityDataSource = new GeoDataSource<AirQuality>({
             filter: (_datum, seriesName): boolean => seriesName === CITY_MONITORS,
             groupBy: (datum): string => datum.sensorId,
             measures: {
-                "mean PM2.5": meanOf(pm25),
+                "mean PM2.5": meanOf(pm25, PM25),
                 "median PM2.5": medianPm25,
-                "peak PM2.5": maxOf(pm25),
+                "peak PM2.5": maxOf(pm25, PM25),
                 "unhealthy share": unhealthyShare,
             },
         },
         // each monitor's readings, where the monitor last was (the trains move)
         "by monitor": {
             cellOf: bySensor({position: 'latest'}),
-            measures: {"mean PM2.5": meanOf(pm25), "peak PM2.5": maxOf(pm25)},
+            measures: {"mean PM2.5": meanOf(pm25, PM25), "peak PM2.5": maxOf(pm25, PM25)},
         },
         // only the unhealthy readings, in the cells of a 2° grid
         "unhealthy": {
             cellOf: byGridCell(2),
             filter: (datum): boolean => datum.payload.level === 'unhealthy',
-            measures: {"peak PM2.5": maxOf(pm25)},
+            measures: {"peak PM2.5": maxOf(pm25, PM25)},
         },
     },
 })
@@ -219,8 +224,10 @@ export const airQualityDataSource = new GeoDataSource<AirQuality>({
 
 The library's measures – `meanOf` and `maxOf` here, and also `countOf`, `sumOf`, `minOf`, and `latestOf` – take a function that gives an event's value. And when none of them is what you need, you write your own, in one of two ways:
 
-- **`reduceOf`**, for a measure that can take an event back out. It keeps a *state* – here, the number of readings, and how many of them were unhealthy – which `add` updates as each reading arrives and `remove` as each one leaves, and `value` turns into the measure: the "unhealthy share". It costs the same however many readings a city has, so prefer it whenever you can undo what an event added (sums, counts, means, and the moments behind a standard deviation all can).
+- **`reduceOf`**, for a measure that can take an event back out. It keeps a *state* – here, the number of readings with a level, and how many of them were unhealthy – which `add` updates as each reading arrives and `remove` as each one leaves, and `value` turns into the measure: the "unhealthy share". It costs the same however many readings a city has, so prefer it whenever you can undo what an event added (sums, counts, means, and the moments behind a standard deviation all can).
 - **`measureOf`**, for a measure that can't – like the median: taking one reading out can move the median anywhere. It's handed all of a cell's readings at once. It's only recalculated for a cell whose readings changed, and only when the chart next draws it, but then over all of the cell's readings, so keep it for the measures that need it.
+
+Every measure takes its units and format as its last argument: the PM2.5 measures are in µg/m³, to one decimal (`PM25`), and the unhealthy share is a percentage (the d3-format specifier `.0%`). The tooltip shows the values with them ("mean PM2.5: **14.2 µg/m³**"), and the keys put the units in their labels.
 
 Your measures are measures like any other: the tooltip lists them, the breakdown by group has them too, and `sizeBy` and `colorBy` can use them. The data source keeps the roll-ups up to date as events arrive *and as they're dropped*, so a roll-up always covers exactly the events the data source holds – and it keeps up while the chart is off screen, too.
 
@@ -343,10 +350,6 @@ export function AirQualityMap(): JSX.Element {
                             <div>{city ?? 'on a train'}</div>
                             <div>PM2.5: <b>{pm25} µg/m³</b> ({level})</div>
                         </>}
-                        valueFormatter={(name, value) => name === 'unhealthy share' ?
-                            `${(value * 100).toFixed(0)}%` :
-                            `${value.toFixed(1)} µg/m³`
-                        }
                     />
                 </Tooltip>
             </Chart>
@@ -365,7 +368,7 @@ Going through the plot's properties:
 - **`colorBy`, `colorDomain`, `colorScheme`** – colors the aggregates by their mean (or, for the unhealthy readings, peak) PM2.5, on a fixed scale from 0 to 50 µg/m³, so a color means the same thing from one moment to the next. Their size shows their number of readings (`sizeBy`, which defaults to `count`). Keys for both are drawn in the corner.
 - **`aggregateShape`** – draws the "unhealthy" grid's aggregates as their cells.
 
-The tooltip's formatters show the times as minutes into the session, the payload as a city and a reading, and the measures in µg/m³ (and the unhealthy share as a percentage). Hover over a city's circle, and the tooltip lists its readings and monitors, its mean, median, and peak PM2.5, its share of unhealthy readings, and how many readings each monitor reported. The geo chart's tooltip also works while the data streams: the places don't move, so there's nothing to chase.
+The tooltip's formatters show the times as minutes into the session, and the payload as a city and a reading; the measures come with their own units and formats (step 3). Hover over a city's circle, and the tooltip lists its readings and monitors, its mean, median, and peak PM2.5, its share of unhealthy readings, and how many readings each monitor reported. The geo chart's tooltip also works while the data streams: a reading's marker stays where the reading was taken – even a train's – so there's nothing to chase.
 
 The legend shows only with the readings – the aggregates have their keys instead.
 
@@ -385,6 +388,7 @@ import {
     GeoDataSource,
     type GeoDatum,
     geoDatumOf,
+    type GeoMeasureOptions,
     geoSeriesFrom,
     maxOf,
     meanOf,
@@ -464,13 +468,15 @@ export function simulatedReadings(): Observable<AirQualityReading> {
 export type AirQuality = {
     pm25: number
     city?: string
-    level: 'good' | 'moderate' | 'unhealthy'
+    level: 'good' | 'moderate' | 'unhealthy' | 'unknown'
 }
 
 export const CITY_MONITORS = "City monitors"
 export const TRAIN_MONITORS = "Train monitors"
 
-const levelOf = (pm25: number): AirQuality['level'] => pm25 <= 15 ? 'good' : pm25 <= 35 ? 'moderate' : 'unhealthy'
+// (a missing reading -- not a finite number -- has no level, rather than failing every test below)
+const levelOf = (pm25: number): AirQuality['level'] =>
+    !Number.isFinite(pm25) ? 'unknown' : pm25 <= 15 ? 'good' : pm25 <= 35 ? 'moderate' : 'unhealthy'
 
 /**
  * Batches the readings, and turns each batch into chart data: the readings, by series, as geo events
@@ -500,20 +506,23 @@ export function toChartData(readings: Observable<AirQualityReading>): Observable
 
 const pm25 = (datum: GeoDatum<AirQuality>): number => datum.payload.pm25
 
+// how the PM2.5 measures are shown: in µg/m³, to one decimal
+const PM25: GeoMeasureOptions = {units: 'µg/m³', format: ',.1f'}
+
 // a measure of our own, from all of a cell's readings at once: the median (which, unlike a sum,
 // can't take a reading back out, so it's recalculated from the readings when they've changed)
-const medianPm25 = measureOf<AirQuality>(readings => d3.median(readings, pm25) ?? NaN)
+const medianPm25 = measureOf<AirQuality>(readings => d3.median(readings, pm25) ?? NaN, PM25)
 
 // a measure of our own that can take a reading back out, so it's kept as readings come and go:
-// the share of the readings that are unhealthy
+// the share of the readings that are unhealthy (of those with a level: a missing reading doesn't count)
+const isMeasured = (datum: GeoDatum<AirQuality>): number => datum.payload.level !== 'unknown' ? 1 : 0
+const isUnhealthy = (datum: GeoDatum<AirQuality>): number => datum.payload.level === 'unhealthy' ? 1 : 0
 const unhealthyShare = reduceOf<AirQuality, {readings: number, unhealthy: number}>({
     initial: () => ({readings: 0, unhealthy: 0}),
-    add: ({readings, unhealthy}, datum) =>
-        ({readings: readings + 1, unhealthy: unhealthy + (datum.payload.level === 'unhealthy' ? 1 : 0)}),
-    remove: ({readings, unhealthy}, datum) =>
-        ({readings: readings - 1, unhealthy: unhealthy - (datum.payload.level === 'unhealthy' ? 1 : 0)}),
+    add: (state, datum) => ({readings: state.readings + isMeasured(datum), unhealthy: state.unhealthy + isUnhealthy(datum)}),
+    remove: (state, datum) => ({readings: state.readings - isMeasured(datum), unhealthy: state.unhealthy - isUnhealthy(datum)}),
     value: ({readings, unhealthy}) => readings > 0 ? unhealthy / readings : NaN,
-})
+}, {format: '.0%'})
 
 export const airQualityDataSource = new GeoDataSource<AirQuality>({
     initialData: [geoSeriesFrom<AirQuality>(CITY_MONITORS), geoSeriesFrom<AirQuality>(TRAIN_MONITORS)],
@@ -529,22 +538,22 @@ export const airQualityDataSource = new GeoDataSource<AirQuality>({
             filter: (_datum, seriesName): boolean => seriesName === CITY_MONITORS,
             groupBy: (datum): string => datum.sensorId,
             measures: {
-                "mean PM2.5": meanOf(pm25),
+                "mean PM2.5": meanOf(pm25, PM25),
                 "median PM2.5": medianPm25,
-                "peak PM2.5": maxOf(pm25),
+                "peak PM2.5": maxOf(pm25, PM25),
                 "unhealthy share": unhealthyShare,
             },
         },
         // each monitor's readings, where the monitor last was (the trains move)
         "by monitor": {
             cellOf: bySensor({position: 'latest'}),
-            measures: {"mean PM2.5": meanOf(pm25), "peak PM2.5": maxOf(pm25)},
+            measures: {"mean PM2.5": meanOf(pm25, PM25), "peak PM2.5": maxOf(pm25, PM25)},
         },
         // only the unhealthy readings, in the cells of a 2° grid
         "unhealthy": {
             cellOf: byGridCell(2),
             filter: (datum): boolean => datum.payload.level === 'unhealthy',
-            measures: {"peak PM2.5": maxOf(pm25)},
+            measures: {"peak PM2.5": maxOf(pm25, PM25)},
         },
     },
 })
@@ -653,10 +662,6 @@ export function AirQualityMap(): JSX.Element {
                             <div>{city ?? 'on a train'}</div>
                             <div>PM2.5: <b>{pm25} µg/m³</b> ({level})</div>
                         </>}
-                        valueFormatter={(name, value) => name === 'unhealthy share' ?
-                            `${(value * 100).toFixed(0)}%` :
-                            `${value.toFixed(1)} µg/m³`
-                        }
                     />
                 </Tooltip>
             </Chart>
@@ -675,15 +680,33 @@ The simulation is the only part to replace. If your monitors publish their readi
 import {webSocket} from "rxjs/webSocket";
 
 airQualityDataSource.setGenerator(
-    () => toChartData(webSocket<AirQualityReading>('wss://air.example.com/readings'))
+    () => toChartData(webSocket<AirQualityReading>('wss://air.example.com/readings').pipe(inOrder()))
 )
 ```
 
 (Call `setGenerator` while the data source is stopped, or pass the generator to the data source when you create it.) Real sensors bring a few things that simulated ones don't:
 
-- **Readings arrive out of order.** The sort in step 2 orders each batch. A reading older than the last one in its series would sit out of order, though, and the data source drops events from the front of each series, so drop such stragglers before they get there – the scatter-chart tutorial's `inOrder` operator does exactly that, keyed by the sensor.
+- **Readings arrive out of order.** The sort in step 2 orders each batch, but a reading older than the last one in its series would sit out of order, and the data source drops events from the front of each series – so a straggler would outstay the readings around it. The `inOrder` operator in the snippet above drops such stragglers. Unlike the scatter-chart tutorial's, it's keyed by the *series*, not the sensor: here a series holds many sensors, and it's the series that must stay in order.
+
+  ```ts
+  import {type MonoTypeOperatorFunction} from "rxjs";
+  import {filter} from "rxjs/operators";
+
+  export function inOrder(): MonoTypeOperatorFunction<AirQualityReading> {
+      const latest = new Map<string, number>()
+      return filter(reading => {
+          const series = reading.city !== undefined ? CITY_MONITORS : TRAIN_MONITORS
+          if (reading.time < (latest.get(series) ?? -Infinity)) return false
+          latest.set(series, reading.time)
+          return true
+      })
+  }
+  ```
+
+  (It sits before the batching, so it also drops a reading that arrives behind a later one of the same batch, which the sort would have put back in order. To keep those, filter each sorted batch instead.)
 - **Sensors come and go.** The geo data source adds a series the first time it shows up in the stream, and roll-ups pick up new sensors as they report. To change the roll-ups themselves – say, a finer grid – call `setRollups`, which rolls up the events held now.
 - **Sensors move.** `bySensor({position: 'latest'})` follows a moving sensor; `'mean'` places it at the average of its retained positions instead (on the sphere, so it's right across the date line, too).
-- **There are a lot of them.** Each event is a marker, so for thousands of sensors reporting often, show a roll-up instead, or shorten `dropDataAfter`.
+- **There are a lot of them.** Each event is a marker, so for thousands of sensors reporting often, show a roll-up instead, or shorten `dropDataAfter` (all the more with `autoRotate`, which redraws every frame).
+- **Readings go missing.** A reading that isn't a finite number (a `NaN`, say, for a monitor that couldn't measure) is left out of the library's sums, means, minimums, and maximums, so it doesn't spoil a city's figures; your own measures should skip it too – as `levelOf` and the unhealthy share do in step 3 (and `d3.median`, in the median, already does).
 
 That's the last page of the intro. Happy mapping!

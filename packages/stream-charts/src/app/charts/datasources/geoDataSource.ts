@@ -139,7 +139,7 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
         this.seriesMap.forEach(series => {
             while (series.data.length > 0 && currentTime - series.data[0].time > this.dropDataAfter) {
                 const dropped = series.data.shift()
-                if (dropped !== undefined) this.rollupStates.forEach(state => state.remove(dropped, series.name))
+                if (dropped !== undefined) this.rollupStates.forEach(state => state.remove(dropped))
             }
         })
     }

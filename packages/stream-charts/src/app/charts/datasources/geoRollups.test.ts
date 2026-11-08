@@ -169,7 +169,7 @@ describe('measures and groups', () => {
 
     it('re-finds the peak when the event holding it is removed, and drops an emptied group', () => {
         const state = rolledUp(rollup, events)
-        state.remove(events[1], 's')
+        state.remove(events[1])
         const [aggregate] = state.aggregates()
         expect(aggregate.values.peak).toBe(3.5)
         expect(aggregate.groups.map(group => group.group)).toEqual(['S-1'])
@@ -177,7 +177,7 @@ describe('measures and groups', () => {
 
     it('drops a cell once its last event is removed', () => {
         const state = rolledUp(rollup, events)
-        events.forEach(event => state.remove(event, 's'))
+        events.forEach(event => state.remove(event))
         expect(state.aggregates()).toEqual([])
     })
 
@@ -185,6 +185,33 @@ describe('measures and groups', () => {
         const [aggregate] = rolledUp({...rollup, filter: datum => datum.payload.kind === 'quake'}, events).aggregates()
         expect(aggregate.count).toBe(2)
         expect(aggregate.values.peak).toBe(5)
+    })
+
+    it('leaves out values that aren\'t finite, so that a missing reading doesn\'t spoil the measures', () => {
+        const missing = reading('S-1', 10, 20, 0, NaN, 'quake')
+        const state = rolledUp(rollup, [missing, ...events])
+        expect(state.aggregates()[0].values).toEqual({events: 4, total: 10.5, mean: 3.5, smallest: 2, peak: 5, latest: 3.5})
+
+        // the measures still follow the events that have values, once the missing one leaves
+        state.remove(missing)
+        state.remove(events[1])
+        expect(state.aggregates()[0].values).toEqual({events: 2, total: 5.5, mean: 2.75, smallest: 2, peak: 3.5, latest: 3.5})
+    })
+
+    it('has no value for a measure while none of the cell\'s events have one', () => {
+        const [aggregate] = rolledUp(rollup, [reading('S-1', 10, 20, 1, NaN)]).aggregates()
+        expect(aggregate.values).toEqual({events: 1, total: 0, mean: NaN, smallest: NaN, peak: NaN, latest: NaN})
+    })
+
+    it('takes an event out of the cell and group it was put in, even when the roll-up\'s functions have changed their minds', () => {
+        // a filter, and a grouping, that read a setting the user changes while the events are held
+        let quakesOnly = true
+        let groupOf = (datum: GeoDatum<Reading>): string => datum.sensorId
+        const state = rolledUp({...rollup, filter: datum => !quakesOnly || datum.payload.kind === 'quake', groupBy: datum => groupOf(datum)}, events)
+        quakesOnly = false
+        groupOf = () => 'other'
+        events.forEach(event => state.remove(event))
+        expect(state.aggregates()).toEqual([])
     })
 
     it('hands back the same aggregates until the cells change', () => {
@@ -213,8 +240,8 @@ describe('measures of your own', () => {
         const state = rolledUp(rollup, events)
         // the magnitudes 2, 4, 4, 4, 5, 5, 7, 9: a mean of 5, and a standard deviation of 2
         expect(state.aggregates()[0].values.spread).toBeCloseTo(2, 9)
-        state.remove(events[0], 's')
-        state.remove(events[7], 's')
+        state.remove(events[0])
+        state.remove(events[7])
         // 4, 4, 4, 5, 5, 7
         expect(state.aggregates()[0].values.spread).toBeCloseTo(Math.sqrt(147 / 6 - (29 / 6) ** 2), 9)
     })
@@ -222,7 +249,7 @@ describe('measures of your own', () => {
     it('measures all the events at once', () => {
         const state = rolledUp(rollup, events)
         expect(state.aggregates()[0].values.median).toBe(4.5)
-        state.remove(events[7], 's')
+        state.remove(events[7])
         expect(state.aggregates()[0].values.median).toBe(4)
     })
 
@@ -327,7 +354,7 @@ describe('incremental roll-ups', () => {
                 if (kept.length > 0 && next() < 0.4) {
                     // mostly the oldest event goes (as the data source drops them), sometimes another
                     const index = next() < 0.8 ? 0 : Math.floor(next() * kept.length)
-                    state.remove(kept[index], 's')
+                    state.remove(kept[index])
                     kept.splice(index, 1)
                 } else {
                     const event = reading(

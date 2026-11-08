@@ -307,3 +307,43 @@ export function wedgeIndexAt(shares: ReadonlyArray<number>, bearing: number): nu
     }
     return shares.length - 1
 }
+
+// a drawn marker (an event's, or an aggregate's circle), for hit-testing the mouse (in canvas
+// coordinates), and what it shows
+export type DrawnMarker<P> = {
+    x: number
+    y: number
+    hitRadius: number
+    target: GeoTooltipMetadata<P>
+}
+
+/**
+ * The marker under the mouse: of the markers that reach the mouse, an aggregate's smallest circle
+ * (the circles are drawn largest first, so the smallest is on top), or the nearest event
+ * @param markers The drawn markers
+ * @param maxHitRadius The largest of their hit radii
+ * @param x The mouse's x (canvas coordinates)
+ * @param y The mouse's y (canvas coordinates)
+ * @return The marker, or `undefined` when none reaches the mouse
+ * @template P The type of the events' payload
+ */
+export function markerAt<P>(markers: d3.Quadtree<DrawnMarker<P>>, maxHitRadius: number, x: number, y: number): DrawnMarker<P> | undefined {
+    let hit: {marker: DrawnMarker<P>, distance: number} | undefined = undefined
+    // (only the quadtree's nodes within the largest hit radius of the mouse are visited)
+    markers.visit((node, x0, y0, x1, y1) => {
+        if (!node.length) {
+            let leaf: d3.QuadtreeLeaf<DrawnMarker<P>> | undefined = node as d3.QuadtreeLeaf<DrawnMarker<P>>
+            while (leaf !== undefined) {
+                const marker = leaf.data
+                const distance = Math.hypot(marker.x - x, marker.y - y)
+                const better = hit === undefined || (marker.target.kind === 'aggregate' ?
+                    marker.hitRadius < hit.marker.hitRadius || (marker.hitRadius === hit.marker.hitRadius && distance < hit.distance) :
+                    distance < hit.distance)
+                if (distance <= marker.hitRadius && better) hit = {marker, distance}
+                leaf = leaf.next
+            }
+        }
+        return x0 > x + maxHitRadius || x1 < x - maxHitRadius || y0 > y + maxHitRadius || y1 < y - maxHitRadius
+    })
+    return (hit as {marker: DrawnMarker<P>} | undefined)?.marker
+}
