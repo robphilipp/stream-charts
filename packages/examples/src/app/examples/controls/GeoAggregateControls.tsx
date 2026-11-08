@@ -1,16 +1,18 @@
 import {type JSX} from "react";
 import type {Theme} from "../../ui/Themes.ts";
 import {DropDown, type DropDownOption} from "../../ui/DropDown.tsx";
+import type {GeoShow} from "../appstate/geoChartStore.ts";
 
-const MODE_OPTIONS: Array<DropDownOption<'points' | 'aggregates'>> = [
+const MODE_OPTIONS: Array<DropDownOption<GeoShow>> = [
     {value: 'points', label: 'Events'},
     {value: 'aggregates', label: 'Aggregates'},
+    {value: 'groups', label: 'Aggregates, by group'},
 ]
 
 type Props = {
     theme: Theme
-    mode: 'points' | 'aggregates'
-    handleModeChange: (mode: 'points' | 'aggregates') => void
+    mode: GeoShow
+    handleModeChange: (mode: GeoShow) => void
     rollupNames: Array<string>
     rollupName: string
     handleRollupNameChange: (rollupName: string) => void
@@ -20,8 +22,8 @@ type Props = {
 }
 
 /**
- * The geo example's controls for what the plot shows: each event, or a roll-up's aggregates (and
- * then, which roll-up, and what colors the aggregates)
+ * The geo example's controls for what the plot shows: each event, a roll-up's aggregates, or its
+ * aggregates divided by their groups (and then, which roll-up, and what colors the aggregates)
  * @param props The theme, and the current choices and their handlers
  * @return The drop-downs, with their labels
  */
@@ -30,7 +32,7 @@ export function GeoAggregateControls(props: Props): JSX.Element {
         theme, mode, handleModeChange, rollupNames, rollupName, handleRollupNameChange,
         measureNames, colorBy, handleColorByChange,
     } = props
-    const aggregates = mode === 'aggregates'
+    const aggregates = mode !== 'points'
     return (
         <>
             <label style={{color: theme.color}}>

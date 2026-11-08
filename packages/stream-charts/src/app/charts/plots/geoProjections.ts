@@ -50,6 +50,10 @@ export type GeoTooltipMetadata<P> = {
      * The aggregate under the mouse
      */
     aggregate: GeoAggregate
+    /**
+     * The group whose wedge is under the mouse (with the plot's `pies` shape)
+     */
+    group?: string
 }
 
 /**
@@ -237,4 +241,69 @@ export function zoomViewAbout(
         if (Math.abs(dLongitude) < 1e-4 && Math.abs(dLatitude) < 1e-4) break
     }
     return {...zoomed, offsetY: setUpProjection(projection, zoomed, width, height)}
+}
+
+/**
+ * @param from A `[longitude, latitude]` (degrees)
+ * @param to Another `[longitude, latitude]` (degrees)
+ * @return The bearing (degrees, clockwise from north, 0 to 360) of `to`, seen from `from`
+ */
+export function bearingOf([fromLongitude, fromLatitude]: [number, number], [toLongitude, toLatitude]: [number, number]): number {
+    const phi1 = fromLatitude / DEGREES
+    const phi2 = toLatitude / DEGREES
+    const deltaLambda = (toLongitude - fromLongitude) / DEGREES
+    const y = Math.sin(deltaLambda) * Math.cos(phi2)
+    const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda)
+    return ((Math.atan2(y, x) * DEGREES) % 360 + 360) % 360
+}
+
+/**
+ * @param center A `[longitude, latitude]` (degrees)
+ * @param distance An angular distance (degrees)
+ * @param bearing A bearing (degrees, clockwise from north)
+ * @return The `[longitude, latitude]` that far from the center, in that direction
+ */
+function destinationOf([longitude, latitude]: [number, number], distance: number, bearing: number): [number, number] {
+    const phi1 = latitude / DEGREES
+    const delta = distance / DEGREES
+    const theta = bearing / DEGREES
+    const phi2 = Math.asin(Math.sin(phi1) * Math.cos(delta) + Math.cos(phi1) * Math.sin(delta) * Math.cos(theta))
+    const lambda2 = longitude / DEGREES + Math.atan2(
+        Math.sin(theta) * Math.sin(delta) * Math.cos(phi1),
+        Math.cos(delta) - Math.sin(phi1) * Math.sin(phi2)
+    )
+    return [((lambda2 * DEGREES + 540) % 360) - 180, phi2 * DEGREES]
+}
+
+/**
+ * A wedge of a circle on the sphere -- a slice of a pie drawn on the earth -- from one bearing,
+ * clockwise, to another, as a GeoJSON polygon (wound clockwise, as d3-geo wants a small polygon)
+ * @param center The circle's `[longitude, latitude]` (degrees)
+ * @param radius The circle's angular radius (degrees)
+ * @param from The bearing (degrees, clockwise from north) where the wedge starts
+ * @param to The bearing where it ends (more than `from`, by at most 360)
+ * @param step The largest angle (degrees) between the points along its arc
+ * @return The wedge
+ */
+export function wedgeOf(center: [number, number], radius: number, from: number, to: number, step: number = 10): GeoJSON.Polygon {
+    const steps = Math.max(1, Math.ceil((to - from) / step))
+    const arc = Array.from({length: steps + 1}, (_, k) => destinationOf(center, radius, from + (to - from) * k / steps))
+    return {type: 'Polygon', coordinates: [[center, ...arc, center]]}
+}
+
+/**
+ * @param shares The groups' shares (e.g. their counts), in the order their wedges are drawn,
+ * clockwise from north
+ * @param bearing A bearing (degrees, clockwise from north)
+ * @return The index of the group whose wedge holds the bearing (-1 when there are no shares)
+ */
+export function wedgeIndexAt(shares: ReadonlyArray<number>, bearing: number): number {
+    const total = shares.reduce((sum, share) => sum + share, 0)
+    if (total <= 0) return -1
+    let end = 0
+    for (let index = 0; index < shares.length; index++) {
+        end += 360 * shares[index] / total
+        if (bearing < end) return index
+    }
+    return shares.length - 1
 }

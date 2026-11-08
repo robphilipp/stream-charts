@@ -12,7 +12,7 @@ import {withAlpha} from "../styling/canvasStyle"
 import {geoViewDriverFor} from "../subscriptions/viewDrivers"
 import {useDataSource, useDataSourceRunning, useStreamingSettings} from "../hooks/useDataSource"
 import type {GeoChartData} from "../observables/geo"
-import type {GeoAggregate} from "../datasources/geoRollups"
+import {formatMeasure, type GeoAggregate, type GeoAggregateGroup} from "../datasources/geoRollups"
 import type {GeoDatum, GeoSeries} from "../series/geoSeries"
 import {usePlotDimensions} from "../hooks/usePlotDimensions"
 import {type TooltipData, useTooltip} from "../hooks/useTooltip"
@@ -21,11 +21,14 @@ import {
     type GeoProjectionName,
     GeoProjections,
     type GeoTooltipMetadata,
+    bearingOf,
     isGlobe,
     panView,
     placeUnder,
     setUpProjection,
     viewCenteredOn,
+    wedgeIndexAt,
+    wedgeOf,
     zoomViewAbout,
 } from "./geoProjections"
 
@@ -149,11 +152,26 @@ export interface Props<P> {
      */
     aggregateOpacity?: number
     /**
-     * How aggregates are drawn: as circles (`circles`, the default), sized by `sizeBy`, or as their
-     * cells (`cells`, for a roll-up whose cells are areas, see `byGridCell`), colored by `colorBy`
-     * (or by `sizeBy`, without one). A roll-up whose cells aren't areas is drawn as circles.
+     * How aggregates are drawn:
+     * - `circles` (the default): a circle per cell, sized by `sizeBy`, and colored by `colorBy`;
+     * - `pies`: a circle per cell, sized by `sizeBy`, and divided into a wedge per group (see the
+     *   roll-up's `groupBy`): each wedge's angle is the group's share of the cell's events, and its
+     *   color the group's own `colorBy` value (or, without `colorBy`, the group's color, see
+     *   `groupColors`) -- e.g. each sensor's mean delay, within each area. A cell without groups is
+     *   drawn as a plain circle;
+     * - `cells`: the cells themselves (for a roll-up whose cells are areas, see `byGridCell`),
+     *   colored by `colorBy` (or by `sizeBy`, without one). A roll-up whose cells aren't areas is
+     *   drawn as circles.
      */
-    aggregateShape?: 'circles' | 'cells'
+    aggregateShape?: 'circles' | 'pies' | 'cells'
+    /**
+     * The color of a group's wedges (with the `pies` shape, without `colorBy`); `undefined` means one
+     * of d3's categorical colors, chosen by the group's name, so a group keeps its color as the data
+     * changes
+     * @param group The group's name
+     * @return The group's color
+     */
+    groupColors?: (group: string) => string | undefined
     /**
      * The radius (px) of the largest aggregate's circle. Defaults to 20.
      */
@@ -241,7 +259,25 @@ type DrawnMarker<P> = {
  * roll-up and cell (an aggregate is a new object each time its cell changes)
  */
 const keyOf = <P, >(target: GeoTooltipMetadata<P>): unknown =>
+    target.kind === 'event' ? target.datum : `${target.rollup}::${target.aggregate.id}::${target.group ?? ''}`
+
+/**
+ * @param target What's under the mouse
+ * @return What identifies its marker (or cell) from one redraw to the next: the event, or the
+ * aggregate's roll-up and cell, whichever of its groups is under the mouse
+ */
+const markerKeyOf = <P, >(target: GeoTooltipMetadata<P>): unknown =>
     target.kind === 'event' ? target.datum : `${target.rollup}::${target.aggregate.id}`
+
+/**
+ * @param name A group's name
+ * @return One of d3's categorical colors, chosen by the name (so a group always gets the same one)
+ */
+function categoricalColorOf(name: string): string {
+    let hash = 0
+    for (let k = 0; k < name.length; k++) hash = (hash * 31 + name.charCodeAt(k)) | 0
+    return d3.schemeTableau10[Math.abs(hash) % d3.schemeTableau10.length]
+}
 
 /**
  * @param target What's under the mouse
@@ -271,6 +307,37 @@ const valueOf = (aggregate: GeoAggregate, name: string): number =>
     name === 'count' ? aggregate.count : (aggregate.values[name] ?? NaN)
 
 /**
+ * @param group A group of a cell's events
+ * @param name `count`, or the name of one of the roll-up's measures
+ * @return The group's count, or its value of the measure (`NaN` for an unknown measure)
+ */
+const groupValueOf = (group: GeoAggregateGroup, name: string): number =>
+    name === 'count' ? group.count : (group.values[name] ?? NaN)
+
+// the most groups listed in the groups' key
+const MAX_KEY_GROUPS = 8
+
+/**
+ * The groups' key (for pies without `colorBy`): the groups with the most events overall, and their
+ * colors
+ * @param aggregates The aggregates
+ * @param colorOf The color of a group's wedges
+ * @return The groups, the most events first, and how many more there are
+ */
+function groupKeyOf(aggregates: Array<GeoAggregate>, colorOf: (group: GeoAggregateGroup) => string): {groups: Array<{label: string, color: string}>, more: number} {
+    const totals = new Map<string, {count: number, group: GeoAggregateGroup}>()
+    aggregates.forEach(aggregate => aggregate.groups.forEach(group => {
+        const total = totals.get(group.group)
+        totals.set(group.group, {count: (total?.count ?? 0) + group.count, group: total?.group ?? group})
+    }))
+    const sorted = Array.from(totals.values()).sort((a, b) => b.count - a.count)
+    return {
+        groups: sorted.slice(0, MAX_KEY_GROUPS).map(({group}) => ({label: group.group, color: colorOf(group)})),
+        more: Math.max(0, sorted.length - MAX_KEY_GROUPS),
+    }
+}
+
+/**
  * @param value A value for a key
  * @return The value, briefly (e.g. 1.2k, 3.45)
  */
@@ -293,10 +360,11 @@ function drawKeys(
     height: number,
     color: string,
     backgroundColor: string,
-    size: {label: string, largest: number, radiusOf: (value: number) => number} | undefined,
-    colors: {label: string, domain: [number, number], colorOf: (value: number) => string} | undefined,
+    size: {label: string, largest: number, radiusOf: (value: number) => number, format?: (value: number) => string} | undefined,
+    colors: {label: string, domain: [number, number], colorOf: (value: number) => string, format?: (value: number) => string} | undefined,
+    groups?: {groups: Array<{label: string, color: string}>, more: number},
 ): void {
-    if (size === undefined && colors === undefined) return
+    if (size === undefined && colors === undefined && groups === undefined) return
     const padding = 8
     const lineHeight = 14
     const largestRadius = size !== undefined ? size.radiusOf(size.largest) : 0
@@ -314,8 +382,11 @@ function drawKeys(
         lineHeight + Math.max(2 * largestRadius, labelYs[labelYs.length - 1] ?? 0) + 6 :
         0
     const colorHeight = colors !== undefined ? 2 * lineHeight + 10 : 0
+    const groupLines = groups !== undefined ? groups.groups.length + (groups.more > 0 ? 1 : 0) : 0
+    const groupsHeight = groupLines * lineHeight
     const boxWidth = Math.max(140, 2 * largestRadius + 80)
-    const boxHeight = 2 * padding + sizeHeight + colorHeight + (size !== undefined && colors !== undefined ? 6 : 0)
+    const sections = [sizeHeight, colorHeight, groupsHeight].filter(sectionHeight => sectionHeight > 0)
+    const boxHeight = 2 * padding + sections.reduce((sum, sectionHeight) => sum + sectionHeight, 0) + 6 * (sections.length - 1)
     const left = width - boxWidth - 10
     let top = height - boxHeight - 10
 
@@ -353,7 +424,7 @@ function drawKeys(
             context2D.lineTo(centerX + largestRadius + 8, labelY)
             context2D.strokeStyle = withAlpha(color, 0.35)
             context2D.stroke()
-            context2D.fillText(keyLabel(value), centerX + largestRadius + 12, labelY)
+            context2D.fillText((size.format ?? keyLabel)(value), centerX + largestRadius + 12, labelY)
         })
         top += sizeHeight + 6
     }
@@ -371,9 +442,24 @@ function drawKeys(
         context2D.fillStyle = gradient
         context2D.fillRect(barLeft, top + lineHeight, barWidth, 8)
         context2D.fillStyle = color
-        context2D.fillText(keyLabel(lowest), barLeft, top + lineHeight + 8 + lineHeight / 2 + 2)
+        context2D.fillText((colors.format ?? keyLabel)(lowest), barLeft, top + lineHeight + 8 + lineHeight / 2 + 2)
         context2D.textAlign = 'right'
-        context2D.fillText(keyLabel(highest), barLeft + barWidth, top + lineHeight + 8 + lineHeight / 2 + 2)
+        context2D.fillText((colors.format ?? keyLabel)(highest), barLeft + barWidth, top + lineHeight + 8 + lineHeight / 2 + 2)
+        top += colorHeight + 6
+    }
+
+    if (groups !== undefined) {
+        context2D.textAlign = 'left'
+        groups.groups.forEach(({label, color: swatch}, index) => {
+            const y = top + index * lineHeight + lineHeight / 2
+            context2D.fillStyle = swatch
+            context2D.fillRect(left + padding, y - 5, 10, 10)
+            context2D.fillStyle = color
+            context2D.fillText(label, left + padding + 16, y)
+        })
+        if (groups.more > 0) {
+            context2D.fillText(`+${groups.more} more`, left + padding + 16, top + groups.groups.length * lineHeight + lineHeight / 2)
+        }
     }
 }
 
@@ -458,6 +544,7 @@ export function GeoPlot<P>(props: Props<P>): null {
         aggregateColor = '#4e79a7',
         aggregateOpacity = 0.6,
         aggregateShape = 'circles',
+        groupColors,
         maxAggregateRadius = 20,
         minAggregateRadius = 2,
         showKeys = true,
@@ -610,8 +697,10 @@ export function GeoPlot<P>(props: Props<P>): null {
 
                 const markers: Array<DrawnMarker<P>> = []
                 const cells: Array<GeoAggregate> = []
-                const hoveredKey = hoveredRef.current !== undefined ? keyOf(hoveredRef.current) : undefined
+                const hoveredKey = hoveredRef.current !== undefined ? markerKeyOf(hoveredRef.current) : undefined
                 let highlighted: DrawnMarker<P> | undefined = undefined
+                // redraws the hovered aggregate's outline (drawn last, over the other aggregates)
+                let outlineHovered: (() => void) | undefined = undefined
 
                 if (mode === 'aggregates') {
                     const aggregates = rollup !== undefined ? aggregatesOf(dataSource, rollup) : []
@@ -627,9 +716,14 @@ export function GeoPlot<P>(props: Props<P>): null {
 
                     // the colors: by `colorBy` (or, for cells, by `sizeBy` without one)
                     const asCells = (aggregate: GeoAggregate): boolean => aggregateShape === 'cells' && aggregate.bounds !== undefined
+                    const asPie = (aggregate: GeoAggregate): boolean => aggregateShape === 'pies' && aggregate.groups.length > 0
                     const colorKey = colorBy ?? (aggregateShape === 'cells' ? sizeBy : undefined)
+                    // (a pie's wedges are colored by their groups' values, so the colors span those)
                     const colorValues = colorKey === undefined ? [] :
-                        aggregates.map(aggregate => valueOf(aggregate, colorKey)).filter(Number.isFinite)
+                        aggregates.flatMap(aggregate => asPie(aggregate) ?
+                            aggregate.groups.map(group => group.count > 0 ? groupValueOf(group, colorKey) : NaN) :
+                            [valueOf(aggregate, colorKey)]
+                        ).filter(Number.isFinite)
                     const [lowest, highest] = colorDomain ?? [
                         colorValues.reduce((min, value) => Math.min(min, value), Infinity),
                         colorValues.reduce((max, value) => Math.max(max, value), -Infinity),
@@ -639,6 +733,11 @@ export function GeoPlot<P>(props: Props<P>): null {
                         colorScheme(highest > lowest ? Math.max(0, Math.min(1, (value - lowest) / (highest - lowest))) : 1)
                     const fillOf = (aggregate: GeoAggregate): string =>
                         colorKey === undefined ? aggregateColor : colorOfValue(valueOf(aggregate, colorKey))
+                    // an aggregate's (or a wedge's) outline: a darker shade of its fill
+                    const outlineOf = (fill: string): string => d3.color(fill)?.darker(0.8).formatRgb() ?? color
+                    const wedgeFillOf = (group: GeoAggregateGroup): string => colorKey !== undefined ?
+                        colorOfValue(groupValueOf(group, colorKey)) :
+                        groupColors?.(group.group) ?? categoricalColorOf(group.group)
 
                     // the cells (areas), then the circles, the largest first, so that small ones
                     // aren't hidden under large ones
@@ -666,31 +765,96 @@ export function GeoPlot<P>(props: Props<P>): null {
                             if (at === undefined) return
                             const [x, y] = at
                             const fill = fillOf(aggregate)
-                            context2D.globalAlpha = aggregateOpacity * fadingOf(fadeLevelOf(aggregate.lastTime))
-                            context2D.beginPath()
-                            path(circleAt(aggregate.latitude, aggregate.longitude, radius))
-                            context2D.fillStyle = fill
-                            context2D.fill()
-                            context2D.strokeStyle = d3.color(fill)?.darker(0.8).formatRgb() ?? color
-                            context2D.lineWidth = 1
-                            context2D.stroke()
+                            const opacity = aggregateOpacity * fadingOf(fadeLevelOf(aggregate.lastTime))
+                            if (asPie(aggregate) && aggregate.groups.length > 1) {
+                                // a wedge per group, clockwise from north, each its share of the
+                                // cell's events, and each outlined as a circle is: in a darker shade
+                                // of its own fill
+                                const center: [number, number] = [aggregate.longitude, aggregate.latitude]
+                                const total = aggregate.groups.reduce((sum, group) => sum + group.count, 0)
+                                let start = 0
+                                aggregate.groups.forEach(group => {
+                                    const end = start + 360 * group.count / total
+                                    const wedgeFill = wedgeFillOf(group)
+                                    context2D.globalAlpha = opacity
+                                    context2D.beginPath()
+                                    path(wedgeOf(center, radius * degreesPerPixel, start, end, radius < 10 ? 20 : 8))
+                                    context2D.fillStyle = wedgeFill
+                                    context2D.fill()
+                                    context2D.strokeStyle = outlineOf(wedgeFill)
+                                    context2D.lineWidth = 1
+                                    context2D.stroke()
+                                    start = end
+                                })
+                            } else {
+                                const circleFill = asPie(aggregate) ? wedgeFillOf(aggregate.groups[0]) : fill
+                                context2D.globalAlpha = opacity
+                                context2D.beginPath()
+                                path(circleAt(aggregate.latitude, aggregate.longitude, radius))
+                                context2D.fillStyle = circleFill
+                                context2D.fill()
+                                context2D.strokeStyle = outlineOf(circleFill)
+                                context2D.lineWidth = 1
+                                context2D.stroke()
+                            }
                             const marker: DrawnMarker<P> = {
                                 x: x + margin.left, y: y + margin.top, hitRadius: Math.max(radius, 5),
                                 target: {kind: 'aggregate', rollup: rollup ?? '', aggregate}
                             }
                             markers.push(marker)
-                            if (hoveredKey === keyOf(marker.target)) highlighted = marker
+                            if (hoveredKey !== markerKeyOf(marker.target)) return
+                            highlighted = marker
+                            // hovered: the circle keeps its colors, and its outline -- or, for a
+                            // pie, the hovered wedge's outline (or every wedge's, when no wedge is
+                            // under the mouse) -- is drawn wider and opaque
+                            outlineHovered = (): void => {
+                                context2D.globalAlpha = 1
+                                context2D.lineWidth = 2
+                                if (asPie(aggregate) && aggregate.groups.length > 1) {
+                                    const hoveredGroup = hoveredRef.current?.kind === 'aggregate' ? hoveredRef.current.group : undefined
+                                    const center: [number, number] = [aggregate.longitude, aggregate.latitude]
+                                    const total = aggregate.groups.reduce((sum, group) => sum + group.count, 0)
+                                    let start = 0
+                                    aggregate.groups.forEach(group => {
+                                        const end = start + 360 * group.count / total
+                                        if (hoveredGroup === undefined || group.group === hoveredGroup) {
+                                            context2D.beginPath()
+                                            path(wedgeOf(center, radius * degreesPerPixel, start, end, radius < 10 ? 20 : 8))
+                                            context2D.strokeStyle = outlineOf(wedgeFillOf(group))
+                                            context2D.stroke()
+                                        }
+                                        start = end
+                                    })
+                                } else {
+                                    context2D.beginPath()
+                                    path(circleAt(aggregate.latitude, aggregate.longitude, radius))
+                                    context2D.strokeStyle = outlineOf(asPie(aggregate) ? wedgeFillOf(aggregate.groups[0]) : fill)
+                                    context2D.stroke()
+                                }
+                            }
                         })
 
                     if (showKeys && aggregates.length > 0) {
+                        // the keys' labels carry the measures' units, and their numbers the measures'
+                        // formats (see the measures' options)
+                        const measureOptions = aggregates[0].measures
+                        const keyLabelOf = (name: string): string => {
+                            const units = measureOptions[name]?.units
+                            return units !== undefined && units !== '' ? `${name} (${units})` : name
+                        }
+                        const keyFormatOf = (name: string): ((value: number) => string) | undefined =>
+                            measureOptions[name]?.format !== undefined ?
+                                (value: number): string => formatMeasure(value, measureOptions[name], false) :
+                                undefined
                         drawKeys(
                             context2D, width, height, color, backgroundColor,
                             aggregates.some(aggregate => !asCells(aggregate)) ?
-                                {label: sizeBy, largest, radiusOf: radiusOfValue} :
+                                {label: keyLabelOf(sizeBy), largest, radiusOf: radiusOfValue, format: keyFormatOf(sizeBy)} :
                                 undefined,
                             colorKey !== undefined && Number.isFinite(lowest) ?
-                                {label: colorKey, domain: [lowest, highest], colorOf: colorOfValue} :
+                                {label: keyLabelOf(colorKey), domain: [lowest, highest], colorOf: colorOfValue, format: keyFormatOf(colorKey)} :
                                 undefined,
+                            colorKey === undefined && aggregates.some(asPie) ? groupKeyOf(aggregates, wedgeFillOf) : undefined,
                         )
                     }
                 } else {
@@ -741,25 +905,21 @@ export function GeoPlot<P>(props: Props<P>): null {
                 }
 
                 // the hovered event (enlarged, in its series' highlight color, with a ring), or the
-                // hovered aggregate (with a ring)
+                // hovered aggregate (its own outline, wider and opaque)
                 const shown = highlighted as DrawnMarker<P> | undefined
-                if (shown !== undefined) {
+                if (shown !== undefined && shown.target.kind === 'event') {
+                    const {seriesName, datum} = shown.target
+                    const style = seriesStyles.get(seriesName) ?? defaultLineStyle()
                     context2D.globalAlpha = 1
-                    context2D.strokeStyle = color
                     context2D.beginPath()
-                    if (shown.target.kind === 'event') {
-                        const {seriesName, datum} = shown.target
-                        const style = seriesStyles.get(seriesName) ?? defaultLineStyle()
-                        path(circleAt(datum.latitude, datum.longitude, shown.hitRadius - 1))
-                        context2D.fillStyle = style.highlightColor
-                        context2D.fill()
-                        context2D.lineWidth = 1
-                    } else {
-                        const {aggregate} = shown.target
-                        path(circleAt(aggregate.latitude, aggregate.longitude, shown.hitRadius + 1))
-                        context2D.lineWidth = 2
-                    }
+                    path(circleAt(datum.latitude, datum.longitude, shown.hitRadius - 1))
+                    context2D.fillStyle = style.highlightColor
+                    context2D.fill()
+                    context2D.strokeStyle = color
+                    context2D.lineWidth = 1
                     context2D.stroke()
+                } else if (shown !== undefined) {
+                    (outlineHovered as (() => void) | undefined)?.()
                 }
 
                 // while the data changes under a resting mouse (the data source running), keep the
@@ -778,9 +938,10 @@ export function GeoPlot<P>(props: Props<P>): null {
                         hoveredRef.current = undefined
                         mouseLeaveHandlerFor(tooltipId)?.(nameOf(hoveredTarget))
                     } else if (now.kind === 'aggregate' && hoveredTarget.kind === 'aggregate' && now.aggregate !== hoveredTarget.aggregate) {
-                        hoveredRef.current = now
+                        const updated: GeoTooltipMetadata<P> = {...now, group: hoveredTarget.group}
+                        hoveredRef.current = updated
                         mouseOverHandlerFor(tooltipId)?.(
-                            nameOf(now), now.aggregate.lastTime, {series: [], metadata: now}, mouseRef.current
+                            nameOf(updated), now.aggregate.lastTime, {series: [], metadata: updated}, mouseRef.current
                         )
                     }
                 }
@@ -801,7 +962,7 @@ export function GeoPlot<P>(props: Props<P>): null {
             outlineColor, markerRadius, markerOpacity, radiusOf, colorOf, fadeDuration, fadedOpacity,
             seriesStyles, seriesFilter, color, backgroundColor, dataSource, onUpdateChartTime, mode, rollup,
             sizeBy, colorBy, sizeDomain, colorDomain, colorScheme, aggregateColor, aggregateOpacity,
-            aggregateShape, maxAggregateRadius, minAggregateRadius, showKeys, mouseOverHandlerFor,
+            aggregateShape, groupColors, maxAggregateRadius, minAggregateRadius, showKeys, mouseOverHandlerFor,
             mouseLeaveHandlerFor,
         ]
     )
@@ -932,7 +1093,18 @@ export function GeoPlot<P>(props: Props<P>): null {
              */
             const targetAt = (x: number, y: number): GeoTooltipMetadata<P> | undefined => {
                 const nearest = markersRef.current.find(x, y, maxHitRadiusRef.current)
-                if (nearest !== undefined && Math.hypot(nearest.x - x, nearest.y - y) <= nearest.hitRadius) return nearest.target
+                if (nearest !== undefined && Math.hypot(nearest.x - x, nearest.y - y) <= nearest.hitRadius) {
+                    const target = nearest.target
+                    if (target.kind !== 'aggregate' || aggregateShape !== 'pies' || target.aggregate.groups.length === 0) return target
+                    // the wedge under the mouse: by the bearing, from the circle's center, of the
+                    // place under the mouse
+                    setUpProjection(projection, viewRef.current, width, height)
+                    const place = placeUnder(projection, [x - margin.left, y - margin.top])
+                    const {groups, longitude, latitude} = target.aggregate
+                    const index = place === undefined ? -1 :
+                        wedgeIndexAt(groups.map(group => group.count), bearingOf([longitude, latitude], place))
+                    return index >= 0 ? {...target, group: groups[index].group} : target
+                }
                 if (cellsRef.current.length === 0 || rollup === undefined) return undefined
 
                 setUpProjection(projection, viewRef.current, width, height)
@@ -976,7 +1148,7 @@ export function GeoPlot<P>(props: Props<P>): null {
         },
         [
             canvasContext, chartId, mouseOverHandlerFor, mouseLeaveHandlerFor, tooltipVisible, rollup,
-            projection, width, height, margin.left, margin.top
+            projection, width, height, margin.left, margin.top, aggregateShape
         ]
     )
 

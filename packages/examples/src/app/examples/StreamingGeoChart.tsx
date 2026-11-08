@@ -41,7 +41,7 @@ import {BufferingControl} from "./controls/BufferingControl.tsx"
 import {DataUpdateRateControl} from "./controls/DataUpdateRateControl.tsx"
 import {ProjectionControl} from "./controls/ProjectionControl.tsx"
 import {GeoAggregateControls} from "./controls/GeoAggregateControls.tsx"
-import {BY_GRID_CELL, DEFAULT_DATA_UPDATE_PERIOD, ROLLUP_NAMES, useGeoChartStore} from "./appstate/geoChartStore.ts"
+import {BY_GRID_CELL, DEFAULT_DATA_UPDATE_PERIOD, MEASURE_NAMES, ROLLUP_NAMES, useGeoChartStore} from "./appstate/geoChartStore.ts"
 import {initialGeoData, type SensorReading, SEISMIC, VESSELS, WEATHER} from "./dataproviders/randomGeoData.ts"
 import {COUNTRY_BORDERS, LAND} from "./dataproviders/worldMap.ts"
 
@@ -79,6 +79,24 @@ function radiusByMagnitude(datum: GeoDatum<SensorReading>): number {
         default:
             return 2.5
     }
+}
+
+// the series' colors, by theme (for the groups that are series, see `groupColorOf`)
+const SERIES_COLORS = {
+    light: new Map([[SEISMIC, '#9467bd'], [WEATHER, '#1f77b4'], [VESSELS, '#2ca02c']]),
+    dark: new Map([[SEISMIC, '#c5a3ff'], [WEATHER, '#5bc0eb'], [VESSELS, '#7bd389']]),
+}
+
+/**
+ * The colors of the groups' wedges, in the pies (without a "color by"): a series' color for the 10°
+ * grid's groups, and the status colors for the alarms' and warnings' groups; any other group (e.g.
+ * a sensor) gets one of the plot's categorical colors
+ * @param theme The theme
+ * @return The color of a group (by its name), or `undefined` for the plot's own choice
+ */
+const groupColorsFor = (theme: Theme): ((group: string) => string | undefined) => {
+    const seriesColors = SERIES_COLORS[theme.name === 'light' ? 'light' : 'dark']
+    return group => seriesColors.get(group) ?? STATUS_COLORS[group as SensorReading['status']]
 }
 
 /**
@@ -178,6 +196,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
 
     const filter = useMemo(() => filterFrom(filterValue), [filterValue])
     const seriesStyles = useMemo(() => seriesStylesFor(theme), [theme])
+    const groupColorOf = useMemo(() => groupColorsFor(theme), [theme])
 
     // seeds the store's data source with some history (the store survives remounts, so this only
     // needs to happen when it hasn't been seeded yet)
@@ -316,7 +335,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 rollupNames={ROLLUP_NAMES}
                                 rollupName={rollupName}
                                 handleRollupNameChange={setRollupName}
-                                measureNames={["peak reading", "mean reading"]}
+                                measureNames={MEASURE_NAMES}
                                 colorBy={colorBy}
                                 handleColorByChange={setColorBy}
                             />
@@ -384,10 +403,11 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         radiusOf={sizeByMagnitude ? radiusByMagnitude : undefined}
                         colorOf={colorByStatusOn ? colorByStatus : undefined}
                         fadeDuration={fadeOlder ? FADE_DURATION : undefined}
-                        mode={mode}
+                        mode={mode === 'points' ? 'points' : 'aggregates'}
                         rollup={rollupName}
                         colorBy={colorBy === 'none' ? undefined : colorBy}
-                        aggregateShape={rollupName === BY_GRID_CELL ? 'cells' : 'circles'}
+                        aggregateShape={mode === 'groups' ? 'pies' : rollupName === BY_GRID_CELL ? 'cells' : 'circles'}
+                        groupColors={groupColorOf}
                         autoRotate={autoRotate ? AUTO_ROTATE_SPEED : undefined}
                         viewState={geoView}
                         onViewChange={setGeoView}
@@ -415,6 +435,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         }}
                     >
                         <GeoPlotTooltipContent<SensorReading>
+                            sparklineValueOf={datum => datum.payload.magnitude}
                             payloadFormatter={({kind, magnitude, status}) =>
                                 <>
                                     <div>{readingLabel(kind)}: <b>{magnitude} {readingUnits(kind)}</b></div>

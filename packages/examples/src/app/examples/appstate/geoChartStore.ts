@@ -8,15 +8,15 @@ import {
     type DataGenerator,
     GeoDataSource,
     type GeoChartData,
-    type GeoDatum,
+    type GeoMeasure,
     type GeoPlotViewState,
     type GeoProjectionName,
     type GeoRollup,
     type GeoSeries,
-    maxOf,
-    meanOf,
+    measureOf,
+    reduceOf,
 } from "stream-charts";
-import {randomGeoDataObservable, type SensorReading} from "../dataproviders/randomGeoData.ts";
+import {randomGeoDataObservable, type SensorKind, type SensorReading} from "../dataproviders/randomGeoData.ts";
 import {DEFAULT_DROP_AFTER_100} from "../options/dropDataAfter.ts";
 import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceStateSlice.ts";
 
@@ -29,16 +29,60 @@ export const BY_LOCATION = "Events by location"
 export const BY_SENSOR = "Events by sensor"
 export const ALERTS_BY_LOCATION = "Alarms and warnings by location"
 export const BY_GRID_CELL = "10° grid"
-export const ROLLUP_NAMES = [BY_LOCATION, BY_SENSOR, ALERTS_BY_LOCATION, BY_GRID_CELL]
+export const SENSORS_BY_AREA = "Sensors in 10° areas"
+export const ROLLUP_NAMES = [BY_LOCATION, BY_SENSOR, ALERTS_BY_LOCATION, BY_GRID_CELL, SENSORS_BY_AREA]
 
-const reading = (datum: GeoDatum<SensorReading>): number => datum.payload.magnitude
+/**
+ * What the geo plot shows: each event, the aggregates, or the aggregates divided by their groups
+ * (pies: a wedge per group)
+ */
+export type GeoShow = 'points' | 'aggregates' | 'groups'
 
-// each roll-up's measures: the peak and the mean reading (a quake's magnitude, a wind speed, or a
-// vessel's speed)
-const MEASURES = {
-    "peak reading": maxOf(reading),
-    "mean reading": meanOf(reading),
+/*
+    Each roll-up's measures, one for each quantity, so that each has its own units: a quake's magnitude
+    (which has none), a wind speed (m/s), and a vessel's speed (knots). A cell's events can be of any
+    kind, so each measure only takes the events of its own kind (and a cell without any has no value).
+ */
+
+/**
+ * @param kind The kind of sensor
+ * @param units The units of its readings
+ * @return The measure of the mean reading of that kind of sensor's events: kept as events arrive
+ * and leave
+ */
+const meanReadingOf = (kind: SensorKind, units: string): GeoMeasure<SensorReading> =>
+    reduceOf<SensorReading, {n: number, sum: number}>({
+        initial: () => ({n: 0, sum: 0}),
+        add: ({n, sum}, datum) => datum.payload.kind === kind ? {n: n + 1, sum: sum + datum.payload.magnitude} : {n, sum},
+        remove: ({n, sum}, datum) => datum.payload.kind === kind ? {n: n - 1, sum: sum - datum.payload.magnitude} : {n, sum},
+        value: ({n, sum}) => n > 0 ? sum / n : NaN,
+    }, {units, format: ',.1f'})
+
+/**
+ * @param kind The kind of sensor
+ * @return The measure of the peak reading of that kind of sensor's events (a peak can't take an
+ * event back out, so it's found from all of a cell's events, when they've changed)
+ */
+const peakReadingOf = (kind: SensorKind): GeoMeasure<SensorReading> =>
+    measureOf<SensorReading>(events => {
+        const peak = events.reduce(
+            (max, datum) => datum.payload.kind === kind ? Math.max(max, datum.payload.magnitude) : max,
+            -Infinity
+        )
+        return Number.isFinite(peak) ? peak : NaN
+    }, {format: ',.1f'})
+
+export const PEAK_MAGNITUDE = "peak magnitude"
+export const MEAN_WIND_SPEED = "mean wind speed"
+export const MEAN_VESSEL_SPEED = "mean vessel speed"
+export const MEASURE_NAMES = [PEAK_MAGNITUDE, MEAN_WIND_SPEED, MEAN_VESSEL_SPEED]
+
+const MEASURES: Record<string, GeoMeasure<SensorReading>> = {
+    [PEAK_MAGNITUDE]: peakReadingOf('seismic'),
+    [MEAN_WIND_SPEED]: meanReadingOf('weather', 'm/s'),
+    [MEAN_VESSEL_SPEED]: meanReadingOf('vessel', 'kn'),
 }
+
 
 const ROLLUPS: Record<string, GeoRollup<SensorReading>> = {
     // all the events at a place, whichever sensor reported them, broken down by sensor (a seismic
@@ -55,6 +99,9 @@ const ROLLUPS: Record<string, GeoRollup<SensorReading>> = {
     },
     // all the events in each 10° cell of a grid, broken down by series
     [BY_GRID_CELL]: {cellOf: byGridCell(10), groupBy: (_datum, seriesName) => seriesName, measures: MEASURES},
+    // all the events in each 10° area, broken down by sensor -- each sensor's peak and mean reading,
+    // within each area (as pies: a wedge per sensor)
+    [SENSORS_BY_AREA]: {cellOf: byGridCell(10), groupBy: datum => datum.sensorId, measures: MEASURES},
 }
 
 /**
@@ -117,8 +164,8 @@ type GeoChartState = {
     // the plot's view (rotation and zoom), kept so that it survives navigating away and back
     // (undefined until the view has changed)
     geoView: GeoPlotViewState | undefined
-    // whether the plot shows each event, or a roll-up's aggregates
-    mode: 'points' | 'aggregates'
+    // whether the plot shows each event, a roll-up's aggregates, or its aggregates by group
+    mode: GeoShow
     // the roll-up shown in the aggregates mode
     rollupName: string
     // what colors the aggregates ('none', or a measure's name)
@@ -142,7 +189,7 @@ const initialState: GeoChartState = {
     geoView: undefined,
     mode: 'points',
     rollupName: BY_LOCATION,
-    colorBy: 'peak reading',
+    colorBy: PEAK_MAGNITUDE,
 }
 
 type GeoChartActions = {
@@ -160,7 +207,7 @@ type GeoChartActions = {
     setFadeOlder: (fadeOlder: boolean) => void
     setAutoRotate: (autoRotate: boolean) => void
     setGeoView: (geoView: GeoPlotViewState) => void
-    setMode: (mode: 'points' | 'aggregates') => void
+    setMode: (mode: GeoShow) => void
     setRollupName: (rollupName: string) => void
     setColorBy: (colorBy: string) => void
 }
@@ -209,7 +256,7 @@ export const useGeoChartStore: UseBoundStore<StoreApi<GeoChartStore>> = create<G
         setFadeOlder: (fadeOlder: boolean): void => set({fadeOlder}),
         setAutoRotate: (autoRotate: boolean): void => set({autoRotate}),
         setGeoView: (geoView: GeoPlotViewState): void => set({geoView}),
-        setMode: (mode: 'points' | 'aggregates'): void => set({mode}),
+        setMode: (mode: GeoShow): void => set({mode}),
         setRollupName: (rollupName: string): void => set({rollupName}),
         setColorBy: (colorBy: string): void => set({colorBy}),
     })));

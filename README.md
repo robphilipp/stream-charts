@@ -892,7 +892,8 @@ const borders = mesh(countries, countries.objects.countries, (a, b) => a !== b)
 | `sizeBy`, `colorBy` | `string` | What an aggregate's size (`count`, the default, or a measure's name) and color (a measure's name, or `count`) show. The circles' areas are proportional to `sizeBy`. |
 | `sizeDomain`, `colorDomain` | `[number, number]` | Fixed ranges for the sizes and colors (default: the range of the values shown). |
 | `colorScheme`, `aggregateColor`, `aggregateOpacity` | | The colors of the `colorBy` values (default `d3.interpolateYlOrRd`), the color without `colorBy`, and the opacity (default 0.6). |
-| `aggregateShape` | `'circles' \| 'cells'` | Draws a grid roll-up's aggregates as their cells (filled areas) rather than circles. |
+| `aggregateShape` | `'circles' \| 'pies' \| 'cells'` | `circles` (the default): a circle per cell. `pies`: a circle per cell, divided into a wedge per group (the roll-up's `groupBy`), each wedge's angle its group's share of the cell's events, and its color the group's own `colorBy` value – for example, each sensor's mean delay, within each area. `cells`: a grid roll-up's cells, as filled areas. |
+| `groupColors` | `(group) => string \| undefined` | The color of a group's wedges, with `pies` and no `colorBy` (default: one of d3's categorical colors, chosen by the group's name). |
 | `minAggregateRadius`, `maxAggregateRadius` | `number` | The circles' smallest and largest radii (px, default 2 and 20). |
 | `showKeys` | `boolean` | Draws keys for the aggregates' sizes and colors in the bottom-right corner (default `true`). |
 
@@ -921,7 +922,7 @@ const dataSource = new GeoDataSource<Reading>({
 | `cellOf` | **Required.** How events are put into cells: `byLocation(precision)` (events at the same place, the latitude and longitude rounded to `precision` degrees, whichever sensor reported them), `bySensor({position})` (each sensor's events, drawn at the sensor's `'latest'` or `'mean'` position), `byGridCell(degrees)` (the cells of a latitude-longitude grid, which can be drawn as areas), or a function `datum => ({id, latitude, longitude})`. |
 | `filter` | `(datum, seriesName) => boolean`: which events are rolled up (all, by default). |
 | `groupBy` | `(datum, seriesName) => string`: a group for each event, for a breakdown of each cell (for example by sensor, by series, or by a payload field). |
-| `measures` | The measures of each cell (and group), by name: `countOf()`, `sumOf(of)`, `meanOf(of)`, `minOf(of)`, `maxOf(of)`, or `latestOf(of)`, where `of` gives an event's value, for example `d => d.payload.magnitude`; or one of your own (see below). |
+| `measures` | The measures of each cell (and group), by name: `countOf()`, `sumOf(of)`, `meanOf(of)`, `minOf(of)`, `maxOf(of)`, or `latestOf(of)`, where `of` gives an event's value, for example `d => d.payload.magnitude`; or one of your own (see below). Each takes its units and format as its last argument (see below). |
 
 **Measures of your own.** When none of the library's measures is what you need, write your own, in one of two ways. Both are measures like any other: the tooltip lists them, the groups have them, and `sizeBy` and `colorBy` can use them.
 
@@ -942,7 +943,11 @@ measures: {
 }
 ```
 
-Each `GeoAggregate` has the cell's `id`, `latitude`, `longitude`, and (for a grid) `bounds`; its `count` and `sensorCount`; its `values` (the measures, by name); its `groups` (each `{group, count, values}`, the largest first); and its `firstTime` and `lastTime`. Read them with `dataSource.aggregates(name)`, for example to list them outside the chart.
+**Units.** Every measure takes `{units, format}` as its last argument: `meanOf(d => d.payload.meanDelayTime, {units: 'ms', format: ',.1f'})`. The tooltip then shows the measure's values with them ("mean delay: **12.3 ms**", for the cell and for each group), and the keys label it "mean delay (ms)". `format` is a d3-format specifier or a function, and units are shown after a space, except those starting with `%` or `°`. Each aggregate carries its roll-up's measures' units and formats (`aggregate.measures`), and `formatMeasure(value, options)` formats a value the same way, for your own displays. A measure without a value in a cell (`NaN`) is left out of the cell's tooltip. The library shows what you measure, in the units you give it, so keep each measure to one quantity: a measure that mixes, say, milliseconds and seconds can't be fixed by its units.
+
+**Aggregating over more than one field.** The cell, the group, and the measures are three different fields: for example, the events in each 5° area (`cellOf: byGridCell(5)`), broken down by sensor (`groupBy: d => d.sensorId`), with the mean of a payload field (`measures: {"mean delay": meanOf(d => d.payload.meanDelayTime)}`). Each area's aggregate then has the mean over all its events, and each of its groups (sensors) its own. With `aggregateShape="pies"` and `colorBy="mean delay"`, each area's circle shows them: a wedge per sensor, sized by its share of the area's events, and colored by its own mean delay. To group by more than one field, combine them into the group's name (`` d => `${d.sensorId} · ${d.payload.route}` ``), banding a continuous field first. To keep only one area, `filter` the events (`d => d3.geoContains(region, [d.longitude, d.latitude])`).
+
+Each `GeoAggregate` has the cell's `id`, `latitude`, `longitude`, and (for a grid) `bounds`; its `count` and `sensorCount`; its `values` (the measures, by name); its `groups` (each `{group, count, values}`, the largest first); and its `firstTime` and `lastTime`. Read them with `dataSource.aggregates(name)`, for example to list them outside the chart, and a cell's events (or one of its groups') with `dataSource.eventsOf(name, cellId, group?)`.
 
 ```tsx
 <Chart chartId={6} width={width} height={height} dataSource={dataSource} seriesStyles={styles} windowingTime={50}>
@@ -1062,7 +1067,7 @@ Each content component also takes a `style` that overrides parts of the `<Toolti
 | `measureFormatter` | `(innerProb, outerProb) => string \| JSX.Element \| Array<string>`: describes the probabilities of a point being inside and outside the band. |
 | `children` | Optional custom content. Inside it, `useOutlierTooltip()` hands you the hovered point and band (`tooltipContent`), the style, and the formatters. Defaults to `<DefaultOutlierTooltipContent/>`. |
 
-**&lt;GeoPlotTooltipContent/&gt;** shows the event under the mouse (its series, sensor, position, time, and payload), or, in the aggregates mode, the aggregate (its roll-up, its counts of events and sensors, its position or cell, its time span, its measures, and its largest groups).
+**&lt;GeoPlotTooltipContent/&gt;** shows the event under the mouse (its series, sensor, position, time, and payload), or, in the aggregates mode, the aggregate (its roll-up, its counts of events and sensors, its position or cell, its time span, its measures, and its largest groups). With pies, the group whose wedge is under the mouse is highlighted, with its own measures.
 
 | prop | description |
 |---|---|
@@ -1071,7 +1076,8 @@ Each content component also takes a `style` that overrides parts of the `<Toolti
 | `payloadFormatter` | `(payload, datum) => ReactNode` (default: one line per field of the payload). |
 | `valueFormatter` | `(name, value) => ReactNode`: an aggregate's measures. |
 | `maxGroups` | The most groups to list for an aggregate (default 6). |
-| `aggregateFormatter` | `(aggregate, rollup) => ReactNode`: replaces the whole content for an aggregate. |
+| `aggregateFormatter` | `(aggregate, rollup, group?) => ReactNode`: replaces the whole content for an aggregate (`group` is the hovered wedge's group, with pies). |
+| `sparklineValueOf` | `(datum) => number`: the value to draw in sparklines of the sensors' readings over time, from the events the data source holds. For an event, its sensor's (the event marked); for an aggregate, a one-sensor cell's, and each listed group's whose events are one sensor's (on its line, and larger for the hovered group). A sparkline is only ever one sensor's, so it never mixes the quantities different sensors measure. No sparklines without it. |
 
 #### <span id="custom-tooltip">writing your own tooltip content</span>
 
@@ -1107,7 +1113,7 @@ What `tooltipData` holds (`{series, metadata}`) depends on the plot:
 | raster | the spike under the mouse (`series[0]`) | `RasterTooltipMetadata`: `spikes`, all of the series' spikes |
 | bar | the category's data | `WindowedOrdinalStats`, the lifetime and windowed statistics. `providerId` says which element is under the mouse (see `BAR_CHART_TOOLTIP_PROVIDER_IDS`). |
 | outlier | the series' data | `OutlierBandTooltipMetadata`: the `datum`, the band's `upperMeasure` and `lowerMeasure`, its `bandIndex`, and `pointsInBand` |
-| geo | the event under the mouse (empty for an aggregate) | `GeoTooltipMetadata`: either `{kind: 'event', seriesName, datum}` or `{kind: 'aggregate', rollup, aggregate}` |
+| geo | the event under the mouse (empty for an aggregate) | `GeoTooltipMetadata`: either `{kind: 'event', seriesName, datum}` or `{kind: 'aggregate', rollup, aggregate, group?}`, where `group` is the group whose wedge is under the mouse (with `pies`) |
 
 Other props: `style` overrides the tooltip's style, `boxStyle` adds CSS to the box, and `topFor(content, height)` places the box's top yourself. The tutorial [writing your own tooltips](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/writing-tooltips.md) builds a custom tooltip for each plot.
 

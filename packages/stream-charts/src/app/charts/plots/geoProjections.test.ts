@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 import {
+    bearingOf,
     type GeoPlotViewState,
     GeoProjections,
     type GeoProjectionName,
@@ -8,6 +9,8 @@ import {
     placeUnder,
     setUpProjection,
     viewCenteredOn,
+    wedgeIndexAt,
+    wedgeOf,
     zoomViewAbout,
 } from "./geoProjections";
 
@@ -129,3 +132,41 @@ describe('geo views', () => {
         })
     })
 })
+
+describe('pie wedges', () => {
+    it('gives the bearing from one place to another, clockwise from north', () => {
+        expect(bearingOf([0, 0], [0, 10])).toBeCloseTo(0, 9)
+        expect(bearingOf([0, 0], [10, 0])).toBeCloseTo(90, 9)
+        expect(bearingOf([0, 0], [0, -10])).toBeCloseTo(180, 9)
+        expect(bearingOf([0, 0], [-10, 0])).toBeCloseTo(270, 9)
+    })
+
+    it('draws a wedge that covers its share of the circle (wound so that d3 sees a small polygon)', () => {
+        const center: [number, number] = [20, 45]
+        const circle = d3.geoArea(d3.geoCircle().center(center).radius(3).precision(1)())
+        const half = d3.geoArea(wedgeOf(center, 3, 0, 180, 1))
+        const otherHalf = d3.geoArea(wedgeOf(center, 3, 180, 360, 1))
+        expect(half / circle).toBeCloseTo(0.5, 2)
+        expect(otherHalf / circle).toBeCloseTo(0.5, 2)
+        expect(d3.geoArea(wedgeOf(center, 3, 0, 90, 1)) / circle).toBeCloseTo(0.25, 2)
+    })
+
+    it('puts the wedge\'s arc on the circle, from its starting bearing to its ending one', () => {
+        const center: [number, number] = [-70, -33]
+        const ring = wedgeOf(center, 2, 30, 120, 5).coordinates[0]
+        const arc = ring.slice(1, -1) as Array<[number, number]>
+        arc.forEach(point => expect(d3.geoDistance(center, point) * 180 / Math.PI).toBeCloseTo(2, 9))
+        expect(bearingOf(center, arc[0])).toBeCloseTo(30, 6)
+        expect(bearingOf(center, arc[arc.length - 1])).toBeCloseTo(120, 6)
+    })
+
+    it('finds the wedge that holds a bearing', () => {
+        // shares of 1, 2, and 1: wedges from 0° to 90°, 90° to 270°, and 270° to 360°
+        expect(wedgeIndexAt([1, 2, 1], 45)).toBe(0)
+        expect(wedgeIndexAt([1, 2, 1], 90)).toBe(1)
+        expect(wedgeIndexAt([1, 2, 1], 269)).toBe(1)
+        expect(wedgeIndexAt([1, 2, 1], 300)).toBe(2)
+        expect(wedgeIndexAt([], 45)).toBe(-1)
+    })
+})
+

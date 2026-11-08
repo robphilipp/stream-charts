@@ -143,6 +143,7 @@ export {
     byLocation,
     bySensor,
     countOf,
+    formatMeasure,
     latestOf,
     maxOf,
     meanOf,
@@ -155,6 +156,7 @@ export {
     type GeoBinning,
     type GeoCellBounds,
     type GeoMeasure,
+    type GeoMeasureOptions,
     type GeoReducer,
     type GeoRollup,
 } from "./datasources/geoRollups"

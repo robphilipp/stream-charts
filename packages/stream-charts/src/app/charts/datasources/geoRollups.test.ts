@@ -4,6 +4,7 @@ import {
     byLocation,
     bySensor,
     countOf,
+    formatMeasure,
     type GeoAggregate,
     type GeoRollup,
     GeoRollupState,
@@ -255,6 +256,41 @@ describe('measures of your own', () => {
     })
 })
 
+describe('units and formats', () => {
+    it('formats a value with its units: a space before most, none before % or °', () => {
+        expect(formatMeasure(12.345, {units: 'ms'})).toBe('12.345 ms')
+        expect(formatMeasure(1234.5678)).toBe('1,234.568')
+        expect(formatMeasure(42, {units: '%'})).toBe('42%')
+        expect(formatMeasure(21.5, {units: '°C'})).toBe('21.5°C')
+        expect(formatMeasure(NaN, {units: 'ms'})).toBe('---')
+    })
+
+    it('formats a value with a d3-format specifier, or a function, and can leave out the units', () => {
+        expect(formatMeasure(12.345, {units: 'ms', format: ',.1f'})).toBe('12.3 ms')
+        expect(formatMeasure(0.256, {units: '%', format: value => (value * 100).toFixed(0)})).toBe('26%')
+        expect(formatMeasure(12.345, {units: 'ms', format: ',.1f'}, false)).toBe('12.3')
+    })
+
+    it('hands each aggregate its roll-up\'s measures\' units and formats', () => {
+        const [aggregate] = rolledUp({
+            cellOf: byLocation(),
+            measures: {
+                events: countOf(),
+                delay: meanOf(magnitude, {units: 'ms', format: ',.1f'}),
+                share: reduceOf<Reading, number>({initial: () => 0, add: n => n + 1, remove: n => n - 1, value: n => n}, {units: '%'}),
+                median: measureOf<Reading>(events => events.length, {units: 'µg/m³'}),
+            },
+        }, [reading('a', 10, 20, 1, 3)]).aggregates()
+        expect(aggregate.measures).toEqual({
+            events: {},
+            delay: {units: 'ms', format: ',.1f'},
+            share: {units: '%'},
+            median: {units: 'µg/m³'},
+        })
+        expect(aggregate.values.delay).toBe(3)
+    })
+})
+
 describe('incremental roll-ups', () => {
     // a small deterministic random-number generator (mulberry32), so failures can be reproduced
     function random(seed: number): () => number {
@@ -360,6 +396,24 @@ describe('GeoDataSource roll-ups', () => {
         const byLocationAggregates = dataSource.aggregates('by location')
         expect(byLocationAggregates.map(a => [a.latitude, a.count])).toEqual([[51.51, 1]])
         expect(dataSource.aggregates('by sensor').map(a => a.id)).toEqual(['LON-1'])
+    })
+
+    it('hands back a cell\'s events, or one of its groups\', oldest first', () => {
+        const subject = new Subject<GeoChartData<Reading>>()
+        const dataSource = new GeoDataSource<Reading>({
+            initialData: [geoSeriesFrom<Reading>('seismic', [])],
+            generator: () => subject.asObservable(),
+            rollups: {'by location': {cellOf: byLocation(), groupBy: datum => datum.sensorId}},
+        })
+        dataSource.start()
+        const events = [reading('TKY-1', 35.68, 139.69, 1), reading('TKY-2', 35.68, 139.69, 2), reading('TKY-1', 35.68, 139.69, 3)]
+        subject.next(geoChartDataOf(new Map([['seismic', events]])))
+        const [cell] = dataSource.aggregates('by location')
+
+        expect(dataSource.eventsOf('by location', cell.id).map(event => event.time)).toEqual([1, 2, 3])
+        expect(dataSource.eventsOf('by location', cell.id, 'TKY-1').map(event => event.time)).toEqual([1, 3])
+        expect(dataSource.eventsOf('by location', cell.id, 'nobody')).toEqual([])
+        expect(dataSource.eventsOf('unknown', cell.id)).toEqual([])
     })
 
     it('rolls up the events held now when its roll-ups are replaced', () => {

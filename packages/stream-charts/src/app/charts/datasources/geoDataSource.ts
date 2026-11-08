@@ -70,6 +70,19 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
     }
 
     /**
+     * The events of one of a roll-up's cells (or of one of the cell's groups) -- e.g. for a sparkline
+     * of a sensor's readings in a tooltip
+     * @param rollupName The name of the roll-up
+     * @param cellId The cell's ID (see {@link GeoAggregate.id})
+     * @param group One of the cell's groups (see {@link GeoAggregate.groups}); all its events when
+     * not given
+     * @return The events, oldest first (a copy; empty for an unknown roll-up, cell, or group)
+     */
+    eventsOf(rollupName: string, cellId: string, group?: string): Array<GeoDatum<P>> {
+        return this.rollupStates.get(rollupName)?.eventsOf(cellId, group) ?? []
+    }
+
+    /**
      * @return The names of the roll-ups
      */
     rollupNames(): Array<string> {

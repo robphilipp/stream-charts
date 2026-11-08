@@ -1,3 +1,4 @@
+import * as d3 from "d3"
 import type {GeoDatum} from "../series/geoSeries"
 
 /*
@@ -160,53 +161,105 @@ export interface GeoReducer<P, S> {
  * and {@link measureOf})
  * @template P The type of the events' payload
  */
-export type GeoMeasure<P> =
+export type GeoMeasure<P> = (
     { readonly kind: 'count' } |
     { readonly kind: 'sum' | 'mean' | 'min' | 'max' | 'latest', readonly of: (datum: GeoDatum<P>) => number } |
     { readonly kind: 'reduce', readonly reducer: GeoReducer<P, unknown> } |
     { readonly kind: 'events', readonly of: (events: ReadonlyArray<GeoDatum<P>>) => number }
+) & { readonly options?: GeoMeasureOptions }
 
 /**
+ * How a measure's values are shown (in the tooltip, and in the plot's keys): its units, and how its
+ * numbers are formatted. Every measure takes them, as its last argument: e.g.
+ * `meanOf(datum => datum.payload.delay, {units: 'ms'})`. The library shows what you measure, in the
+ * units you give it; it's up to you to measure quantities that share them.
+ */
+export interface GeoMeasureOptions {
+    /**
+     * The units of the measure's values (e.g. `'ms'`, `'µg/m³'`, or `'%'`), shown after them -- with a
+     * space, except for units that start with `%` or `°`
+     */
+    readonly units?: string
+    /**
+     * How the numbers are formatted: a d3-format specifier (e.g. `',.1f'`), or a function. Defaults to
+     * up to three decimals (`',.3~f'`).
+     */
+    readonly format?: string | ((value: number) => string)
+}
+
+const DEFAULT_FORMAT = d3.format(',.3~f')
+
+/**
+ * Formats a measure's value, with its units
+ * @param value The value
+ * @param options The measure's units and format
+ * @param withUnits Whether to show the units (e.g. not in a key whose label already says them).
+ * Defaults to `true`.
+ * @return The formatted value (e.g. `12.3 ms`), or `---` when the value isn't a number
+ */
+export function formatMeasure(value: number, options?: GeoMeasureOptions, withUnits: boolean = true): string {
+    if (!Number.isFinite(value)) return '---'
+    const {units, format} = options ?? {}
+    const number = format === undefined ? DEFAULT_FORMAT(value) :
+        typeof format === 'string' ? d3.format(format)(value) :
+            format(value)
+    if (!withUnits || units === undefined || units === '') return number
+    return /^[%°]/.test(units) ? `${number}${units}` : `${number} ${units}`
+}
+
+/**
+ * @param options The measure's units and format (see {@link GeoMeasureOptions})
  * @return The measure that counts the events
  * @template P The type of the events' payload
  */
-export const countOf = <P>(): GeoMeasure<P> => ({kind: 'count'})
+export const countOf = <P>(options?: GeoMeasureOptions): GeoMeasure<P> => ({kind: 'count', options})
 /**
  * @param of The value of an event (e.g. `datum => datum.payload.magnitude`)
+ * @param options The measure's units and format (see {@link GeoMeasureOptions})
  * @return The measure that sums the events' values
  * @template P The type of the events' payload
  */
-export const sumOf = <P>(of: (datum: GeoDatum<P>) => number): GeoMeasure<P> => ({kind: 'sum', of})
+export const sumOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasureOptions): GeoMeasure<P> =>
+    ({kind: 'sum', of, options})
 /**
  * @param of The value of an event
+ * @param options The measure's units and format (see {@link GeoMeasureOptions})
  * @return The measure that averages the events' values (`NaN` for no events)
  * @template P The type of the events' payload
  */
-export const meanOf = <P>(of: (datum: GeoDatum<P>) => number): GeoMeasure<P> => ({kind: 'mean', of})
+export const meanOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasureOptions): GeoMeasure<P> =>
+    ({kind: 'mean', of, options})
 /**
  * @param of The value of an event
+ * @param options The measure's units and format (see {@link GeoMeasureOptions})
  * @return The measure that gives the smallest of the events' values
  * @template P The type of the events' payload
  */
-export const minOf = <P>(of: (datum: GeoDatum<P>) => number): GeoMeasure<P> => ({kind: 'min', of})
+export const minOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasureOptions): GeoMeasure<P> =>
+    ({kind: 'min', of, options})
 /**
  * @param of The value of an event
+ * @param options The measure's units and format (see {@link GeoMeasureOptions})
  * @return The measure that gives the largest of the events' values (e.g. the peak magnitude)
  * @template P The type of the events' payload
  */
-export const maxOf = <P>(of: (datum: GeoDatum<P>) => number): GeoMeasure<P> => ({kind: 'max', of})
+export const maxOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasureOptions): GeoMeasure<P> =>
+    ({kind: 'max', of, options})
 /**
  * @param of The value of an event
+ * @param options The measure's units and format (see {@link GeoMeasureOptions})
  * @return The measure that gives the latest event's value
  * @template P The type of the events' payload
  */
-export const latestOf = <P>(of: (datum: GeoDatum<P>) => number): GeoMeasure<P> => ({kind: 'latest', of})
+export const latestOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasureOptions): GeoMeasure<P> =>
+    ({kind: 'latest', of, options})
 /**
  * A measure of your own that can take an event back out, kept incrementally: its state is updated
  * as each event arrives and as each one leaves, so it costs the same however many events a cell
  * holds. Use it for anything you can undo: e.g. a standard deviation (from the count, the sum, and
  * the sum of the squares), a weighted mean, or a count of the events with some payload value.
  * @param reducer The reducer: the initial state, how an event is added and removed, and the value
+ * @param options The measure's units and format (see {@link GeoMeasureOptions})
  * @return The measure
  * @template P The type of the events' payload
  * @template S The type of the reducer's state
@@ -221,8 +274,8 @@ export const latestOf = <P>(of: (datum: GeoDatum<P>) => number): GeoMeasure<P> =
  * })
  * ```
  */
-export const reduceOf = <P, S>(reducer: GeoReducer<P, S>): GeoMeasure<P> =>
-    ({kind: 'reduce', reducer: reducer as unknown as GeoReducer<P, unknown>})
+export const reduceOf = <P, S>(reducer: GeoReducer<P, S>, options?: GeoMeasureOptions): GeoMeasure<P> =>
+    ({kind: 'reduce', reducer: reducer as unknown as GeoReducer<P, unknown>, options})
 /**
  * A measure of your own, from all of a cell's (or group's) events at once: for anything that can't
  * take an event back out, e.g. a median, a percentile, or a count of distinct values. It's
@@ -230,6 +283,7 @@ export const reduceOf = <P, S>(reducer: GeoReducer<P, S>): GeoMeasure<P> =>
  * most once per redraw), but then over all of the cell's events -- so for large, busy cells, prefer
  * {@link reduceOf} where you can.
  * @param of The measure's value, from the events (oldest first; don't keep the array)
+ * @param options The measure's units and format (see {@link GeoMeasureOptions})
  * @return The measure
  * @template P The type of the events' payload
  * @example
@@ -238,8 +292,8 @@ export const reduceOf = <P, S>(reducer: GeoReducer<P, S>): GeoMeasure<P> =>
  * measureOf<Reading>(events => d3.median(events, datum => datum.payload.magnitude) ?? NaN)
  * ```
  */
-export const measureOf = <P>(of: (events: ReadonlyArray<GeoDatum<P>>) => number): GeoMeasure<P> =>
-    ({kind: 'events', of})
+export const measureOf = <P>(of: (events: ReadonlyArray<GeoDatum<P>>) => number, options?: GeoMeasureOptions): GeoMeasure<P> =>
+    ({kind: 'events', of, options})
 
 /**
  * A roll-up: how a {@link GeoDataSource} aggregates its events, by place
@@ -336,6 +390,11 @@ export interface GeoAggregate {
      * The time of the cell's latest event
      */
     readonly lastTime: number
+    /**
+     * The roll-up's measures' units and formats, by name (see {@link GeoMeasureOptions} and
+     * {@link formatMeasure}) -- the same for every aggregate of the roll-up
+     */
+    readonly measures: Readonly<Record<string, GeoMeasureOptions>>
 }
 
 /**
@@ -385,6 +444,13 @@ class Tally<P> {
      */
     get last(): GeoDatum<P> | undefined {
         return this.count > 0 ? this.events[this.events.length - 1] : undefined
+    }
+
+    /**
+     * @return The events, oldest first (a copy)
+     */
+    list(): Array<GeoDatum<P>> {
+        return this.events.slice(this.head)
     }
 
     /**
@@ -605,9 +671,10 @@ class Cell<P> {
 
     /**
      * @param where Where the cell is drawn (see {@link GeoBinning.position})
+     * @param measures The roll-up's measures' units and formats, by name
      * @return The cell's aggregate
      */
-    aggregate(where: GeoBinning<P>['position']): GeoAggregate {
+    aggregate(where: GeoBinning<P>['position'], measures: Readonly<Record<string, GeoMeasureOptions>>): GeoAggregate {
         const [latitude, longitude] = this.positionFor(where)
         return {
             id: this.id,
@@ -622,6 +689,7 @@ class Cell<P> {
                 .sort((a, b) => b.count - a.count || a.group.localeCompare(b.group)),
             firstTime: this.all.first?.time ?? NaN,
             lastTime: this.all.last?.time ?? NaN,
+            measures,
         }
     }
 
@@ -664,6 +732,8 @@ function binningFrom<P>(cellOf: GeoRollup<P>['cellOf']): GeoBinning<P> {
 export class GeoRollupState<P> {
     private readonly binning: GeoBinning<P>
     private readonly measures: ReadonlyArray<[string, GeoMeasure<P>]>
+    // the measures' units and formats, by name (handed to every aggregate)
+    private readonly measureOptions: Readonly<Record<string, GeoMeasureOptions>>
     private readonly cells = new Map<string, Cell<P>>()
     // the aggregates, as last read, until the cells change
     private cached: Array<GeoAggregate> | undefined = undefined
@@ -676,6 +746,7 @@ export class GeoRollupState<P> {
         this.rollup = rollup
         this.binning = binningFrom(rollup.cellOf)
         this.measures = Object.entries(rollup.measures ?? {})
+        this.measureOptions = Object.fromEntries(this.measures.map(([name, measure]) => [name, measure.options ?? {}]))
     }
 
     /**
@@ -711,11 +782,23 @@ export class GeoRollupState<P> {
     }
 
     /**
+     * @param cellId The ID of a cell
+     * @param group A group of the cell's events; all of them when not given
+     * @return The cell's (or the group's) events, oldest first (empty for an unknown cell or group)
+     */
+    eventsOf(cellId: string, group?: string): Array<GeoDatum<P>> {
+        const cell = this.cells.get(cellId)
+        if (cell === undefined) return []
+        if (group === undefined) return cell.all.list()
+        return cell.groups.get(group)?.list() ?? []
+    }
+
+    /**
      * @return The aggregates of the cells (the same array until the cells change)
      */
     aggregates(): Array<GeoAggregate> {
         if (this.cached === undefined) {
-            this.cached = Array.from(this.cells.values()).map(cell => cell.aggregate(this.binning.position))
+            this.cached = Array.from(this.cells.values()).map(cell => cell.aggregate(this.binning.position, this.measureOptions))
         }
         return this.cached
     }
