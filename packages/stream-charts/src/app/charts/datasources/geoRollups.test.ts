@@ -10,7 +10,9 @@ import {
     latestOf,
     maxOf,
     meanOf,
+    measureOf,
     minOf,
+    reduceOf,
     sumOf,
 } from "./geoRollups";
 import {type GeoDatum, geoDatumOf, geoSeriesFrom} from "../series/geoSeries";
@@ -23,6 +25,23 @@ const reading = (sensorId: string, latitude: number, longitude: number, time: nu
     geoDatumOf(sensorId, latitude, longitude, time, {magnitude, kind})
 
 const magnitude = (datum: GeoDatum<Reading>): number => datum.payload.magnitude
+
+// a measure of our own that can be undone: the (population) standard deviation of the magnitudes
+type Moments = {n: number, sum: number, squares: number}
+const standardDeviation = reduceOf<Reading, Moments>({
+    initial: () => ({n: 0, sum: 0, squares: 0}),
+    add: ({n, sum, squares}, datum) => ({n: n + 1, sum: sum + magnitude(datum), squares: squares + magnitude(datum) ** 2}),
+    remove: ({n, sum, squares}, datum) => ({n: n - 1, sum: sum - magnitude(datum), squares: squares - magnitude(datum) ** 2}),
+    value: ({n, sum, squares}) => n > 0 ? Math.sqrt(Math.max(0, squares / n - (sum / n) ** 2)) : NaN,
+})
+
+// a measure of our own from all the events: the median magnitude
+const medianOf = (values: Array<number>): number => {
+    const sorted = [...values].sort((a, b) => a - b)
+    const middle = sorted.length >> 1
+    return sorted.length === 0 ? NaN : sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2
+}
+const median = measureOf<Reading>(events => medianOf(events.map(magnitude)))
 
 /**
  * @param rollup A roll-up
@@ -176,6 +195,66 @@ describe('measures and groups', () => {
     })
 })
 
+describe('measures of your own', () => {
+    const events = [
+        reading('S-1', 10, 20, 1, 2, 'quake'),
+        reading('S-2', 10, 20, 2, 4, 'quake'),
+        reading('S-1', 10, 20, 3, 4, 'tremor'),
+        reading('S-2', 10, 20, 4, 4, 'quake'),
+        reading('S-1', 10, 20, 5, 5, 'tremor'),
+        reading('S-1', 10, 20, 6, 5, 'quake'),
+        reading('S-2', 10, 20, 7, 7, 'tremor'),
+        reading('S-1', 10, 20, 8, 9, 'quake'),
+    ]
+    const rollup: GeoRollup<Reading> = {cellOf: byLocation(), groupBy: datum => datum.payload.kind, measures: {spread: standardDeviation, median}}
+
+    it('keeps a reducer\'s value as events are added and removed', () => {
+        const state = rolledUp(rollup, events)
+        // the magnitudes 2, 4, 4, 4, 5, 5, 7, 9: a mean of 5, and a standard deviation of 2
+        expect(state.aggregates()[0].values.spread).toBeCloseTo(2, 9)
+        state.remove(events[0], 's')
+        state.remove(events[7], 's')
+        // 4, 4, 4, 5, 5, 7
+        expect(state.aggregates()[0].values.spread).toBeCloseTo(Math.sqrt(147 / 6 - (29 / 6) ** 2), 9)
+    })
+
+    it('measures all the events at once', () => {
+        const state = rolledUp(rollup, events)
+        expect(state.aggregates()[0].values.median).toBe(4.5)
+        state.remove(events[7], 's')
+        expect(state.aggregates()[0].values.median).toBe(4)
+    })
+
+    it('measures each group with them, too', () => {
+        const [aggregate] = rolledUp(rollup, events).aggregates()
+        const tremors = aggregate.groups.find(group => group.group === 'tremor')!
+        // the tremors' magnitudes: 4, 5, 7
+        expect(tremors.values.median).toBe(5)
+        expect(tremors.values.spread).toBeCloseTo(Math.sqrt(14 / 9), 9)
+    })
+
+    it('recalculates a measure of all the events only for the cells that changed, and only when read', () => {
+        let calls = 0
+        const counted = measureOf<Reading>(events => {
+            calls++
+            return events.length
+        })
+        const state = new GeoRollupState<Reading>({cellOf: bySensor(), measures: {counted}})
+        state.add(reading('A', 0, 0, 1), 's')
+        state.add(reading('B', 0, 0, 2), 's')
+        state.add(reading('A', 0, 0, 3), 's')
+        expect(calls).toBe(0)
+        state.aggregates()
+        expect(calls).toBe(2)
+
+        // only cell B changed
+        state.add(reading('B', 0, 0, 4), 's')
+        const aggregates = state.aggregates()
+        expect(calls).toBe(3)
+        expect(aggregates.map(aggregate => [aggregate.id, aggregate.values.counted])).toEqual([['A', 2], ['B', 2]])
+    })
+})
+
 describe('incremental roll-ups', () => {
     // a small deterministic random-number generator (mulberry32), so failures can be reproduced
     function random(seed: number): () => number {
@@ -199,7 +278,10 @@ describe('incremental roll-ups', () => {
         const rollup: GeoRollup<Reading> = {
             ...base,
             groupBy: datum => datum.payload.kind,
-            measures: {total: sumOf(magnitude), mean: meanOf(magnitude), low: minOf(magnitude), peak: maxOf(magnitude), last: latestOf(magnitude)},
+            measures: {
+                total: sumOf(magnitude), mean: meanOf(magnitude), low: minOf(magnitude), peak: maxOf(magnitude),
+                last: latestOf(magnitude), spread: standardDeviation, median,
+            },
         }
         for (let seed = 1; seed <= 20; seed++) {
             const next = random(seed)
@@ -235,8 +317,11 @@ describe('incremental roll-ups', () => {
                 expect(actual.longitude).toBeCloseTo(expected.longitude, 6)
                 Object.entries(expected.values).forEach(([name, value]) => expect(actual.values[name]).toBeCloseTo(value, 6))
                 expect(actual.groups.map(group => [group.group, group.count])).toEqual(expected.groups.map(group => [group.group, group.count]))
-                expected.groups.forEach((group, index) =>
-                    expect(actual.groups[index].values.peak).toBeCloseTo(group.values.peak, 9))
+                expected.groups.forEach((group, index) => {
+                    expect(actual.groups[index].values.peak).toBeCloseTo(group.values.peak, 9)
+                    expect(actual.groups[index].values.median).toBeCloseTo(group.values.median, 9)
+                    expect(actual.groups[index].values.spread).toBeCloseTo(group.values.spread, 6)
+                })
             })
         }
     })

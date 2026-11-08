@@ -123,13 +123,48 @@ export function byGridCell<P>(degrees: number): GeoBinning<P> {
 }
 
 /**
+ * An aggregation of your own that can take an event back out (see {@link reduceOf}): a state, kept
+ * as events are added to and removed from a cell (or a group), and the measure's value from it.
+ * The functions should leave the state they're handed as it is, and return the new state (or
+ * change it in place and return it, as long as `initial` hands out a new state each time).
+ * @template P The type of the events' payload
+ * @template S The type of the state
+ */
+export interface GeoReducer<P, S> {
+    /**
+     * @return The state of a cell (or group) without any events
+     */
+    initial: () => S
+    /**
+     * @param state The state
+     * @param datum The event that arrived
+     * @return The state with the event in it
+     */
+    add: (state: S, datum: GeoDatum<P>) => S
+    /**
+     * @param state The state
+     * @param datum The event that left (e.g. dropped as too old)
+     * @return The state without the event
+     */
+    remove: (state: S, datum: GeoDatum<P>) => S
+    /**
+     * @param state The state
+     * @return The measure's value
+     */
+    value: (state: S) => number
+}
+
+/**
  * A measure of the events in a cell (see {@link countOf}, {@link sumOf}, {@link meanOf},
- * {@link minOf}, {@link maxOf}, {@link latestOf})
+ * {@link minOf}, {@link maxOf}, {@link latestOf}, and, for measures of your own, {@link reduceOf}
+ * and {@link measureOf})
  * @template P The type of the events' payload
  */
 export type GeoMeasure<P> =
     { readonly kind: 'count' } |
-    { readonly kind: 'sum' | 'mean' | 'min' | 'max' | 'latest', readonly of: (datum: GeoDatum<P>) => number }
+    { readonly kind: 'sum' | 'mean' | 'min' | 'max' | 'latest', readonly of: (datum: GeoDatum<P>) => number } |
+    { readonly kind: 'reduce', readonly reducer: GeoReducer<P, unknown> } |
+    { readonly kind: 'events', readonly of: (events: ReadonlyArray<GeoDatum<P>>) => number }
 
 /**
  * @return The measure that counts the events
@@ -166,6 +201,45 @@ export const maxOf = <P>(of: (datum: GeoDatum<P>) => number): GeoMeasure<P> => (
  * @template P The type of the events' payload
  */
 export const latestOf = <P>(of: (datum: GeoDatum<P>) => number): GeoMeasure<P> => ({kind: 'latest', of})
+/**
+ * A measure of your own that can take an event back out, kept incrementally: its state is updated
+ * as each event arrives and as each one leaves, so it costs the same however many events a cell
+ * holds. Use it for anything you can undo: e.g. a standard deviation (from the count, the sum, and
+ * the sum of the squares), a weighted mean, or a count of the events with some payload value.
+ * @param reducer The reducer: the initial state, how an event is added and removed, and the value
+ * @return The measure
+ * @template P The type of the events' payload
+ * @template S The type of the reducer's state
+ * @example
+ * ```ts
+ * // the standard deviation of the events' magnitudes
+ * reduceOf<Reading, {n: number, sum: number, squares: number}>({
+ *     initial: () => ({n: 0, sum: 0, squares: 0}),
+ *     add: ({n, sum, squares}, datum) => ({n: n + 1, sum: sum + datum.payload.magnitude, squares: squares + datum.payload.magnitude ** 2}),
+ *     remove: ({n, sum, squares}, datum) => ({n: n - 1, sum: sum - datum.payload.magnitude, squares: squares - datum.payload.magnitude ** 2}),
+ *     value: ({n, sum, squares}) => n > 0 ? Math.sqrt(Math.max(0, squares / n - (sum / n) ** 2)) : NaN,
+ * })
+ * ```
+ */
+export const reduceOf = <P, S>(reducer: GeoReducer<P, S>): GeoMeasure<P> =>
+    ({kind: 'reduce', reducer: reducer as unknown as GeoReducer<P, unknown>})
+/**
+ * A measure of your own, from all of a cell's (or group's) events at once: for anything that can't
+ * take an event back out, e.g. a median, a percentile, or a count of distinct values. It's
+ * recalculated only for a cell that changed, and only when the cell's aggregate is next read (at
+ * most once per redraw), but then over all of the cell's events -- so for large, busy cells, prefer
+ * {@link reduceOf} where you can.
+ * @param of The measure's value, from the events (oldest first; don't keep the array)
+ * @return The measure
+ * @template P The type of the events' payload
+ * @example
+ * ```ts
+ * // the median magnitude
+ * measureOf<Reading>(events => d3.median(events, datum => datum.payload.magnitude) ?? NaN)
+ * ```
+ */
+export const measureOf = <P>(of: (events: ReadonlyArray<GeoDatum<P>>) => number): GeoMeasure<P> =>
+    ({kind: 'events', of})
 
 /**
  * A roll-up: how a {@link GeoDataSource} aggregates its events, by place
@@ -267,7 +341,9 @@ export interface GeoAggregate {
 /**
  * The events of a cell (or of a group of a cell), and their measures, kept as events are added
  * and removed: sums (and so means) are running sums; a smallest or largest value is kept as events
- * are added, and re-found only when the event holding it is removed
+ * are added, and re-found only when the event holding it is removed; a reducer's state is updated
+ * with each event; and a measure of all the events is recalculated, when it's read, only after the
+ * events changed
  */
 class Tally<P> {
     // the events, oldest first (from `head` on: removing the oldest just moves the head)
@@ -275,6 +351,9 @@ class Tally<P> {
     private head = 0
     private readonly sums = new Map<string, number>()
     private readonly extremes = new Map<string, number | undefined>()
+    // the reducers' states, and the measures of all the events (undefined until recalculated)
+    private readonly states = new Map<string, unknown>()
+    private readonly calculated = new Map<string, number | undefined>()
     private readonly measures: ReadonlyArray<[string, GeoMeasure<P>]>
 
     /**
@@ -282,6 +361,9 @@ class Tally<P> {
      */
     constructor(measures: ReadonlyArray<[string, GeoMeasure<P>]>) {
         this.measures = measures
+        measures.forEach(([name, measure]) => {
+            if (measure.kind === 'reduce') this.states.set(name, measure.reducer.initial())
+        })
     }
 
     /**
@@ -313,6 +395,14 @@ class Tally<P> {
         this.events.push(datum)
         this.measures.forEach(([name, measure]) => {
             if (measure.kind === 'count' || measure.kind === 'latest') return
+            if (measure.kind === 'reduce') {
+                this.states.set(name, measure.reducer.add(this.states.get(name), datum))
+                return
+            }
+            if (measure.kind === 'events') {
+                this.calculated.set(name, undefined)
+                return
+            }
             const value = measure.of(datum)
             if (measure.kind === 'sum' || measure.kind === 'mean') {
                 this.sums.set(name, (this.sums.get(name) ?? 0) + value)
@@ -347,6 +437,18 @@ class Tally<P> {
         }
         this.measures.forEach(([name, measure]) => {
             if (measure.kind === 'count' || measure.kind === 'latest') return
+            if (measure.kind === 'reduce') {
+                // (back to the initial state once the last event leaves, so that the reducer's
+                // rounding errors don't pile up over a long stream)
+                this.states.set(name, this.count > 0 ?
+                    measure.reducer.remove(this.states.get(name), datum) :
+                    measure.reducer.initial())
+                return
+            }
+            if (measure.kind === 'events') {
+                this.calculated.set(name, undefined)
+                return
+            }
             const value = measure.of(datum)
             if (measure.kind === 'sum' || measure.kind === 'mean') {
                 this.sums.set(name, this.count > 0 ? (this.sums.get(name) ?? 0) - value : 0)
@@ -377,6 +479,18 @@ class Tally<P> {
                 case 'latest':
                     values[name] = this.last !== undefined ? measure.of(this.last) : NaN
                     break
+                case 'reduce':
+                    values[name] = measure.reducer.value(this.states.get(name))
+                    break
+                case 'events': {
+                    let value = this.calculated.get(name)
+                    if (value === undefined) {
+                        value = this.count > 0 ? measure.of(this.events.slice(this.head)) : NaN
+                        this.calculated.set(name, value)
+                    }
+                    values[name] = value
+                    break
+                }
                 default:
                     values[name] = this.extremeOf(name, measure)
             }
@@ -390,7 +504,7 @@ class Tally<P> {
      * @return The smallest or largest value of the events (`NaN` for no events), re-found when unknown
      */
     private extremeOf(name: string, measure: GeoMeasure<P>): number {
-        if (this.count === 0 || measure.kind === 'count') return NaN
+        if (this.count === 0 || (measure.kind !== 'min' && measure.kind !== 'max')) return NaN
         let extreme = this.extremes.get(name)
         if (extreme === undefined) {
             extreme = measure.kind === 'min' ? Infinity : -Infinity

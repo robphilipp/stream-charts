@@ -28,7 +28,7 @@ The next pages describe:
 6. theming – how the charts change colors, how to add a theme, and what the limits are,
 7. tooltips and trackers,
 8. what's going on under the hood – which code is the example's and which is the library's, and how the data flows from one to the other, and
-9. three tutorials: one that walks you through adding your own data source, from the RxJS observable to the chart, one on writing your own tooltips for each chart type, and one that builds a full-featured scatter chart from (simulated) sensor data.
+9. four tutorials: one that walks you through adding your own data source, from the RxJS observable to the chart, one on writing your own tooltips for each chart type, one that builds a full-featured scatter chart from (simulated) sensor data, and one that builds a geo chart of (simulated) air-quality monitors across Europe, with roll-ups.
 
 Click on the `Next` button in the navigation bar to continue. Or, if you're the impatient type, jump ahead using the table of contents (the button on the left of the navigation bar).
 

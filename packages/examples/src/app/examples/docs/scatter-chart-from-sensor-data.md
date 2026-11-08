@@ -428,4 +428,4 @@ Real sensors bring a few things that simulated ones don't:
 - **Sensors come and go.** The data source's series are fixed when you create it. To add a sensor, create a new data source with the new set of series (and `dispose()` the old one).
 - **Gaps are real.** When a sensor goes quiet, the line bridges the gap between its readings. With the markers on, you can see where the readings stop and start again.
 
-That's the last page of the intro. Happy charting!
+Next up, the last tutorial: a geo chart, which plots sensor events on a map rather than over time.

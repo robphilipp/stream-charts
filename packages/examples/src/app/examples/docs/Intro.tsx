@@ -31,6 +31,7 @@ import how_the_data_flows_page from "./how-the-data-flows.md?raw";
 import adding_a_data_source_page from "./adding-a-data-source.md?raw";
 import scatter_chart_from_sensor_data_page from "./scatter-chart-from-sensor-data.md?raw";
 import writing_tooltips_page from "./writing-tooltips.md?raw";
+import geo_chart_tutorial_page from "./geo-chart-tutorial.md?raw";
 import ReactMarkdown, {type Components, type ExtraProps, type Options} from "react-markdown";
 import rehypeRaw from 'rehype-raw';
 import rehypeHighlight from "rehype-highlight";
@@ -73,6 +74,7 @@ const pages = [
     adding_a_data_source_page,
     writing_tooltips_page,
     scatter_chart_from_sensor_data_page,
+    geo_chart_tutorial_page,
 ]
 
 /**

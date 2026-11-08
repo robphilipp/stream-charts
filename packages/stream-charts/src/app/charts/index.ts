@@ -146,13 +146,16 @@ export {
     latestOf,
     maxOf,
     meanOf,
+    measureOf,
     minOf,
+    reduceOf,
     sumOf,
     type GeoAggregate,
     type GeoAggregateGroup,
     type GeoBinning,
     type GeoCellBounds,
     type GeoMeasure,
+    type GeoReducer,
     type GeoRollup,
 } from "./datasources/geoRollups"
 export {
