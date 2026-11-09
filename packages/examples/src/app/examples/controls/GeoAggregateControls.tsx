@@ -4,6 +4,7 @@ import {DropDown, type DropDownOption} from "../../ui/DropDown.tsx";
 import type {GeoShow} from "../appstate/geoChartStore.ts";
 
 const MODE_OPTIONS: Array<DropDownOption<GeoShow>> = [
+    {value: 'auto', label: 'Auto (by zoom)'},
     {value: 'points', label: 'Events'},
     {value: 'aggregates', label: 'Aggregates'},
     {value: 'groups', label: 'Aggregates, by group'},
@@ -32,7 +33,8 @@ export function GeoAggregateControls(props: Props): JSX.Element {
         theme, mode, handleModeChange, rollupNames, rollupName, handleRollupNameChange,
         measureNames, colorBy, handleColorByChange,
     } = props
-    const aggregates = mode !== 'points'
+    // (the roll-up and its colors are only picked for the aggregates: the auto mode picks its own)
+    const aggregates = mode === 'aggregates' || mode === 'groups'
     return (
         <>
             <label style={{color: theme.color}}>

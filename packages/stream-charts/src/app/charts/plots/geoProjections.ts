@@ -386,6 +386,153 @@ export function markerEllipseAt(
     ]
 }
 
+/**
+ * A flash of a new event (see the {@link GeoPlot}'s `flashes`): where, how large, how long, and in
+ * what color its ring is. Anything not set is the event's: its place, the plot's `flashRadius` and
+ * `flashDuration`, and its marker's color.
+ */
+export interface GeoFlash {
+    /**
+     * The latitude (degrees) of the flash's center. Defaults to the event's.
+     */
+    latitude?: number
+    /**
+     * The longitude (degrees) of the flash's center. Defaults to the event's.
+     */
+    longitude?: number
+    /**
+     * The radius (px, at the view's center) the flash's ring grows to. Defaults to the plot's
+     * `flashRadius`.
+     */
+    radius?: number
+    /**
+     * How long (ms) the flash lasts. Defaults to the plot's `flashDuration`.
+     */
+    duration?: number
+    /**
+     * The color of the flash's ring. Defaults to the event's marker's color.
+     */
+    color?: string
+}
+
+/**
+ * A flash, with everything set (see {@link GeoFlash})
+ */
+export type ResolvedGeoFlash = {
+    latitude: number
+    longitude: number
+    radius: number
+    duration: number
+    color: string | undefined
+}
+
+/**
+ * The flashes of a new event, from what the plot's `flashes` says of it
+ * @param spec Whether the event flashes (`true`, once, as the plot's settings say; `false`, not at
+ * all), or its flashes (none, for an empty list)
+ * @param datum The event
+ * @param defaults The plot's flash radius (px) and duration (ms)
+ * @return The event's flashes, with everything that isn't set taken from the event and the defaults
+ * (the color, from the event's marker, is left `undefined`); none for a flash with a place that isn't
+ * a finite latitude and longitude
+ */
+export function resolvedFlashes(
+    spec: boolean | ReadonlyArray<GeoFlash>,
+    datum: {latitude: number, longitude: number},
+    defaults: {radius: number, duration: number},
+): Array<ResolvedGeoFlash> {
+    const flashes = spec === true ? [{}] : spec === false ? [] : spec
+    return flashes
+        .map(flash => ({
+            latitude: flash.latitude ?? datum.latitude,
+            longitude: flash.longitude ?? datum.longitude,
+            radius: flash.radius ?? defaults.radius,
+            duration: flash.duration ?? defaults.duration,
+            color: flash.color,
+        }))
+        .filter(flash => Number.isFinite(flash.latitude) && Number.isFinite(flash.longitude) && flash.duration > 0)
+}
+
+/**
+ * A flash's ring at an age: it grows from the marker outward, quickly at first and then more slowly,
+ * fading as it grows, until it's gone
+ * @param age How long (ms) since the flash started (its event arrived)
+ * @param duration How long (ms) a flash lasts
+ * @param radius The radius (px) the ring grows to
+ * @return The ring's radius (px) and opacity (0 to 1), or `undefined` before the flash starts and
+ * once it's over
+ */
+export function flashRingOf(age: number, duration: number, radius: number): {radius: number, opacity: number} | undefined {
+    if (!(age >= 0 && age < duration)) return undefined
+    const t = age / duration
+    // (eased out: 1 - (1 - t)^2)
+    const grown = 1 - (1 - t) * (1 - t)
+    return {radius: 2 + (radius - 2) * grown, opacity: 1 - t}
+}
+
+/**
+ * The roll-up that the {@link GeoPlot}'s `auto` mode shows: the coarsest whose cells span at most
+ * `clusterDistance` pixels on the screen (so that what it merges into one cell couldn't be told
+ * apart anyway), or, once even the finest roll-up's cells span more, the events themselves. So that
+ * zooming across a boundary doesn't flicker between two levels, the level shown stays shown while
+ * its cells span up to `hysteresis` times the distance, and the next coarser level's more than the
+ * distance divided by it.
+ * @param levels The roll-ups to choose from, and how large (px) their cells are on the screen
+ * @param clusterDistance The most (px) that a roll-up's cells may span
+ * @param current The roll-up shown now (`undefined` for the events), or `null` when nothing is yet
+ * @param hysteresis How far (a factor of the distance) past it the level shown now stays shown
+ * @return The name of the roll-up to show, or `undefined` for the events
+ */
+export function autoLevelOf(
+    levels: ReadonlyArray<{rollup: string, cellPixels: number}>,
+    clusterDistance: number,
+    current: string | undefined | null,
+    hysteresis: number = 1.25,
+): string | undefined {
+    // coarsest first, then the events (whose "cells" have no size)
+    const sorted: Array<{rollup: string | undefined, cellPixels: number}> = [
+        ...[...levels].filter(level => Number.isFinite(level.cellPixels)).sort((a, b) => b.cellPixels - a.cellPixels),
+        {rollup: undefined, cellPixels: 0},
+    ]
+    if (current !== null) {
+        const index = sorted.findIndex(level => level.rollup === current)
+        const coarser = index > 0 ? sorted[index - 1] : undefined
+        if (index >= 0 && sorted[index].cellPixels <= clusterDistance * hysteresis &&
+            (coarser === undefined || coarser.cellPixels > clusterDistance / hysteresis)) {
+            return current
+        }
+    }
+    return sorted.find(level => level.cellPixels <= clusterDistance)?.rollup
+}
+
+/**
+ * Groups flashes that would be drawn as one: of the same color and length, starting within the same
+ * stretch of time as long as one of them, and centered in the same `distance`-pixel square of the
+ * screen -- e.g. a city's many new events, seen from far away. Drawn as one ring each, a place's
+ * flashes pulse steadily, one ring at a time (or two, as one fades and the next starts), however
+ * many new events it has.
+ * @param flashes The flashes: where they're drawn (px), when they started, how long they last (ms),
+ * and their color
+ * @param distance The size (px) of the squares; 0 (or less) not to group them
+ * @return The groups, each one flash or more
+ * @template T The type of the flashes
+ */
+export function flashGroupsOf<T extends {x: number, y: number, start: number, duration: number, color: string}>(
+    flashes: ReadonlyArray<T>,
+    distance: number,
+): Array<Array<T>> {
+    if (!(distance > 0)) return flashes.map(flash => [flash])
+    const groups = new Map<string, Array<T>>()
+    flashes.forEach(flash => {
+        const stretch = Math.floor(flash.start / flash.duration)
+        const key = `${flash.color}|${flash.duration}|${Math.floor(flash.x / distance)}|${Math.floor(flash.y / distance)}|${stretch}`
+        const group = groups.get(key)
+        if (group === undefined) groups.set(key, [flash])
+        else group.push(flash)
+    })
+    return Array.from(groups.values())
+}
+
 // a drawn marker (an event's, or an aggregate's circle), for hit-testing the mouse (in canvas
 // coordinates), and what it shows
 export type DrawnMarker<P> = {

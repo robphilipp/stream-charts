@@ -1,7 +1,11 @@
 import * as d3 from "d3";
 import {
+    autoLevelOf,
     bearingOf,
     type DrawnMarker,
+    flashGroupsOf,
+    flashRingOf,
+    resolvedFlashes,
     type GeoPlotViewState,
     GeoProjections,
     type GeoProjectionName,
@@ -278,5 +282,97 @@ describe('marker ellipses', () => {
         const flat = projectionNamed('equirectangular')
         setUpProjection(flat, viewCenteredOn([0, 0]), WIDTH, HEIGHT)
         expect(largestError(flat, 179.9, 0, 6)).toBeUndefined()
+    })
+})
+
+describe('flashes', () => {
+    it('grows a ring outward, quickly at first, fading as it grows', () => {
+        const start = flashRingOf(0, 1000, 20)!
+        const middle = flashRingOf(500, 1000, 20)!
+        const late = flashRingOf(900, 1000, 20)!
+        expect(start).toEqual({radius: 2, opacity: 1})
+        // (three quarters of the way out at half time)
+        expect(middle.radius).toBeCloseTo(15.5, 9)
+        expect(middle.opacity).toBeCloseTo(0.5, 9)
+        expect(late.radius).toBeGreaterThan(middle.radius)
+        expect(late.radius).toBeLessThan(20)
+        expect(late.opacity).toBeCloseTo(0.1, 9)
+    })
+
+    it('flashes an event once, at its place, as the plot\'s settings say -- or not at all', () => {
+        const datum = {latitude: 51.5, longitude: -0.1}
+        const defaults = {radius: 20, duration: 1500}
+        expect(resolvedFlashes(true, datum, defaults)).toEqual([{latitude: 51.5, longitude: -0.1, radius: 20, duration: 1500, color: undefined}])
+        expect(resolvedFlashes(false, datum, defaults)).toEqual([])
+        expect(resolvedFlashes([], datum, defaults)).toEqual([])
+    })
+
+    it('flashes an event as many times as it says, each where, as large, as long, and in the color it says', () => {
+        const flashes = resolvedFlashes(
+            [{}, {latitude: 51.51, longitude: -0.12, radius: 8, duration: 600, color: '#ffb300'}],
+            {latitude: 51.5, longitude: -0.1},
+            {radius: 20, duration: 1500},
+        )
+        expect(flashes).toEqual([
+            {latitude: 51.5, longitude: -0.1, radius: 20, duration: 1500, color: undefined},
+            {latitude: 51.51, longitude: -0.12, radius: 8, duration: 600, color: '#ffb300'},
+        ])
+    })
+
+    it('leaves out a flash with no place, or no time to show', () => {
+        expect(resolvedFlashes([{latitude: NaN}, {duration: 0}], {latitude: 51.5, longitude: -0.1}, {radius: 20, duration: 1500})).toEqual([])
+    })
+
+    it('has no ring before the flash starts, or once it\'s over', () => {
+        expect(flashRingOf(-1, 1000, 20)).toBeUndefined()
+        expect(flashRingOf(1000, 1000, 20)).toBeUndefined()
+        expect(flashRingOf(NaN, 1000, 20)).toBeUndefined()
+    })
+})
+
+describe('the auto mode\'s levels', () => {
+    // a grid of 10°, 1°, and 0.1° cells, at a zoom where a degree spans `perDegree` px
+    const levels = (perDegree: number): Array<{rollup: string, cellPixels: number}> =>
+        [['10°', 10], ['1°', 1], ['0.1°', 0.1]].map(([rollup, degrees]) => ({rollup: rollup as string, cellPixels: (degrees as number) * perDegree}))
+
+    it('shows the coarsest roll-up whose cells span at most the distance, or else the events', () => {
+        // (zoomed out: 10° cells span 66 px, 1° cells 6.6 px)
+        expect(autoLevelOf(levels(6.6), 20, null)).toBe('1°')
+        // (further out: even 10° cells span less)
+        expect(autoLevelOf(levels(1.5), 20, null)).toBe('10°')
+        // (zoomed in: 0.1° cells span 30 px)
+        expect(autoLevelOf(levels(300), 20, null)).toBeUndefined()
+        expect(autoLevelOf(levels(150), 20, null)).toBe('0.1°')
+    })
+
+    it('keeps showing a level a little past its boundaries, so that it doesn\'t flicker', () => {
+        // (1° cells grow past the distance, but not by a quarter)
+        expect(autoLevelOf(levels(22), 20, '1°')).toBe('1°')
+        expect(autoLevelOf(levels(26), 20, '1°')).toBe('0.1°')
+        // (zooming back out: the coarser 1° cells shrink below the distance, but not by a quarter)
+        expect(autoLevelOf(levels(18), 20, '0.1°')).toBe('0.1°')
+        expect(autoLevelOf(levels(15), 20, '0.1°')).toBe('1°')
+        // (the events, while the finest cells are only a little smaller than the distance)
+        expect(autoLevelOf(levels(180), 20, undefined)).toBeUndefined()
+        expect(autoLevelOf(levels(150), 20, undefined)).toBe('0.1°')
+    })
+})
+
+describe('merging flashes', () => {
+    const flash = (x: number, y: number, start: number, color: string = 'magenta', duration: number = 1500): {x: number, y: number, start: number, duration: number, color: string} =>
+        ({x, y, start, duration, color})
+
+    it('groups the flashes of a color that start within a flash\'s length of each other, close together', () => {
+        const groups = flashGroupsOf([flash(100, 100, 1600), flash(104, 103, 2900), flash(130, 100, 1600), flash(101, 101, 1600, 'orange')], 12)
+        expect(groups.map(group => group.length).sort()).toEqual([1, 1, 2])
+    })
+
+    it('keeps flashes apart that start in different stretches of a flash\'s length, or last different lengths', () => {
+        expect(flashGroupsOf([flash(100, 100, 1000), flash(100, 100, 1600)], 12).length).toBe(2)
+        expect(flashGroupsOf([flash(100, 100, 1600), flash(100, 100, 1600, 'magenta', 600)], 12).length).toBe(2)
+    })
+
+    it('doesn\'t group flashes when the distance is 0', () => {
+        expect(flashGroupsOf([flash(100, 100, 1000), flash(100, 100, 1000)], 0).length).toBe(2)
     })
 })

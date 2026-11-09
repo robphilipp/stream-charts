@@ -413,6 +413,16 @@ describe('GeoDataSource roll-ups', () => {
         expect(dataSource.aggregates('unknown')).toEqual([])
     })
 
+    it('says how large its roll-ups\' cells are, when their binning does', () => {
+        const {dataSource} = startedSource()
+        // ("by location" rounds to a precision; "by sensor" has cells of every size)
+        expect(dataSource.rollupCellSize('by location')).toBe(byLocation().cellSize)
+        expect(dataSource.rollupCellSize('by sensor')).toBeUndefined()
+        expect(dataSource.rollupCellSize('unknown')).toBeUndefined()
+        expect(byGridCell(10).cellSize).toBe(10)
+        expect(byLocation(0.1).cellSize).toBe(0.1)
+    })
+
     it('rolls up new events, and takes dropped ones back out', () => {
         const {dataSource, emit} = startedSource(100)
         emit(geoChartDataOf(new Map([['seismic', [reading('TKY-2', 35.68, 139.69, 50, 4)]]])))

@@ -1,4 +1,5 @@
 import {type JSX, useCallback, useMemo, useRef, useState} from "react"
+import * as d3 from "d3"
 import {
     Grid,
     gridArea,
@@ -16,6 +17,7 @@ import {
     defaultLineStyle,
     defaultMargin,
     type GeoDatum,
+    type GeoFlash,
     GeoPlot,
     GeoPlotTooltipContent,
     type GeoProjectionName,
@@ -41,8 +43,19 @@ import {BufferingControl} from "./controls/BufferingControl.tsx"
 import {DataUpdateRateControl} from "./controls/DataUpdateRateControl.tsx"
 import {ProjectionControl} from "./controls/ProjectionControl.tsx"
 import {GeoAggregateControls} from "./controls/GeoAggregateControls.tsx"
-import {BY_GRID_CELL, DEFAULT_DATA_UPDATE_PERIOD, MEASURE_NAMES, ROLLUP_NAMES, useGeoChartStore} from "./appstate/geoChartStore.ts"
-import {initialGeoData, type SensorReading, SEISMIC, VESSELS, WEATHER} from "./dataproviders/randomGeoData.ts"
+import {
+    BY_GRID_CELL,
+    DEFAULT_DATA_UPDATE_PERIOD,
+    DROP_RATE,
+    MEAN_SIGNAL,
+    measureNamesOf,
+    AUTO_ROLLUP_NAMES,
+    ROLLUP_NAMES,
+    useGeoChartStore,
+    WEAK_SIGNAL,
+    WEAKEST_SIGNAL,
+} from "./appstate/geoChartStore.ts"
+import {CARRIERS, type CellEvent, initialCellTowerData, type PhoneFix, PHONES, type TowerPing} from "./dataproviders/cellTowerData.ts"
 import {COUNTRY_BORDERS, LAND} from "./dataproviders/worldMap.ts"
 
 const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
@@ -50,73 +63,128 @@ const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
 // how much history (ms) the example starts with
 const INITIAL_HISTORY = 10_000
 
-// how long (ms) readings take to fade (when fading older readings)
+// how long (ms) events take to fade (when fading older events)
 const FADE_DURATION = 30_000
+
+// how long (ms) a phone's new (estimated) location flashes
+const FLASH_DURATION = 1500
+// how a phone's actual place flashes as it's located: smaller and shorter than its estimated
+// location's flash, in its own color, by theme
+const ACTUAL_FLASH = {radius: 8, duration: 600}
+const ACTUAL_COLORS = {light: '#ff8f00', dark: '#ffd54f'}
+
+/**
+ * The flashes of the phones' locations: as each arrives, a ring at the estimated location, and a
+ * small, short one at the phone's actual place (each when it's on)
+ * @param located Whether the estimated locations flash
+ * @param actual Whether the phones' actual places flash
+ * @param actualColor The color of the actual places' flashes
+ * @return The flashes of an event (see the plot's `flashes`): none for a ping
+ */
+const phoneFlashesFor = (located: boolean, actual: boolean, actualColor: string) =>
+    (datum: GeoDatum<CellEvent>): Array<GeoFlash> => {
+        if (datum.payload.kind !== 'fix') return []
+        const {phoneLatitude, phoneLongitude} = datum.payload
+        return [
+            ...(located ? [{}] : []),
+            ...(actual ? [{latitude: phoneLatitude, longitude: phoneLongitude, ...ACTUAL_FLASH, color: actualColor}] : []),
+        ]
+    }
+
+/**
+ * @param fix A phone's estimated location
+ * @param latitude The latitude of the estimated location
+ * @param longitude The longitude of the estimated location
+ * @return How far (m) the estimate is from where the phone actually was
+ */
+const errorOf = (fix: PhoneFix, latitude: number, longitude: number): number =>
+    Math.round(d3.geoDistance([longitude, latitude], [fix.phoneLongitude, fix.phoneLatitude]) * 6_371_000)
 
 // how fast (degrees per second) the globe turns (when it turns by itself)
 const AUTO_ROTATE_SPEED = 6
 
-// the readings' colors by status (when coloring by status; "ok" readings keep their series' color)
-const STATUS_COLORS: Record<SensorReading['status'], string | undefined> = {
-    ok: undefined,
-    warning: '#f08a3b',
-    alarm: '#d62728',
-}
+// how far the view can zoom in: far enough to see a city's towers, a few kilometers apart, from a
+// view of the whole earth
+const MAX_ZOOM = 2000
+
+// a fair signal is weaker than this (dBm), and a weak one, weaker than WEAK_SIGNAL
+const FAIR_SIGNAL = -100
+
+// the pings' colors by their signal (when coloring by signal; a good signal keeps its series' color)
+const SIGNAL_COLORS = {fair: '#f08a3b', weak: '#d62728'}
 
 /**
- * The radius of a reading's marker, from its magnitude: a quake's magnitude, a wind speed (m/s),
- * or a vessel's speed (knots), each scaled to a similar range of sizes
- * @param datum The reading
+ * @param signalStrength A signal's strength (dBm)
+ * @return Its color: red when it's weak, orange when it's fair, and otherwise `undefined` (the
+ * series' color)
+ */
+const signalColorOf = (signalStrength: number): string | undefined =>
+    signalStrength < WEAK_SIGNAL ? SIGNAL_COLORS.weak : signalStrength < FAIR_SIGNAL ? SIGNAL_COLORS.fair : undefined
+
+/**
+ * The radius of an event's marker: a ping's, from its signal's strength (the stronger, the larger);
+ * a phone's location's, a small blip
+ * @param datum The event
  * @return The marker's radius (px)
  */
-function radiusByMagnitude(datum: GeoDatum<SensorReading>): number {
-    const {kind, magnitude} = datum.payload
-    switch (kind) {
-        case 'seismic':
-            return 1 + magnitude * 1.2
-        case 'weather':
-            return 1.5 + magnitude / 6
-        default:
-            return 2.5
-    }
-}
-
-// the series' colors, by theme (for the groups that are series, see `groupColorOf`)
-const SERIES_COLORS = {
-    light: new Map([[SEISMIC, '#9467bd'], [WEATHER, '#1f77b4'], [VESSELS, '#2ca02c']]),
-    dark: new Map([[SEISMIC, '#c5a3ff'], [WEATHER, '#5bc0eb'], [VESSELS, '#7bd389']]),
+function radiusBySignal(datum: GeoDatum<CellEvent>): number {
+    return datum.payload.kind === 'ping' ? 1.5 + (datum.payload.signalStrength + 140) / 14 : 4
 }
 
 /**
- * The colors of the groups' wedges, in the pies (without a "color by"): a series' color for the 10°
- * grid's groups, and the status colors for the alarms' and warnings' groups; any other group (e.g.
- * a sensor) gets one of the plot's categorical colors
+ * @param datum An event
+ * @return A ping's color by its signal (see `signalColorOf`), or `undefined` (its series' color)
+ */
+const colorBySignal = (datum: GeoDatum<CellEvent>): string | undefined =>
+    datum.payload.kind === 'ping' ? signalColorOf(datum.payload.signalStrength) : undefined
+
+// the series' colors (the carriers', and the phones' locations'), by theme (also for the groups
+// that are carriers, see `groupColorsFor`)
+const CARRIER_COLORS = {
+    light: ['#1f77b4', '#2ca02c', '#9467bd', '#bcbd22', '#17becf', '#8c564b'],
+    dark: ['#5bc0eb', '#7bd389', '#c5a3ff', '#e3e36a', '#6ee7f2', '#c49c94'],
+}
+const SERIES_COLORS = {
+    light: new Map([...CARRIERS.map(({name}, index): [string, string] => [name, CARRIER_COLORS.light[index]]), [PHONES, '#c51b7d']]),
+    dark: new Map([...CARRIERS.map(({name}, index): [string, string] => [name, CARRIER_COLORS.dark[index]]), [PHONES, '#ff79c6']]),
+}
+
+// the technologies' colors (for the weak signals' groups): unlike the carriers'
+const TECHNOLOGY_COLORS = new Map([['5G', '#393b79'], ['LTE', '#e7969c'], ['3G', '#7f7f7f']])
+
+/**
+ * The colors of the groups' wedges, in the pies (without a "color by"): a carrier's color for the
+ * groups that are carriers, and the technologies' colors for the weak signals' groups; any other
+ * group (e.g. a kind of phone) gets one of the plot's categorical colors
  * @param theme The theme
  * @return The color of a group (by its name), or `undefined` for the plot's own choice
  */
 const groupColorsFor = (theme: Theme): ((group: string) => string | undefined) => {
     const seriesColors = SERIES_COLORS[theme.name === 'light' ? 'light' : 'dark']
-    return group => seriesColors.get(group) ?? STATUS_COLORS[group as SensorReading['status']]
+    // (the carriers' groups are named by carrier, and, in the grid, by their series: the same names)
+    return group => seriesColors.get(group) ?? TECHNOLOGY_COLORS.get(group)
 }
 
 /**
- * @param datum A reading
- * @return The reading's color by its status, or `undefined` (its series' color) when it's ok
+ * @param measure What colors the aggregates (a measure's name, or "count")
+ * @return The colors for its values, from the lowest (0) to the highest (1): red for the bad end --
+ * a weak signal (low), or a high drop rate -- and blues for the rest, which are neither good nor bad
  */
-const colorByStatus = (datum: GeoDatum<SensorReading>): string | undefined => STATUS_COLORS[datum.payload.status]
+function colorSchemeOf(measure: string): (t: number) => string {
+    if (measure === MEAN_SIGNAL || measure === WEAKEST_SIGNAL) return t => d3.interpolateYlOrRd(1 - t)
+    if (measure === DROP_RATE) return d3.interpolateYlOrRd
+    return t => d3.interpolateBlues(0.25 + 0.75 * t)
+}
 
 /**
  * @param theme The theme
  * @return The series' styles (their colors), for the theme
  */
 function seriesStylesFor(theme: Theme): Map<string, SeriesLineStyle> {
-    const light = theme.name === 'light'
-    const style = (color: string): SeriesLineStyle => ({...defaultLineStyle(), color, highlightColor: color})
-    return new Map([
-        [SEISMIC, style(light ? '#9467bd' : '#c5a3ff')],
-        [WEATHER, style(light ? '#1f77b4' : '#5bc0eb')],
-        [VESSELS, style(light ? '#2ca02c' : '#7bd389')],
-    ])
+    const colors = SERIES_COLORS[theme.name === 'light' ? 'light' : 'dark']
+    return new Map(Array.from(colors.entries()).map(([name, color]) =>
+        [name, {...defaultLineStyle(), color, highlightColor: color}]
+    ))
 }
 
 /**
@@ -173,12 +241,16 @@ export function StreamingGeoChart(props: Props): JSX.Element {
     const setShowTooltip = useGeoChartStore(state => state.setShowTooltip)
     const showLegend = useGeoChartStore(state => state.showLegend)
     const setShowLegend = useGeoChartStore(state => state.setShowLegend)
-    const sizeByMagnitude = useGeoChartStore(state => state.sizeByMagnitude)
-    const setSizeByMagnitude = useGeoChartStore(state => state.setSizeByMagnitude)
-    const colorByStatusOn = useGeoChartStore(state => state.colorByStatus)
-    const setColorByStatus = useGeoChartStore(state => state.setColorByStatus)
+    const sizeBySignal = useGeoChartStore(state => state.sizeBySignal)
+    const setSizeBySignal = useGeoChartStore(state => state.setSizeBySignal)
+    const colorBySignalOn = useGeoChartStore(state => state.colorBySignal)
+    const setColorBySignal = useGeoChartStore(state => state.setColorBySignal)
     const fadeOlder = useGeoChartStore(state => state.fadeOlder)
     const setFadeOlder = useGeoChartStore(state => state.setFadeOlder)
+    const flashLocated = useGeoChartStore(state => state.flashLocated)
+    const setFlashLocated = useGeoChartStore(state => state.setFlashLocated)
+    const flashActual = useGeoChartStore(state => state.flashActual)
+    const setFlashActual = useGeoChartStore(state => state.setFlashActual)
     const autoRotate = useGeoChartStore(state => state.autoRotate)
     const setAutoRotate = useGeoChartStore(state => state.setAutoRotate)
     const setGeoView = useGeoChartStore(state => state.setGeoView)
@@ -197,6 +269,15 @@ export function StreamingGeoChart(props: Props): JSX.Element {
     const filter = useMemo(() => filterFrom(filterValue), [filterValue])
     const seriesStyles = useMemo(() => seriesStylesFor(theme), [theme])
     const groupColorOf = useMemo(() => groupColorsFor(theme), [theme])
+    const phoneFlashes = useMemo(
+        () => phoneFlashesFor(flashLocated, flashActual, ACTUAL_COLORS[theme.name === 'light' ? 'light' : 'dark']),
+        [flashLocated, flashActual, theme]
+    )
+    // the roll-up's measures (e.g. the phones' differ from the pings'), and what colors its
+    // aggregates: the measure picked, when the roll-up has it, and otherwise their count
+    const measureNames = useMemo(() => measureNamesOf(rollupName), [rollupName])
+    const shownColorBy = colorBy === 'none' || colorBy === 'count' || measureNames.includes(colorBy) ? colorBy : 'count'
+    const colorScheme = useMemo(() => colorSchemeOf(shownColorBy), [shownColorBy])
 
     // seeds the store's data source with some history (the store survives remounts, so this only
     // needs to happen when it hasn't been seeded yet)
@@ -204,7 +285,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
     // eslint-disable-next-line react-hooks/refs
     if (!seededRef.current && dataSource.seriesList().length === 0) {
         seededRef.current = true
-        setInitialData(initialGeoData(DEFAULT_DATA_UPDATE_PERIOD, INITIAL_HISTORY))
+        setInitialData(initialCellTowerData(DEFAULT_DATA_UPDATE_PERIOD, INITIAL_HISTORY))
     }
 
     // holds the latest `resetZoom` handed back by <GeoPlot> (see its `onZoomReset` prop), so that
@@ -216,7 +297,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
 
     function handleClearClick(): void {
         // replaces the data source with a fresh one (which stops the current one), and resets the view
-        setInitialData(initialGeoData(DEFAULT_DATA_UPDATE_PERIOD, INITIAL_HISTORY))
+        setInitialData(initialCellTowerData(DEFAULT_DATA_UPDATE_PERIOD, INITIAL_HISTORY))
         resetZoomRef.current()
     }
 
@@ -268,7 +349,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         >
                             <FilterIcon color={filterValue.length > 0 ? theme.color : theme.disabledBackgroundColor}/>
                             <TooltipIcon color={showTooltip ? theme.color : theme.disabledBackgroundColor}/>
-                            <MarkersIcon color={sizeByMagnitude ? theme.color : theme.disabledBackgroundColor}/>
+                            <MarkersIcon color={sizeBySignal ? theme.color : theme.disabledBackgroundColor}/>
                         </CommonExecutionControls>
                         <CommonControls>
                             <DropDataControl
@@ -312,20 +393,20 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 onChange={() => setShowLegend(!showLegend)}
                             />
                             <Checkbox
-                                checked={sizeByMagnitude}
-                                label="size by magnitude"
+                                checked={sizeBySignal}
+                                label="size by signal"
                                 backgroundColor={theme.backgroundColor}
                                 borderColor={theme.color}
                                 labelColor={theme.color}
-                                onChange={() => setSizeByMagnitude(!sizeByMagnitude)}
+                                onChange={() => setSizeBySignal(!sizeBySignal)}
                             />
                             <Checkbox
-                                checked={colorByStatusOn}
-                                label="color by status"
+                                checked={colorBySignalOn}
+                                label="color by signal"
                                 backgroundColor={theme.backgroundColor}
                                 borderColor={theme.color}
                                 labelColor={theme.color}
-                                onChange={() => setColorByStatus(!colorByStatusOn)}
+                                onChange={() => setColorBySignal(!colorBySignalOn)}
                             />
                             <Divider theme={theme}/>
                             <GeoAggregateControls
@@ -335,8 +416,8 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 rollupNames={ROLLUP_NAMES}
                                 rollupName={rollupName}
                                 handleRollupNameChange={setRollupName}
-                                measureNames={MEASURE_NAMES}
-                                colorBy={colorBy}
+                                measureNames={measureNames}
+                                colorBy={shownColorBy}
                                 handleColorByChange={setColorBy}
                             />
                             <Divider theme={theme}/>
@@ -370,6 +451,22 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 onChange={() => setFadeOlder(!fadeOlder)}
                             />
                             <Checkbox
+                                checked={flashLocated}
+                                label="flash located"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setFlashLocated(!flashLocated)}
+                            />
+                            <Checkbox
+                                checked={flashActual}
+                                label="flash actual"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setFlashActual(!flashActual)}
+                            />
+                            <Checkbox
                                 checked={autoRotate}
                                 label="auto-rotate"
                                 backgroundColor={theme.backgroundColor}
@@ -395,26 +492,31 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                     windowingTime={windowingTime}
                     dataUpdatePeriod={dataUpdatePeriod}
                 >
-                    <GeoPlot<SensorReading>
+                    <GeoPlot<CellEvent>
                         projection={projection}
                         basemap={LAND}
                         borders={showBorders ? COUNTRY_BORDERS : undefined}
                         showGraticule={showGraticule}
-                        radiusOf={sizeByMagnitude ? radiusByMagnitude : undefined}
-                        colorOf={colorByStatusOn ? colorByStatus : undefined}
+                        radiusOf={sizeBySignal ? radiusBySignal : undefined}
+                        colorOf={colorBySignalOn ? colorBySignal : undefined}
                         fadeDuration={fadeOlder ? FADE_DURATION : undefined}
-                        mode={mode === 'points' ? 'points' : 'aggregates'}
+                        flashDuration={flashLocated || flashActual ? FLASH_DURATION : undefined}
+                        flashes={phoneFlashes}
+                        mode={mode === 'points' || mode === 'auto' ? mode : 'aggregates'}
+                        autoRollups={AUTO_ROLLUP_NAMES}
                         rollup={rollupName}
-                        colorBy={colorBy === 'none' ? undefined : colorBy}
-                        aggregateShape={mode === 'groups' ? 'pies' : rollupName === BY_GRID_CELL ? 'cells' : 'circles'}
+                        colorBy={shownColorBy === 'none' || mode === 'auto' ? undefined : shownColorBy}
+                        colorScheme={colorScheme}
+                        aggregateShape={mode === 'groups' || mode === 'auto' ? 'pies' : rollupName === BY_GRID_CELL ? 'cells' : 'circles'}
                         groupColors={groupColorOf}
                         autoRotate={autoRotate ? AUTO_ROTATE_SPEED : undefined}
+                        zoomMaxScaleFactor={MAX_ZOOM}
                         viewState={geoView}
                         onViewChange={setGeoView}
                         onZoomReset={handleZoomReset}
                     />
                     <Legend
-                        visible={showLegend && mode === 'points'}
+                        visible={showLegend && (mode === 'points' || mode === 'auto')}
                         location={LegendLocation.TOP_LEFT}
                         style={{
                             fontColor: theme.color,
@@ -434,12 +536,16 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                             borderOpacity: 0.5,
                         }}
                     >
-                        <GeoPlotTooltipContent<SensorReading>
-                            sparklineValueOf={datum => datum.payload.magnitude}
-                            payloadFormatter={({kind, magnitude, status}) =>
+                        <GeoPlotTooltipContent<CellEvent>
+                            sparklineValueOf={datum => datum.payload.kind === 'ping' ? datum.payload.signalStrength : datum.payload.accuracy}
+                            payloadFormatter={(payload, datum) => payload.kind === 'ping' ?
+                                <PingDetails ping={payload}/> :
                                 <>
-                                    <div>{readingLabel(kind)}: <b>{magnitude} {readingUnits(kind)}</b></div>
-                                    <div>Status: <b style={{color: STATUS_COLORS[status]}}>{status}</b></div>
+                                    {/* (the sensor, above, is the phone's ID) */}
+                                    <div>Phone: <b>{payload.phoneType}</b>, on {payload.carrier}</div>
+                                    <div>Located from <b>{payload.towers}</b> towers, to within <b>{payload.accuracy} m</b></div>
+                                    {/* (known only because the phones are simulated) */}
+                                    <div>Actually <b>{errorOf(payload, datum.latitude, datum.longitude)} m</b> away</div>
                                 </>
                             }
                         />
@@ -451,31 +557,17 @@ export function StreamingGeoChart(props: Props): JSX.Element {
 }
 
 /**
- * @param kind The kind of sensor
- * @return What its magnitude measures
+ * A ping's details, for the tooltip: the phone, the event, the network, and the signal
+ * @param props The ping
+ * @return The details
  */
-function readingLabel(kind: SensorReading['kind']): string {
-    switch (kind) {
-        case 'seismic':
-            return 'Magnitude'
-        case 'weather':
-            return 'Wind speed'
-        default:
-            return 'Speed'
-    }
-}
-
-/**
- * @param kind The kind of sensor
- * @return The units of its magnitude
- */
-function readingUnits(kind: SensorReading['kind']): string {
-    switch (kind) {
-        case 'seismic':
-            return ''
-        case 'weather':
-            return 'm/s'
-        default:
-            return 'kn'
-    }
+function PingDetails(props: {ping: TowerPing}): JSX.Element {
+    const {ping} = props
+    return <>
+        <div>Phone: <b>{ping.deviceId}</b> ({ping.phoneType})</div>
+        <div>Event: <b>{ping.event}</b></div>
+        <div>Network: <b>{ping.technology}</b>, band {ping.band}, sector {ping.sector}</div>
+        <div>Signal: <b style={{color: signalColorOf(ping.signalStrength)}}>{ping.signalStrength} dBm</b> (SINR {ping.signalQuality} dB)</div>
+        <div>Distance: <b>{ping.distance.toFixed(2)} km</b></div>
+    </>
 }

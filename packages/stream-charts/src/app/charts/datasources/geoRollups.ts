@@ -46,6 +46,12 @@ export interface GeoBinning<P> {
      * @return The bounds of the event's cell, when cells are areas (e.g. a grid's cells)
      */
     readonly cellBoundsOf?: (datum: GeoDatum<P>) => GeoCellBounds
+    /**
+     * The size (degrees, of latitude) of the cells, when they're all about the same size (e.g. a
+     * grid's, or rounded places'): so that a plot can pick, by how large the cells are on the screen,
+     * which of several roll-ups to show (see the `GeoPlot`'s `auto` mode)
+     */
+    readonly cellSize?: number
 }
 
 /**
@@ -76,6 +82,7 @@ export function byLocation<P>(precision: number = 0.01): GeoBinning<P> {
             tidy(rounded(datum.latitude) * precision),
             tidy(rounded(normalizedLongitude(datum.longitude)) * precision)
         ],
+        cellSize: precision,
     }
 }
 
@@ -120,6 +127,7 @@ export function byGridCell<P>(degrees: number): GeoBinning<P> {
             return [(south + north) / 2, (west + east) / 2]
         },
         cellBoundsOf: boundsOf,
+        cellSize: degrees,
     }
 }
 
@@ -817,6 +825,14 @@ export class GeoRollupState<P> {
         if (cell === undefined) return []
         if (group === undefined) return cell.all.list()
         return cell.groups.get(group)?.list() ?? []
+    }
+
+    /**
+     * @return The size (degrees) of the roll-up's cells, when its binning says (see
+     * {@link GeoBinning.cellSize})
+     */
+    get cellSize(): number | undefined {
+        return this.binning.cellSize
     }
 
     /**

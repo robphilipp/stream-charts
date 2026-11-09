@@ -83,6 +83,15 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
     }
 
     /**
+     * @param rollupName The name of a roll-up
+     * @return The size (degrees) of the roll-up's cells, when its binning says (e.g. `byGridCell`'s,
+     * and `byLocation`'s); `undefined` for an unknown roll-up, or one whose cells vary
+     */
+    rollupCellSize(rollupName: string): number | undefined {
+        return this.rollupStates.get(rollupName)?.cellSize
+    }
+
+    /**
      * @return The names of the roll-ups
      */
     rollupNames(): Array<string> {

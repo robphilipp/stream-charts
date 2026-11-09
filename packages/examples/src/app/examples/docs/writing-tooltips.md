@@ -303,15 +303,15 @@ The geo plot has two kinds of things to hover over, depending on its `mode`: the
 ```tsx
 import {type ReactElement} from "react";
 import {TooltipContent, type GeoDatum, type GeoTooltipMetadata} from "stream-charts";
-import type {SensorReading} from "./dataproviders/randomGeoData";
+import type {CellEvent} from "./dataproviders/cellTowerData";
 
 export function MyGeoTooltip(): ReactElement {
     return (
-        <TooltipContent<GeoDatum<SensorReading>, GeoTooltipMetadata<SensorReading>, GeoTooltipMetadata<SensorReading>>
+        <TooltipContent<GeoDatum<CellEvent>, GeoTooltipMetadata<CellEvent>, GeoTooltipMetadata<CellEvent>>
             capture={(_seriesName, _time, {metadata}) => metadata}
         >
             {target => target.kind === 'event' ?
-                <div>{target.datum.sensorId}: {target.datum.payload.magnitude}</div> :
+                <div>{target.datum.sensorId}: {target.datum.payload.kind === 'ping' ? `${target.datum.payload.signalStrength} dBm` : 'located'}</div> :
                 <div>{target.aggregate.count} events from {target.aggregate.sensorCount} sensors</div>
             }
         </TooltipContent>

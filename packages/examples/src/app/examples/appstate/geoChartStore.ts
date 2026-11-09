@@ -3,20 +3,23 @@ import {create, type StoreApi} from 'zustand';
 import {devtools} from "zustand/middleware";
 import {
     byGridCell,
-    byLocation,
     bySensor,
     type DataGenerator,
     GeoDataSource,
     type GeoChartData,
+    type GeoDatum,
     type GeoMeasure,
     type GeoPlotViewState,
     type GeoProjectionName,
     type GeoRollup,
     type GeoSeries,
+    meanOf,
     measureOf,
+    minOf,
     reduceOf,
 } from "stream-charts";
-import {randomGeoDataObservable, type SensorKind, type SensorReading} from "../dataproviders/randomGeoData.ts";
+import * as d3 from "d3";
+import {type CellEvent, CITY_CENTERS, cellTowerDataObservable, TOWERS_BY_ID} from "../dataproviders/cellTowerData.ts";
 import {DEFAULT_DROP_AFTER_100} from "../options/dropDataAfter.ts";
 import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceStateSlice.ts";
 
@@ -25,90 +28,144 @@ export const DEFAULT_DATA_UPDATE_PERIOD = 50
 /*
     The roll-ups the data source keeps (see the GeoPlot's "aggregates" mode)
  */
-export const BY_LOCATION = "Events by location"
-export const BY_SENSOR = "Events by sensor"
-export const ALERTS_BY_LOCATION = "Alarms and warnings by location"
+export const BY_TOWER = "Pings by tower"
+export const BY_CITY = "Pings by city"
+export const WEAK_SIGNALS = "Weak signals by tower"
+export const BY_PHONE = "Phones, where they are"
 export const BY_GRID_CELL = "10° grid"
-export const SENSORS_BY_AREA = "Sensors in 10° areas"
-export const ROLLUP_NAMES = [BY_LOCATION, BY_SENSOR, ALERTS_BY_LOCATION, BY_GRID_CELL, SENSORS_BY_AREA]
-
-/**
- * What the geo plot shows: each event, the aggregates, or the aggregates divided by their groups
- * (pies: a wedge per group)
- */
-export type GeoShow = 'points' | 'aggregates' | 'groups'
+export const ROLLUP_NAMES = [BY_TOWER, BY_CITY, WEAK_SIGNALS, BY_PHONE, BY_GRID_CELL]
 
 /*
-    Each roll-up's measures, one for each quantity, so that each has its own units: a quake's magnitude
-    (which has none), a wind speed (m/s), and a vessel's speed (knots). A cell's events can be of any
-    kind, so each measure only takes the events of its own kind (and a cell without any has no value).
+    The roll-ups that the auto mode chooses among, by the zoom (see the GeoPlot's "auto" mode): the
+    pings, in the cells of grids from 10° down to 0.01° (about a kilometer), broken down by carrier.
+    (The phones' locations aren't clustered: they'd be half of every cluster, since each ping comes
+    with one. They show, with their flashes, once the view is zoomed in to the events.)
  */
+export const AUTO_CELL_SIZES = [10, 1, 0.1, 0.01]
+export const AUTO_ROLLUP_NAMES = AUTO_CELL_SIZES.map(degrees => `Clusters of ${degrees}°`)
 
 /**
- * @param kind The kind of sensor
- * @param units The units of its readings
- * @return The measure of the mean reading of that kind of sensor's events: kept as events arrive
- * and leave
+ * What the geo plot shows: clusters of events or the events, by the zoom (auto); each event; the
+ * aggregates; or the aggregates divided by their groups (pies: a wedge per group)
  */
-const meanReadingOf = (kind: SensorKind, units: string): GeoMeasure<SensorReading> =>
-    reduceOf<SensorReading, {n: number, sum: number}>({
-        initial: () => ({n: 0, sum: 0}),
-        add: ({n, sum}, datum) => datum.payload.kind === kind ? {n: n + 1, sum: sum + datum.payload.magnitude} : {n, sum},
-        remove: ({n, sum}, datum) => datum.payload.kind === kind ? {n: n - 1, sum: sum - datum.payload.magnitude} : {n, sum},
-        value: ({n, sum}) => n > 0 ? sum / n : NaN,
-    }, {units, format: ',.1f'})
+export type GeoShow = 'auto' | 'points' | 'aggregates' | 'groups'
+
+// a signal weaker than this (dBm) is weak (calls drop, data slows)
+export const WEAK_SIGNAL = -110
 
 /**
- * @param kind The kind of sensor
- * @return The measure of the peak reading of that kind of sensor's events (a peak can't take an
- * event back out, so it's found from all of a cell's events, when they've changed)
+ * @param datum An event
+ * @return Whether it's a ping to a tower (rather than a phone's estimated location)
  */
-const peakReadingOf = (kind: SensorKind): GeoMeasure<SensorReading> =>
-    measureOf<SensorReading>(events => {
-        const peak = events.reduce(
-            (max, datum) => datum.payload.kind === kind ? Math.max(max, datum.payload.magnitude) : max,
-            -Infinity
-        )
-        return Number.isFinite(peak) ? peak : NaN
-    }, {format: ',.1f'})
+const isPing = (datum: GeoDatum<CellEvent>): boolean => datum.payload.kind === 'ping'
 
-export const PEAK_MAGNITUDE = "peak magnitude"
-export const MEAN_WIND_SPEED = "mean wind speed"
-export const MEAN_VESSEL_SPEED = "mean vessel speed"
-export const MEASURE_NAMES = [PEAK_MAGNITUDE, MEAN_WIND_SPEED, MEAN_VESSEL_SPEED]
+/**
+ * @param datum An event
+ * @return A ping's signal strength (dBm); `NaN` for a phone's location, which the measures leave out
+ */
+const signalStrength = (datum: GeoDatum<CellEvent>): number =>
+    datum.payload.kind === 'ping' ? datum.payload.signalStrength : NaN
 
-const MEASURES: Record<string, GeoMeasure<SensorReading>> = {
-    [PEAK_MAGNITUDE]: peakReadingOf('seismic'),
-    [MEAN_WIND_SPEED]: meanReadingOf('weather', 'm/s'),
-    [MEAN_VESSEL_SPEED]: meanReadingOf('vessel', 'kn'),
+/**
+ * @param datum An event
+ * @return A ping's distance (km) from its tower; `NaN` for a phone's location
+ */
+const distance = (datum: GeoDatum<CellEvent>): number =>
+    datum.payload.kind === 'ping' ? datum.payload.distance : NaN
+
+/*
+    The pings' measures: the library's mean and minimum of the signal strength, a measure of our own
+    that's kept as pings come and go (the share of calls that dropped), and one that's found from all
+    of a cell's pings (the median distance of the phones from their towers)
+ */
+export const MEAN_SIGNAL = "mean signal"
+export const WEAKEST_SIGNAL = "weakest signal"
+export const DROP_RATE = "drop rate"
+export const MEDIAN_DISTANCE = "median distance"
+export const MEASURE_NAMES = [MEAN_SIGNAL, WEAKEST_SIGNAL, DROP_RATE, MEDIAN_DISTANCE]
+// the phones' measure: how well their locations fit the towers' distances
+export const MEAN_ACCURACY = "mean accuracy"
+
+/**
+ * @param datum An event
+ * @return 1 when it's a call that dropped, otherwise 0
+ */
+const dropped = (datum: GeoDatum<CellEvent>): number =>
+    datum.payload.kind === 'ping' && datum.payload.event === 'call drop' ? 1 : 0
+
+/**
+ * @param datum An event
+ * @return 1 when it's a call (that went through, or dropped), otherwise 0
+ */
+const isCall = (datum: GeoDatum<CellEvent>): number =>
+    datum.payload.kind === 'ping' && (datum.payload.event === 'call' || datum.payload.event === 'call drop') ? 1 : 0
+
+const MEASURES: Record<string, GeoMeasure<CellEvent>> = {
+    [MEAN_SIGNAL]: meanOf(signalStrength, {units: 'dBm', format: ',.0f'}),
+    [WEAKEST_SIGNAL]: minOf(signalStrength, {units: 'dBm', format: ',.0f'}),
+    [DROP_RATE]: reduceOf<CellEvent, {calls: number, drops: number}>({
+        initial: () => ({calls: 0, drops: 0}),
+        add: ({calls, drops}, datum) => ({calls: calls + isCall(datum), drops: drops + dropped(datum)}),
+        remove: ({calls, drops}, datum) => ({calls: calls - isCall(datum), drops: drops - dropped(datum)}),
+        value: ({calls, drops}) => calls > 0 ? drops / calls : NaN,
+    }, {format: '.0%'}),
+    [MEDIAN_DISTANCE]: measureOf<CellEvent>(
+        events => d3.median(events, distance) ?? NaN,
+        {units: 'km', format: ',.1f'}
+    ),
 }
 
+/**
+ * @param datum A ping
+ * @return The cell of the ping's tower's city: its ID (the city's code), and the city's center
+ */
+function cityOf(datum: GeoDatum<CellEvent>): {id: string, latitude: number, longitude: number} {
+    const city = TOWERS_BY_ID.get(datum.sensorId)?.city ?? datum.sensorId
+    const [longitude, latitude] = CITY_CENTERS.get(city) ?? [datum.longitude, datum.latitude]
+    return {id: city, latitude, longitude}
+}
 
-const ROLLUPS: Record<string, GeoRollup<SensorReading>> = {
-    // all the events at a place, whichever sensor reported them, broken down by sensor (a seismic
-    // site has several sensors at the same place)
-    [BY_LOCATION]: {cellOf: byLocation(0.01), groupBy: datum => datum.sensorId, measures: MEASURES},
-    // each sensor's events, where the sensor last was (the vessels move)
-    [BY_SENSOR]: {cellOf: bySensor({position: 'latest'}), measures: MEASURES},
-    // only the warnings and alarms, by place, broken down by status
-    [ALERTS_BY_LOCATION]: {
-        cellOf: byLocation(0.01),
-        filter: datum => datum.payload.status !== 'ok',
-        groupBy: datum => datum.payload.status,
+const ROLLUPS: Record<string, GeoRollup<CellEvent>> = {
+    // each tower's pings, broken down by the kind of phone
+    [BY_TOWER]: {cellOf: bySensor(), filter: isPing, groupBy: datum => datum.payload.phoneType, measures: MEASURES},
+    // each city's pings, from all its towers, at the city's center, broken down by carrier
+    [BY_CITY]: {cellOf: cityOf, filter: isPing, groupBy: datum => datum.payload.carrier, measures: MEASURES},
+    // only the pings with a weak signal, by tower, broken down by technology
+    [WEAK_SIGNALS]: {
+        cellOf: bySensor(),
+        filter: datum => datum.payload.kind === 'ping' && datum.payload.signalStrength < WEAK_SIGNAL,
+        groupBy: datum => datum.payload.kind === 'ping' ? datum.payload.technology : '',
         measures: MEASURES,
     },
-    // all the events in each 10° cell of a grid, broken down by series
-    [BY_GRID_CELL]: {cellOf: byGridCell(10), groupBy: (_datum, seriesName) => seriesName, measures: MEASURES},
-    // all the events in each 10° area, broken down by sensor -- each sensor's peak and mean reading,
-    // within each area (as pies: a wedge per sensor)
-    [SENSORS_BY_AREA]: {cellOf: byGridCell(10), groupBy: datum => datum.sensorId, measures: MEASURES},
+    // each phone, where it was last located (the phones move), broken down by carrier
+    [BY_PHONE]: {
+        cellOf: bySensor({position: 'latest'}),
+        filter: datum => datum.payload.kind === 'fix',
+        groupBy: datum => datum.payload.carrier,
+        measures: {
+            [MEAN_ACCURACY]: meanOf(datum => datum.payload.kind === 'fix' ? datum.payload.accuracy : NaN, {units: 'm', format: ',.0f'}),
+        },
+    },
+    // all the pings in each 10° cell of a grid, broken down by carrier
+    [BY_GRID_CELL]: {cellOf: byGridCell(10), filter: isPing, groupBy: (_datum, seriesName) => seriesName, measures: MEASURES},
+    // the auto mode's clusters: the pings, broken down by carrier
+    ...Object.fromEntries(AUTO_CELL_SIZES.map((degrees, index): [string, GeoRollup<CellEvent>] => [
+        AUTO_ROLLUP_NAMES[index],
+        {cellOf: byGridCell(degrees), filter: isPing, groupBy: (_datum, seriesName) => seriesName, measures: MEASURES},
+    ])),
 }
+
+/**
+ * @param rollupName The name of a roll-up
+ * @return The names of the roll-up's measures (e.g. for what colors its aggregates)
+ */
+export const measureNamesOf = (rollupName: string): Array<string> => Object.keys(ROLLUPS[rollupName]?.measures ?? {})
 
 /**
  * @param seriesList The series
  * @return The time of the latest event in any of the series (0 when there are none)
  */
-function lastTimeIn(seriesList: Array<GeoSeries<SensorReading>>): number {
+function lastTimeIn(seriesList: Array<GeoSeries<CellEvent>>): number {
     return seriesList.reduce(
         (tMax, series) => Math.max(tMax, series.last().map(datum => datum.time).getOrElse(0)),
         0
@@ -116,27 +173,28 @@ function lastTimeIn(seriesList: Array<GeoSeries<SensorReading>>): number {
 }
 
 /**
- * Creates the random sensor-event generator for the specified update period. The data source calls
- * it with its current series each time it starts, so Run after Pause continues from the latest event.
- * @param updatePeriod The period (ms) between ticks of the sensor network
+ * Creates the random cell-tower event generator for the specified update period. The data source
+ * calls it with its current series each time it starts, so Run after Pause continues from the
+ * latest event.
+ * @param updatePeriod The period (ms) between ticks of the cell network
  * @return The data generator
  */
-const randomData = (updatePeriod: number): DataGenerator<GeoChartData<SensorReading>, GeoSeries<SensorReading>> =>
-    currentSeries => randomGeoDataObservable(updatePeriod, lastTimeIn(currentSeries))
+const randomData = (updatePeriod: number): DataGenerator<GeoChartData<CellEvent>, GeoSeries<CellEvent>> =>
+    currentSeries => cellTowerDataObservable(updatePeriod, lastTimeIn(currentSeries))
 
 /**
  * Creates the chart's data source
  * @param initialData The initial series (owned by the data source from here on)
- * @param dataUpdatePeriod The period (ms) between ticks of the sensor network
+ * @param dataUpdatePeriod The period (ms) between ticks of the cell network
  * @param dropAfterMs Events older than this (ms) are dropped
  * @return The data source
  */
 const newDataSource = (
-    initialData: Array<GeoSeries<SensorReading>>,
+    initialData: Array<GeoSeries<CellEvent>>,
     dataUpdatePeriod: number,
     dropAfterMs: number
-): GeoDataSource<SensorReading> =>
-    new GeoDataSource<SensorReading>({
+): GeoDataSource<CellEvent> =>
+    new GeoDataSource<CellEvent>({
         initialData,
         generator: randomData(dataUpdatePeriod),
         dropDataAfter: dropAfterMs,
@@ -153,16 +211,20 @@ type GeoChartState = {
     showBorders: boolean
     showTooltip: boolean
     showLegend: boolean
-    // whether the markers' size follows the reading's magnitude
-    sizeByMagnitude: boolean
-    // whether the markers' color follows the reading's status (rather than the series' color)
-    colorByStatus: boolean
-    // whether older readings fade
+    // whether the pings' markers' size follows their signal's strength
+    sizeBySignal: boolean
+    // whether the pings' markers' color shows a weak signal (rather than the series' color)
+    colorBySignal: boolean
+    // whether older events fade
     fadeOlder: boolean
+    // whether each phone's new (estimated) location flashes
+    flashLocated: boolean
+    // whether each phone's actual place flashes (briefly) as it's located
+    flashActual: boolean
     // whether the globe turns by itself
     autoRotate: boolean
     // the plot's view (rotation and zoom), kept so that it survives navigating away and back
-    // (undefined until the view has changed)
+    // (undefined, for the plot's starting view of the whole globe, until the view has changed)
     geoView: GeoPlotViewState | undefined
     // whether the plot shows each event, a roll-up's aggregates, or its aggregates by group
     mode: GeoShow
@@ -175,21 +237,27 @@ type GeoChartState = {
 const initialState: GeoChartState = {
     filterValue: '',
     dropAfterMs: DEFAULT_DROP_AFTER_100[1],
-    windowingTime: 50,
+    // (the events are redrawn in batches five times a second: with tens of thousands of events
+    // held, redrawing them all on each of 20 batches a second would leave little time for anything
+    // else; the flashes still animate smoothly between batches)
+    windowingTime: 200,
     dataUpdatePeriod: DEFAULT_DATA_UPDATE_PERIOD,
     projection: 'orthographic',
     showGraticule: true,
     showBorders: true,
     showTooltip: true,
     showLegend: true,
-    sizeByMagnitude: true,
-    colorByStatus: false,
+    sizeBySignal: true,
+    colorBySignal: false,
     fadeOlder: true,
+    flashLocated: true,
+    flashActual: true,
     autoRotate: false,
     geoView: undefined,
-    mode: 'points',
-    rollupName: BY_LOCATION,
-    colorBy: PEAK_MAGNITUDE,
+    // (clusters, from afar, which come apart into the events as the view zooms in)
+    mode: 'auto',
+    rollupName: BY_TOWER,
+    colorBy: MEAN_SIGNAL,
 }
 
 type GeoChartActions = {
@@ -202,9 +270,11 @@ type GeoChartActions = {
     setShowBorders: (show: boolean) => void
     setShowTooltip: (show: boolean) => void
     setShowLegend: (show: boolean) => void
-    setSizeByMagnitude: (sizeByMagnitude: boolean) => void
-    setColorByStatus: (colorByStatus: boolean) => void
+    setSizeBySignal: (sizeBySignal: boolean) => void
+    setColorBySignal: (colorBySignal: boolean) => void
     setFadeOlder: (fadeOlder: boolean) => void
+    setFlashLocated: (flashLocated: boolean) => void
+    setFlashActual: (flashActual: boolean) => void
     setAutoRotate: (autoRotate: boolean) => void
     setGeoView: (geoView: GeoPlotViewState) => void
     setMode: (mode: GeoShow) => void
@@ -213,7 +283,7 @@ type GeoChartActions = {
 }
 
 type GeoChartStore = GeoChartState & GeoChartActions &
-    DataSourceSlice<GeoDataSource<SensorReading>, GeoSeries<SensorReading>>
+    DataSourceSlice<GeoDataSource<CellEvent>, GeoSeries<CellEvent>>
 
 /**
  * The geo chart's state, which survives the chart being unmounted (e.g. navigating to another page
@@ -222,7 +292,7 @@ type GeoChartStore = GeoChartState & GeoChartActions &
 export const useGeoChartStore: UseBoundStore<StoreApi<GeoChartStore>> = create<GeoChartStore>()(
     devtools<GeoChartStore>((set, get) => ({
         ...initialState,
-        ...dataSourceSlice<GeoDataSource<SensorReading>, GeoSeries<SensorReading>>(
+        ...dataSourceSlice<GeoDataSource<CellEvent>, GeoSeries<CellEvent>>(
             set,
             get,
             newDataSource([], initialState.dataUpdatePeriod, initialState.dropAfterMs),
@@ -251,9 +321,11 @@ export const useGeoChartStore: UseBoundStore<StoreApi<GeoChartStore>> = create<G
         setShowBorders: (showBorders: boolean): void => set({showBorders}),
         setShowTooltip: (showTooltip: boolean): void => set({showTooltip}),
         setShowLegend: (showLegend: boolean): void => set({showLegend}),
-        setSizeByMagnitude: (sizeByMagnitude: boolean): void => set({sizeByMagnitude}),
-        setColorByStatus: (colorByStatus: boolean): void => set({colorByStatus}),
+        setSizeBySignal: (sizeBySignal: boolean): void => set({sizeBySignal}),
+        setColorBySignal: (colorBySignal: boolean): void => set({colorBySignal}),
         setFadeOlder: (fadeOlder: boolean): void => set({fadeOlder}),
+        setFlashLocated: (flashLocated: boolean): void => set({flashLocated}),
+        setFlashActual: (flashActual: boolean): void => set({flashActual}),
         setAutoRotate: (autoRotate: boolean): void => set({autoRotate}),
         setGeoView: (geoView: GeoPlotViewState): void => set({geoView}),
         setMode: (mode: GeoShow): void => set({mode}),

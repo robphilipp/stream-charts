@@ -8,7 +8,7 @@
 
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/charts-collage-dark.gif">
-    <img src="packages/examples/public/images/charts-collage-light.gif" alt="the six stream-charts plots: a scatter chart streaming live, scrolling smoothly with cadence, with two x-axes, a linear and a logarithmic y-axis, and a legend whose hovered entry highlights its series; a raster chart of neuron spikes with a legend and a tooltip; a bar chart with windowed statistics and a tooltip; a Poincaré plot of an iterated map with a tooltip; an outlier chart with confidence bands, flagged outliers, and a tooltip; and a geo chart of sensor events on a turning globe">
+    <img src="packages/examples/public/images/charts-collage-light.gif" alt="the six stream-charts plots: a scatter chart streaming live, scrolling smoothly with cadence, with two x-axes, a linear and a logarithmic y-axis, and a legend whose hovered entry highlights its series; a raster chart of neuron spikes with a legend and a tooltip; a bar chart with windowed statistics and a tooltip; a Poincaré plot of an iterated map with a tooltip; an outlier chart with confidence bands, flagged outliers, and a tooltip; and a geo chart of cell-tower pings and phones' locations flashing on a turning globe">
 </picture>
 
 *Scatter, streaming (two x-axes, linear and log y-axes, hovering the legend highlights a series, cadence) · raster (legend, tooltip) · bar (running and windowed statistics, tooltip) · Poincaré (tooltip) · outlier (confidence bands, flagged outliers, tooltip) · geo (sensor events on a turning globe)*
@@ -849,12 +849,12 @@ Events from sensors at places on the earth, drawn on a globe or a map with [d3-g
 
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/geo-chart-dark.png">
-    <img src="packages/examples/public/images/geo-chart-light.png" alt="the geo chart example: a globe with seismic events, weather readings, and trails of vessel reports, the older ones fading">
+    <img src="packages/examples/public/images/geo-chart-light.png" alt="the geo chart example, zoomed into London: six carriers' cell towers as colored dots, the trails of the phones' estimated locations between them, the older ones fading, and rings flashing out from the newest">
 </picture>
 
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/geo-aggregates-dark.png">
-    <img src="packages/examples/public/images/geo-aggregates-light.png" alt="the geo chart showing aggregates: circles at each place, sized by their number of events and colored by their peak reading, with a size and a color key">
+    <img src="packages/examples/public/images/geo-aggregates-light.png" alt="the geo chart showing aggregates: a circle at each cell tower, sized by its number of pings and colored by their mean signal strength, from red (weak) to yellow (strong), with a size and a color key">
 </picture>
 
 [▶ watch it stream](packages/examples/public/images/geo-chart-streaming.gif) (animated)
@@ -881,13 +881,17 @@ const borders = mesh(countries, countries.objects.countries, (a, b) => a !== b)
 | `markerRadius`, `markerOpacity` | `number` | Each event's marker radius (px, default 3) and opacity (default 0.85). |
 | `radiusOf`, `colorOf` | `(datum, seriesName) => number`, `(datum, seriesName) => string \| undefined` | An event's radius and color, for example from its payload. A color of `undefined` means the series' color. |
 | `fadeDuration`, `fadedOpacity` | `number` | Fades events as they age: to `fadedOpacity` (a fraction, default 0.15) once they're `fadeDuration` ms older than the latest event. Off by default. |
+| `flashDuration`, `flashRadius`, `flashes` | `number`, `number`, `(datum, seriesName) => boolean` | Flashes each new event as it arrives: a ring, in its marker's color, grows to `flashRadius` px (default 20) and fades over `flashDuration` ms – in either mode. The ring is a circle on the earth, shaped by the projection like the markers. `flashes` picks which events flash (all, by default): `true` or `false`, or a list of flashes, each with its own `latitude`, `longitude`, `radius`, `duration`, and `color` (a `GeoFlash`) – for example, a second flash at a place the event is about. The plot redraws up to 60 times a second while a ring shows. Off by default. |
+| `flashMergeDistance` | `number` | Flashes of the same color and length that start within one flash's length of each other, this close (px) on the screen, are drawn as one ring, wider the more it stands for – so that a place with many new events pulses steadily, one ring at a time. Default 20; 0 never merges them. |
 | `rotateEnabled`, `zoomEnabled` | `boolean` | Whether dragging moves the view, and the wheel zooms it (both default `true`). |
 | `zoomKeyModifiersRequired` | `boolean` | Whether zooming needs shift or ctrl held down (default `true`). |
 | `zoomMaxScaleFactor` | `number` | How far the view can zoom in (default 20×). |
+| `isolateHoveredSeries` | `boolean` | What hovering a series in the legend does: show only that series' events (and their flashes), `true`, the default – a map's series often overlap – or dim the others', `false`. |
 | `autoRotate` | `number` | Turns the globe by itself, at this many degrees per second, pausing while it's dragged or an event is hovered. The plot redraws up to 60 times a second while it turns (the demo's few thousand events take about 8 ms a redraw), so with many tens of thousands of events held, show a roll-up instead, or keep fewer events. |
 | `viewState`, `onViewChange` | `GeoPlotViewState`, `(view) => void` | Keep the view (rotation, zoom, and a flat map's offset) across remounts: store what `onViewChange` hands you, and pass it back as `viewState`. |
 | `onZoomReset` | `(resetZoom: () => void) => void` | Hands you a function that resets the view, for example for a **Reset** button. |
-| `mode` | `'points' \| 'aggregates'` | Each event (the default), or a roll-up's aggregates. |
+| `mode` | `'points' \| 'aggregates' \| 'auto'` | Each event (the default); a roll-up's aggregates; or, by the zoom, clusters that come apart into the events as the view zooms in (`auto`): the coarsest of `autoRollups` whose cells span at most `clusterDistance` px on the screen, or the events once even the finest's cells span more. |
+| `autoRollups`, `clusterDistance` | `string[]`, `number` | For the `auto` mode: the roll-ups to choose among – roll-ups of the same events, with cells of different sizes (e.g. `byGridCell(10)`, `byGridCell(1)`, `byGridCell(0.1)`) – and how far apart (px, default 20) events need to be on the screen to be shown apart. Default: all of the data source's roll-ups whose cells have a size. |
 | `rollup` | `string` | The name of the data source's roll-up to show, in the aggregates mode. |
 | `sizeBy`, `colorBy` | `string` | What an aggregate's size (`count`, the default, or a measure's name) and color (a measure's name, or `count`) show. The circles' areas are proportional to `sizeBy`. |
 | `sizeDomain`, `colorDomain` | `[number, number]` | Fixed ranges for the sizes and colors. The sizes span `sizeDomain` (default: 0 to the largest value shown), from `minAggregateRadius` to `maxAggregateRadius`; the colors span `colorDomain` (default: the range of the values shown). Aggregates without a `colorBy` value are drawn in `aggregateColor`, which the key shows as "no value". |
@@ -919,7 +923,7 @@ const dataSource = new GeoDataSource<Reading>({
 
 | roll-up option | description |
 |---|---|
-| `cellOf` | **Required.** How events are put into cells: `byLocation(precision)` (events at the same place, the latitude and longitude rounded to `precision` degrees, whichever sensor reported them), `bySensor({position})` (each sensor's events, drawn at the sensor's `'latest'` or `'mean'` position), `byGridCell(degrees)` (the cells of a latitude-longitude grid, which can be drawn as areas), or a function `datum => ({id, latitude, longitude})`. |
+| `cellOf` | **Required.** How events are put into cells (`byLocation` and `byGridCell` also say how large their cells are, for the plot's `auto` mode): `byLocation(precision)` (events at the same place, the latitude and longitude rounded to `precision` degrees, whichever sensor reported them), `bySensor({position})` (each sensor's events, drawn at the sensor's `'latest'` or `'mean'` position), `byGridCell(degrees)` (the cells of a latitude-longitude grid, which can be drawn as areas), or a function `datum => ({id, latitude, longitude})`. |
 | `filter` | `(datum, seriesName) => boolean`: which events are rolled up (all, by default). Like `cellOf` and `groupBy`, it's called once for each event, as it arrives; when the event is dropped, it's taken out of the cell and group it went into then. |
 | `groupBy` | `(datum, seriesName) => string`: a group for each event, for a breakdown of each cell (for example by sensor, by series, or by a payload field). |
 | `measures` | The measures of each cell (and group), by name: `countOf()`, `sumOf(of)`, `meanOf(of)`, `minOf(of)`, `maxOf(of)`, or `latestOf(of)`, where `of` gives an event's value, for example `d => d.payload.magnitude` (a value that isn't a finite number, such as a missing reading's `NaN`, is left out of the sum, mean, minimum, and maximum); or one of your own (see below). Each takes its units and format as its last argument (see below). |
