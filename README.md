@@ -1077,7 +1077,7 @@ Each content component also takes a `style` that overrides parts of the `<Toolti
 | `valueFormatter` | `(name, value) => ReactNode`: an aggregate's measures. |
 | `maxGroups` | The most groups to list for an aggregate (default 6). |
 | `aggregateFormatter` | `(aggregate, rollup, group?) => ReactNode`: replaces the whole content for an aggregate (`group` is the hovered wedge's group, with pies). |
-| `sparklineValueOf` | `(datum) => number`: the value to draw in sparklines of the sensors' readings over time, from the events the data source holds. For an event, its sensor's (the event marked); for an aggregate, a one-sensor cell's, and each listed group's whose events are one sensor's (on its line, and larger for the hovered group). A sparkline is only ever one sensor's, so it never mixes the quantities different sensors measure. No sparklines without it. |
+| `sparklineValueOf` | `(datum) => number`: the value to draw in sparklines of the sensors' readings over time, from the events the data source holds. For an event, its sensor's (the event marked); for an aggregate, a one-sensor cell's, and each listed group's whose events are one sensor's (on its line, and larger for the hovered group). The larger sparklines have axes: the readings' values, and the seconds before the latest reading. A sparkline is only ever one sensor's, so it never mixes the quantities different sensors measure. No sparklines without it. |
 
 #### <span id="custom-tooltip">writing your own tooltip content</span>
 

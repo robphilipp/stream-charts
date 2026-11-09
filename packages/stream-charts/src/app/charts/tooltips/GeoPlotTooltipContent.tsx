@@ -1,4 +1,5 @@
 import type {ReactElement, ReactNode} from "react"
+import * as d3 from "d3"
 import {type Sparkline, sparklineFor, type TooltipStyle} from "./tooltipUtils"
 import {TooltipContent} from "./TooltipContent"
 import type {GeoDatum} from "../series/geoSeries"
@@ -10,12 +11,39 @@ import type {GeoChartData} from "../observables/geo"
 import type {GeoSeries} from "../series/geoSeries"
 
 // the sizes (px) of the sparklines: a full one (an event's sensor, a one-sensor cell, or the hovered
-// group), and an inline one (on a group's line)
-const SPARKLINE = {width: 180, height: 32}
+// group), with axes, and an inline one (on a group's line); a full one's size is its plot area's,
+// without its axes' labels
+const SPARKLINE = {width: 180, height: 40}
 const INLINE_SPARKLINE = {width: 60, height: 12}
+// the space around a sparkline's line, within its plot area (at the full size, room for the marked
+// point's dot)
+const SPARKLINE_PADDING = 4
+const INLINE_SPARKLINE_PADDING = 1
+// the space around a full sparkline's plot area for its axes: their ticks and labels (the y-axis' on
+// the left; the time axis' below, with its "s" caption to the right of its end)
+const AXES_MARGIN = {left: 28, right: 14, top: 4, bottom: 14}
+// the length of the axes' ticks
+const TICK_LENGTH = 3
+// the (most) ticks on the axes (the y-axis' round values, of which only the middle one, if any, is
+// labelled, besides the ends)
+const VALUE_TICK_COUNT = 2
+const TIME_TICK_COUNT = 4
 
 // the most points a sensor's sparkline is drawn from (its latest ones)
 const MAX_SPARKLINE_EVENTS = 500
+
+/**
+ * A sensor's readings, as a sparkline, and the ranges of the values and the times it spans (for its
+ * axes)
+ */
+type Readings = {
+    sparkline: Sparkline
+    // the range of values the sparkline's height spans (with axes, a round range, so that the
+    // y-axis' ticks are round values)
+    values: [lowest: number, highest: number]
+    // the times of the first and the last of the readings drawn
+    times: [first: number, last: number]
+}
 
 /**
  * What the tooltip shows: what's under the mouse, and the sparklines of its sensors' readings
@@ -24,9 +52,9 @@ const MAX_SPARKLINE_EVENTS = 500
 type GeoTooltipContents<P> = {
     target: GeoTooltipMetadata<P>
     // the event's sensor's readings (the event marked), or a one-sensor cell's readings
-    sparkline?: Sparkline
+    sparkline?: Readings
     // the readings of each of the listed groups whose events are one sensor's
-    groupSparklines: Map<string, Sparkline>
+    groupSparklines: Map<string, Readings>
 }
 
 /**
@@ -39,7 +67,7 @@ const oneSensorsEvents = <P, >(events: ReadonlyArray<GeoDatum<P>>): boolean =>
 /**
  * @param events A sensor's events, oldest first
  * @param valueOf The value of an event, to draw
- * @param size The sparkline's size
+ * @param full Whether it's a full sparkline (with axes), or an inline one
  * @param markedTime The time of an event to mark (e.g. the hovered one)
  * @return The sparkline of the events' values (of their latest ones), or `undefined` when there are
  * fewer than two to draw
@@ -47,31 +75,143 @@ const oneSensorsEvents = <P, >(events: ReadonlyArray<GeoDatum<P>>): boolean =>
 function sparklineOf<P>(
     events: ReadonlyArray<GeoDatum<P>>,
     valueOf: (datum: GeoDatum<P>) => number,
-    size: {width: number, height: number},
+    full: boolean,
     markedTime?: number,
-): Sparkline | undefined {
+): Readings | undefined {
     const latest = events.length > MAX_SPARKLINE_EVENTS ? events.slice(events.length - MAX_SPARKLINE_EVENTS) : events
-    // (room around the line for the marked point's dot, at the full size)
-    const padding = size.height > INLINE_SPARKLINE.height ? 4 : 1
-    return sparklineFor(latest.map(event => ({time: event.time, value: valueOf(event)})), size.width, size.height, padding, undefined, markedTime)
+    const points = latest
+        .map(event => ({time: event.time, value: valueOf(event)}))
+        .filter(({time, value}) => Number.isFinite(time) && Number.isFinite(value))
+    if (points.length < 2) return undefined
+
+    // a full sparkline's height spans a round range of values, for its y-axis' ticks (and a flat
+    // line's, a range around its value); an inline one's, the values' own range
+    const lowest = points.reduce((min, {value}) => Math.min(min, value), Infinity)
+    const highest = points.reduce((max, {value}) => Math.max(max, value), -Infinity)
+    const values: [number, number] = !full ? [lowest, highest] :
+        lowest < highest ? d3.nice(lowest, highest, VALUE_TICK_COUNT) as [number, number] :
+            [lowest - 1, highest + 1]
+    const sparkline = full ?
+        sparklineFor(points, SPARKLINE.width, SPARKLINE.height, SPARKLINE_PADDING, values, markedTime) :
+        sparklineFor(points, INLINE_SPARKLINE.width, INLINE_SPARKLINE.height, INLINE_SPARKLINE_PADDING, undefined, markedTime)
+    return sparkline === undefined ?
+        undefined :
+        {sparkline, values, times: [points[0].time, points[points.length - 1].time]}
 }
 
 /**
- * A sparkline, as an SVG
- * @param props The sparkline, its size, its color, and whether it's shown on a line of text
- * @return The SVG
+ * A sensor's readings over time, as a sparkline with axes (like the scatter chart tooltip's
+ * autocorrelation): a y-axis on the left, with ticks (and labels) at the ends of a round range of
+ * values, and at its middle, when that's a round value too; and a time axis along the bottom, with
+ * ticks at round times before the latest reading (in seconds, labelled below the plot), captioned "s"
+ * just to the right of its end, at the latest reading
+ * @param props The readings' sparkline (and the ranges of their values and times), the color of the
+ * line and the axes, and the font size of the axes' labels
+ * @return The sparkline, with its axes
  */
-function SparklineSvg(props: {sparkline: Sparkline, size: {width: number, height: number}, color: string, inline?: boolean}): ReactElement {
-    const {sparkline, size, color, inline = false} = props
+function ReadingsChart(props: {readings: Readings, color: string, fontSize: number}): ReactElement {
+    const {readings: {sparkline, values: [lowest, highest], times: [first, last]}, color, fontSize} = props
+    const {width, height} = SPARKLINE
+    // where a time (seconds before the latest reading), and a value, are within the plot area (as
+    // `sparklineFor` places them)
+    const innerWidth = width - 2 * SPARKLINE_PADDING
+    const innerHeight = height - 2 * SPARKLINE_PADDING
+    const span = (last - first) / 1000
+    const xOf = (secondsBefore: number): number =>
+        SPARKLINE_PADDING + (span > 0 ? (span + secondsBefore) / span * innerWidth : innerWidth / 2)
+    const yOf = (value: number): number => SPARKLINE_PADDING + (highest - value) / (highest - lowest) * innerHeight
+    // (the y-axis sits just left of the plot area, and the time axis just below it, so that they
+    // don't cover the line)
+    const yAxisX = -TICK_LENGTH
+    const timeAxisY = height
+    // (the y-axis is short: its labels are the range's ends, and its middle, when that's a round value)
+    const middle = (lowest + highest) / 2
+    const valueTicks = d3.ticks(lowest, highest, VALUE_TICK_COUNT).includes(middle) ?
+        [lowest, middle, highest] :
+        [lowest, highest]
+    const valueFormat = d3.tickFormat(lowest, highest, VALUE_TICK_COUNT)
+    const timeTicks = span > 0 ? d3.ticks(-span, 0, TIME_TICK_COUNT) : []
+    const timeFormat = d3.tickFormat(-span, 0, TIME_TICK_COUNT)
+    const axisStyle = {stroke: color, strokeOpacity: 0.6, strokeWidth: 1}
+    const labelStyle = {fill: color, fillOpacity: 0.8, fontSize}
+
     return (
         <svg
-            width={size.width}
-            height={size.height}
-            style={inline ? {display: 'inline-block', verticalAlign: 'middle', marginLeft: 8} : {display: 'block', marginTop: 4}}
+            width={AXES_MARGIN.left + width + AXES_MARGIN.right}
+            height={AXES_MARGIN.top + height + AXES_MARGIN.bottom}
+            style={{display: 'block', marginTop: 4}}
             aria-hidden="true"
         >
-            <path d={sparkline.path} fill="none" stroke={color} strokeWidth={inline ? 1 : 1.25} strokeLinejoin="round" strokeLinecap="round"/>
-            {sparkline.mark !== undefined && <circle cx={sparkline.mark[0]} cy={sparkline.mark[1]} r={2.5} fill={color}/>}
+            <g transform={`translate(${AXES_MARGIN.left}, ${AXES_MARGIN.top})`}>
+                {/* the y-axis: the values, the lowest at the bottom */}
+                <line x1={yAxisX} y1={yOf(highest)} x2={yAxisX} y2={yOf(lowest)} {...axisStyle}/>
+                {valueTicks.map(value => (
+                    <g key={value}>
+                        <line x1={yAxisX - TICK_LENGTH} y1={yOf(value)} x2={yAxisX} y2={yOf(value)} {...axisStyle}/>
+                        <text
+                            x={yAxisX - TICK_LENGTH - 2} y={yOf(value)}
+                            textAnchor="end" dominantBaseline="middle"
+                            {...labelStyle}
+                        >
+                            {valueFormat(value)}
+                        </text>
+                    </g>
+                ))}
+                {/* the time axis: seconds before the latest reading, with ticks at round times */}
+                <line x1={yAxisX} y1={timeAxisY} x2={xOf(0)} y2={timeAxisY} {...axisStyle}/>
+                {timeTicks.map(secondsBefore => (
+                    <g key={secondsBefore}>
+                        <line
+                            x1={xOf(secondsBefore)} y1={timeAxisY}
+                            x2={xOf(secondsBefore)} y2={timeAxisY + TICK_LENGTH}
+                            {...axisStyle}
+                        />
+                        <text
+                            x={xOf(secondsBefore)} y={height + AXES_MARGIN.bottom - 2}
+                            textAnchor="middle"
+                            {...labelStyle}
+                        >
+                            {timeFormat(secondsBefore)}
+                        </text>
+                    </g>
+                ))}
+                {/* the time axis' caption, just to the right of its end */}
+                <text
+                    x={xOf(0) + TICK_LENGTH} y={timeAxisY}
+                    textAnchor="start" dominantBaseline="middle"
+                    {...labelStyle}
+                >
+                    s
+                </text>
+                <path
+                    d={sparkline.path}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={1.25}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                />
+                {sparkline.mark !== undefined && <circle cx={sparkline.mark[0]} cy={sparkline.mark[1]} r={2.5} fill={color}/>}
+            </g>
+        </svg>
+    )
+}
+
+/**
+ * An inline sparkline (on a group's line of text), as an SVG, without axes
+ * @param props The sparkline, and its color
+ * @return The SVG
+ */
+function InlineSparklineSvg(props: {sparkline: Sparkline, color: string}): ReactElement {
+    const {sparkline, color} = props
+    return (
+        <svg
+            width={INLINE_SPARKLINE.width}
+            height={INLINE_SPARKLINE.height}
+            style={{display: 'inline-block', verticalAlign: 'middle', marginLeft: 8}}
+            aria-hidden="true"
+        >
+            <path d={sparkline.path} fill="none" stroke={color} strokeWidth={1} strokeLinejoin="round" strokeLinecap="round"/>
         </svg>
     )
 }
@@ -167,7 +307,9 @@ export interface Props<P> {
      * With it, the tooltip shows sparklines of the sensors' readings over time, from the events the
      * data source holds: for an event, its sensor's (with the event marked); for an aggregate, a
      * one-sensor cell's, and, on their lines, each listed group's whose events are one sensor's (a
-     * larger one for the hovered group). Only one sensor's events are ever drawn together, so a
+     * larger one for the hovered group). The larger sparklines (the event's sensor's, the one-sensor
+     * cell's, and the hovered group's) have axes: the readings' values, and the time (seconds) before
+     * the latest reading. Only one sensor's events are ever drawn together, so a
      * sparkline never mixes sensors (or the quantities they measure). Without it, there are no
      * sparklines.
      * @param datum An event
@@ -213,7 +355,7 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
      * @return The tooltip's contents
      */
     const capture = (target: GeoTooltipMetadata<P>): GeoTooltipContents<P> => {
-        const groupSparklines = new Map<string, Sparkline>()
+        const groupSparklines = new Map<string, Readings>()
         if (sparklineValueOf === undefined) return {target, groupSparklines}
 
         if (target.kind === 'event') {
@@ -221,18 +363,18 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
             const series = dataSource?.series.get(seriesName)
             const events = series === undefined ? [] :
                 Array.from(series.data).filter(event => event.sensorId === datum.sensorId)
-            return {target, sparkline: sparklineOf(events, sparklineValueOf, SPARKLINE, datum.time), groupSparklines}
+            return {target, sparkline: sparklineOf(events, sparklineValueOf, true, datum.time), groupSparklines}
         }
 
         const {rollup, aggregate, group: hoveredGroup} = target
-        let sparkline: Sparkline | undefined = undefined
+        let sparkline: Readings | undefined = undefined
         if (aggregate.groups.length === 0 && aggregate.sensorCount === 1) {
-            sparkline = sparklineOf(eventsOf(rollup, aggregate.id), sparklineValueOf, SPARKLINE)
+            sparkline = sparklineOf(eventsOf(rollup, aggregate.id), sparklineValueOf, true)
         }
         listedGroups(aggregate.groups, maxGroups, hoveredGroup).forEach(group => {
             const events = eventsOf(rollup, aggregate.id, group.group)
             if (!oneSensorsEvents(events)) return
-            const groupSparkline = sparklineOf(events, sparklineValueOf, group.group === hoveredGroup ? SPARKLINE : INLINE_SPARKLINE)
+            const groupSparkline = sparklineOf(events, sparklineValueOf, group.group === hoveredGroup)
             if (groupSparkline !== undefined) groupSparklines.set(group.group, groupSparkline)
         })
         return {target, sparkline, groupSparklines}
@@ -256,7 +398,7 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
                         <hr/>
                         {payloadFormatter(datum.payload, datum)}
                         {/* the sensor's readings over time, with this event marked (the dot) */}
-                        {sparkline !== undefined && <SparklineSvg sparkline={sparkline} size={SPARKLINE} color={tooltipStyle.fontColor}/>}
+                        {sparkline !== undefined && <ReadingsChart readings={sparkline} color={tooltipStyle.fontColor} fontSize={tooltipStyle.fontSize - 3}/>}
                     </>
                 }
 
@@ -282,7 +424,7 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
                         <div key={name}>{name}: <b>{formatValue(name, value)}</b></div>
                     )}
                     {/* a one-sensor cell's readings over time */}
-                    {sparkline !== undefined && <SparklineSvg sparkline={sparkline} size={SPARKLINE} color={tooltipStyle.fontColor}/>}
+                    {sparkline !== undefined && <ReadingsChart readings={sparkline} color={tooltipStyle.fontColor} fontSize={tooltipStyle.fontSize - 3}/>}
                     {groups.length > 0 && <hr/>}
                     {shownGroups.map(group => group.group === hoveredGroup ?
                         // the group whose wedge is under the mouse: highlighted, with its own measures
@@ -293,7 +435,7 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
                             )}
                             {groupSparklines.has(group.group) &&
                                 <div style={{paddingLeft: 14}}>
-                                    <SparklineSvg sparkline={groupSparklines.get(group.group)!} size={SPARKLINE} color={tooltipStyle.fontColor}/>
+                                    <ReadingsChart readings={groupSparklines.get(group.group)!} color={tooltipStyle.fontColor} fontSize={tooltipStyle.fontSize - 3}/>
                                 </div>
                             }
                         </div> :
@@ -301,7 +443,7 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
                         <div key={group.group}>
                             {group.group}: {hoveredGroup === undefined ? <b>{group.count.toLocaleString()}</b> : group.count.toLocaleString()}
                             {groupSparklines.has(group.group) &&
-                                <SparklineSvg sparkline={groupSparklines.get(group.group)!} size={INLINE_SPARKLINE} color={tooltipStyle.fontColor} inline/>
+                                <InlineSparklineSvg sparkline={groupSparklines.get(group.group)!.sparkline} color={tooltipStyle.fontColor}/>
                             }
                         </div>
                     )}
