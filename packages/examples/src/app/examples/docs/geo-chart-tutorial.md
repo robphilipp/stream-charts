@@ -706,7 +706,7 @@ airQualityDataSource.setGenerator(
   (It sits before the batching, so it also drops a reading that arrives behind a later one of the same batch, which the sort would have put back in order. To keep those, filter each sorted batch instead.)
 - **Sensors come and go.** The geo data source adds a series the first time it shows up in the stream, and roll-ups pick up new sensors as they report. To change the roll-ups themselves – say, a finer grid – call `setRollups`, which rolls up the events held now.
 - **Sensors move.** `bySensor({position: 'latest'})` follows a moving sensor; `'mean'` places it at the average of its retained positions instead (on the sphere, so it's right across the date line, too).
-- **There are a lot of them.** Each event is a marker, so for thousands of sensors reporting often, show a roll-up instead, or shorten `dropDataAfter` (all the more with `autoRotate`, which redraws every frame).
+- **There are a lot of them.** Each event is a marker, so for thousands of sensors reporting often, show a roll-up instead, or shorten `dropDataAfter` (all the more with `autoRotate`, which redraws up to 60 times a second).
 - **Readings go missing.** A reading that isn't a finite number (a `NaN`, say, for a monitor that couldn't measure) is left out of the library's sums, means, minimums, and maximums, so it doesn't spoil a city's figures; your own measures should skip it too – as `levelOf` and the unhealthy share do in step 3 (and `d3.median`, in the median, already does).
 
 That's the last page of the intro. Happy mapping!

@@ -25,6 +25,7 @@ import {
     type DrawnMarker,
     isGlobe,
     markerAt,
+    markerEllipseAt,
     panView,
     placeUnder,
     setUpProjection,
@@ -224,8 +225,9 @@ export interface Props<P> {
     /**
      * When set, the view turns westward (the earth spins eastward) at this many degrees per second,
      * pausing while the view is dragged and while an event is hovered. Defaults to no rotation. The
-     * plot redraws on every animation frame while it turns, so with many thousands of events held,
-     * show a roll-up's aggregates instead, or keep fewer events (the data source's `dropDataAfter`).
+     * plot redraws up to 60 times a second while it turns, so with many tens of thousands of events
+     * held, show a roll-up's aggregates instead, or keep fewer events (the data source's
+     * `dropDataAfter`).
      */
     autoRotate?: number
     /**
@@ -479,6 +481,10 @@ const DEGREES = 180 / Math.PI
 // the number of distinct opacities the faded markers are drawn with (so that markers can still be
 // drawn a path per color and opacity)
 const FADE_LEVELS = 12
+// the most frames per second that the auto-rotation redraws (the view turns by the time elapsed, so
+// it turns at the same speed, however often it's redrawn): a slowly turning globe looks as smooth at
+// 60 frames a second, and the faster displays would otherwise redraw it twice as often, or more
+const AUTO_ROTATE_FRAME_RATE = 60
 
 /**
  * Renders streaming sensor events on a map, or a globe, for the series held by the
@@ -612,13 +618,35 @@ export function GeoPlot<P>(props: Props<P>): null {
 
     // the last-drawn markers, for finding the one under the mouse, and the largest hit radius; and
     // the last-drawn cells (in the `cells` shape), for finding the one under the mouse
-    const markersRef = useRef<d3.Quadtree<DrawnMarker<P>>>(d3.quadtree<DrawnMarker<P>>())
+    // (the markers' index is built only when the mouse first needs it after a redraw: a turning globe
+    // redraws on every frame, but pauses while hovered)
+    const drawnMarkersRef = useRef<Array<DrawnMarker<P>>>([])
+    const markersRef = useRef<d3.Quadtree<DrawnMarker<P>> | undefined>(undefined)
     const maxHitRadiusRef = useRef<number>(0)
     const cellsRef = useRef<Array<GeoAggregate>>([])
+    // the map, as last drawn into a layer of its own (an offscreen canvas the size of the plot area),
+    // for its view and the draw function's settings, so that redrawing the events under a resting
+    // view doesn't redraw the map; and the view last drawn (to tell when it's changing)
+    const baseLayerRef = useRef<{canvas: HTMLCanvasElement, view: GeoPlotViewState, settings: object} | undefined>(undefined)
+    const lastViewRef = useRef<GeoPlotViewState | undefined>(undefined)
     // the categorical colors handed out to the groups (see `groupColors`), by group
     const groupColorsRef = useRef<Map<string, string>>(new Map())
     // what's under the mouse (an event, or an aggregate)
     const hoveredRef = useRef<GeoTooltipMetadata<P> | undefined>(undefined)
+
+    // what the map's drawing depends on: a new object whenever any of it changes, so that a map layer
+    // drawn with other settings isn't reused (see `baseLayerRef`). (The draw function itself is
+    // recreated as each batch of events arrives, so it can't be what identifies them.)
+    const mapSettings = useMemo(
+        () => ({
+            projection, width, height, graticule, showGraticule, basemap, borders, oceanColor, landColor,
+            borderColor, graticuleColor, outlineColor,
+        }),
+        [
+            projection, width, height, graticule, showGraticule, basemap, borders, oceanColor, landColor,
+            borderColor, graticuleColor, outlineColor,
+        ]
+    )
 
     const updatePlot = useCallback(
         /**
@@ -626,16 +654,13 @@ export function GeoPlot<P>(props: Props<P>): null {
          * @param cc The canvas context to register the draw function with
          */
         (cc: CanvasContext): void => {
-            const draw = (context: CanvasContext): void => {
-                const {context2D} = context
-                setUpProjection(projection, viewRef.current, width, height)
+            /**
+             * Draws the map: the sphere (the oceans), the graticule, the land, the borders, and the
+             * sphere's outline
+             * @param context2D The context to draw into (translated to the plot area)
+             */
+            const drawMap = (context2D: CanvasRenderingContext2D): void => {
                 const path = d3.geoPath(projection, context2D)
-
-                context2D.save()
-                clipToArea(context, plotDimensions, {x: margin.left, y: margin.top})
-                context2D.translate(margin.left, margin.top)
-
-                // the sphere (the oceans), the graticule, the land, and the borders
                 context2D.beginPath()
                 path({type: 'Sphere'})
                 context2D.fillStyle = oceanColor
@@ -666,6 +691,44 @@ export function GeoPlot<P>(props: Props<P>): null {
                 context2D.strokeStyle = outlineColor
                 context2D.lineWidth = 1
                 context2D.stroke()
+            }
+
+            const draw = (context: CanvasContext): void => {
+                const {context2D, dpr} = context
+                const view = viewRef.current
+                setUpProjection(projection, view, width, height)
+                const path = d3.geoPath(projection, context2D)
+
+                context2D.save()
+                clipToArea(context, plotDimensions, {x: margin.left, y: margin.top})
+                context2D.translate(margin.left, margin.top)
+
+                // the map: copied from the layer it was last drawn into, when that was for this view
+                // (e.g. as events arrive under a resting view); drawn directly while the view is
+                // changing (turning, or being dragged), since it changes on every frame then; and
+                // otherwise drawn into the layer (once the view has held still for a redraw), and
+                // copied from it
+                const layer = baseLayerRef.current
+                const viewChanged = lastViewRef.current !== view
+                lastViewRef.current = view
+                if (layer !== undefined && layer.view === view && layer.settings === mapSettings) {
+                    context2D.drawImage(layer.canvas, 0, 0, width, height)
+                } else if (viewChanged || width <= 0 || height <= 0) {
+                    drawMap(context2D)
+                } else {
+                    const canvas = layer?.canvas ?? document.createElement('canvas')
+                    canvas.width = Math.round(width * dpr)
+                    canvas.height = Math.round(height * dpr)
+                    const layerContext = canvas.getContext('2d')
+                    if (layerContext !== null) {
+                        layerContext.setTransform(dpr, 0, 0, dpr, 0, 0)
+                        drawMap(layerContext)
+                        baseLayerRef.current = {canvas, view, settings: mapSettings}
+                        context2D.drawImage(canvas, 0, 0, width, height)
+                    } else {
+                        drawMap(context2D)
+                    }
+                }
 
                 // a globe hides the far side, beyond its clip angle from the view's center
                 const [lambda, phi] = projection.rotate()
@@ -685,12 +748,13 @@ export function GeoPlot<P>(props: Props<P>): null {
                     return x < 0 || y < 0 || x > width || y > height ? undefined : [x, y]
                 }
 
-                // the markers are circles on the sphere, drawn through the projection, so that the
-                // projection shapes them as it shapes the map (e.g. flattened toward a globe's edge, or
-                // stretched toward the poles of a Mercator map). A marker's radius is in pixels at the
-                // view's center, where the projection's scale is the pixels per radian, so the markers
-                // keep their size as the view zooms. (Small circles get fewer points: they're drawn
-                // for every event, on every redraw.)
+                // the markers are circles on the sphere, shaped by the projection as it shapes the map
+                // (e.g. flattened toward a globe's edge, or stretched toward the poles of a Mercator
+                // map). A marker's radius is in pixels at the view's center, where the projection's
+                // scale is the pixels per radian, so the markers keep their size as the view zooms. An
+                // event's marker is drawn as the ellipse it projects to (see `markerEllipseAt`), which
+                // is a few times quicker; an aggregate's, and an event's that the ellipse would get
+                // wrong, through the projection. (Small circles get fewer points.)
                 const degreesPerPixel = DEGREES / projection.scale()
                 const circle = d3.geoCircle()
                 const circleAt = (latitude: number, longitude: number, radius: number): d3.GeoPermissibleObjects =>
@@ -903,7 +967,16 @@ export function GeoPlot<P>(props: Props<P>): null {
                                 markerPath = {fill, level, path: markersPath, geoPath}
                                 paths.set(key, markerPath)
                             }
-                            markerPath.geoPath(circleAt(datum.latitude, datum.longitude, radius))
+                            const ellipse = markerEllipseAt(projection, at, datum.longitude, datum.latitude, radius, degreesPerPixel)
+                            if (ellipse !== undefined) {
+                                const [ellipseX, ellipseY, radiusX, radiusY, rotation] = ellipse
+                                // (each ellipse starts a subpath of its own, so that it isn't joined to
+                                // the one before)
+                                markerPath.path.moveTo(ellipseX + radiusX * Math.cos(rotation), ellipseY + radiusX * Math.sin(rotation))
+                                markerPath.path.ellipse(ellipseX, ellipseY, radiusX, radiusY, rotation, 0, 2 * Math.PI)
+                            } else {
+                                markerPath.geoPath(circleAt(datum.latitude, datum.longitude, radius))
+                            }
 
                             const marker: DrawnMarker<P> = {
                                 x: x + margin.left, y: y + margin.top,
@@ -968,8 +1041,8 @@ export function GeoPlot<P>(props: Props<P>): null {
                 }
 
                 cellsRef.current = cells
-                markersRef.current = d3.quadtree<DrawnMarker<P>>().x(marker => marker.x).y(marker => marker.y).addAll(markers)
-                maxHitRadiusRef.current = markers.reduce((max, marker) => Math.max(max, marker.hitRadius), 0)
+                drawnMarkersRef.current = markers
+                markersRef.current = undefined
                 context2D.restore()
             }
 
@@ -978,7 +1051,7 @@ export function GeoPlot<P>(props: Props<P>): null {
             cc.requestRedraw()
         },
         [
-            chartId, projection, width, height, plotDimensions, margin.left, margin.top, graticule,
+            chartId, projection, width, height, plotDimensions, margin.left, margin.top, graticule, mapSettings,
             showGraticule, basemap, borders, oceanColor, landColor, borderColor, graticuleColor,
             outlineColor, markerRadius, markerOpacity, radiusOf, colorOf, fadeDuration, fadedOpacity,
             seriesStyles, seriesFilter, color, backgroundColor, dataSource, onUpdateChartTime, mode, rollup,
@@ -1065,24 +1138,30 @@ export function GeoPlot<P>(props: Props<P>): null {
     // reports the view when the plot unmounts (e.g. to keep the auto-rotation's progress)
     useEffect(() => (): void => reportView(), [reportView])
 
-    // turns the view westward, at `autoRotate` degrees per second, on every animation frame --
-    // except while it's being dragged, or an event is hovered (and reports the view when it pauses)
+    // turns the view westward, at `autoRotate` degrees per second, redrawing at up to
+    // AUTO_ROTATE_FRAME_RATE frames a second -- except while it's being dragged, or an event is
+    // hovered (and reports the view when it pauses)
     useEffect(
         () => {
             if (autoRotate === undefined || autoRotate === 0 || canvasContext === null) return
             let previousTime: number | undefined = undefined
             let wasPaused = false
+            // (a frame is skipped when it comes too soon after the last one redrawn, with some slack,
+            // so that a display a little faster than the frame rate still redraws on every other frame)
+            const frameInterval = 0.8 * 1000 / AUTO_ROTATE_FRAME_RATE
             let frame = requestAnimationFrame(function turn(time: number): void {
                 const paused = draggingRef.current || hoveredRef.current !== undefined
-                if (!paused && previousTime !== undefined) {
-                    const [lambda, phi, gamma] = viewRef.current.rotate
-                    const turned = lambda + autoRotate * (time - previousTime) / 1000
-                    viewRef.current = {...viewRef.current, rotate: [((turned % 360) + 540) % 360 - 180, phi, gamma]}
-                    canvasContext.requestRedraw()
+                if (paused || previousTime === undefined || time - previousTime >= frameInterval) {
+                    if (!paused && previousTime !== undefined) {
+                        const [lambda, phi, gamma] = viewRef.current.rotate
+                        const turned = lambda + autoRotate * (time - previousTime) / 1000
+                        viewRef.current = {...viewRef.current, rotate: [((turned % 360) + 540) % 360 - 180, phi, gamma]}
+                        canvasContext.requestRedraw()
+                    }
+                    if (paused && !wasPaused) reportView()
+                    wasPaused = paused
+                    previousTime = time
                 }
-                if (paused && !wasPaused) reportView()
-                wasPaused = paused
-                previousTime = time
                 frame = requestAnimationFrame(turn)
             })
             return (): void => cancelAnimationFrame(frame)
@@ -1113,6 +1192,11 @@ export function GeoPlot<P>(props: Props<P>): null {
              * (in the `cells` shape) holding the place under the mouse
              */
             const targetAt = (x: number, y: number): GeoTooltipMetadata<P> | undefined => {
+                if (markersRef.current === undefined) {
+                    const markers = drawnMarkersRef.current
+                    markersRef.current = d3.quadtree<DrawnMarker<P>>().x(marker => marker.x).y(marker => marker.y).addAll(markers)
+                    maxHitRadiusRef.current = markers.reduce((max, marker) => Math.max(max, marker.hitRadius), 0)
+                }
                 const hit = markerAt(markersRef.current, maxHitRadiusRef.current, x, y)
                 if (hit !== undefined) {
                     const target = hit.target

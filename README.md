@@ -884,7 +884,7 @@ const borders = mesh(countries, countries.objects.countries, (a, b) => a !== b)
 | `rotateEnabled`, `zoomEnabled` | `boolean` | Whether dragging moves the view, and the wheel zooms it (both default `true`). |
 | `zoomKeyModifiersRequired` | `boolean` | Whether zooming needs shift or ctrl held down (default `true`). |
 | `zoomMaxScaleFactor` | `number` | How far the view can zoom in (default 20×). |
-| `autoRotate` | `number` | Turns the globe by itself, at this many degrees per second, pausing while it's dragged or an event is hovered. The plot redraws on every frame while it turns, so with many thousands of events held, show a roll-up instead, or keep fewer events. |
+| `autoRotate` | `number` | Turns the globe by itself, at this many degrees per second, pausing while it's dragged or an event is hovered. The plot redraws up to 60 times a second while it turns (the demo's few thousand events take about 8 ms a redraw), so with many tens of thousands of events held, show a roll-up instead, or keep fewer events. |
 | `viewState`, `onViewChange` | `GeoPlotViewState`, `(view) => void` | Keep the view (rotation, zoom, and a flat map's offset) across remounts: store what `onViewChange` hands you, and pass it back as `viewState`. |
 | `onZoomReset` | `(resetZoom: () => void) => void` | Hands you a function that resets the view, for example for a **Reset** button. |
 | `mode` | `'points' \| 'aggregates'` | Each event (the default), or a roll-up's aggregates. |

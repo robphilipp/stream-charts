@@ -7,6 +7,7 @@ import {
     type GeoProjectionName,
     isGlobe,
     markerAt,
+    markerEllipseAt,
     panView,
     placeUnder,
     setUpProjection,
@@ -220,5 +221,62 @@ describe('hit-testing the markers', () => {
         const markers = [aggregateMarker('a', 100, 100, 10), eventMarker('b', 200, 200, 6)]
         expect(idAt(markers, 150, 150)).toBeUndefined()
         expect(markerAt(markersOf([]), 0, 10, 10)).toBeUndefined()
+    })
+})
+
+describe('marker ellipses', () => {
+    /**
+     * How far (px) the points of a small circle on the earth, projected exactly, are from the ellipse
+     * its marker is drawn as
+     * @param projection The projection, set up for a view
+     * @param longitude The circle's center's longitude
+     * @param latitude The circle's center's latitude
+     * @param radius The circle's radius (px at the view's center)
+     * @return The largest distance (px), or `undefined` when the marker is drawn exactly (no ellipse)
+     */
+    const largestError = (projection: d3.GeoProjection, longitude: number, latitude: number, radius: number): number | undefined => {
+        const degreesPerPixel = 180 / Math.PI / projection.scale()
+        const center = projection([longitude, latitude])!
+        const ellipse = markerEllipseAt(projection, center, longitude, latitude, radius, degreesPerPixel)
+        if (ellipse === undefined) return undefined
+        const [x, y, radiusX, radiusY, rotation] = ellipse
+        const ring = d3.geoCircle().center([longitude, latitude]).radius(radius * degreesPerPixel).precision(5)().coordinates[0]
+        return ring.reduce((largest, point) => {
+            const [px, py] = projection(point as [number, number])!
+            // the point, in the ellipse's own frame (on the ellipse at a normalized distance of 1), and
+            // how far it is from the ellipse along the ray from the ellipse's center
+            const dx = px - x, dy = py - y
+            const u = (dx * Math.cos(rotation) + dy * Math.sin(rotation)) / radiusX
+            const v = (-dx * Math.sin(rotation) + dy * Math.cos(rotation)) / radiusY
+            return Math.max(largest, Math.hypot(dx, dy) * Math.abs(1 - 1 / Math.hypot(u, v)))
+        }, 0)
+    }
+
+    it.each<[GeoProjectionName, number, number, number]>([
+        ['orthographic', 0, 20, 12],      // the view's center
+        ['orthographic', 70, 30, 12],     // toward the globe's edge (flattened)
+        ['orthographic', -60, -40, 12],
+        ['mercator', 20, 60, 3],          // toward a Mercator map's pole (stretched)
+        ['equirectangular', 120, -35, 12],
+        ['stereographic', 100, 10, 6],
+        ['conicEqualArea', -80, 45, 12],
+    ])('draws a small circle on the %s projection, at %d° %d°, as the ellipse it projects to', (name, longitude, latitude, radius) => {
+        const projection = projectionNamed(name)
+        setUpProjection(projection, viewCenteredOn([0, 20]), WIDTH, HEIGHT)
+        expect(largestError(projection, longitude, latitude, radius)).toBeLessThan(0.5)
+    })
+
+    it('draws a marker exactly where the projection is lopsided over it, near a pole, or across a flat map\'s antimeridian', () => {
+        const mercator = projectionNamed('mercator')
+        setUpProjection(mercator, viewCenteredOn([0, 20]), WIDTH, HEIGHT)
+        expect(largestError(mercator, 20, 70, 12)).toBeUndefined()
+
+        const globe = projectionNamed('orthographic')
+        setUpProjection(globe, viewCenteredOn([0, 60]), WIDTH, HEIGHT)
+        expect(largestError(globe, 10, 89.5, 6)).toBeUndefined()
+
+        const flat = projectionNamed('equirectangular')
+        setUpProjection(flat, viewCenteredOn([0, 0]), WIDTH, HEIGHT)
+        expect(largestError(flat, 179.9, 0, 6)).toBeUndefined()
     })
 })

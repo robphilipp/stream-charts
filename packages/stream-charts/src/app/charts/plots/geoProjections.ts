@@ -308,6 +308,84 @@ export function wedgeIndexAt(shares: ReadonlyArray<number>, bearing: number): nu
     return shares.length - 1
 }
 
+/**
+ * The ellipse a marker is drawn as: its center (px), its two radii (px), and the rotation (radians)
+ * of its first radius' axis
+ */
+export type MarkerEllipse = [x: number, y: number, radiusX: number, radiusY: number, rotation: number]
+
+// how far (a factor of its radius at the view's center) a marker may be stretched, and how lopsided
+// (px) the projection may be over it, before it's drawn exactly instead (see `markerEllipseAt`)
+const MAX_MARKER_STRETCH = 20
+const MAX_MARKER_LOPSIDEDNESS = 0.5
+
+/**
+ * The ellipse that a small circle on the earth (an event's marker) projects to, to draw it quickly.
+ * The projection shapes the circle as it shapes the map (e.g. flattened toward a globe's edge, or
+ * stretched toward a Mercator map's poles); over a small circle, it's nearly the same throughout, so
+ * the circle projects to nearly an ellipse: the one through the projections of its northern,
+ * southern, eastern, and western points. (Drawing the circle exactly, as a polygon on the sphere,
+ * through the projection, takes a few times longer, which adds up over thousands of markers, redrawn
+ * on every frame of a turning globe.) Where the projection changes across the circle -- it's
+ * lopsided, e.g. near a Mercator map's poles -- the ellipse is off by about half the lopsidedness, so
+ * a circle lopsided by more than half a pixel is left to be drawn exactly.
+ * @param projection The projection, set up for the view
+ * @param center Where the circle's center is drawn: its `[x, y]` (px)
+ * @param longitude The longitude (degrees) of the circle's center
+ * @param latitude The latitude (degrees) of the circle's center
+ * @param radius The circle's radius (px, at the view's center)
+ * @param degreesPerPixel The degrees of the sphere that a pixel spans at the view's center
+ * @return The ellipse, or `undefined` where the circle should be drawn exactly instead (where the
+ * projection is lopsided over it, or stretches it too far; near a pole; or across a flat map's
+ * antimeridian)
+ */
+export function markerEllipseAt(
+    projection: d3.GeoProjection,
+    [x, y]: [number, number],
+    longitude: number,
+    latitude: number,
+    radius: number,
+    degreesPerPixel: number,
+): MarkerEllipse | undefined {
+    const angularRadius = radius * degreesPerPixel
+    const cosLatitude = Math.cos(latitude / DEGREES)
+    if (Math.abs(latitude) + angularRadius > 89 || cosLatitude < 1e-3) return undefined
+    // where the circle's eastern, western, northern, and southern points are drawn (the eastern and
+    // western points are along the parallel: near enough, for a small circle)
+    const east = projection([longitude + angularRadius / cosLatitude, latitude])
+    const west = projection([longitude - angularRadius / cosLatitude, latitude])
+    const north = projection([longitude, latitude + angularRadius])
+    const south = projection([longitude, latitude - angularRadius])
+    if (east === null || west === null || north === null || south === null) return undefined
+
+    // how lopsided the projection is over the circle: how far the midpoints of its opposite points
+    // are from its center
+    const lopsidedness = Math.max(
+        Math.hypot((east[0] + west[0]) / 2 - x, (east[1] + west[1]) / 2 - y),
+        Math.hypot((north[0] + south[0]) / 2 - x, (north[1] + south[1]) / 2 - y),
+    )
+    if (!(lopsidedness <= MAX_MARKER_LOPSIDEDNESS)) return undefined
+
+    // the ellipse through the four points is the image of the unit circle under the matrix
+    // [[ex, nx], [ey, ny]] (half the distances between opposite points): its radii are the matrix's
+    // singular values, and its first radius lies along its first left singular vector (the closed
+    // form of a 2x2 singular value decomposition)
+    const ex = (east[0] - west[0]) / 2, ey = (east[1] - west[1]) / 2
+    const nx = (north[0] - south[0]) / 2, ny = (north[1] - south[1]) / 2
+    const e = (ex + ny) / 2, f = (ex - ny) / 2, g = (ey + nx) / 2, h = (ey - nx) / 2
+    const q = Math.hypot(e, h), r = Math.hypot(f, g)
+    const radiusX = q + r
+    const radiusY = Math.abs(q - r)
+    if (!Number.isFinite(radiusX) || radiusX > MAX_MARKER_STRETCH * radius) return undefined
+    return [
+        (east[0] + west[0] + north[0] + south[0]) / 4,
+        (east[1] + west[1] + north[1] + south[1]) / 4,
+        radiusX,
+        radiusY,
+        (Math.atan2(g, f) + Math.atan2(h, e)) / 2,
+    ]
+}
+
 // a drawn marker (an event's, or an aggregate's circle), for hit-testing the mouse (in canvas
 // coordinates), and what it shows
 export type DrawnMarker<P> = {
