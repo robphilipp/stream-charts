@@ -58,7 +58,7 @@ import {
     WEAKEST_SIGNAL,
 } from "./appstate/geoChartStore.ts"
 import {CARRIERS, type CellEvent, initialCellTowerData, type PhoneFix, PHONES, TOWERS_BY_COUNTRY, type TowerPing} from "./dataproviders/cellTowerData.ts"
-import {COUNTRIES, COUNTRY_BORDERS, type DetailedWorld, detailedWorld, LAND, UNITED_KINGDOM} from "./dataproviders/worldMap.ts"
+import {COUNTRIES, COUNTRY_BORDERS, type DetailedWorld, detailedWorld, LAND, UNITED_KINGDOM, UNITED_STATES} from "./dataproviders/worldMap.ts"
 import {FocusControl} from "./controls/FocusControl.tsx"
 
 const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
@@ -78,6 +78,7 @@ const FOCUS_SHAPES = {
     europe: d3.geoGraticule().extent([[-11, 35], [32, 61]]).outline(),
     uk: UNITED_KINGDOM,
     london: d3.geoGraticule().extent([[-0.55, 51.28], [0.3, 51.7]]).outline(),
+    usa: UNITED_STATES,
 }
 
 // the countries' tints, by their number of towers (none for a country without any)
@@ -320,6 +321,10 @@ export function StreamingGeoChart(props: Props): JSX.Element {
         []
     )
     const basemap = useMemo(() => byZoom(LAND, detailed?.land), [detailed])
+    // (Albers USA shows the lower 48 states, with Alaska and Hawaii moved in: each in a rectangle of
+    // its own, which would show its neighbors' land, too, overlapping -- so it's drawn with the
+    // United States alone)
+    const albersUsa = projection === 'albersUsa'
     const borders = useMemo(() => byZoom(COUNTRY_BORDERS, detailed?.borders), [detailed])
     // the countries, tinted by their number of towers (a choropleth), and named, those with towers
     const layers = useMemo<Array<GeoLayer>>(
@@ -566,10 +571,10 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                 >
                     <GeoPlot<CellEvent>
                         projection={projection}
-                        basemap={basemap}
-                        borders={showBorders ? borders : undefined}
-                        layers={layers}
-                        fitTo={focus === 'world' ? undefined : FOCUS_SHAPES[focus]}
+                        basemap={albersUsa ? UNITED_STATES : basemap}
+                        borders={showBorders && !albersUsa ? borders : undefined}
+                        layers={albersUsa ? [] : layers}
+                        fitTo={albersUsa ? UNITED_STATES : focus === 'world' ? undefined : FOCUS_SHAPES[focus]}
                         showGraticule={showGraticule}
                         radiusOf={sizeBySignal ? radiusBySignal : undefined}
                         colorOf={colorBySignalOn ? colorBySignal : undefined}

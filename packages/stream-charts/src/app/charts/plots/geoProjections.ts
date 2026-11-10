@@ -18,6 +18,9 @@ export const GeoProjections = {
     equalEarth: d3.geoEqualEarth,
     conicEqualArea: d3.geoConicEqualArea,
     conicEquidistant: d3.geoConicEquidistant,
+    // (a composite: the lower 48 states, with Alaska and Hawaii moved in; shown in the "shift" view
+    // mode, framing a shape -- e.g. the United States -- see the GeoPlot's `viewMode` and `fitTo`)
+    albersUsa: d3.geoAlbersUsa,
 } as const
 
 /**
@@ -76,9 +79,14 @@ export interface GeoPlotViewState {
     /**
      * How far (px) a flat map is shifted up or down (zoomed in, a flat map pans north and south by
      * shifting, rather than by tilting, which would make it an oblique projection). Not used by a
-     * globe.
+     * globe. In the "shift" view mode, how far the map is shifted down.
      */
     offsetY: number
+    /**
+     * In the "shift" view mode (see the GeoPlot's `viewMode`), how far (px) the map is shifted right;
+     * not used otherwise (the view turns, rather than shifts, east and west)
+     */
+    offsetX?: number
 }
 
 const DEGREES = 180 / Math.PI
@@ -100,8 +108,90 @@ export function viewCenteredOn([longitude, latitude]: [number, number]): GeoPlot
  * @return `true` when the projection clips at an angle from its center
  */
 export function isGlobe(projection: d3.GeoProjection): boolean {
+    // (a composite projection, like d3's Albers USA, has no clip angle: it isn't a globe)
+    if (typeof projection.clipAngle !== 'function') return false
     const clipAngle = projection.clipAngle()
     return clipAngle !== null && clipAngle !== undefined && clipAngle > 0
+}
+
+/**
+ * Whether a projection can be turned (rotated): a composite projection -- several projections, each
+ * of its own region, put together, like d3's Albers USA -- can't be, so its view shifts instead (see
+ * the GeoPlot's `viewMode`)
+ * @param projection The projection
+ * @return `true` when the projection can be rotated
+ */
+export const canTurn = (projection: d3.GeoProjection): boolean => typeof projection.rotate === 'function'
+
+/**
+ * Sets the projection up to show a view in the "shift" view mode: fitted to the base shape (in the
+ * plot area, less the padding), and then zoomed (about the area's middle) and shifted as the view
+ * says -- the projection's rotation (if it has one) left as it is. For the projections that can't
+ * be rotated (composites, like d3's Albers USA), and for any other whose view should only shift and
+ * zoom, like a picture.
+ * @param projection The projection (changed in place)
+ * @param base The shape the view frames before it's zoomed or shifted (e.g. the United States)
+ * @param view The view (its zoom, `k`, and its shifts, `offsetX` and `offsetY`)
+ * @param width The width (px) of the plot area
+ * @param height The height (px) of the plot area
+ * @param padding The space (px) to leave around the base shape
+ */
+export function setUpShiftedProjection(
+    projection: d3.GeoProjection,
+    base: d3.GeoPermissibleObjects,
+    view: GeoPlotViewState,
+    width: number,
+    height: number,
+    padding: number = 0,
+): void {
+    const inset = width > 2 * padding && height > 2 * padding ? padding : 0
+    projection.fitExtent([[inset, inset], [width - inset, height - inset]], base)
+    const [x, y] = projection.translate()
+    const middleX = width / 2, middleY = height / 2
+    projection.scale(projection.scale() * view.k)
+    projection.translate([
+        middleX + (x - middleX) * view.k + (view.offsetX ?? 0),
+        middleY + (y - middleY) * view.k + view.offsetY,
+    ])
+}
+
+/**
+ * @param view A view in the "shift" view mode
+ * @param dx The horizontal distance (px) dragged
+ * @param dy The vertical distance (px) dragged
+ * @return The view, shifted as far as it was dragged
+ */
+export const shiftView = (view: GeoPlotViewState, dx: number, dy: number): GeoPlotViewState =>
+    ({...view, offsetX: (view.offsetX ?? 0) + dx, offsetY: view.offsetY + dy})
+
+/**
+ * The view, in the "shift" view mode, after zooming it to a new zoom about a point of the plot area:
+ * the place under the point stays under it
+ * @param view The view before zooming
+ * @param k The new zoom
+ * @param point The `[x, y]` (px) of the point in the plot area to zoom about
+ * @param width The width (px) of the plot area
+ * @param height The height (px) of the plot area
+ * @return The new view
+ */
+export function zoomShiftedViewAbout(
+    view: GeoPlotViewState,
+    k: number,
+    [x, y]: [x: number, y: number],
+    width: number,
+    height: number,
+): GeoPlotViewState {
+    // a point of the fitted map, u, is drawn at middle + (u - middle) * k + offset: the one drawn at
+    // the point now is kept there at the new zoom
+    const middleX = width / 2, middleY = height / 2
+    const ux = middleX + (x - middleX - (view.offsetX ?? 0)) / view.k
+    const uy = middleY + (y - middleY - view.offsetY) / view.k
+    return {
+        ...view,
+        k,
+        offsetX: x - middleX - (ux - middleX) * k,
+        offsetY: y - middleY - (uy - middleY) * k,
+    }
 }
 
 /**

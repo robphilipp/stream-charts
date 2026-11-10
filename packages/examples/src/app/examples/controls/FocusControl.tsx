@@ -8,6 +8,7 @@ const OPTIONS: Array<DropDownOption<GeoFocus>> = [
     {value: 'europe', label: 'Europe'},
     {value: 'uk', label: 'United Kingdom'},
     {value: 'london', label: 'London'},
+    {value: 'usa', label: 'United States'},
 ]
 
 type Props = {

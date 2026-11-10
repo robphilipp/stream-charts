@@ -17,6 +17,8 @@ const OPTIONS: Array<DropDownOption<GeoProjectionName>> = [
     {value: 'equalEarth', label: 'Equal Earth'},
     {value: 'conicEqualArea', label: 'Conic equal-area'},
     {value: 'conicEquidistant', label: 'Conic equidistant'},
+    // (a composite, which shows only the United States, so the view frames it, and shifts)
+    {value: 'albersUsa', label: 'Albers USA (composite)'},
 ]
 
 type Props = {

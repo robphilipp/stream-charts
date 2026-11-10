@@ -122,19 +122,22 @@ export function featuresOf(object: d3.GeoPermissibleObjects): Array<GeoJSON.Feat
  * @param width The width (px) of the plot area
  * @param height The height (px) of the plot area
  * @param steps The grid's points along each side
+ * @param gaps Whether a point off the map is only a gap in it (e.g. the sea between a composite
+ * projection's regions, like Albers USA's), rather than a sign that the view shows everything
  * @return The box of longitudes and latitudes shown, a little larger (a tenth) to be safe, or
  * `undefined`
  */
-export function viewBoxOf(projection: d3.GeoProjection, width: number, height: number, steps: number = 9): GeoBox | undefined {
+export function viewBoxOf(projection: d3.GeoProjection, width: number, height: number, steps: number = 9, gaps: boolean = false): GeoBox | undefined {
     if (!(width > 0 && height > 0)) return undefined
     const places: Array<[number, number]> = []
     for (let i = 0; i < steps; i++) {
         for (let j = 0; j < steps; j++) {
             const place = placeUnder(projection, [width * i / (steps - 1), height * j / (steps - 1)])
-            if (place === undefined) return undefined
-            places.push(place)
+            if (place !== undefined) places.push(place)
+            else if (!gaps) return undefined
         }
     }
+    if (places.length === 0) return undefined
     // (the longitudes are taken relative to the view's middle, so that a box across the antimeridian
     // comes out right)
     const [middleLongitude] = places[Math.floor(places.length / 2)]

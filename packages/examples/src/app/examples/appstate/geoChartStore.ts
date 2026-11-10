@@ -46,9 +46,9 @@ export const AUTO_ROLLUP_NAMES = AUTO_CELL_SIZES.map(degrees => `Clusters of ${d
 
 /**
  * What the view frames, when it first shows and when it's reset: the whole earth, Europe, the United
- * Kingdom, or London (see the GeoPlot's `fitTo`)
+ * Kingdom, London, or the United States (see the GeoPlot's `fitTo`)
  */
-export type GeoFocus = 'world' | 'europe' | 'uk' | 'london'
+export type GeoFocus = 'world' | 'europe' | 'uk' | 'london' | 'usa'
 
 /**
  * What the geo plot shows: clusters of events or the events, by the zoom (auto); each event; the

@@ -34,6 +34,7 @@ import {
     type GeoTooltipMetadata,
     autoLevelOf,
     bearingOf,
+    canTurn,
     type DrawnMarker,
     flashGroupsOf,
     flashRingOf,
@@ -47,10 +48,13 @@ import {
     panView,
     placeUnder,
     setUpProjection,
+    setUpShiftedProjection,
+    shiftView,
     viewCenteredOn,
     viewFitting,
     wedgeIndexAt,
     wedgeOf,
+    zoomShiftedViewAbout,
     zoomViewAbout,
 } from "./geoProjections"
 
@@ -326,9 +330,20 @@ export interface Props<P> {
      * pausing while the view is dragged and while an event is hovered. Defaults to no rotation. The
      * plot redraws up to 60 times a second while it turns, so with many tens of thousands of events
      * held, show a roll-up's aggregates instead, or keep fewer events (the data source's
-     * `dropDataAfter`).
+     * `dropDataAfter`). Not in the "shift" view mode.
      */
     autoRotate?: number
+    /**
+     * How the view moves: by turning the earth (`turn`, the default) -- a globe turns under a drag,
+     * every way, and a flat map turns east and west, and shifts north and south -- or by shifting the
+     * map, like a picture (`shift`): fitted to `fitTo` (or the whole sphere), a drag slides it, and
+     * the wheel zooms it about the mouse, the projection's own rotation left as it is (e.g. a conic
+     * map of one state, set up for it). A projection that can't be turned -- a composite of several,
+     * like `albersUsa` (the lower 48 states, with Alaska and Hawaii moved in) -- is always shown in
+     * the `shift` mode, and needs `fitTo` (e.g. the United States), since it can't show the whole
+     * sphere.
+     */
+    viewMode?: 'turn' | 'shift'
     /**
      * An (optional) view to restore when the plot mounts -- commonly the last view reported
      * through `onViewChange` and held by the application (e.g. in a store), so that the view
@@ -590,6 +605,8 @@ function drawKeys(
 }
 
 const DEFAULT_CENTER: [number, number] = [0, 20]
+// the whole sphere, as GeoJSON
+const SPHERE: d3.GeoPermissibleObjects = {type: 'Sphere'}
 // how far (px) beyond the plot area the map is clipped (so that the outlines of the areas clipped
 // there fall outside the plot area, which the canvas clips to)
 const MAP_CLIP_MARGIN = 4
@@ -730,6 +747,7 @@ export function GeoPlot<P>(props: Props<P>): null {
         zoomKeyModifiersRequired = true,
         zoomMaxScaleFactor = 20,
         autoRotate,
+        viewMode = 'turn',
         isolateHoveredSeries = true,
         viewState,
         onViewChange = noop,
@@ -748,12 +766,32 @@ export function GeoPlot<P>(props: Props<P>): null {
     // the view (rotation, zoom, and a flat map's vertical shift), changed by dragging, zooming, and
     // the auto-rotation; starts as the view handed in (see `viewState`), or centered on `center`
     const [centerLongitude, centerLatitude] = center
-    // (framing `fitTo`, when it's set: for the plot's size, and the projection)
+    // whether the view shifts (and zooms), rather than turns (see `viewMode`): always for a projection
+    // that can't be turned (a composite); and the shape it's fitted to before it's shifted or zoomed
+    const shifting = viewMode === 'shift' || !canTurn(projection)
+    const base = useMemo<d3.GeoPermissibleObjects>(() => fitTo ?? SPHERE, [fitTo])
+
+    /**
+     * Sets the projection up for a view: turned (see `setUpProjection`), or, in the shift mode, fitted
+     * to the base shape and shifted (see `setUpShiftedProjection`)
+     * @param view The view
+     */
+    const setUp = useCallback(
+        (view: GeoPlotViewState): void => {
+            if (shifting) setUpShiftedProjection(projection, base, view, width, height, fitPadding)
+            else setUpProjection(projection, view, width, height)
+        },
+        [shifting, projection, base, width, height, fitPadding]
+    )
+
+    // (framing `fitTo`, when it's set: for the plot's size, and the projection; in the shift mode, the
+    // base shape is the frame, unzoomed and unshifted)
     const initialView = useMemo(
-        () => fitTo !== undefined ?
-            viewFitting(projection, fitTo, width, height, fitPadding) :
-            viewCenteredOn([centerLongitude, centerLatitude]),
-        [fitTo, fitPadding, projection, width, height, centerLongitude, centerLatitude]
+        (): GeoPlotViewState => shifting ? {rotate: [0, 0, 0], k: 1, offsetX: 0, offsetY: 0} :
+            fitTo !== undefined ?
+                viewFitting(projection, fitTo, width, height, fitPadding) :
+                viewCenteredOn([centerLongitude, centerLatitude]),
+        [shifting, fitTo, fitPadding, projection, width, height, centerLongitude, centerLatitude]
     )
     const viewRef = useRef<GeoPlotViewState>(viewState ?? initialView)
 
@@ -849,7 +887,9 @@ export function GeoPlot<P>(props: Props<P>): null {
                 // show in the view (see `viewBoxOf`), and clipped to the plot area (a little beyond
                 // it, so that the clipped areas' outlines fall outside it)
                 const k = viewRef.current.k
-                const viewBox = viewBoxOf(projection, width, height)
+                // (in the shift mode, the points off the map are gaps -- e.g. the sea around a
+                // composite's regions)
+                const viewBox = viewBoxOf(projection, width, height, 9, shifting)
                 const shown = (data: GeoMapData | undefined): d3.GeoPermissibleObjects | undefined => {
                     const object = data !== undefined ? detailOf(data, k) : undefined
                     return object !== undefined ? visibleOf(object, viewBox) : undefined
@@ -860,12 +900,20 @@ export function GeoPlot<P>(props: Props<P>): null {
                         const object = shown(layer.data)
                         return object !== undefined ? [{layer, object}] : []
                     })
-                const clipExtent = projection.clipExtent()
-                projection.clipExtent([[-MAP_CLIP_MARGIN, -MAP_CLIP_MARGIN], [width + MAP_CLIP_MARGIN, height + MAP_CLIP_MARGIN]])
+                // (a composite projection clips each of its regions itself: it can't be clipped)
+                const clippable = typeof projection.clipExtent === 'function'
+                const clipExtent = clippable ? projection.clipExtent() : null
+                if (clippable) {
+                    projection.clipExtent([[-MAP_CLIP_MARGIN, -MAP_CLIP_MARGIN], [width + MAP_CLIP_MARGIN, height + MAP_CLIP_MARGIN]])
+                }
                 const path = d3.geoPath(projection, context2D)
 
+                // the sphere (the oceans) -- or, for a projection that can't be turned (a composite,
+                // whose "sphere" is its regions' rectangles), the whole plot area
+                const wholeSphere = canTurn(projection)
                 context2D.beginPath()
-                path({type: 'Sphere'})
+                if (wholeSphere) path(SPHERE)
+                else context2D.rect(0, 0, width, height)
                 context2D.fillStyle = oceanColor
                 context2D.fill()
 
@@ -894,18 +942,20 @@ export function GeoPlot<P>(props: Props<P>): null {
                 }
                 // (the labels over everything else of the map)
                 shownLayers.forEach(({layer, object}) => drawLayerLabels(context2D, path, layer, object, color, width, height))
-                context2D.beginPath()
-                path({type: 'Sphere'})
-                context2D.strokeStyle = outlineColor
-                context2D.lineWidth = 1
-                context2D.stroke()
-                projection.clipExtent(clipExtent)
+                if (wholeSphere) {
+                    context2D.beginPath()
+                    path(SPHERE)
+                    context2D.strokeStyle = outlineColor
+                    context2D.lineWidth = 1
+                    context2D.stroke()
+                }
+                if (clippable) projection.clipExtent(clipExtent)
             }
 
             const draw = (context: CanvasContext): void => {
                 const {context2D, dpr} = context
                 const view = viewRef.current
-                setUpProjection(projection, view, width, height)
+                setUp(view)
                 // (for what's drawn over the scene, see `drawScene`)
                 const path = d3.geoPath(projection, context2D)
                 const viewChanged = lastViewRef.current !== view
@@ -916,9 +966,11 @@ export function GeoPlot<P>(props: Props<P>): null {
                 context2D.translate(margin.left, margin.top)
 
                 // a globe hides the far side, beyond its clip angle from the view's center
-                const [lambda, phi] = projection.rotate()
+                // (a projection that can't be turned, a composite, isn't a globe, and has no rotation)
+                const globe = isGlobe(projection)
+                const [lambda, phi] = globe ? projection.rotate() : [0, 0]
                 const viewCenter: [number, number] = [-lambda, -phi]
-                const maxDistance = isGlobe(projection) ? (projection.clipAngle() ?? 0) / DEGREES : Infinity
+                const maxDistance = globe ? (projection.clipAngle() ?? 0) / DEGREES : Infinity
                 /**
                  * @param latitude A latitude
                  * @param longitude A longitude
@@ -1397,7 +1449,7 @@ export function GeoPlot<P>(props: Props<P>): null {
             cc.requestRedraw()
         },
         [
-            chartId, projection, width, height, plotDimensions, margin.left, margin.top, graticule, mapSettings, markerSettings,
+            chartId, projection, setUp, shifting, width, height, plotDimensions, margin.left, margin.top, graticule, mapSettings, markerSettings,
             showGraticule, basemap, borders, layers, oceanColor, landColor, borderColor, graticuleColor,
             outlineColor, markerRadius, markerOpacity, radiusOf, colorOf, fadeDuration, fadedOpacity, flashDuration,
             seriesStyles, seriesFilter, color, backgroundColor, dataSource, onUpdateChartTime, mode, rollup, autoRollups,
@@ -1437,7 +1489,9 @@ export function GeoPlot<P>(props: Props<P>): null {
             draggingRef.current = true
         },
         onPan: (dx, dy) => {
-            viewRef.current = panView(projection, viewRef.current, dx, dy, width, height)
+            viewRef.current = shifting ?
+                shiftView(viewRef.current, dx, dy) :
+                panView(projection, viewRef.current, dx, dy, width, height)
             canvasContext?.requestRedraw()
         },
         onPanEnd: () => {
@@ -1446,7 +1500,10 @@ export function GeoPlot<P>(props: Props<P>): null {
             reportView()
         },
         onZoom: ({k, x, y}) => {
-            viewRef.current = zoomViewAbout(projection, viewRef.current, k, [x - margin.left, y - margin.top], width, height)
+            const point: [number, number] = [x - margin.left, y - margin.top]
+            viewRef.current = shifting ?
+                zoomShiftedViewAbout(viewRef.current, k, point, width, height) :
+                zoomViewAbout(projection, viewRef.current, k, point, width, height)
             canvasContext?.requestRedraw()
             reportView()
         },
@@ -1509,7 +1566,7 @@ export function GeoPlot<P>(props: Props<P>): null {
     // hovered (and reports the view when it pauses)
     useEffect(
         () => {
-            if (autoRotate === undefined || autoRotate === 0 || canvasContext === null) return
+            if (autoRotate === undefined || autoRotate === 0 || canvasContext === null || shifting) return
             let previousTime: number | undefined = undefined
             let wasPaused = false
             let frame = requestAnimationFrame(function turn(time: number): void {
@@ -1529,7 +1586,7 @@ export function GeoPlot<P>(props: Props<P>): null {
             })
             return (): void => cancelAnimationFrame(frame)
         },
-        [autoRotate, canvasContext, reportView]
+        [autoRotate, canvasContext, reportView, shifting]
     )
 
     // the flashes' filters, as of the latest render (read as events arrive, without resubscribing)
@@ -1622,7 +1679,7 @@ export function GeoPlot<P>(props: Props<P>): null {
                     if (target.kind !== 'aggregate' || aggregateShape !== 'pies' || target.aggregate.groups.length === 0) return target
                     // the wedge under the mouse: by the bearing, from the circle's center, of the
                     // place under the mouse
-                    setUpProjection(projection, viewRef.current, width, height)
+                    setUp(viewRef.current)
                     const place = placeUnder(projection, [x - margin.left, y - margin.top])
                     const {groups, longitude, latitude} = target.aggregate
                     const index = place === undefined ? -1 :
@@ -1632,7 +1689,7 @@ export function GeoPlot<P>(props: Props<P>): null {
                 const shownRollup = shownRollupRef.current
                 if (cellsRef.current.length === 0 || shownRollup === undefined) return undefined
 
-                setUpProjection(projection, viewRef.current, width, height)
+                setUp(viewRef.current)
                 const place = placeUnder(projection, [x - margin.left, y - margin.top])
                 if (place === undefined) return undefined
                 const [longitude, latitude] = place
@@ -1673,7 +1730,7 @@ export function GeoPlot<P>(props: Props<P>): null {
         },
         [
             canvasContext, chartId, mouseOverHandlerFor, mouseLeaveHandlerFor, tooltipVisible,
-            projection, width, height, margin.left, margin.top, aggregateShape
+            projection, setUp, width, height, margin.left, margin.top, aggregateShape
         ]
     )
 
@@ -1700,6 +1757,16 @@ export function GeoPlot<P>(props: Props<P>): null {
             return (): void => driver.unsubscribe()
         },
         [dataSource, running, canvasContext]
+    )
+
+    // a projection that can't be turned (a composite) can't show the whole sphere: it needs a shape
+    useEffect(
+        () => {
+            if (!canTurn(projection) && fitTo === undefined) {
+                console.error("GeoPlot: a projection that can't be turned (a composite, like albersUsa) needs `fitTo` (e.g. the United States)")
+            }
+        },
+        [projection, fitTo]
     )
 
     // this plot needs a data source (see the `Chart`'s `dataSource` prop)

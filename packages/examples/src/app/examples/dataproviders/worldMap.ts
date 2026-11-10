@@ -35,6 +35,12 @@ export const COUNTRIES = feature(world, world.objects.countries)
 export const UNITED_KINGDOM = COUNTRIES.features.find(country => (country.properties as {name?: string} | null)?.name === 'United Kingdom')
 
 /**
+ * The United States' outline, Alaska and Hawaii included (e.g. for framing the view on it, or for
+ * the Albers USA projection, which shows nothing else)
+ */
+export const UNITED_STATES = COUNTRIES.features.find(country => (country.properties as {name?: string} | null)?.name === 'United States of America')
+
+/**
  * The map at a finer level of detail (1:50m): the land, the borders between countries, and the
  * countries
  */

@@ -2,6 +2,7 @@ import * as d3 from "d3";
 import {
     autoLevelOf,
     bearingOf,
+    canTurn,
     type DrawnMarker,
     flashGroupsOf,
     flashRingOf,
@@ -15,10 +16,13 @@ import {
     panView,
     placeUnder,
     setUpProjection,
+    setUpShiftedProjection,
+    shiftView,
     viewCenteredOn,
     viewFitting,
     wedgeIndexAt,
     wedgeOf,
+    zoomShiftedViewAbout,
     zoomViewAbout,
 } from "./geoProjections";
 import type {GeoAggregate} from "../datasources/geoRollups";
@@ -408,5 +412,66 @@ describe('fitting a view to a shape', () => {
         expect(view.k).toBe(1)
         expect(view.rotate[0]).toBeCloseTo(-10, 9)
         expect(view.rotate[1]).toBeCloseTo(-50, 9)
+    })
+})
+
+describe('the shift view mode (e.g. for a composite projection)', () => {
+    // the lower 48 states, about
+    const lower48 = d3.geoGraticule().extent([[-125, 25], [-67, 49]]).outline()
+    const start = {rotate: [0, 0, 0] as [number, number, number], k: 1, offsetX: 0, offsetY: 0}
+    const kansas: [number, number] = [-98, 38.5]
+
+    it('knows a composite projection can\'t be turned, and isn\'t a globe', () => {
+        const albersUsa = GeoProjections.albersUsa()
+        expect(canTurn(albersUsa)).toBe(false)
+        expect(isGlobe(albersUsa)).toBe(false)
+        expect(canTurn(GeoProjections.orthographic())).toBe(true)
+    })
+
+    it('fits the base shape into the plot area, less the padding', () => {
+        const projection = GeoProjections.albersUsa()
+        setUpShiftedProjection(projection, lower48, start, WIDTH, HEIGHT, 20)
+        const [[x0, y0], [x1, y1]] = d3.geoPath(projection).bounds(lower48)
+        expect(x0).toBeGreaterThanOrEqual(19)
+        expect(y0).toBeGreaterThanOrEqual(19)
+        expect(x1).toBeLessThanOrEqual(WIDTH - 19)
+        expect(y1).toBeLessThanOrEqual(HEIGHT - 19)
+        expect(Math.max((x1 - x0) / (WIDTH - 40), (y1 - y0) / (HEIGHT - 40))).toBeCloseTo(1, 2)
+    })
+
+    it('zooms about a point, keeping the place under it there', () => {
+        const projection = GeoProjections.albersUsa()
+        setUpShiftedProjection(projection, lower48, start, WIDTH, HEIGHT)
+        const before = projection(kansas)!
+        const zoomed = zoomShiftedViewAbout(start, 4, before, WIDTH, HEIGHT)
+        setUpShiftedProjection(projection, lower48, zoomed, WIDTH, HEIGHT)
+        const after = projection(kansas)!
+        expect(after[0]).toBeCloseTo(before[0], 6)
+        expect(after[1]).toBeCloseTo(before[1], 6)
+        // (and the scale is four times as large)
+        const [[x0], [x1]] = d3.geoPath(projection).bounds(lower48)
+        setUpShiftedProjection(projection, lower48, start, WIDTH, HEIGHT)
+        const [[ux0], [ux1]] = d3.geoPath(projection).bounds(lower48)
+        expect((x1 - x0) / (ux1 - ux0)).toBeCloseTo(4, 3)
+    })
+
+    it('shifts the map as far as it\'s dragged', () => {
+        const projection = GeoProjections.albersUsa()
+        setUpShiftedProjection(projection, lower48, start, WIDTH, HEIGHT)
+        const before = projection(kansas)!
+        setUpShiftedProjection(projection, lower48, shiftView(start, 30, -20), WIDTH, HEIGHT)
+        const after = projection(kansas)!
+        expect(after[0] - before[0]).toBeCloseTo(30, 6)
+        expect(after[1] - before[1]).toBeCloseTo(-20, 6)
+    })
+
+    it('finds the places under the plot area\'s points, but none off its regions', () => {
+        const projection = GeoProjections.albersUsa()
+        setUpShiftedProjection(projection, lower48, start, WIDTH, HEIGHT)
+        const place = placeUnder(projection, projection(kansas)!)!
+        expect(place[0]).toBeCloseTo(kansas[0], 6)
+        expect(place[1]).toBeCloseTo(kansas[1], 6)
+        // (far beyond the regions -- each a rectangle, the sea around its land included)
+        expect(placeUnder(projection, [-WIDTH, -HEIGHT])).toBeUndefined()
     })
 })
