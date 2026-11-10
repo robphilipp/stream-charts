@@ -1,4 +1,4 @@
-import {type JSX, useCallback, useMemo, useRef, useState} from "react"
+import {type JSX, useCallback, useEffect, useMemo, useRef, useState} from "react"
 import * as d3 from "d3"
 import {
     Grid,
@@ -18,6 +18,8 @@ import {
     defaultMargin,
     type GeoDatum,
     type GeoFlash,
+    type GeoLayer,
+    type GeoMapData,
     GeoPlot,
     GeoPlotTooltipContent,
     type GeoProjectionName,
@@ -55,8 +57,9 @@ import {
     WEAK_SIGNAL,
     WEAKEST_SIGNAL,
 } from "./appstate/geoChartStore.ts"
-import {CARRIERS, type CellEvent, initialCellTowerData, type PhoneFix, PHONES, type TowerPing} from "./dataproviders/cellTowerData.ts"
-import {COUNTRY_BORDERS, LAND} from "./dataproviders/worldMap.ts"
+import {CARRIERS, type CellEvent, initialCellTowerData, type PhoneFix, PHONES, TOWERS_BY_COUNTRY, type TowerPing} from "./dataproviders/cellTowerData.ts"
+import {COUNTRIES, COUNTRY_BORDERS, type DetailedWorld, detailedWorld, LAND, UNITED_KINGDOM} from "./dataproviders/worldMap.ts"
+import {FocusControl} from "./controls/FocusControl.tsx"
 
 const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
 
@@ -65,6 +68,35 @@ const INITIAL_HISTORY = 10_000
 
 // how long (ms) events take to fade (when fading older events)
 const FADE_DURATION = 30_000
+
+// the zoom from which the map is drawn at its finer level of detail (1:50m, rather than 1:110m)
+const DETAILED_ZOOM = 6
+
+// the shapes that the view can frame (see the plot's `fitTo`): Europe and London as boxes of
+// longitude and latitude (wound as d3 wants a small polygon), and the United Kingdom's outline
+const FOCUS_SHAPES = {
+    europe: d3.geoGraticule().extent([[-11, 35], [32, 61]]).outline(),
+    uk: UNITED_KINGDOM,
+    london: d3.geoGraticule().extent([[-0.55, 51.28], [0.3, 51.7]]).outline(),
+}
+
+// the countries' tints, by their number of towers (none for a country without any)
+const MOST_TOWERS = Math.max(...TOWERS_BY_COUNTRY.values())
+const towersColor = (towers: number): string => d3.interpolateBlues(0.3 + 0.7 * towers / MOST_TOWERS)
+
+/**
+ * @param feature A country
+ * @return Its number of towers (0 for a country without any)
+ */
+const towersIn = (feature: GeoJSON.Feature): number => TOWERS_BY_COUNTRY.get(feature.properties?.name) ?? 0
+
+/**
+ * @param coarse The map's data at its coarser level of detail (1:110m)
+ * @param detailed The same at its finer level of detail (1:50m), once loaded
+ * @return The map's data, by zoom: the coarser, and, from DETAILED_ZOOM in, the finer
+ */
+const byZoom = <T extends GeoMapData>(coarse: T, detailed: T | undefined): GeoMapData =>
+    detailed === undefined ? coarse : [{minZoom: 0, data: coarse as d3.GeoPermissibleObjects}, {minZoom: DETAILED_ZOOM, data: detailed as d3.GeoPermissibleObjects}]
 
 // how long (ms) a phone's new (estimated) location flashes
 const FLASH_DURATION = 1500
@@ -247,6 +279,10 @@ export function StreamingGeoChart(props: Props): JSX.Element {
     const setColorBySignal = useGeoChartStore(state => state.setColorBySignal)
     const fadeOlder = useGeoChartStore(state => state.fadeOlder)
     const setFadeOlder = useGeoChartStore(state => state.setFadeOlder)
+    const showCountries = useGeoChartStore(state => state.showCountries)
+    const setShowCountries = useGeoChartStore(state => state.setShowCountries)
+    const focus = useGeoChartStore(state => state.focus)
+    const setFocus = useGeoChartStore(state => state.setFocus)
     const flashLocated = useGeoChartStore(state => state.flashLocated)
     const setFlashLocated = useGeoChartStore(state => state.setFlashLocated)
     const flashActual = useGeoChartStore(state => state.flashActual)
@@ -269,6 +305,33 @@ export function StreamingGeoChart(props: Props): JSX.Element {
     const filter = useMemo(() => filterFrom(filterValue), [filterValue])
     const seriesStyles = useMemo(() => seriesStylesFor(theme), [theme])
     const groupColorOf = useMemo(() => groupColorsFor(theme), [theme])
+    // the map at its finer level of detail, for zoomed-in views: loaded (once) when the chart mounts
+    const [detailed, setDetailed] = useState<DetailedWorld | undefined>(undefined)
+    useEffect(
+        () => {
+            let mounted = true
+            detailedWorld().then(world => {
+                if (mounted) setDetailed(world)
+            })
+            return (): void => {
+                mounted = false
+            }
+        },
+        []
+    )
+    const basemap = useMemo(() => byZoom(LAND, detailed?.land), [detailed])
+    const borders = useMemo(() => byZoom(COUNTRY_BORDERS, detailed?.borders), [detailed])
+    // the countries, tinted by their number of towers (a choropleth), and named, those with towers
+    const layers = useMemo<Array<GeoLayer>>(
+        () => showCountries ? [{
+            data: byZoom(COUNTRIES, detailed?.countries),
+            fill: (feature): string | undefined => towersIn(feature) > 0 ? towersColor(towersIn(feature)) : undefined,
+            opacity: 0.45,
+            label: (feature): string | undefined => towersIn(feature) > 0 ? feature.properties?.name : undefined,
+        }] : [],
+        [showCountries, detailed]
+    )
+
     const phoneFlashes = useMemo(
         () => phoneFlashesFor(flashLocated, flashActual, ACTUAL_COLORS[theme.name === 'light' ? 'light' : 'dark']),
         [flashLocated, flashActual, theme]
@@ -421,6 +484,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 handleColorByChange={setColorBy}
                             />
                             <Divider theme={theme}/>
+                            <FocusControl theme={theme} focus={focus} handleFocusChange={setFocus}/>
                             <ProjectionControl
                                 theme={theme}
                                 projection={projection}
@@ -433,6 +497,14 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 borderColor={theme.color}
                                 labelColor={theme.color}
                                 onChange={() => setShowGraticule(!showGraticule)}
+                            />
+                            <Checkbox
+                                checked={showCountries}
+                                label="countries"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setShowCountries(!showCountries)}
                             />
                             <Checkbox
                                 checked={showBorders}
@@ -494,8 +566,10 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                 >
                     <GeoPlot<CellEvent>
                         projection={projection}
-                        basemap={LAND}
-                        borders={showBorders ? COUNTRY_BORDERS : undefined}
+                        basemap={basemap}
+                        borders={showBorders ? borders : undefined}
+                        layers={layers}
+                        fitTo={focus === 'world' ? undefined : FOCUS_SHAPES[focus]}
                         showGraticule={showGraticule}
                         radiusOf={sizeBySignal ? radiusBySignal : undefined}
                         colorOf={colorBySignalOn ? colorBySignal : undefined}

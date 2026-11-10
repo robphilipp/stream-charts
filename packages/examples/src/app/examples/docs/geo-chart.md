@@ -78,7 +78,11 @@ The data source keeps its roll-ups up to date as events arrive *and as they're d
 - **Roll-up** – Which roll-up to show, in the aggregates mode. *Wired to:* the plot's `rollup` property (the names come from the data source's `rollups` option).
 - **Color by** – What colors the aggregates: nothing, their count, or one of the roll-up's measures. *Wired to:* the plot's `colorBy` property, and its `colorScheme` (red toward the bad end).
 - **Projection** – The map projection: the orthographic projection (the globe), the other azimuthal projections, or one of the flat ones, from Mercator to Equal Earth. *Wired to:* the plot's `projection` property.
+- **Focus** – What the view frames, when it first shows and when it's reset: the whole earth, Europe, the United Kingdom, or London. *Wired to:* the plot's `fitTo` property (the United Kingdom's outline, or a box of longitudes and latitudes).
+- **countries** – Tints the countries by their number of towers (a choropleth), and names those with towers, where their names fit. *Wired to:* the plot's `layers` property: a layer whose `fill` and `label` are functions of the country.
 - **graticule** and **borders** – The lines of latitude and longitude, and the borders between countries. *Wired to:* the plot's `showGraticule` and `borders` properties.
+
+The map itself changes with the zoom: zoomed out, it's Natural Earth's 1:110m map, and from 6 times in, its 1:50m map – about seven times as detailed, and loaded only when the chart first shows. *Wired to:* the plot's `basemap`, `borders`, and `layers`, each given both versions, with the zoom from which each is drawn.
 - **fade older** – Fades the events (and the aggregates) as they age, over 30 seconds. *Wired to:* the plot's `fadeDuration` property.
 - **flash located** – Flashes each phone's new (estimated) location as it arrives: a ring that grows from it and fades, over a second and a half. *Wired to:* the plot's `flashDuration` and `flashes` properties (only the phones' locations flash).
 - **flash actual** – Flashes, briefly, the place where each phone actually is, as it's located: a small orange ring. *Wired to:* the plot's `flashes` property, which gives each location a second flash, with its own place (the payload's `phoneLatitude` and `phoneLongitude`), radius, duration, and color.
@@ -95,10 +99,10 @@ The example (yours to copy, change, or ignore):
 - `src/app/examples/appstate/geoChartStore.ts` – the example's state, its data source, and the data source's roll-ups
 - `src/app/examples/dataproviders/cellTowerData.ts` – the random cell network: its towers, its phones, their pings, and the trilateration that locates the phones
 - `src/app/examples/dataproviders/worldMap.ts` – the map: the land and the borders, from the [world-atlas](https://github.com/topojson/world-atlas) package (converted from TopoJSON with [topojson-client](https://github.com/topojson/topojson-client))
-- `src/app/examples/controls/ProjectionControl.tsx` and `src/app/examples/controls/GeoAggregateControls.tsx` – the controls just for this chart
+- `src/app/examples/controls/ProjectionControl.tsx`, `src/app/examples/controls/FocusControl.tsx`, and `src/app/examples/controls/GeoAggregateControls.tsx` – the controls just for this chart
 
 The library (what you'd use in your own application):
 - `<Chart>`, `<GeoPlot>`, `<Legend>`, `<Tooltip>` with `<GeoPlotTooltipContent>`
 - `GeoDataSource` – holds the events, and keeps the roll-ups (made with `bySensor`, `byGridCell`, or a function of your own, and measures like `meanOf` and `minOf`, or your own with `reduceOf` and `measureOf`)
 
-The library doesn't come with a map: you hand the plot the land and borders you want, at the level of detail you want, as GeoJSON.
+The library doesn't come with a map: you hand the plot the land, the borders, and any other layers you want, at the levels of detail you want, as GeoJSON.

@@ -133,6 +133,65 @@ export function setUpProjection(projection: d3.GeoProjection, view: GeoPlotViewS
 }
 
 /**
+ * The view that frames a shape (e.g. a country, or a state): centered on its centroid, and zoomed in
+ * until its bounds fill the plot area, less the padding, in one direction or the other. A globe turns
+ * to face the shape; a flat map turns east or west to it, and shifts it to the middle, north or south,
+ * as far as the map allows.
+ * @param projection The projection (left set up for the view)
+ * @param shape The shape, as GeoJSON
+ * @param width The width (px) of the plot area
+ * @param height The height (px) of the plot area
+ * @param padding The space (px) to leave between the shape and the plot area's edges
+ * @return The view; the whole sphere, centered on the shape, when the shape (or the area) has no size
+ */
+export function viewFitting(
+    projection: d3.GeoProjection,
+    shape: d3.GeoPermissibleObjects,
+    width: number,
+    height: number,
+    padding: number = 20,
+): GeoPlotViewState {
+    const [longitude, latitude] = d3.geoCentroid(shape as d3.ExtendedFeature)
+    let center: [number, number] = [Number.isFinite(longitude) ? longitude : 0, Number.isFinite(latitude) ? latitude : 0]
+    const centered = viewCenteredOn(center)
+    if (!(width > 2 * padding && height > 2 * padding)) return centered
+
+    // the zoom that fits the shape's bounds, centered: zooming scales the shape about the plot area's
+    // middle, so the view turns until the middle of the shape's (drawn) bounds is there -- which the
+    // shape's centroid isn't quite (e.g. a globe draws a box's northern edge shorter than its
+    // southern) -- a few steps converge
+    const globe = isGlobe(projection)
+    let view: GeoPlotViewState = centered
+    for (let step = 0; step < 4; step++) {
+        const unzoomed = viewCenteredOn(center)
+        setUpProjection(projection, unzoomed, width, height)
+        const [[x0, y0], [x1, y1]] = d3.geoPath(projection).bounds(shape)
+        const k = Math.min((width - 2 * padding) / (x1 - x0), (height - 2 * padding) / (y1 - y0))
+        if (!Number.isFinite(k) || k <= 0) return centered
+        view = {...unzoomed, k: Math.max(1, k)}
+        setUpProjection(projection, view, width, height)
+        const [[zx0, zy0], [zx1, zy1]] = d3.geoPath(projection).bounds(shape)
+        const middle = placeUnder(projection, [(zx0 + zx1) / 2, (zy0 + zy1) / 2])
+        if (middle === undefined) break
+        // (a flat map only turns east and west: it's shifted north and south below)
+        const next: [number, number] = globe ? middle : [middle[0], center[1]]
+        if (Math.abs(next[0] - center[0]) < 1e-6 && Math.abs(next[1] - center[1]) < 1e-6) break
+        center = next
+    }
+    if (globe) {
+        setUpProjection(projection, view, width, height)
+        return view
+    }
+
+    // a flat map only turns east and west: shift the shape's middle to the plot area's, north or south
+    // (as far as the map allows, see `setUpProjection`)
+    const applied = setUpProjection(projection, view, width, height)
+    const [[, top], [, bottom]] = d3.geoPath(projection).bounds(shape)
+    view = {...view, offsetY: applied + height / 2 - (top + bottom) / 2}
+    return {...view, offsetY: setUpProjection(projection, view, width, height)}
+}
+
+/**
  * The view after dragging it: a globe turns under the mouse, in every direction; a flat map shifts
  * east and west (by turning), and north and south (by shifting, when zoomed in)
  * @param projection The projection (left set up for the new view)

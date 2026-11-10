@@ -18,6 +18,16 @@ import type {GeoDatum, GeoSeries} from "../series/geoSeries"
 import {usePlotDimensions} from "../hooks/usePlotDimensions"
 import {type TooltipData, useTooltip} from "../hooks/useTooltip"
 import {
+    detailOf,
+    drawLayerLabels,
+    drawLayerShapes,
+    type GeoLayer,
+    type GeoMapData,
+    layerShownAt,
+    viewBoxOf,
+    visibleOf,
+} from "./geoLayers"
+import {
     type GeoPlotViewState,
     type GeoProjectionName,
     GeoProjections,
@@ -38,6 +48,7 @@ import {
     placeUnder,
     setUpProjection,
     viewCenteredOn,
+    viewFitting,
     wedgeIndexAt,
     wedgeOf,
     zoomViewAbout,
@@ -56,20 +67,44 @@ export interface Props<P> {
     projection?: GeoProjectionName | d3.GeoProjection
     /**
      * The `[longitude, latitude]` (degrees) at the center of the view when the plot first shows,
-     * and after its view is reset. Defaults to `[0, 20]`. Changing it re-centers the view.
+     * and after its view is reset. Defaults to `[0, 20]`. Changing it re-centers the view. Not used
+     * with `fitTo`.
      */
     center?: [longitude: number, latitude: number]
     /**
-     * The land (or any other areas) to draw under the events, as GeoJSON (e.g. the `land` features
-     * of a world atlas). The plot doesn't come with a map, so that the application chooses its
-     * level of detail. Drawn filled, in `landColor`.
+     * A shape (GeoJSON, e.g. a country, or a state) that the view frames when the plot first shows,
+     * and after its view is reset: centered on the shape, and zoomed in until it fills the plot area,
+     * less `fitPadding`. Changing it re-frames the view; and until the user moves the view, the view
+     * keeps the shape framed as the plot's size changes. (The zoom's limit is raised to the framing
+     * zoom, when that's past `zoomMaxScaleFactor`.)
      */
-    basemap?: d3.GeoPermissibleObjects
+    fitTo?: d3.GeoPermissibleObjects
     /**
-     * The borders (or any other lines) to draw over the basemap, as GeoJSON (e.g. a mesh of a world
-     * atlas' country borders). Drawn as lines, in `borderColor`.
+     * The space (px) left around the shape that the view frames (see `fitTo`). Defaults to 20.
      */
-    borders?: d3.GeoPermissibleObjects
+    fitPadding?: number
+    /**
+     * The land (or any other areas) to draw under the events, as GeoJSON (e.g. the `land` features
+     * of a world atlas) -- or versions of it at different levels of detail, each drawn from its own
+     * zoom in (see {@link GeoMapData}). The plot doesn't come with a map, so that the application
+     * chooses its level of detail. Drawn filled, in `landColor`.
+     */
+    basemap?: GeoMapData
+    /**
+     * The borders (or any other lines) to draw over the basemap and the layers, as GeoJSON (e.g. a
+     * mesh of a world atlas' country borders) -- or versions of it by zoom (see {@link GeoMapData}).
+     * Drawn as lines, in `borderColor`.
+     */
+    borders?: GeoMapData
+    /**
+     * More of the map, drawn over the basemap, in order, and under the borders (see {@link GeoLayer}):
+     * e.g. a country's states, colored by a value of each (a choropleth, with a `fill` function of the
+     * feature), its counties (only once zoomed in, see `minZoom`), its roads, or its lakes -- each
+     * with its own colors, line width, and opacity, versions by zoom, and labels. Only the features
+     * that might show in the view are drawn, and the map is clipped to the plot area, so that a
+     * detailed map, zoomed in, draws quickly.
+     */
+    layers?: Array<GeoLayer>
     /**
      * Whether to draw the graticule (the lines of latitude and longitude, every 10°). Defaults to `true`.
      */
@@ -555,6 +590,9 @@ function drawKeys(
 }
 
 const DEFAULT_CENTER: [number, number] = [0, 20]
+// how far (px) beyond the plot area the map is clipped (so that the outlines of the areas clipped
+// there fall outside the plot area, which the canvas clips to)
+const MAP_CLIP_MARGIN = 4
 const DEGREES = 180 / Math.PI
 // the number of distinct opacities the faded markers are drawn with (so that markers can still be
 // drawn a path per color and opacity)
@@ -650,8 +688,11 @@ export function GeoPlot<P>(props: Props<P>): null {
     const {
         projection: projectionProp = 'orthographic',
         center = DEFAULT_CENTER,
+        fitTo,
+        fitPadding = 20,
         basemap,
         borders,
+        layers,
         showGraticule = true,
         oceanColor = withAlpha(color, 0.05),
         landColor = withAlpha(color, 0.2),
@@ -707,9 +748,12 @@ export function GeoPlot<P>(props: Props<P>): null {
     // the view (rotation, zoom, and a flat map's vertical shift), changed by dragging, zooming, and
     // the auto-rotation; starts as the view handed in (see `viewState`), or centered on `center`
     const [centerLongitude, centerLatitude] = center
+    // (framing `fitTo`, when it's set: for the plot's size, and the projection)
     const initialView = useMemo(
-        () => viewCenteredOn([centerLongitude, centerLatitude]),
-        [centerLongitude, centerLatitude]
+        () => fitTo !== undefined ?
+            viewFitting(projection, fitTo, width, height, fitPadding) :
+            viewCenteredOn([centerLongitude, centerLatitude]),
+        [fitTo, fitPadding, projection, width, height, centerLongitude, centerLatitude]
     )
     const viewRef = useRef<GeoPlotViewState>(viewState ?? initialView)
 
@@ -773,12 +817,12 @@ export function GeoPlot<P>(props: Props<P>): null {
     // recreated as each batch of events arrives, so it can't be what identifies them.)
     const mapSettings = useMemo(
         () => ({
-            projection, width, height, graticule, showGraticule, basemap, borders, oceanColor, landColor,
-            borderColor, graticuleColor, outlineColor,
+            projection, width, height, graticule, showGraticule, basemap, borders, layers, oceanColor, landColor,
+            borderColor, graticuleColor, outlineColor, color,
         }),
         [
-            projection, width, height, graticule, showGraticule, basemap, borders, oceanColor, landColor,
-            borderColor, graticuleColor, outlineColor,
+            projection, width, height, graticule, showGraticule, basemap, borders, layers, oceanColor, landColor,
+            borderColor, graticuleColor, outlineColor, color,
         ]
     )
 
@@ -801,7 +845,25 @@ export function GeoPlot<P>(props: Props<P>): null {
              * @param context2D The context to draw into (translated to the plot area)
              */
             const drawMap = (context2D: CanvasRenderingContext2D): void => {
+                // the map's data at this zoom (see `GeoMapData`), trimmed to the features that might
+                // show in the view (see `viewBoxOf`), and clipped to the plot area (a little beyond
+                // it, so that the clipped areas' outlines fall outside it)
+                const k = viewRef.current.k
+                const viewBox = viewBoxOf(projection, width, height)
+                const shown = (data: GeoMapData | undefined): d3.GeoPermissibleObjects | undefined => {
+                    const object = data !== undefined ? detailOf(data, k) : undefined
+                    return object !== undefined ? visibleOf(object, viewBox) : undefined
+                }
+                const shownLayers = (layers ?? [])
+                    .filter(layer => layerShownAt(layer, k))
+                    .flatMap(layer => {
+                        const object = shown(layer.data)
+                        return object !== undefined ? [{layer, object}] : []
+                    })
+                const clipExtent = projection.clipExtent()
+                projection.clipExtent([[-MAP_CLIP_MARGIN, -MAP_CLIP_MARGIN], [width + MAP_CLIP_MARGIN, height + MAP_CLIP_MARGIN]])
                 const path = d3.geoPath(projection, context2D)
+
                 context2D.beginPath()
                 path({type: 'Sphere'})
                 context2D.fillStyle = oceanColor
@@ -814,24 +876,30 @@ export function GeoPlot<P>(props: Props<P>): null {
                     context2D.lineWidth = 0.5
                     context2D.stroke()
                 }
-                if (basemap !== undefined) {
+                const land = shown(basemap)
+                if (land !== undefined) {
                     context2D.beginPath()
-                    path(basemap)
+                    path(land)
                     context2D.fillStyle = landColor
                     context2D.fill()
                 }
-                if (borders !== undefined) {
+                shownLayers.forEach(({layer, object}) => drawLayerShapes(context2D, path, layer, object))
+                const lines = shown(borders)
+                if (lines !== undefined) {
                     context2D.beginPath()
-                    path(borders)
+                    path(lines)
                     context2D.strokeStyle = borderColor
                     context2D.lineWidth = 0.5
                     context2D.stroke()
                 }
+                // (the labels over everything else of the map)
+                shownLayers.forEach(({layer, object}) => drawLayerLabels(context2D, path, layer, object, color, width, height))
                 context2D.beginPath()
                 path({type: 'Sphere'})
                 context2D.strokeStyle = outlineColor
                 context2D.lineWidth = 1
                 context2D.stroke()
+                projection.clipExtent(clipExtent)
             }
 
             const draw = (context: CanvasContext): void => {
@@ -1330,7 +1398,7 @@ export function GeoPlot<P>(props: Props<P>): null {
         },
         [
             chartId, projection, width, height, plotDimensions, margin.left, margin.top, graticule, mapSettings, markerSettings,
-            showGraticule, basemap, borders, oceanColor, landColor, borderColor, graticuleColor,
+            showGraticule, basemap, borders, layers, oceanColor, landColor, borderColor, graticuleColor,
             outlineColor, markerRadius, markerOpacity, radiusOf, colorOf, fadeDuration, fadedOpacity, flashDuration,
             seriesStyles, seriesFilter, color, backgroundColor, dataSource, onUpdateChartTime, mode, rollup, autoRollups,
             clusterDistance, flashMergeDistance,
@@ -1354,11 +1422,14 @@ export function GeoPlot<P>(props: Props<P>): null {
     // dragging moves the view, and the wheel zooms it about the mouse (see `useCanvasZoomPan`). The
     // zoom scale grows as the view zooms in (like the bar plot's, not the time-axis plots'), so the
     // wheel is inverted to zoom the same way as the other plots for the same gesture.
+    // (d3-zoom's scale setter, for the reset, which the zoom's options are handed before it exists)
+    const zoomScaleRef = useRef<(k: number) => void>(noop)
     const {resetZoomTransform, setZoomScale} = useCanvasZoomPan(canvasContext, {
         panEnabled: rotateEnabled,
         zoomEnabled,
         keyModifiersRequired: zoomKeyModifiersRequired,
-        scaleExtent: [1, zoomMaxScaleFactor],
+        // (raised to the starting view's zoom, e.g. framing a small shape, see `fitTo`)
+        scaleExtent: [1, Math.max(zoomMaxScaleFactor, initialView.k)],
         invertWheel: true,
         translateExtent: [[margin.left, margin.top], [width, height]],
         onPanStart: () => {
@@ -1382,6 +1453,8 @@ export function GeoPlot<P>(props: Props<P>): null {
         onZoomReset,
         resetView: () => {
             viewRef.current = initialView
+            // (d3-zoom's transform was reset to a scale of 1: the starting view's may be more)
+            zoomScaleRef.current(initialView.k)
             canvasContext?.requestRedraw()
             reportView()
         },
@@ -1400,19 +1473,32 @@ export function GeoPlot<P>(props: Props<P>): null {
         [canvasContext, setZoomScale]
     )
 
-    // a new `center` re-centers (and un-zooms) the view -- but not when the plot mounts, so that a
-    // view handed in is kept
-    const centeredOnRef = useRef(initialView)
     useEffect(
         () => {
-            if (centeredOnRef.current === initialView) return
-            centeredOnRef.current = initialView
+            zoomScaleRef.current = setZoomScale
+        },
+        [setZoomScale]
+    )
+
+    // a new starting view: a new `center` (or `fitTo`) re-centers (or re-frames) the view, and a new
+    // size re-frames it while the user hasn't moved it -- but not when the plot mounts, so that a view
+    // handed in is kept
+    const framedOnRef = useRef({fitTo, centerLongitude, centerLatitude, initialView})
+    useEffect(
+        () => {
+            const framed = framedOnRef.current
+            if (framed.initialView === initialView) return
+            const moved = framed.fitTo !== fitTo || framed.centerLongitude !== centerLongitude || framed.centerLatitude !== centerLatitude
+            const following = viewRef.current === framed.initialView
+            framedOnRef.current = {fitTo, centerLongitude, centerLatitude, initialView}
+            if (!moved && !following) return
             viewRef.current = initialView
             resetZoomTransform()
+            setZoomScale(initialView.k)
             canvasContext?.requestRedraw()
             reportView()
         },
-        [initialView, canvasContext, resetZoomTransform, reportView]
+        [initialView, fitTo, centerLongitude, centerLatitude, canvasContext, resetZoomTransform, setZoomScale, reportView]
     )
 
     // reports the view when the plot unmounts (e.g. to keep the auto-rotation's progress)

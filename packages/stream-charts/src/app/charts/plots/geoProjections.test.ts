@@ -16,6 +16,7 @@ import {
     placeUnder,
     setUpProjection,
     viewCenteredOn,
+    viewFitting,
     wedgeIndexAt,
     wedgeOf,
     zoomViewAbout,
@@ -374,5 +375,38 @@ describe('merging flashes', () => {
 
     it('doesn\'t group flashes when the distance is 0', () => {
         expect(flashGroupsOf([flash(100, 100, 1000), flash(100, 100, 1000)], 0).length).toBe(2)
+    })
+})
+
+describe('fitting a view to a shape', () => {
+    // about Colorado: a box of 7° of longitude and 4° of latitude (wound as d3 wants a small polygon)
+    const colorado = d3.geoGraticule().extent([[-109, 37], [-102, 41]]).outline()
+    const PADDING = 20
+
+    it.each<GeoProjectionName>(['orthographic', 'mercator', 'conicEqualArea'])(
+        'frames the shape on the %s projection: centered, filling the area less the padding one way or the other',
+        name => {
+            const projection = projectionNamed(name)
+            const view = viewFitting(projection, colorado, WIDTH, HEIGHT, PADDING)
+            setUpProjection(projection, view, WIDTH, HEIGHT)
+            const [[x0, y0], [x1, y1]] = d3.geoPath(projection).bounds(colorado)
+            expect(view.k).toBeGreaterThan(10)
+            // (within the area, less the padding, and filling it across or down)
+            expect(x0).toBeGreaterThanOrEqual(PADDING - 1)
+            expect(x1).toBeLessThanOrEqual(WIDTH - PADDING + 1)
+            expect(y0).toBeGreaterThanOrEqual(PADDING - 1)
+            expect(y1).toBeLessThanOrEqual(HEIGHT - PADDING + 1)
+            expect(Math.max((x1 - x0) / (WIDTH - 2 * PADDING), (y1 - y0) / (HEIGHT - 2 * PADDING))).toBeCloseTo(1, 1)
+            // (centered)
+            expect((x0 + x1) / 2).toBeCloseTo(WIDTH / 2, -1)
+            expect((y0 + y1) / 2).toBeCloseTo(HEIGHT / 2, -1)
+        }
+    )
+
+    it('shows the whole sphere, centered on a shape with no size', () => {
+        const view = viewFitting(projectionNamed('orthographic'), {type: 'Point', coordinates: [10, 50]}, WIDTH, HEIGHT)
+        expect(view.k).toBe(1)
+        expect(view.rotate[0]).toBeCloseTo(-10, 9)
+        expect(view.rotate[1]).toBeCloseTo(-50, 9)
     })
 })

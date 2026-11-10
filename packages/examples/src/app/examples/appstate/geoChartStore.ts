@@ -45,6 +45,12 @@ export const AUTO_CELL_SIZES = [10, 1, 0.1, 0.01]
 export const AUTO_ROLLUP_NAMES = AUTO_CELL_SIZES.map(degrees => `Clusters of ${degrees}°`)
 
 /**
+ * What the view frames, when it first shows and when it's reset: the whole earth, Europe, the United
+ * Kingdom, or London (see the GeoPlot's `fitTo`)
+ */
+export type GeoFocus = 'world' | 'europe' | 'uk' | 'london'
+
+/**
  * What the geo plot shows: clusters of events or the events, by the zoom (auto); each event; the
  * aggregates; or the aggregates divided by their groups (pies: a wedge per group)
  */
@@ -217,6 +223,11 @@ type GeoChartState = {
     colorBySignal: boolean
     // whether older events fade
     fadeOlder: boolean
+    // whether the countries are drawn as a layer of their own (tinted by their number of towers,
+    // and named)
+    showCountries: boolean
+    // what the view frames
+    focus: GeoFocus
     // whether each phone's new (estimated) location flashes
     flashLocated: boolean
     // whether each phone's actual place flashes (briefly) as it's located
@@ -250,6 +261,8 @@ const initialState: GeoChartState = {
     sizeBySignal: true,
     colorBySignal: false,
     fadeOlder: true,
+    showCountries: true,
+    focus: 'world',
     flashLocated: true,
     flashActual: true,
     autoRotate: false,
@@ -273,6 +286,8 @@ type GeoChartActions = {
     setSizeBySignal: (sizeBySignal: boolean) => void
     setColorBySignal: (colorBySignal: boolean) => void
     setFadeOlder: (fadeOlder: boolean) => void
+    setShowCountries: (showCountries: boolean) => void
+    setFocus: (focus: GeoFocus) => void
     setFlashLocated: (flashLocated: boolean) => void
     setFlashActual: (flashActual: boolean) => void
     setAutoRotate: (autoRotate: boolean) => void
@@ -324,6 +339,8 @@ export const useGeoChartStore: UseBoundStore<StoreApi<GeoChartStore>> = create<G
         setSizeBySignal: (sizeBySignal: boolean): void => set({sizeBySignal}),
         setColorBySignal: (colorBySignal: boolean): void => set({colorBySignal}),
         setFadeOlder: (fadeOlder: boolean): void => set({fadeOlder}),
+        setShowCountries: (showCountries: boolean): void => set({showCountries}),
+        setFocus: (focus: GeoFocus): void => set({focus}),
         setFlashLocated: (flashLocated: boolean): void => set({flashLocated}),
         setFlashActual: (flashActual: boolean): void => set({flashActual}),
         setAutoRotate: (autoRotate: boolean): void => set({autoRotate}),

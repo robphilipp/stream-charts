@@ -99,39 +99,39 @@ export const CARRIERS = [
 export const PHONES = "Phones (located)"
 export const SERIES_NAMES = [...CARRIERS.map(carrier => carrier.name), PHONES]
 
-// the major cities: their codes, and their centers' [longitude, latitude] (every carrier has nine
-// towers in each)
-const MAJOR_CITIES: Array<{code: string, center: [longitude: number, latitude: number]}> = [
-    {code: "LON", center: [-0.13, 51.51]},
-    {code: "PAR", center: [2.35, 48.86]},
-    {code: "BER", center: [13.40, 52.52]},
-    {code: "MAD", center: [-3.70, 40.42]},
-    {code: "IST", center: [28.98, 41.01]},
-    {code: "CAI", center: [31.24, 30.04]},
-    {code: "LOS", center: [3.38, 6.52]},
-    {code: "NBO", center: [36.82, -1.29]},
-    {code: "JNB", center: [28.05, -26.20]},
-    {code: "DXB", center: [55.27, 25.20]},
-    {code: "BOM", center: [72.88, 19.08]},
-    {code: "SIN", center: [103.82, 1.35]},
-    {code: "TKY", center: [139.69, 35.68]},
-    {code: "SYD", center: [151.21, -33.87]},
-    {code: "LAX", center: [-118.24, 34.05]},
-    {code: "CHI", center: [-87.63, 41.88]},
-    {code: "NYC", center: [-74.01, 40.71]},
-    {code: "MEX", center: [-99.13, 19.43]},
-    {code: "BOG", center: [-74.07, 4.71]},
-    {code: "SAO", center: [-46.63, -23.55]},
+// the major cities: their codes, their countries, and their centers' [longitude, latitude] (every
+// carrier has nine towers in each)
+const MAJOR_CITIES: Array<{code: string, country: string, center: [longitude: number, latitude: number]}> = [
+    {code: "LON", country: "United Kingdom", center: [-0.13, 51.51]},
+    {code: "PAR", country: "France", center: [2.35, 48.86]},
+    {code: "BER", country: "Germany", center: [13.40, 52.52]},
+    {code: "MAD", country: "Spain", center: [-3.70, 40.42]},
+    {code: "IST", country: "Turkey", center: [28.98, 41.01]},
+    {code: "CAI", country: "Egypt", center: [31.24, 30.04]},
+    {code: "LOS", country: "Nigeria", center: [3.38, 6.52]},
+    {code: "NBO", country: "Kenya", center: [36.82, -1.29]},
+    {code: "JNB", country: "South Africa", center: [28.05, -26.20]},
+    {code: "DXB", country: "United Arab Emirates", center: [55.27, 25.20]},
+    {code: "BOM", country: "India", center: [72.88, 19.08]},
+    {code: "SIN", country: "Singapore", center: [103.82, 1.35]},
+    {code: "TKY", country: "Japan", center: [139.69, 35.68]},
+    {code: "SYD", country: "Australia", center: [151.21, -33.87]},
+    {code: "LAX", country: "United States of America", center: [-118.24, 34.05]},
+    {code: "CHI", country: "United States of America", center: [-87.63, 41.88]},
+    {code: "NYC", country: "United States of America", center: [-74.01, 40.71]},
+    {code: "MEX", country: "Mexico", center: [-99.13, 19.43]},
+    {code: "BOG", country: "Colombia", center: [-74.07, 4.71]},
+    {code: "SAO", country: "Brazil", center: [-46.63, -23.55]},
 ]
 
 // more European cities, each with four of the carriers, five towers each (100 more towers in
 // Europe): the carriers that aren't everywhere, as regional networks aren't
-const EUROPEAN_CITIES: Array<{code: string, center: [longitude: number, latitude: number]}> = [
-    {code: "ROM", center: [12.50, 41.90]},
-    {code: "AMS", center: [4.90, 52.37]},
-    {code: "VIE", center: [16.37, 48.21]},
-    {code: "WAW", center: [21.01, 52.23]},
-    {code: "STO", center: [18.07, 59.33]},
+const EUROPEAN_CITIES: Array<{code: string, country: string, center: [longitude: number, latitude: number]}> = [
+    {code: "ROM", country: "Italy", center: [12.50, 41.90]},
+    {code: "AMS", country: "Netherlands", center: [4.90, 52.37]},
+    {code: "VIE", country: "Austria", center: [16.37, 48.21]},
+    {code: "WAW", country: "Poland", center: [21.01, 52.23]},
+    {code: "STO", country: "Sweden", center: [18.07, 59.33]},
 ]
 
 /**
@@ -140,6 +140,8 @@ const EUROPEAN_CITIES: Array<{code: string, center: [longitude: number, latitude
  */
 interface City {
     code: string
+    // the city's country (as the world atlas names it)
+    country: string
     center: [longitude: number, latitude: number]
     carriers: Array<{name: string, code: string}>
     towersPerCarrier: number
@@ -206,6 +208,15 @@ export const TOWERS_BY_ID = new Map(TOWERS.map(tower => [tower.id, tower]))
  * The cities' centers ([longitude, latitude]), by code
  */
 export const CITY_CENTERS = new Map(CITIES.map(({code, center}) => [code, center]))
+
+/**
+ * The number of towers in each country (by the name the world atlas gives it)
+ */
+export const TOWERS_BY_COUNTRY: Map<string, number> = d3.rollup(
+    TOWERS,
+    towers => towers.length,
+    tower => CITIES.find(city => city.code === tower.city)?.country ?? ''
+)
 
 const PHONE_TYPES: Array<[PhoneType, number]> = [
     ['iPhone', 0.35], ['Galaxy', 0.25], ['Pixel', 0.08], ['Other Android', 0.22], ['Feature phone', 0.04], ['IoT module', 0.06],
