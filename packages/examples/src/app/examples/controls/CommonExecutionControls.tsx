@@ -11,12 +11,12 @@ type Props = {
     isRunning: boolean
     onRunPauseClick: () => void
     onClearClick: () => void
-    children: JSX.Element | Array<JSX.Element>
+    children?: JSX.Element | Array<JSX.Element>
 }
 
 /**
  * The run/pause and reset buttons (the reset button is disabled while the chart is running),
- * followed by the children
+ * followed by the children (if any)
  * @param props The control bar's type (unused), the theme, whether the chart is running, the
  * handlers for the run/pause and reset buttons, and the children
  * @return The buttons, and the children

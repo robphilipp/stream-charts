@@ -1,14 +1,8 @@
 import {type JSX} from "react";
 import type {Theme} from "../../ui/Themes.ts";
-import {DropDown, type DropDownOption} from "../../ui/DropDown.tsx";
+import {DropDown} from "../../ui/DropDown.tsx";
 import type {GeoShow} from "../appstate/geoChartStore.ts";
-
-const MODE_OPTIONS: Array<DropDownOption<GeoShow>> = [
-    {value: 'auto', label: 'Auto (by zoom)'},
-    {value: 'points', label: 'Events'},
-    {value: 'aggregates', label: 'Aggregates'},
-    {value: 'groups', label: 'Aggregates, by group'},
-]
+import {MODE_OPTIONS} from "./geoControlOptions.ts";
 
 type Props = {
     theme: Theme

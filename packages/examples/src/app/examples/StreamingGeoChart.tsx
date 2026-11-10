@@ -35,7 +35,13 @@ import Checkbox from "../ui/Checkbox"
 import {buttonStyle} from "../ui/utils"
 import {ExpandableControlBar} from "../ui/ExpandableControlBar.tsx"
 import {CommonExecutionControls} from "./controls/CommonExecutionControls.tsx"
-import {FilterIcon, MarkersIcon, TooltipIcon} from "../ui/Icons.tsx"
+import {
+    AggregatesIcon, AutoRotateIcon, BordersIcon, ChoroplethIcon, CitiesIcon, CompositeMapIcon, ConicMapIcon, EventsIcon,
+    FadeIcon, FlashActualIcon, FlashIcon, FlatMapIcon, FocusIcon, GlobeIcon, GraticuleIcon, PieIcon, RiversIcon, RoadsIcon,
+    SignalColorIcon, SizeByIcon, StatesIcon, WorldMapIcon, ZoomAggregatesIcon,
+} from "../ui/Icons.tsx"
+import {HoverHint} from "../ui/HoverHint.tsx"
+import type {DropDownOption} from "../ui/DropDown.tsx"
 import {CommonControls} from "./controls/CommonControls.tsx"
 import {DropDataControl} from "./controls/DropDataControl.tsx"
 import {Divider} from "../ui/Divider.tsx"
@@ -45,6 +51,10 @@ import {BufferingControl} from "./controls/BufferingControl.tsx"
 import {DataUpdateRateControl} from "./controls/DataUpdateRateControl.tsx"
 import {ProjectionControl} from "./controls/ProjectionControl.tsx"
 import {GeoAggregateControls} from "./controls/GeoAggregateControls.tsx"
+import {FOCUS_OPTIONS, MODE_OPTIONS, PROJECTION_OPTIONS} from "./controls/geoControlOptions.ts"
+import {ChartControlsHeader} from "./controls/ChartControlHeader.tsx"
+import {ChartControls} from "./controls/ChartControls.tsx"
+import {VerticalDivider} from "../ui/VerticalDivider.tsx"
 import {
     BY_GRID_CELL,
     DEFAULT_DATA_UPDATE_PERIOD,
@@ -56,6 +66,7 @@ import {
     useGeoChartStore,
     WEAK_SIGNAL,
     WEAKEST_SIGNAL,
+    type GeoShow,
 } from "./appstate/geoChartStore.ts"
 import {CARRIERS, type CellEvent, initialCellTowerData, type PhoneFix, PHONES, TOWERS_BY_COUNTRY, type TowerPing} from "./dataproviders/cellTowerData.ts"
 import {
@@ -388,6 +399,81 @@ function seriesStylesFor(theme: Theme): Map<string, SeriesLineStyle> {
  * @param filterValue The string representation of the regex
  * @return The compiled regex
  */
+/**
+ * @param options A drop-down's options
+ * @param value One of their values
+ * @return The option's label (the value itself, when there's no such option)
+ */
+function labelOf<V extends string>(options: Array<DropDownOption<V>>, value: V): string {
+    return options.find(option => option.value === value)?.label ?? value
+}
+
+/**
+ * @param theme The theme
+ * @param name An option's name (e.g. "graticule")
+ * @param on Whether the option is on
+ * @param iconOf The option's icon, in a color
+ * @param inactive Why the option doesn't apply to what's shown, when it doesn't (e.g. "not used with
+ * aggregates"); `undefined` when it does
+ * @return The option's icon for a control bar's header: in the theme's color when the option is on
+ * (and applies), and grayed out otherwise, named (with whether it's on, or why it doesn't apply)
+ * when hovered
+ */
+function optionIcon(
+    theme: Theme,
+    name: string,
+    on: boolean,
+    iconOf: (color: string) => JSX.Element,
+    inactive?: string,
+): JSX.Element {
+    const label = `${name}: ${on ? 'on' : 'off'}${inactive !== undefined ? ` (${inactive})` : ''}`
+    return (
+        <HoverHint theme={theme} label={label}>
+            {iconOf(on && inactive === undefined ? theme.color : theme.disabledBackgroundColor)}
+        </HoverHint>
+    )
+}
+
+/**
+ * @param projection A map projection's name
+ * @param color The icon's color
+ * @return The icon for the kind of projection: a globe for the azimuthal projections, a grid for the
+ * cylindrical, an oval for the pseudo-cylindrical, a fan for the conic, and frames for a composite
+ */
+function projectionIconOf(projection: GeoProjectionName, color: string): JSX.Element {
+    switch (projection) {
+        case 'equirectangular':
+        case 'mercator':
+        case 'transverseMercator':
+            return <FlatMapIcon color={color}/>
+        case 'naturalEarth1':
+        case 'equalEarth':
+            return <WorldMapIcon color={color}/>
+        case 'conicEqualArea':
+        case 'conicEquidistant':
+            return <ConicMapIcon color={color}/>
+        case 'albersUsa':
+            return <CompositeMapIcon color={color}/>
+        default:
+            return <GlobeIcon color={color}/>
+    }
+}
+
+/**
+ * @param mode What the plot shows
+ * @param color The icon's color
+ * @return The icon for what the plot shows: dots for the events, circles for the aggregates, a pie
+ * for the aggregates by group, and a pie coming apart into dots for the auto mode
+ */
+function showIconOf(mode: GeoShow, color: string): JSX.Element {
+    switch (mode) {
+        case 'points': return <EventsIcon color={color}/>
+        case 'aggregates': return <AggregatesIcon color={color}/>
+        case 'groups': return <PieIcon color={color}/>
+        default: return <ZoomAggregatesIcon color={color}/>
+    }
+}
+
 const filterFrom = (filterValue: string): RegExp => regexFilter(filterValue).getOrElse(new RegExp(''))
 
 /**
@@ -518,6 +604,16 @@ export function StreamingGeoChart(props: Props): JSX.Element {
     // the roll-up's measures (e.g. the phones' differ from the pings'), and what colors its
     // aggregates: the measure picked, when the roll-up has it, and otherwise their count
     const measureNames = useMemo(() => measureNamesOf(rollupName), [rollupName])
+    // what the auto mode shows at the view's zoom: a roll-up's clusters (its name), or the events
+    // (`undefined`); `null` until it's shown something (see the plot's `onAutoRollupChange`)
+    const [autoRollup, setAutoRollup] = useState<string | undefined | null>(null)
+    // the events' sizes and colors by their signal apply only when the events are shown: with the
+    // aggregates alone, they're unused (and their checkboxes disabled); and in the auto mode, they
+    // apply only once it's zoomed in far enough to show the events (their checkboxes stay enabled)
+    const signalUnused = mode === 'aggregates' || mode === 'groups'
+    const signalInactive = signalUnused ? 'not used with aggregates' :
+        mode === 'auto' && autoRollup !== undefined ? 'applies when zoomed in to the events' :
+            undefined
     const shownColorBy = colorBy === 'none' || colorBy === 'count' || measureNames.includes(colorBy) ? colorBy : 'count'
     const colorScheme = useMemo(() => colorSchemeOf(shownColorBy), [shownColorBy])
 
@@ -589,9 +685,27 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                             onRunPauseClick={() => setRunning(!running)}
                             onClearClick={handleClearClick}
                         >
-                            <FilterIcon color={filterValue.length > 0 ? theme.color : theme.disabledBackgroundColor}/>
-                            <TooltipIcon color={showTooltip ? theme.color : theme.disabledBackgroundColor}/>
-                            <MarkersIcon color={sizeBySignal ? theme.color : theme.disabledBackgroundColor}/>
+                            <>
+                                <VerticalDivider color={theme.disabledBackgroundColor} height={15}/>
+                                <HoverHint theme={theme} label={`Projection: ${labelOf(PROJECTION_OPTIONS, projection)}`}>
+                                    {projectionIconOf(projection, theme.color)}
+                                </HoverHint>
+                                <VerticalDivider color={theme.disabledBackgroundColor} height={15}/>
+                                {optionIcon(theme, 'graticule', showGraticule, color => <GraticuleIcon color={color}/>)}
+                                {/* (the map's layers: the United States' with the Albers USA projection, which
+                                    draws only its outline, and otherwise the countries') */}
+                                {albersUsa ? <>
+                                    {optionIcon(theme, 'states & counties', showStates, color => <StatesIcon color={color}/>)}
+                                    {optionIcon(theme, 'rivers', showRivers, color => <RiversIcon color={color}/>)}
+                                    {optionIcon(theme, 'cities', showCities, color => <CitiesIcon color={color}/>)}
+                                    {optionIcon(theme, 'roads', showRoads, color => <RoadsIcon color={color}/>)}
+                                </> : <>
+                                    {optionIcon(theme, 'countries', showCountries, color => <ChoroplethIcon color={color}/>)}
+                                    {optionIcon(theme, 'borders', showBorders, color => <BordersIcon color={color}/>)}
+                                </>}
+                                <VerticalDivider color={theme.disabledBackgroundColor} height={15}/>
+                                {optionIcon(theme, 'auto-rotate', autoRotate, color => <AutoRotateIcon color={color}/>)}
+                            </>
                         </CommonExecutionControls>
                         <CommonControls>
                             <DropDataControl
@@ -634,36 +748,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 labelColor={theme.color}
                                 onChange={() => setShowLegend(!showLegend)}
                             />
-                            <Checkbox
-                                checked={sizeBySignal}
-                                label="size by signal"
-                                backgroundColor={theme.backgroundColor}
-                                borderColor={theme.color}
-                                labelColor={theme.color}
-                                onChange={() => setSizeBySignal(!sizeBySignal)}
-                            />
-                            <Checkbox
-                                checked={colorBySignalOn}
-                                label="color by signal"
-                                backgroundColor={theme.backgroundColor}
-                                borderColor={theme.color}
-                                labelColor={theme.color}
-                                onChange={() => setColorBySignal(!colorBySignalOn)}
-                            />
                             <Divider theme={theme}/>
-                            <GeoAggregateControls
-                                theme={theme}
-                                mode={mode}
-                                handleModeChange={setMode}
-                                rollupNames={ROLLUP_NAMES}
-                                rollupName={rollupName}
-                                handleRollupNameChange={setRollupName}
-                                measureNames={measureNames}
-                                colorBy={shownColorBy}
-                                handleColorByChange={setColorBy}
-                            />
-                            <Divider theme={theme}/>
-                            <FocusControl theme={theme} focus={focus} handleFocusChange={setFocus}/>
                             <ProjectionControl
                                 theme={theme}
                                 projection={projection}
@@ -677,38 +762,43 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 labelColor={theme.color}
                                 onChange={() => setShowGraticule(!showGraticule)}
                             />
-                            <Checkbox
-                                checked={showStates}
-                                label="states & counties (Albers USA)"
-                                backgroundColor={theme.backgroundColor}
-                                borderColor={theme.color}
-                                labelColor={theme.color}
-                                onChange={() => setShowStates(!showStates)}
-                            />
-                            <Checkbox
-                                checked={showRivers}
-                                label="rivers (Albers USA)"
-                                backgroundColor={theme.backgroundColor}
-                                borderColor={theme.color}
-                                labelColor={theme.color}
-                                onChange={() => setShowRivers(!showRivers)}
-                            />
-                            <Checkbox
-                                checked={showCities}
-                                label="cities (Albers USA)"
-                                backgroundColor={theme.backgroundColor}
-                                borderColor={theme.color}
-                                labelColor={theme.color}
-                                onChange={() => setShowCities(!showCities)}
-                            />
-                            <Checkbox
-                                checked={showRoads}
-                                label="roads (Albers USA)"
-                                backgroundColor={theme.backgroundColor}
-                                borderColor={theme.color}
-                                labelColor={theme.color}
-                                onChange={() => setShowRoads(!showRoads)}
-                            />
+                            <>
+                                {/* (the United States' detail, drawn only with the Albers USA projection) */}
+                                {albersUsa ? <>
+                                    <Checkbox
+                                        checked={showStates}
+                                        label="states & counties"
+                                        backgroundColor={theme.backgroundColor}
+                                        borderColor={theme.color}
+                                        labelColor={theme.color}
+                                        onChange={() => setShowStates(!showStates)}
+                                    />
+                                    <Checkbox
+                                        checked={showRivers}
+                                        label="rivers"
+                                        backgroundColor={theme.backgroundColor}
+                                        borderColor={theme.color}
+                                        labelColor={theme.color}
+                                        onChange={() => setShowRivers(!showRivers)}
+                                    />
+                                    <Checkbox
+                                        checked={showCities}
+                                        label="cities"
+                                        backgroundColor={theme.backgroundColor}
+                                        borderColor={theme.color}
+                                        labelColor={theme.color}
+                                        onChange={() => setShowCities(!showCities)}
+                                    />
+                                    <Checkbox
+                                        checked={showRoads}
+                                        label="roads"
+                                        backgroundColor={theme.backgroundColor}
+                                        borderColor={theme.color}
+                                        labelColor={theme.color}
+                                        onChange={() => setShowRoads(!showRoads)}
+                                    />
+                                </> : null}
+                            </>
                             <Checkbox
                                 checked={showCountries}
                                 label="countries"
@@ -726,30 +816,6 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 onChange={() => setShowBorders(!showBorders)}
                             />
                             <Checkbox
-                                checked={fadeOlder}
-                                label="fade older"
-                                backgroundColor={theme.backgroundColor}
-                                borderColor={theme.color}
-                                labelColor={theme.color}
-                                onChange={() => setFadeOlder(!fadeOlder)}
-                            />
-                            <Checkbox
-                                checked={flashLocated}
-                                label="flash located"
-                                backgroundColor={theme.backgroundColor}
-                                borderColor={theme.color}
-                                labelColor={theme.color}
-                                onChange={() => setFlashLocated(!flashLocated)}
-                            />
-                            <Checkbox
-                                checked={flashActual}
-                                label="flash actual"
-                                backgroundColor={theme.backgroundColor}
-                                borderColor={theme.color}
-                                labelColor={theme.color}
-                                onChange={() => setFlashActual(!flashActual)}
-                            />
-                            <Checkbox
                                 checked={autoRotate}
                                 label="auto-rotate"
                                 backgroundColor={theme.backgroundColor}
@@ -758,6 +824,105 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 onChange={() => setAutoRotate(!autoRotate)}
                             />
                         </CommonControls>
+                    </ExpandableControlBar>
+                    <ExpandableControlBar
+                        expandButtonStyle={buttonStyle(theme)}
+                        backgroundColor={theme.backgroundColor}
+                        borderColor={theme.disabledBackgroundColor}
+                        borderRadius={10}
+                        minHeight={55}
+                        autoExpandOnMouseEnter={false}
+                    >
+                        <ChartControlsHeader type={"header"} theme={theme}>
+                            <div style={{paddingRight: 10}}>View Controls</div>
+                            <VerticalDivider color={theme.disabledBackgroundColor} height="25%"/>
+                            <HoverHint theme={theme} label={`Show: ${labelOf(MODE_OPTIONS, mode)}`}>
+                                {showIconOf(mode, theme.color)}
+                            </HoverHint>
+                            <VerticalDivider color={theme.disabledBackgroundColor} height="25%"/>
+                            {optionIcon(theme, 'size by signal', sizeBySignal, color => <SizeByIcon color={color}/>, signalInactive)}
+                            {optionIcon(
+                                theme,
+                                'color by signal',
+                                colorBySignalOn,
+                                color => colorBySignalOn && signalInactive === undefined ?
+                                    <SignalColorIcon color={color} weakColor={SIGNAL_COLORS.weak} fairColor={SIGNAL_COLORS.fair}/> :
+                                    <SignalColorIcon color={color}/>,
+                                signalInactive,
+                            )}
+                            <VerticalDivider color={theme.disabledBackgroundColor} height="25%"/>
+                            <HoverHint theme={theme} label={`Focus: ${labelOf(FOCUS_OPTIONS, focus)}`}>
+                                <FocusIcon color={theme.color}/>
+                            </HoverHint>
+                            <VerticalDivider color={theme.disabledBackgroundColor} height="25%"/>
+                            {optionIcon(theme, 'fade older', fadeOlder, color => <FadeIcon color={color}/>)}
+                            {optionIcon(theme, 'flash located', flashLocated, color => <FlashIcon color={color}/>)}
+                            {optionIcon(theme, 'flash actual', flashActual, color => <FlashActualIcon color={color}/>)}
+                        </ChartControlsHeader>
+                        <ChartControls type={"controls"}>
+                            <GeoAggregateControls
+                                theme={theme}
+                                mode={mode}
+                                handleModeChange={setMode}
+                                rollupNames={ROLLUP_NAMES}
+                                rollupName={rollupName}
+                                handleRollupNameChange={setRollupName}
+                                measureNames={measureNames}
+                                colorBy={shownColorBy}
+                                handleColorByChange={setColorBy}
+                            />
+                            <Divider theme={theme}/>
+                            <Checkbox
+                                checked={sizeBySignal}
+                                label="size by signal"
+                                disabled={signalUnused}
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                marginLeft={0}
+                                onChange={() => setSizeBySignal(!sizeBySignal)}
+                            />
+                            <Checkbox
+                                checked={colorBySignalOn}
+                                label="color by signal"
+                                disabled={signalUnused}
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                marginLeft={0}
+                                onChange={() => setColorBySignal(!colorBySignalOn)}
+                            />
+                            <Divider theme={theme}/>
+                            <FocusControl theme={theme} focus={focus} handleFocusChange={setFocus}/>
+                            <Divider theme={theme}/>
+                            <Checkbox
+                                checked={fadeOlder}
+                                label="fade older"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                marginLeft={0}
+                                onChange={() => setFadeOlder(!fadeOlder)}
+                            />
+                            <Checkbox
+                                checked={flashLocated}
+                                label="flash located"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                marginLeft={0}
+                                onChange={() => setFlashLocated(!flashLocated)}
+                            />
+                            <Checkbox
+                                checked={flashActual}
+                                label="flash actual"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                marginLeft={0}
+                                onChange={() => setFlashActual(!flashActual)}
+                            />
+                        </ChartControls>
                     </ExpandableControlBar>
                 </div>
             </GridItem>
@@ -789,6 +954,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         flashes={phoneFlashes}
                         mode={mode === 'points' || mode === 'auto' ? mode : 'aggregates'}
                         autoRollups={AUTO_ROLLUP_NAMES}
+                        onAutoRollupChange={setAutoRollup}
                         rollup={rollupName}
                         colorBy={shownColorBy === 'none' || mode === 'auto' ? undefined : shownColorBy}
                         colorScheme={colorScheme}

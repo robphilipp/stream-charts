@@ -1,15 +1,8 @@
 import {type JSX} from "react";
 import type {Theme} from "../../ui/Themes.ts";
-import {DropDown, type DropDownOption} from "../../ui/DropDown.tsx";
+import {DropDown} from "../../ui/DropDown.tsx";
 import type {GeoFocus} from "../appstate/geoChartStore.ts";
-
-const OPTIONS: Array<DropDownOption<GeoFocus>> = [
-    {value: 'world', label: 'The whole earth'},
-    {value: 'europe', label: 'Europe'},
-    {value: 'uk', label: 'United Kingdom'},
-    {value: 'london', label: 'London'},
-    {value: 'usa', label: 'United States'},
-]
+import {FOCUS_OPTIONS} from "./geoControlOptions.ts";
 
 type Props = {
     theme: Theme
@@ -26,7 +19,7 @@ export function FocusControl(props: Props): JSX.Element {
     const {theme, focus, handleFocusChange} = props
     return (
         <label style={{color: theme.color}}>
-            <DropDown theme={theme} name="geo-focus" options={OPTIONS} value={focus} onChange={handleFocusChange}/>
+            <DropDown theme={theme} name="geo-focus" options={FOCUS_OPTIONS} value={focus} onChange={handleFocusChange}/>
             <span style={{paddingLeft: 10}}>Focus</span>
         </label>
     )

@@ -181,6 +181,12 @@ export interface Props<P> {
      */
     autoRollups?: Array<string>
     /**
+     * In the `auto` mode, called when what it shows changes as the view zooms -- and when it first
+     * shows something: one of the `autoRollups` (clusters), or the events
+     * @param rollup The name of the roll-up shown, or `undefined` when the events are shown
+     */
+    onAutoRollupChange?: (rollup: string | undefined) => void
+    /**
      * In the `auto` mode, the most (px) that a roll-up's cells may span on the screen: events closer
      * than about this are shown merged, as an aggregate. Defaults to 20.
      */
@@ -731,6 +737,7 @@ export function GeoPlot<P>(props: Props<P>): null {
         mode = 'points',
         rollup,
         autoRollups,
+        onAutoRollupChange = noop,
         clusterDistance = 20,
         sizeBy = 'count',
         colorBy,
@@ -847,6 +854,15 @@ export function GeoPlot<P>(props: Props<P>): null {
         [onViewChange]
     )
     const reportView = useCallback((): void => onViewChangeRef.current({...viewRef.current}), [])
+
+    // reports what the auto mode shows (see `onAutoRollupChange`)
+    const onAutoRollupChangeRef = useRef(onAutoRollupChange)
+    useEffect(
+        () => {
+            onAutoRollupChangeRef.current = onAutoRollupChange
+        },
+        [onAutoRollupChange]
+    )
 
     // the time of the latest event, reported to the chart's `onUpdateChartTime`
     const currentTimeRef = useRef<number>(0)
@@ -1060,7 +1076,9 @@ export function GeoPlot<P>(props: Props<P>): null {
                     const levels = rollupCellSizesOf(dataSource, autoRollups)
                         .map(({rollup: name, degrees}) => ({rollup: name, cellPixels: degrees * pixelsPerDegree}))
                     shownRollup = autoLevelOf(levels, clusterDistance, autoLevelRef.current)
+                    const changed = autoLevelRef.current !== shownRollup
                     autoLevelRef.current = shownRollup
+                    if (changed) onAutoRollupChangeRef.current(shownRollup)
                 }
                 const showsAggregates = mode === 'aggregates' || shownRollup !== undefined
                 shownRollupRef.current = shownRollup

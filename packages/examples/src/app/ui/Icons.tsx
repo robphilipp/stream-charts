@@ -769,3 +769,406 @@ export function CheckIcon(props: { color: string }): JSX.Element {
         </svg>
     )
 }
+
+/**
+ * Scattered dots (a map's events, each drawn on its own)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function EventsIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            {[[3, 4], [9, 2.5], [12.5, 8], [6, 9], [3.5, 13], [10, 12.5]].map(([cx, cy]) =>
+                <circle key={`${cx},${cy}`} cx={cx} cy={cy} r={1.75} fill={color}/>
+            )}
+        </svg>
+    )
+}
+
+/**
+ * Circles of different sizes (a map's events, rolled up into aggregates)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function AggregatesIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <circle cx={5.5} cy={5.5} r={4.5} fill="none" stroke={color} strokeWidth={1.5}/>
+            <circle cx={11.5} cy={11} r={3} fill="none" stroke={color} strokeWidth={1.5}/>
+            <circle cx={3.5} cy={12.5} r={1.75} fill={color}/>
+        </svg>
+    )
+}
+
+/**
+ * A pie, with a wedge filled (a map's aggregates, divided by their groups)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function PieIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <circle cx={7.5} cy={7.5} r={6.5} fill="none" stroke={color} strokeWidth={1.5}/>
+            <path d="M7.5 7.5 L7.5 1 A6.5 6.5 0 0 1 13.13 10.75 Z" fill={color}/>
+            <line x1={7.5} y1={7.5} x2={1.87} y2={10.75} stroke={color} strokeWidth={1.5}/>
+        </svg>
+    )
+}
+
+/**
+ * A pie coming apart into dots (a map's aggregates, by the zoom: clusters from afar, and the events
+ * themselves up close)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function ZoomAggregatesIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <circle cx={5} cy={5} r={4.25} fill="none" stroke={color} strokeWidth={1.5}/>
+            <path d="M5 5 L5 0.75 A4.25 4.25 0 0 1 9.25 5 Z" fill={color}/>
+            <circle cx={11.5} cy={9} r={1.5} fill={color}/>
+            <circle cx={8} cy={13} r={1.5} fill={color}/>
+            <circle cx={13} cy={13.5} r={1.5} fill={color}/>
+        </svg>
+    )
+}
+
+/**
+ * A viewfinder: corner brackets around a dot (what a map's view frames)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function FocusIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <path
+                d="M1 5 L1 1 L5 1 M10 1 L14 1 L14 5 M14 10 L14 14 L10 14 M5 14 L1 14 L1 10"
+                stroke={color}
+                fill="none"
+                strokeWidth={1.5}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+            />
+            <circle cx={7.5} cy={7.5} r={2} fill={color}/>
+        </svg>
+    )
+}
+
+/**
+ * Dots fading from left to right (older events fading)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function FadeIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <circle cx={2.5} cy={7.5} r={2.25} fill={color} opacity={0.2}/>
+            <circle cx={7.5} cy={7.5} r={2.25} fill={color} opacity={0.55}/>
+            <circle cx={12.5} cy={7.5} r={2.25} fill={color}/>
+        </svg>
+    )
+}
+
+/**
+ * A dot with rings growing from it (an event's flash)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function FlashIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <circle cx={7.5} cy={7.5} r={1.75} fill={color}/>
+            <circle cx={7.5} cy={7.5} r={4} fill="none" stroke={color} strokeWidth={1.25}/>
+            <circle cx={7.5} cy={7.5} r={6.75} fill="none" stroke={color} strokeWidth={1} opacity={0.5}/>
+        </svg>
+    )
+}
+
+/**
+ * A crosshair in a ring (the flash at a phone's actual place)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function FlashActualIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <circle cx={7.5} cy={7.5} r={4.5} fill="none" stroke={color} strokeWidth={1.25}/>
+            <path
+                d="M7.5 0.5 L7.5 4.5 M7.5 10.5 L7.5 14.5 M0.5 7.5 L4.5 7.5 M10.5 7.5 L14.5 7.5"
+                stroke={color}
+                strokeWidth={1.25}
+                strokeLinecap="round"
+            />
+        </svg>
+    )
+}
+
+/**
+ * A globe: a circle, with a meridian and the equator (an azimuthal projection, e.g. the
+ * orthographic, which shows a hemisphere)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function GlobeIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <circle cx={7.5} cy={7.5} r={6.5} fill="none" stroke={color} strokeWidth={1.5}/>
+            <ellipse cx={7.5} cy={7.5} rx={2.75} ry={6.5} fill="none" stroke={color} strokeWidth={1}/>
+            <line x1={1} y1={7.5} x2={14} y2={7.5} stroke={color} strokeWidth={1}/>
+        </svg>
+    )
+}
+
+/**
+ * A rectangle with a grid (a cylindrical projection, e.g. the Mercator)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function FlatMapIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <rect x={1} y={3} width={13} height={9} fill="none" stroke={color} strokeWidth={1.5}/>
+            <path d="M5.33 3 L5.33 12 M9.67 3 L9.67 12 M1 7.5 L14 7.5" stroke={color} strokeWidth={1}/>
+        </svg>
+    )
+}
+
+/**
+ * An oval with curved meridians (a pseudo-cylindrical projection, e.g. the Equal Earth)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function WorldMapIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <rect x={0.75} y={3} width={13.5} height={9} rx={4} ry={4} fill="none" stroke={color} strokeWidth={1.5}/>
+            <path d="M7.5 3 L7.5 12 M1 7.5 L14 7.5" stroke={color} strokeWidth={1}/>
+            <path d="M4.5 3.4 Q2.5 7.5 4.5 11.6 M10.5 3.4 Q12.5 7.5 10.5 11.6" fill="none" stroke={color} strokeWidth={1}/>
+        </svg>
+    )
+}
+
+/**
+ * A fan: part of a ring, its meridians meeting at a point above it (a conic projection)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function ConicMapIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <path
+                d="M2.2 5.2 A10 10 0 0 0 12.8 5.2 L14.6 12.6 A17 17 0 0 1 0.4 12.6 Z"
+                fill="none"
+                stroke={color}
+                strokeWidth={1.5}
+                strokeLinejoin="round"
+            />
+            <path d="M7.5 6.5 L7.5 14" stroke={color} strokeWidth={1}/>
+        </svg>
+    )
+}
+
+/**
+ * A large frame, with two small ones beside it (a composite projection, e.g. the Albers USA: the
+ * lower 48 states, with Alaska and Hawaii moved in)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function CompositeMapIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <rect x={4} y={1} width={10} height={8} fill="none" stroke={color} strokeWidth={1.5}/>
+            <rect x={1} y={10} width={4} height={4} fill="none" stroke={color} strokeWidth={1.25}/>
+            <rect x={7} y={11.5} width={2.5} height={2.5} fill="none" stroke={color} strokeWidth={1.25}/>
+        </svg>
+    )
+}
+
+/**
+ * Dots growing from left to right (markers sized by a value)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function SizeByIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <circle cx={1.75} cy={9.5} r={1.25} fill={color}/>
+            <circle cx={5.5} cy={8.5} r={2.25} fill={color}/>
+            <circle cx={11} cy={7.5} r={3.5} fill={color}/>
+        </svg>
+    )
+}
+
+/**
+ * A signal's bars, rising from left to right, the weakest two in the colors given (markers colored
+ * by their signal's strength)
+ * @param props The icon's color, and the weak and fair bars' colors (both the icon's, by default)
+ * @return The icon
+ */
+export function SignalColorIcon(props: { color: string, weakColor?: string, fairColor?: string }): JSX.Element {
+    const {color, weakColor = color, fairColor = color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <rect x={0.5} y={10} width={3} height={4} fill={weakColor}/>
+            <rect x={4.5} y={7} width={3} height={7} fill={fairColor}/>
+            <rect x={8.5} y={4} width={3} height={10} fill={color}/>
+            <rect x={12.5} y={1} width={2} height={13} fill={color}/>
+        </svg>
+    )
+}
+
+/**
+ * Lines of latitude and longitude, with no frame (the graticule)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function GraticuleIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <path
+                d="M5 1 Q3.5 7.5 5 14 M10 1 Q11.5 7.5 10 14 M1 5 L14 5 M1 10 L14 10"
+                fill="none"
+                stroke={color}
+                strokeWidth={1.25}
+                strokeLinecap="round"
+            />
+        </svg>
+    )
+}
+
+/**
+ * Neighboring regions in different shades (countries tinted by a value: a choropleth)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function ChoroplethIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <path d="M1 1 L8 1 L7 6 L9 9 L1 10 Z" fill={color} opacity={0.85}/>
+            <path d="M8 1 L14 1 L14 8 L9 9 L7 6 Z" fill={color} opacity={0.4}/>
+            <path d="M1 10 L9 9 L14 8 L14 14 L1 14 Z" fill={color} opacity={0.6}/>
+        </svg>
+    )
+}
+
+/**
+ * A jagged, dashed line between two places (the borders between countries)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function BordersIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <polyline
+                points="6,0.5 4,4 7.5,6.5 5.5,10 8.5,14.5"
+                fill="none"
+                stroke={color}
+                strokeWidth={1.5}
+                strokeDasharray="2.5 1.5"
+                strokeLinejoin="round"
+            />
+            <circle cx={1.75} cy={8} r={1.25} fill={color}/>
+            <circle cx={12.25} cy={6} r={1.25} fill={color}/>
+        </svg>
+    )
+}
+
+/**
+ * Regions sharing their borders, outlined (states, or counties)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function StatesIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <path
+                d="M1 2 L14 2 L14 13 L1 13 Z M6 2 L6 7 L1 7 M6 7 L9 8 L14 7 M9 8 L8 13"
+                fill="none"
+                stroke={color}
+                strokeWidth={1.25}
+                strokeLinejoin="round"
+            />
+        </svg>
+    )
+}
+
+/**
+ * A winding line, wider downstream (a river)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function RiversIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <path d="M2 1 Q8 3 5 7 Q2 11 9 14" fill="none" stroke={color} strokeWidth={1.75} strokeLinecap="round"/>
+            <path d="M12 2 Q11 5 6.5 5.5" fill="none" stroke={color} strokeWidth={1} strokeLinecap="round"/>
+        </svg>
+    )
+}
+
+/**
+ * Dots, each with a name beside it (cities)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function CitiesIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <circle cx={2.5} cy={4} r={2} fill={color}/>
+            <line x1={6} y1={4} x2={14} y2={4} stroke={color} strokeWidth={1.5} strokeLinecap="round"/>
+            <circle cx={2.5} cy={11} r={2} fill={color}/>
+            <line x1={6} y1={11} x2={11} y2={11} stroke={color} strokeWidth={1.5} strokeLinecap="round"/>
+        </svg>
+    )
+}
+
+/**
+ * A road going off into the distance, its edges meeting, with a dashed line down its middle
+ * (highways)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function RoadsIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <path d="M5.5 1 L1 14 M9.5 1 L14 14" stroke={color} strokeWidth={1.5} strokeLinecap="round"/>
+            <path d="M7.5 1.5 L7.5 14" stroke={color} strokeWidth={1.25} strokeDasharray="2 1.75"/>
+        </svg>
+    )
+}
+
+/**
+ * An arrow running around a circle (turning by itself)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function AutoRotateIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <path d="M13 7.5 A5.5 5.5 0 1 1 10.5 2.9" fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round"/>
+            <path d="M8.5 0.75 L11.75 2.25 L9.5 5.25" fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round"/>
+        </svg>
+    )
+}
