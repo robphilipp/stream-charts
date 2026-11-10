@@ -156,6 +156,30 @@ export function setUpShiftedProjection(
 }
 
 /**
+ * The view in the "shift" view mode that the others are shifts of: the base shape, unzoomed and
+ * unshifted
+ */
+export const SHIFT_REFERENCE_VIEW: GeoPlotViewState = {rotate: [0, 0, 0], k: 1, offsetX: 0, offsetY: 0}
+
+/**
+ * In the "shift" view mode, a view only scales and slides the map projected at the reference view
+ * (see `setUpShiftedProjection`): this is that scale and slide, so that the map projected once can
+ * be drawn at any view
+ * @param view A view in the "shift" view mode
+ * @param width The width (px) of the plot area
+ * @param height The height (px) of the plot area
+ * @return The scale, `k`, and offsets, `x0` and `y0`, that take a point projected at the reference
+ * view, `(x, y)`, to the view: `(k x + x0, k y + y0)`
+ */
+export function shiftOf(view: GeoPlotViewState, width: number, height: number): {k: number, x0: number, y0: number} {
+    return {
+        k: view.k,
+        x0: width / 2 * (1 - view.k) + (view.offsetX ?? 0),
+        y0: height / 2 * (1 - view.k) + view.offsetY,
+    }
+}
+
+/**
  * @param view A view in the "shift" view mode
  * @param dx The horizontal distance (px) dragged
  * @param dy The vertical distance (px) dragged

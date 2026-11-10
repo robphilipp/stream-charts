@@ -1,5 +1,18 @@
 import * as d3 from "d3"
 import {placeUnder} from "./geoProjections"
+import type {GeoPen, PixelBounds} from "./geoPens"
+
+// the radius (px) of a point's dot, by default (see `GeoLayer.pointRadius`); and the gap (px) between
+// a point's dot and its label, and the height (px) its label takes
+const DEFAULT_POINT_RADIUS = 2.5
+const POINT_LABEL_GAP = 3
+const POINT_LABEL_HEIGHT = 12
+
+/**
+ * @param feature A feature
+ * @return Whether it's a point (drawn as a dot, and labelled beside it)
+ */
+const isPoint = (feature: GeoJSON.Feature): boolean => feature.geometry?.type === 'Point'
 
 /**
  * One version of a map's data, for zooms from `minZoom` in (see {@link GeoMapData}): e.g. coarse land
@@ -59,9 +72,16 @@ export interface GeoLayer {
     readonly minZoom?: number
     readonly maxZoom?: number
     /**
+     * The radius (px) of the dots that the layer's points (`Point` features, e.g. cities) are drawn
+     * as: the same at any zoom, filled with the layer's `fill`, and outlined with its `stroke`.
+     * Defaults to 2.5.
+     */
+    readonly pointRadius?: number
+    /**
      * A feature's label (e.g. its name), drawn at its middle when the feature is wholly in view, and
      * the label fits inside it as drawn (so that labels come and go with the zoom, rather than piling
-     * up); no labels when not set
+     * up); and a point's beside its dot, when it's in view, and doesn't overlap a label of the layer
+     * drawn before it (so put the most important points first). No labels when not set.
      */
     readonly label?: (feature: GeoJSON.Feature) => string | undefined
     /**
@@ -253,50 +273,54 @@ export function visibleOf(object: d3.GeoPermissibleObjects, viewBox: GeoBox | un
 
 /**
  * Draws a layer's shapes: all at once, when they're all the same color, or one feature at a time,
- * when their colors are functions of the features
+ * when their colors are functions of the features (and nothing, for a layer with neither a fill nor
+ * an outline: only labels). Its points are drawn as dots (see the layer's `pointRadius`).
  * @param context2D The context to draw into
- * @param path The path generator, drawing into the context
+ * @param pen The pen to draw with
  * @param layer The layer
- * @param object The layer's data, as drawn at this zoom, trimmed to the view
+ * @param object The layer's data, as drawn at this zoom (in the turn view mode, trimmed to the view)
  */
 export function drawLayerShapes(
     context2D: CanvasRenderingContext2D,
-    path: d3.GeoPath,
+    pen: GeoPen,
     layer: GeoLayer,
     object: d3.GeoPermissibleObjects,
 ): void {
-    const {fill, stroke, lineWidth = 0.5, opacity = 1} = layer
+    const {fill, stroke, lineWidth = 0.5, opacity = 1, pointRadius = DEFAULT_POINT_RADIUS} = layer
+    if (fill === undefined && stroke === undefined) return
+    const fillOf = (feature: GeoJSON.Feature): string | undefined => typeof fill === 'function' ? fill(feature) : fill
+    const strokeOf = (feature: GeoJSON.Feature): string | undefined => typeof stroke === 'function' ? stroke(feature) : stroke
+    const features = featuresOf(object)
+    const points = features.filter(isPoint)
     context2D.save()
     context2D.globalAlpha = opacity
-    context2D.lineWidth = lineWidth
-    if (typeof fill !== 'function' && typeof stroke !== 'function') {
-        context2D.beginPath()
-        path(object)
-        if (fill !== undefined) {
-            context2D.fillStyle = fill
-            context2D.fill()
-        }
-        if (stroke !== undefined) {
-            context2D.strokeStyle = stroke
-            context2D.stroke()
-        }
-    } else {
-        featuresOf(object).forEach(feature => {
-            const featureFill = typeof fill === 'function' ? fill(feature) : fill
-            const featureStroke = typeof stroke === 'function' ? stroke(feature) : stroke
-            if (featureFill === undefined && featureStroke === undefined) return
-            context2D.beginPath()
-            path(feature)
-            if (featureFill !== undefined) {
-                context2D.fillStyle = featureFill
-                context2D.fill()
-            }
-            if (featureStroke !== undefined) {
-                context2D.strokeStyle = featureStroke
-                context2D.stroke()
-            }
+    if (points.length === 0 && typeof fill !== 'function' && typeof stroke !== 'function') {
+        pen.draw(context2D, object, fill, stroke, lineWidth)
+    } else if (points.length < features.length) {
+        features.forEach(feature => {
+            if (!isPoint(feature)) pen.draw(context2D, feature, fillOf(feature), strokeOf(feature), lineWidth)
         })
     }
+    // (the points as dots, drawn at their places, rather than projected with the shapes: in the shift
+    // view mode, the shapes are scaled with the zoom, and the dots shouldn't be)
+    points.forEach(feature => {
+        const featureFill = fillOf(feature)
+        const featureStroke = strokeOf(feature)
+        if (featureFill === undefined && featureStroke === undefined) return
+        const [x, y] = pen.centroid(feature)
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return
+        context2D.beginPath()
+        context2D.arc(x, y, pointRadius, 0, 2 * Math.PI)
+        if (featureFill !== undefined) {
+            context2D.fillStyle = featureFill
+            context2D.fill()
+        }
+        if (featureStroke !== undefined) {
+            context2D.strokeStyle = featureStroke
+            context2D.lineWidth = lineWidth
+            context2D.stroke()
+        }
+    })
     context2D.restore()
 }
 
@@ -306,37 +330,53 @@ export function drawLayerShapes(
  * e.g. a country, zoomed in on one of its cities -- has no label: the middle of what's drawn of it
  * isn't its own.)
  * @param context2D The context to draw into
- * @param path The path generator (for the features' middles and bounds)
+ * @param pen The pen to draw with (for the features' middles and bounds)
  * @param layer The layer
- * @param object The layer's data, as drawn at this zoom, trimmed to the view
+ * @param object The layer's data, as drawn at this zoom (in the turn view mode, trimmed to the view)
  * @param color The labels' default color (the chart's)
  * @param width The width (px) of the plot area
  * @param height The height (px) of the plot area
  */
 export function drawLayerLabels(
     context2D: CanvasRenderingContext2D,
-    path: d3.GeoPath,
+    pen: GeoPen,
     layer: GeoLayer,
     object: d3.GeoPermissibleObjects,
     color: string,
     width: number,
     height: number,
 ): void {
-    const {label} = layer
+    const {label, pointRadius = DEFAULT_POINT_RADIUS} = layer
     if (label === undefined) return
     context2D.save()
     context2D.font = layer.labelFont ?? '11px sans-serif'
     context2D.fillStyle = layer.labelColor ?? color
-    context2D.textAlign = 'center'
     context2D.textBaseline = 'middle'
+    // the points' labels drawn so far (which the later points' labels mustn't overlap)
+    const placed: Array<PixelBounds> = []
     featuresOf(object).forEach(feature => {
         const text = label(feature)
         if (text === undefined || text === '') return
-        const [[x0, y0], [x1, y1]] = path.bounds(feature)
+        if (isPoint(feature)) {
+            const [x, y] = pen.centroid(feature)
+            if (!Number.isFinite(x) || !Number.isFinite(y)) return
+            const left = x + pointRadius + POINT_LABEL_GAP
+            const box: PixelBounds = [[left, y - POINT_LABEL_HEIGHT / 2], [left + context2D.measureText(text).width, y + POINT_LABEL_HEIGHT / 2]]
+            const [[bx0, by0], [bx1, by1]] = box
+            if (bx0 < 0 || by0 < 0 || bx1 > width || by1 > height) return
+            if (placed.some(([[px0, py0], [px1, py1]]) => bx0 < px1 && px0 < bx1 && by0 < py1 && py0 < by1)) return
+            placed.push(box)
+            context2D.textAlign = 'left'
+            context2D.fillText(text, left, y)
+            return
+        }
+        const [[x0, y0], [x1, y1]] = pen.bounds(feature)
         if (!(x0 >= 0 && y0 >= 0 && x1 <= width && y1 <= height)) return
-        const [x, y] = path.centroid(feature)
+        const [x, y] = pen.centroid(feature)
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return
         const textWidth = context2D.measureText(text).width
         if (textWidth > x1 - x0 || 12 > y1 - y0) return
+        context2D.textAlign = 'center'
         context2D.fillText(text, x, y)
     })
     context2D.restore()

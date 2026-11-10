@@ -228,6 +228,13 @@ type GeoChartState = {
     showCountries: boolean
     // what the view frames
     focus: GeoFocus
+    // whether the United States' roads are drawn (with the Albers USA projection)
+    showRoads: boolean
+    // whether the United States' states and counties are drawn (with the Albers USA projection)
+    showStates: boolean
+    // whether the United States' rivers, and its cities, are drawn (with the Albers USA projection)
+    showRivers: boolean
+    showCities: boolean
     // whether each phone's new (estimated) location flashes
     flashLocated: boolean
     // whether each phone's actual place flashes (briefly) as it's located
@@ -263,6 +270,10 @@ const initialState: GeoChartState = {
     fadeOlder: true,
     showCountries: true,
     focus: 'world',
+    showRoads: true,
+    showStates: true,
+    showRivers: true,
+    showCities: true,
     flashLocated: true,
     flashActual: true,
     autoRotate: false,
@@ -288,6 +299,10 @@ type GeoChartActions = {
     setFadeOlder: (fadeOlder: boolean) => void
     setShowCountries: (showCountries: boolean) => void
     setFocus: (focus: GeoFocus) => void
+    setShowRoads: (showRoads: boolean) => void
+    setShowStates: (showStates: boolean) => void
+    setShowRivers: (showRivers: boolean) => void
+    setShowCities: (showCities: boolean) => void
     setFlashLocated: (flashLocated: boolean) => void
     setFlashActual: (flashActual: boolean) => void
     setAutoRotate: (autoRotate: boolean) => void
@@ -341,6 +356,10 @@ export const useGeoChartStore: UseBoundStore<StoreApi<GeoChartStore>> = create<G
         setFadeOlder: (fadeOlder: boolean): void => set({fadeOlder}),
         setShowCountries: (showCountries: boolean): void => set({showCountries}),
         setFocus: (focus: GeoFocus): void => set({focus}),
+        setShowRoads: (showRoads: boolean): void => set({showRoads}),
+        setShowStates: (showStates: boolean): void => set({showStates}),
+        setShowRivers: (showRivers: boolean): void => set({showRivers}),
+        setShowCities: (showCities: boolean): void => set({showCities}),
         setFlashLocated: (flashLocated: boolean): void => set({flashLocated}),
         setFlashActual: (flashActual: boolean): void => set({flashActual}),
         setAutoRotate: (autoRotate: boolean): void => set({autoRotate}),

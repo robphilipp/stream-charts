@@ -11,6 +11,7 @@ import {
     visibleOf,
 } from "./geoLayers";
 import {GeoProjections, setUpProjection, setUpShiftedProjection, viewCenteredOn} from "./geoProjections";
+import {directPen, type GeoPen} from "./geoPens";
 
 const WIDTH = 800
 const HEIGHT = 500
@@ -134,11 +135,12 @@ describe('drawing layers', () => {
         return {context: context as unknown as CanvasRenderingContext2D, fills, strokes}
     }
     const states: d3.GeoPermissibleObjects = {type: 'FeatureCollection', features: [square(0, 0, 1, 'a'), square(2, 0, 1, 'b')]}
-    const path = (() => null) as unknown as d3.GeoPath
+    const traced: Array<d3.GeoPermissibleObjects> = []
+    const pen = directPen(((object: d3.GeoPermissibleObjects) => traced.push(object)) as unknown as d3.GeoPath)
 
     it('draws a layer of one color at once', () => {
         const {context, fills, strokes} = recordingContext()
-        drawLayerShapes(context, path, {data: states, fill: '#ccc', stroke: '#333'}, states)
+        drawLayerShapes(context, pen, {data: states, fill: '#ccc', stroke: '#333'}, states)
         expect(fills).toEqual(['#ccc'])
         expect(strokes).toEqual(['#333'])
     })
@@ -146,25 +148,35 @@ describe('drawing layers', () => {
     it('draws each feature in its own color (a choropleth), and leaves out a feature without one', () => {
         const {context, fills} = recordingContext()
         const colors: Record<string, string | undefined> = {a: 'red', b: undefined}
-        drawLayerShapes(context, path, {data: states, fill: feature => colors[feature.properties?.name]}, states)
+        drawLayerShapes(context, pen, {data: states, fill: feature => colors[feature.properties?.name]}, states)
         expect(fills).toEqual(['red'])
+    })
+
+    it("doesn't trace a layer of labels alone (with neither a fill nor an outline)", () => {
+        const {context, fills, strokes} = recordingContext()
+        traced.length = 0
+        drawLayerShapes(context, pen, {data: states, label: feature => feature.properties?.name}, states)
+        expect(traced).toEqual([])
+        expect(fills).toEqual([])
+        expect(strokes).toEqual([])
     })
 })
 
 describe('labels', () => {
     /**
      * @param bounds Each feature's drawn bounds, by name
-     * @return A stand-in for a path generator, drawing the features at those bounds
+     * @return A pen drawing the features at those bounds
      */
-    const pathFor = (bounds: Record<string, [[number, number], [number, number]]>): d3.GeoPath => {
+    const penFor = (bounds: Record<string, [[number, number], [number, number]]>): GeoPen => {
         const boundsOf = (feature: GeoJSON.Feature): [[number, number], [number, number]] => bounds[feature.properties?.name]
-        return Object.assign(() => null, {
+        return {
+            draw: () => undefined,
             bounds: boundsOf,
-            centroid: (feature: GeoJSON.Feature) => {
+            centroid: feature => {
                 const [[x0, y0], [x1, y1]] = boundsOf(feature)
                 return [(x0 + x1) / 2, (y0 + y1) / 2]
             },
-        }) as unknown as d3.GeoPath
+        }
     }
     const labelled = (bounds: Record<string, [[number, number], [number, number]]>): Array<string> => {
         const drawn: Array<string> = []
@@ -174,7 +186,7 @@ describe('labels', () => {
             fillText: (text: string) => drawn.push(text),
         } as unknown as CanvasRenderingContext2D
         const features: d3.GeoPermissibleObjects = {type: 'FeatureCollection', features: Object.keys(bounds).map(name => square(0, 0, 1, name))}
-        drawLayerLabels(context, pathFor(bounds), {data: features, label: feature => feature.properties?.name}, features, '#000', WIDTH, HEIGHT)
+        drawLayerLabels(context, penFor(bounds), {data: features, label: feature => feature.properties?.name}, features, '#000', WIDTH, HEIGHT)
         return drawn
     }
 
@@ -187,5 +199,108 @@ describe('labels', () => {
 
     it('doesn\'t label a feature cut by the plot area\'s edges', () => {
         expect(labelled({huge: [[-4, -4], [WIDTH + 4, HEIGHT + 4]], partly: [[WIDTH - 100, 100], [WIDTH + 50, 200]]})).toEqual([])
+    })
+
+    describe('on a globe', () => {
+        // (a globe filling the plot area, looking at 0° E, 0° N)
+        const globe = (rotate: [number, number]): d3.GeoProjection =>
+            d3.geoOrthographic().fitSize([WIDTH, HEIGHT], {type: 'Sphere'}).rotate(rotate)
+        const at = (projection: d3.GeoProjection, feature: GeoJSON.Feature): [number, number] =>
+            directPen(d3.geoPath(projection)).centroid(feature)
+
+        it('places a label at the middle of the whole feature, not of the part in sight', () => {
+            // (a square from 85° E to 105° E: the globe's edge, at 90° E, cuts it, leaving its middle
+            // out of sight)
+            const cut = square(85, 0, 20, 'cut')
+            const [x, y] = at(globe([0, 0]), cut)
+            expect(x).toBeNaN()
+            expect(y).toBeNaN()
+            // (turned 30° west, the square is in sight, and its label in its middle)
+            const projection = globe([-30, 0])
+            const [x1, y1] = at(projection, cut)
+            const [mx, my] = projection(d3.geoCentroid(cut)) as [number, number]
+            expect(x1).toBeCloseTo(mx, 0)
+            expect(y1).toBeCloseTo(my, 0)
+        })
+
+        it("places a feature in pieces' label at the middle of its largest piece", () => {
+            const pieces: GeoJSON.Feature = {
+                type: 'Feature',
+                properties: {name: 'pieces'},
+                geometry: {
+                    type: 'MultiPolygon',
+                    coordinates: [square(30, 40, 4, 'small'), square(-20, 0, 20, 'large')]
+                        .map(piece => (piece.geometry as GeoJSON.Polygon).coordinates),
+                },
+            }
+            const projection = globe([0, 0])
+            const [x, y] = at(projection, pieces)
+            const [mx, my] = projection(d3.geoCentroid(square(-20, 0, 20, 'large'))) as [number, number]
+            expect(x).toBeCloseTo(mx, 6)
+            expect(y).toBeCloseTo(my, 6)
+        })
+
+        it('keeps a label in place on the feature as the globe turns it out of sight', () => {
+            // (a square from 30° W to 0° E: turned 70° west, the globe's edge, at 20° W, cuts it)
+            const feature = square(-30, 20, 30, 'turning')
+            const offsets = [0, -40, -70].map(turn => {
+                const projection = globe([turn, 0])
+                const [x, y] = at(projection, feature)
+                const [mx, my] = projection(d3.geoCentroid(feature)) as [number, number]
+                return [x - mx, y - my]
+            })
+            offsets.forEach(([dx, dy]) => {
+                expect(dx).toBeCloseTo(0, 6)
+                expect(dy).toBeCloseTo(0, 6)
+            })
+        })
+    })
+})
+
+describe('points (e.g. cities)', () => {
+    const city = (name: string): GeoJSON.Feature => ({type: 'Feature', properties: {name}, geometry: {type: 'Point', coordinates: [0, 0]}})
+    /**
+     * @param places Where each city is drawn, by name
+     * @return A pen drawing the cities there (and recording any shapes it's asked to draw)
+     */
+    const penAt = (places: Record<string, [number, number]>): GeoPen & {shapes: Array<unknown>} => {
+        const shapes: Array<unknown> = []
+        return {
+            shapes,
+            draw: (_, object) => shapes.push(object),
+            bounds: () => [[0, 0], [0, 0]],
+            centroid: feature => places[feature.properties?.name],
+        }
+    }
+
+    it('draws each point as a dot of the layer\'s radius at its place, rather than as a shape', () => {
+        const dots: Array<string> = []
+        const context = {
+            save: () => undefined, restore: () => undefined, beginPath: () => undefined, fill: () => undefined,
+            arc: (x: number, y: number, radius: number) => dots.push(`${x},${y} r${radius}`),
+            set fillStyle(_: string) { /* (unrecorded) */ },
+            set globalAlpha(_: number) { /* (unrecorded) */ },
+        } as unknown as CanvasRenderingContext2D
+        const cities: d3.GeoPermissibleObjects = {type: 'FeatureCollection', features: [city('near'), city('far side')]}
+        const pen = penAt({'near': [100, 50], 'far side': [NaN, NaN]})
+        drawLayerShapes(context, pen, {data: cities, fill: '#333', pointRadius: 3}, cities)
+        // (and nothing for a point the projection can't show, e.g. on a globe's far side)
+        expect(dots).toEqual(['100,50 r3'])
+        expect(pen.shapes).toEqual([])
+    })
+
+    it('labels each point beside its dot, unless its label would overlap one drawn before it, or leave the plot area', () => {
+        const drawn: Array<string> = []
+        const context = {
+            save: () => undefined, restore: () => undefined,
+            measureText: (text: string) => ({width: 6 * text.length}),
+            fillText: (text: string, x: number, y: number) => drawn.push(`${text} ${x},${y}`),
+        } as unknown as CanvasRenderingContext2D
+        const names = ['Chicago', 'Evanston', 'Gary', 'Edge']
+        const cities: d3.GeoPermissibleObjects = {type: 'FeatureCollection', features: names.map(city)}
+        const pen = penAt({Chicago: [100, 100], Evanston: [110, 95], Gary: [100, 140], Edge: [WIDTH - 5, 100]})
+        drawLayerLabels(context, pen, {data: cities, label: feature => feature.properties?.name}, cities, '#000', WIDTH, HEIGHT)
+        // (beside the dot: past its radius, 2.5, and a gap of 3)
+        expect(drawn).toEqual(['Chicago 105.5,100', 'Gary 105.5,140'])
     })
 })

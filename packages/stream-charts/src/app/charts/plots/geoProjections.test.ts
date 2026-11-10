@@ -17,6 +17,8 @@ import {
     placeUnder,
     setUpProjection,
     setUpShiftedProjection,
+    SHIFT_REFERENCE_VIEW,
+    shiftOf,
     shiftView,
     viewCenteredOn,
     viewFitting,
@@ -473,5 +475,25 @@ describe('the shift view mode (e.g. for a composite projection)', () => {
         expect(place[1]).toBeCloseTo(kansas[1], 6)
         // (far beyond the regions -- each a rectangle, the sea around its land included)
         expect(placeUnder(projection, [-WIDTH, -HEIGHT])).toBeUndefined()
+    })
+
+    it('takes a view to a scale and slide of the reference view, for a composite and for a conic', () => {
+        const places: Array<[number, number]> = [kansas, [-74, 40.7], [-122.4, 37.8], [-150, 61.2], [-157.8, 21.3]]
+        const views = [{...start, k: 3, offsetX: -250, offsetY: 120}, {...start, k: 0.5, offsetX: 40, offsetY: -10}]
+        for (const name of ['albersUsa', 'conicEqualArea'] as Array<GeoProjectionName>) {
+            const reference = GeoProjections[name]()
+            setUpShiftedProjection(reference, lower48, SHIFT_REFERENCE_VIEW, WIDTH, HEIGHT, 20)
+            const projected = places.map(place => reference(place)!)
+            for (const view of views) {
+                const projection = GeoProjections[name]()
+                setUpShiftedProjection(projection, lower48, view, WIDTH, HEIGHT, 20)
+                const {k, x0, y0} = shiftOf(view, WIDTH, HEIGHT)
+                places.forEach((place, i) => {
+                    const [x, y] = projection(place)!
+                    expect(k * projected[i][0] + x0).toBeCloseTo(x, 6)
+                    expect(k * projected[i][1] + y0).toBeCloseTo(y, 6)
+                })
+            }
+        }
     })
 })

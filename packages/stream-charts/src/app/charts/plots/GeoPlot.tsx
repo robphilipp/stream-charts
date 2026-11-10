@@ -49,6 +49,8 @@ import {
     placeUnder,
     setUpProjection,
     setUpShiftedProjection,
+    SHIFT_REFERENCE_VIEW,
+    shiftOf,
     shiftView,
     viewCenteredOn,
     viewFitting,
@@ -57,6 +59,7 @@ import {
     zoomShiftedViewAbout,
     zoomViewAbout,
 } from "./geoProjections"
+import {directPen, ReferenceShapes, shiftedPen} from "./geoPens"
 
 /**
  * The properties of the {@link GeoPlot}
@@ -321,8 +324,10 @@ export interface Props<P> {
     zoomMaxScaleFactor?: number
     /**
      * What hovering a series in the legend does: show that series' events alone (`true`, the
-     * default -- a map's series often overlap at the same places), or dim the others' (`false`).
-     * Either way, only the events (and their flashes) are affected, not the aggregates.
+     * default -- a map's series often overlap at the same places), or dim the others' (`false`),
+     * drawing the hovered series' over them. Either way, the events and their flashes are affected;
+     * and the aggregates' pies, when the hovered series names one of their groups, dim the other
+     * groups' wedges.
      */
     isolateHoveredSeries?: boolean
     /**
@@ -610,6 +615,9 @@ const SPHERE: d3.GeoPermissibleObjects = {type: 'Sphere'}
 // how far (px) beyond the plot area the map is clipped (so that the outlines of the areas clipped
 // there fall outside the plot area, which the canvas clips to)
 const MAP_CLIP_MARGIN = 4
+// in the shift view mode, how closely (px) the map's shapes, projected once (see `ReferenceShapes`),
+// follow their curves: finer than d3's default (√½ px), since they're scaled up as the view zooms in
+const REFERENCE_PRECISION = 0.1
 const DEGREES = 180 / Math.PI
 // the number of distinct opacities the faded markers are drawn with (so that markers can still be
 // drawn a path per color and opacity)
@@ -795,6 +803,41 @@ export function GeoPlot<P>(props: Props<P>): null {
     )
     const viewRef = useRef<GeoPlotViewState>(viewState ?? initialView)
 
+    // in the shift view mode, the map's shapes projected (each once, when first drawn) at the
+    // reference view, which each view only scales and slides (see `shiftedPen`): anew whenever the
+    // reference changes
+    const referenceShapes = useMemo(
+        () => {
+            if (!shifting) return undefined
+            // (the reference's scale and translation, found once: fitting is slow)
+            let reference: {scale: number, translate: [number, number]} | undefined = undefined
+            return new ReferenceShapes(<T, >(project: (path: d3.GeoPath) => T): T => {
+                const scale = projection.scale()
+                const translate = projection.translate()
+                const precision = projection.precision()
+                const clippable = typeof projection.clipExtent === 'function'
+                const clipExtent = clippable ? projection.clipExtent() : null
+                if (reference === undefined) {
+                    setUpShiftedProjection(projection, base, SHIFT_REFERENCE_VIEW, width, height, fitPadding)
+                    reference = {scale: projection.scale(), translate: projection.translate()}
+                } else {
+                    projection.scale(reference.scale).translate(reference.translate)
+                }
+                // (unclipped: the views slide what's beyond the plot area at the reference into it)
+                projection.precision(REFERENCE_PRECISION)
+                if (clippable) projection.clipExtent(null)
+                try {
+                    return project(d3.geoPath(projection))
+                } finally {
+                    projection.precision(precision)
+                    if (clippable) projection.clipExtent(clipExtent)
+                    projection.scale(scale).translate(translate)
+                }
+            })
+        },
+        [shifting, projection, base, width, height, fitPadding]
+    )
+
     // reports the view (see `onViewChange`)
     const onViewChangeRef = useRef(onViewChange)
     useEffect(
@@ -883,16 +926,17 @@ export function GeoPlot<P>(props: Props<P>): null {
              * @param context2D The context to draw into (translated to the plot area)
              */
             const drawMap = (context2D: CanvasRenderingContext2D): void => {
-                // the map's data at this zoom (see `GeoMapData`), trimmed to the features that might
-                // show in the view (see `viewBoxOf`), and clipped to the plot area (a little beyond
-                // it, so that the clipped areas' outlines fall outside it)
+                // the map's data at this zoom (see `GeoMapData`). In the turn view mode, each view
+                // projects it anew, so it's trimmed to the features that might show in the view (see
+                // `viewBoxOf`), and clipped to the plot area (a little beyond it, so that the clipped
+                // areas' outlines fall outside it); in the shift view mode, it's projected once, at
+                // the reference view, and each view scales and slides it (see `shiftedPen`), so it's
+                // drawn whole
                 const k = viewRef.current.k
-                // (in the shift mode, the points off the map are gaps -- e.g. the sea around a
-                // composite's regions)
-                const viewBox = viewBoxOf(projection, width, height, 9, shifting)
+                const viewBox = referenceShapes === undefined ? viewBoxOf(projection, width, height) : undefined
                 const shown = (data: GeoMapData | undefined): d3.GeoPermissibleObjects | undefined => {
                     const object = data !== undefined ? detailOf(data, k) : undefined
-                    return object !== undefined ? visibleOf(object, viewBox) : undefined
+                    return object !== undefined && viewBox !== undefined ? visibleOf(object, viewBox) : object
                 }
                 const shownLayers = (layers ?? [])
                     .filter(layer => layerShownAt(layer, k))
@@ -906,49 +950,29 @@ export function GeoPlot<P>(props: Props<P>): null {
                 if (clippable) {
                     projection.clipExtent([[-MAP_CLIP_MARGIN, -MAP_CLIP_MARGIN], [width + MAP_CLIP_MARGIN, height + MAP_CLIP_MARGIN]])
                 }
-                const path = d3.geoPath(projection, context2D)
+                const pen = referenceShapes !== undefined ?
+                    shiftedPen(referenceShapes, shiftOf(viewRef.current, width, height)) :
+                    directPen(d3.geoPath(projection, context2D))
 
                 // the sphere (the oceans) -- or, for a projection that can't be turned (a composite,
                 // whose "sphere" is its regions' rectangles), the whole plot area
                 const wholeSphere = canTurn(projection)
-                context2D.beginPath()
-                if (wholeSphere) path(SPHERE)
-                else context2D.rect(0, 0, width, height)
-                context2D.fillStyle = oceanColor
-                context2D.fill()
-
-                if (showGraticule) {
-                    context2D.beginPath()
-                    path(graticule)
-                    context2D.strokeStyle = graticuleColor
-                    context2D.lineWidth = 0.5
-                    context2D.stroke()
-                }
-                const land = shown(basemap)
-                if (land !== undefined) {
-                    context2D.beginPath()
-                    path(land)
-                    context2D.fillStyle = landColor
-                    context2D.fill()
-                }
-                shownLayers.forEach(({layer, object}) => drawLayerShapes(context2D, path, layer, object))
-                const lines = shown(borders)
-                if (lines !== undefined) {
-                    context2D.beginPath()
-                    path(lines)
-                    context2D.strokeStyle = borderColor
-                    context2D.lineWidth = 0.5
-                    context2D.stroke()
-                }
-                // (the labels over everything else of the map)
-                shownLayers.forEach(({layer, object}) => drawLayerLabels(context2D, path, layer, object, color, width, height))
                 if (wholeSphere) {
-                    context2D.beginPath()
-                    path(SPHERE)
-                    context2D.strokeStyle = outlineColor
-                    context2D.lineWidth = 1
-                    context2D.stroke()
+                    pen.draw(context2D, SPHERE, oceanColor, undefined, 0)
+                } else {
+                    context2D.fillStyle = oceanColor
+                    context2D.fillRect(0, 0, width, height)
                 }
+
+                if (showGraticule) pen.draw(context2D, graticule, undefined, graticuleColor, 0.5)
+                const land = shown(basemap)
+                if (land !== undefined) pen.draw(context2D, land, landColor, undefined, 0)
+                shownLayers.forEach(({layer, object}) => drawLayerShapes(context2D, pen, layer, object))
+                const lines = shown(borders)
+                if (lines !== undefined) pen.draw(context2D, lines, undefined, borderColor, 0.5)
+                // (the labels over everything else of the map)
+                shownLayers.forEach(({layer, object}) => drawLayerLabels(context2D, pen, layer, object, color, width, height))
+                if (wholeSphere) pen.draw(context2D, SPHERE, undefined, outlineColor, 1)
                 if (clippable) projection.clipExtent(clipExtent)
             }
 
@@ -1016,6 +1040,13 @@ export function GeoPlot<P>(props: Props<P>): null {
                  */
                 const shownWithHovered = (seriesName: string): boolean =>
                     !isolateHoveredSeries || hoveredSeriesName === null || seriesName === hoveredSeriesName
+                /**
+                 * @param name A series' name (or an aggregate's group's)
+                 * @return The opacity (a fraction of its own) it's drawn with: dimmed while another
+                 * series is hovered in the legend
+                 */
+                const dimmingOf = (name: string): number =>
+                    hoveredSeriesName !== null && name !== hoveredSeriesName ? DIMMED_OPACITY : 1
 
                 const hoveredKey = hoveredRef.current !== undefined ? markerKeyOf(hoveredRef.current) : undefined
 
@@ -1116,6 +1147,12 @@ export function GeoPlot<P>(props: Props<P>): null {
                         const wedgeFillOf = (group: GeoAggregateGroup): string => colorKey !== undefined ?
                             colorOfValue(groupValueOf(group, colorKey)) :
                             groupColors?.(group.group) ?? categoricalColorOf(groupColorsRef.current, group.group)
+                        // (while a series is hovered in the legend that names a group, e.g. a
+                        // carrier, the other groups' wedges are dimmed)
+                        const hoveredIsGroup = hoveredSeriesName !== null && aggregates.some(
+                            aggregate => aggregate.groups.some(group => group.group === hoveredSeriesName)
+                        )
+                        const wedgeDimmingOf = (group: GeoAggregateGroup): number => hoveredIsGroup ? dimmingOf(group.group) : 1
 
                         // the cells (areas), then the circles, the largest first, so that small ones
                         // aren't hidden under large ones
@@ -1154,7 +1191,7 @@ export function GeoPlot<P>(props: Props<P>): null {
                                     aggregate.groups.forEach(group => {
                                         const end = start + 360 * group.count / total
                                         const wedgeFill = wedgeFillOf(group)
-                                        sceneContext.globalAlpha = opacity
+                                        sceneContext.globalAlpha = opacity * wedgeDimmingOf(group)
                                         sceneContext.beginPath()
                                         path(wedgeOf(center, radius * degreesPerPixel, start, end, radius < 10 ? 20 : 8))
                                         sceneContext.fillStyle = wedgeFill
@@ -1166,7 +1203,7 @@ export function GeoPlot<P>(props: Props<P>): null {
                                     })
                                 } else {
                                     const circleFill = asPie(aggregate) ? wedgeFillOf(aggregate.groups[0]) : fill
-                                    sceneContext.globalAlpha = opacity
+                                    sceneContext.globalAlpha = opacity * (asPie(aggregate) ? wedgeDimmingOf(aggregate.groups[0]) : 1)
                                     sceneContext.beginPath()
                                     path(circleAt(aggregate.latitude, aggregate.longitude, radius))
                                     sceneContext.fillStyle = circleFill
@@ -1247,11 +1284,17 @@ export function GeoPlot<P>(props: Props<P>): null {
                                 {view, settings: markerSettings, byDatum: new WeakMap<GeoDatum<P>, MarkerGeometry>()}
                         geometryRef.current = geometries ?? kept
 
-                        dataSource?.seriesList().forEach(series => {
+                        // (the series hovered in the legend drawn last, over the others, which are
+                        // dimmed, when it isn't isolated)
+                        const seriesList = dataSource?.seriesList() ?? []
+                        const hoveredLast = [
+                            ...seriesList.filter(series => series.name !== hoveredSeriesName),
+                            ...seriesList.filter(series => series.name === hoveredSeriesName),
+                        ]
+                        hoveredLast.forEach(series => {
                             if (!series.name.match(seriesFilter) || !shownWithHovered(series.name)) return
                             const style = seriesStyles.get(series.name) ?? defaultLineStyle()
-                            // (dimmed while another series is hovered in the legend, when not isolating it)
-                            const dimming = hoveredSeriesName !== null && series.name !== hoveredSeriesName ? DIMMED_OPACITY : 1
+                            const dimming = dimmingOf(series.name)
                             // the markers, a path per color and fading, so that a series in one color
                             // is a few fills
                             // (a color and fading's markers are split into paths of at most
@@ -1374,7 +1417,10 @@ export function GeoPlot<P>(props: Props<P>): null {
                         const ringColor = flash.color ??
                             colorOf?.(datum, seriesName) ??
                             (seriesStyles.get(seriesName) ?? defaultLineStyle()).color
-                        return [{x: at[0], y: at[1], start: flash.start, duration: flash.duration, color: ringColor, ring, latitude, longitude}]
+                        return [{
+                            x: at[0], y: at[1], start: flash.start, duration: flash.duration, color: ringColor, ring, latitude, longitude,
+                            dimming: dimmingOf(seriesName),
+                        }]
                     })
                     flashGroupsOf(rings, flashMergeDistance).forEach(group => {
                         const earliest = group.reduce((first, ring) => ring.start < first.start ? ring : first)
@@ -1384,7 +1430,7 @@ export function GeoPlot<P>(props: Props<P>): null {
                         const latitude = mean(ring => ring.latitude)
                         const longitude = mean(ring => ring.longitude)
                         const {radius, opacity} = earliest.ring
-                        context2D.globalAlpha = opacity
+                        context2D.globalAlpha = opacity * Math.max(...group.map(ring => ring.dimming))
                         context2D.strokeStyle = earliest.color
                         context2D.lineWidth = 2 + Math.min(3, Math.log2(group.length))
                         context2D.beginPath()
@@ -1449,7 +1495,7 @@ export function GeoPlot<P>(props: Props<P>): null {
             cc.requestRedraw()
         },
         [
-            chartId, projection, setUp, shifting, width, height, plotDimensions, margin.left, margin.top, graticule, mapSettings, markerSettings,
+            chartId, projection, setUp, referenceShapes, width, height, plotDimensions, margin.left, margin.top, graticule, mapSettings, markerSettings,
             showGraticule, basemap, borders, layers, oceanColor, landColor, borderColor, graticuleColor,
             outlineColor, markerRadius, markerOpacity, radiusOf, colorOf, fadeDuration, fadedOpacity, flashDuration,
             seriesStyles, seriesFilter, color, backgroundColor, dataSource, onUpdateChartTime, mode, rollup, autoRollups,

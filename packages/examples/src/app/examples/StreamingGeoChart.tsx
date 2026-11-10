@@ -58,7 +58,23 @@ import {
     WEAKEST_SIGNAL,
 } from "./appstate/geoChartStore.ts"
 import {CARRIERS, type CellEvent, initialCellTowerData, type PhoneFix, PHONES, TOWERS_BY_COUNTRY, type TowerPing} from "./dataproviders/cellTowerData.ts"
-import {COUNTRIES, COUNTRY_BORDERS, type DetailedWorld, detailedWorld, LAND, UNITED_KINGDOM, UNITED_STATES} from "./dataproviders/worldMap.ts"
+import {
+    COUNTRIES,
+    COUNTRY_BORDERS,
+    type DetailedWorld,
+    detailedWorld,
+    LAND,
+    UNITED_KINGDOM,
+    UNITED_STATES,
+    type UsCity,
+    usCities,
+    type UsDetail,
+    usDetail,
+    usLakesAndRivers,
+    type UsRoad,
+    usRoads,
+    type UsWater,
+} from "./dataproviders/worldMap.ts"
 import {FocusControl} from "./controls/FocusControl.tsx"
 
 const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
@@ -98,6 +114,152 @@ const towersIn = (feature: GeoJSON.Feature): number => TOWERS_BY_COUNTRY.get(fea
  */
 const byZoom = <T extends GeoMapData>(coarse: T, detailed: T | undefined): GeoMapData =>
     detailed === undefined ? coarse : [{minZoom: 0, data: coarse as d3.GeoPermissibleObjects}, {minZoom: DETAILED_ZOOM, data: detailed as d3.GeoPermissibleObjects}]
+
+// the zooms from which the United States' outline is drawn at 1:10m (rather than 1:50m), and from
+// which its counties' borders and names are drawn
+const US_FINEST_ZOOM = 2
+const COUNTY_BORDERS_ZOOM = 3
+const COUNTY_NAMES_ZOOM = 5
+// the borders' colors, by theme: the states', and the counties'
+const US_BORDER_COLORS = {
+    light: {state: '#8a8a8a', county: '#ababab'},
+    dark: {state: '#7a7a7a', county: '#525252'},
+}
+
+/**
+ * The United States' outline, by zoom: 1:110m, until the finer outlines are loaded; then 1:50m, and
+ * from US_FINEST_ZOOM in, 1:10m (Natural Earth's, all three)
+ * @param detailed The world at 1:50m, once loaded
+ * @param us The United States in detail, once loaded
+ * @return The outline
+ */
+function usOutlineOf(detailed: DetailedWorld | undefined, us: UsDetail | undefined): GeoMapData {
+    const coarse = UNITED_STATES ?? LAND
+    const fine = detailed?.countries.features.find(country => (country.properties as {name?: string} | null)?.name === 'United States of America') ?? coarse
+    return us === undefined ?
+        fine :
+        [{minZoom: 0, data: fine as d3.GeoPermissibleObjects}, {minZoom: US_FINEST_ZOOM, data: us.outline}]
+}
+
+/**
+ * The layers of the United States' states and counties: the borders between the counties (zoomed
+ * in), and between the states, and their names (where they fit, the counties' only zoomed in)
+ * @param us The United States in detail
+ * @param theme The theme
+ * @return The layers
+ */
+function stateLayersOf(us: UsDetail, theme: Theme): Array<GeoLayer> {
+    const colors = US_BORDER_COLORS[theme.name === 'light' ? 'light' : 'dark']
+    const nameOf = (feature: GeoJSON.Feature): string | undefined => feature.properties?.name
+    return [
+        {data: us.countyBorders, stroke: colors.county, lineWidth: 0.4, minZoom: COUNTY_BORDERS_ZOOM},
+        {data: us.stateBorders, stroke: colors.state, lineWidth: 0.9},
+        {data: us.counties, label: nameOf, labelFont: '9px sans-serif', minZoom: COUNTY_NAMES_ZOOM},
+        {data: us.states, label: nameOf},
+    ]
+}
+
+// the rivers' colors, by theme
+const RIVER_COLORS = {light: '#7ea7c8', dark: '#4d7491'}
+// the zooms from which the rivers of each of Natural Earth's ranks are drawn (those of the ranks not
+// listed, the most important, at every zoom)
+const RIVER_ZOOMS = new Map([[10, 2], [11, 3], [12, 4]])
+// the zooms from which the cities of each of Natural Earth's ranks (to the rank) are drawn
+const CITY_ZOOMS: Array<{minZoom: number, rank: number}> = [{minZoom: 0, rank: 2}, {minZoom: 1.5, rank: 4}, {minZoom: 3, rank: 6}, {minZoom: 5, rank: 8}]
+
+/**
+ * The layers of the United States' lakes and rivers: the rivers (the less important only zoomed in),
+ * under the lakes (which hide the rivers' lines through them), in the ocean's color, as the plot
+ * draws it: its tint of the chart's color (see the GeoPlot's `oceanColor`), over the background --
+ * opaque, so that the land doesn't show through
+ * @param water The lakes and rivers
+ * @param theme The theme
+ * @param showRivers Whether the rivers are drawn
+ * @return The layers
+ */
+function waterLayersOf(water: {lakes: Array<UsWater>, rivers: Array<UsWater>}, theme: Theme, showRivers: boolean): Array<GeoLayer> {
+    const collection = (features: Array<UsWater>): GeoJSON.FeatureCollection => ({type: 'FeatureCollection', features})
+    const riverLayers: Array<GeoLayer> = [undefined, ...RIVER_ZOOMS.keys()].map(rank => ({
+        data: collection(water.rivers.filter(river => rank === undefined ? !RIVER_ZOOMS.has(river.properties.rank) : river.properties.rank === rank)),
+        stroke: RIVER_COLORS[theme.name],
+        lineWidth: 0.7,
+        minZoom: rank === undefined ? 0 : RIVER_ZOOMS.get(rank),
+    }))
+    return [
+        ...(showRivers ? riverLayers : []),
+        {data: collection(water.lakes), fill: d3.interpolateRgb(theme.backgroundColor, theme.color)(0.05)},
+    ]
+}
+
+/**
+ * The layer of the United States' cities: dots, named where the names don't overlap, the more
+ * important first; more of them as the view zooms in (see CITY_ZOOMS)
+ * @param cities The cities, the most important first
+ * @param theme The theme
+ * @return The layer
+ */
+function cityLayerOf(cities: Array<UsCity>, theme: Theme): GeoLayer {
+    return {
+        data: CITY_ZOOMS.map(({minZoom, rank}) => ({
+            minZoom,
+            data: {type: 'FeatureCollection', features: cities.filter(city => city.properties.rank <= rank)} as GeoJSON.FeatureCollection,
+        })),
+        fill: theme.color,
+        pointRadius: 2,
+        label: (feature): string | undefined => feature.properties?.name,
+        labelFont: '10px sans-serif',
+    }
+}
+
+/**
+ * Loads something (once) when it's first wanted
+ * @param load Loads it
+ * @param wanted Whether it's wanted (yet)
+ * @return It, once loaded (and undefined until then)
+ */
+function useLoaded<T>(load: () => Promise<T>, wanted: boolean): T | undefined {
+    const [loaded, setLoaded] = useState<T | undefined>(undefined)
+    useEffect(
+        () => {
+            if (!wanted || loaded !== undefined) return
+            let mounted = true
+            load().then(value => {
+                if (mounted) setLoaded(value)
+            })
+            return (): void => {
+                mounted = false
+            }
+        },
+        [load, wanted, loaded]
+    )
+    return loaded
+}
+
+// the roads' colors, by theme: the interstates', and the other roads'
+const ROAD_COLORS = {
+    light: {interstate: '#c98a3e', other: '#a39684'},
+    dark: {interstate: '#d4a25c', other: '#857b6c'},
+}
+// the zoom from which the least important roads (Natural Earth's ranks 7 and 8) are drawn
+const MINOR_ROADS_ZOOM = 3
+
+/**
+ * The layers of the United States' roads, from the least important up (so the interstates are drawn
+ * over the rest): the minor roads, only zoomed in; the other major roads; and the interstates
+ * @param roads The roads
+ * @param theme The theme
+ * @return The layers
+ */
+function roadLayersOf(roads: Array<UsRoad>, theme: Theme): Array<GeoLayer> {
+    const colors = ROAD_COLORS[theme.name === 'light' ? 'light' : 'dark']
+    const collection = (features: Array<UsRoad>): GeoJSON.FeatureCollection => ({type: 'FeatureCollection', features})
+    const interstate = (road: UsRoad): boolean => road.properties.level === 'Interstate'
+    return [
+        {data: collection(roads.filter(road => !interstate(road) && road.properties.rank >= 7)), stroke: colors.other, lineWidth: 0.5, minZoom: MINOR_ROADS_ZOOM},
+        {data: collection(roads.filter(road => !interstate(road) && road.properties.rank < 7)), stroke: colors.other, lineWidth: 0.8},
+        {data: collection(roads.filter(interstate)), stroke: colors.interstate, lineWidth: 1.3},
+    ]
+}
 
 // how long (ms) a phone's new (estimated) location flashes
 const FLASH_DURATION = 1500
@@ -307,24 +469,36 @@ export function StreamingGeoChart(props: Props): JSX.Element {
     const seriesStyles = useMemo(() => seriesStylesFor(theme), [theme])
     const groupColorOf = useMemo(() => groupColorsFor(theme), [theme])
     // the map at its finer level of detail, for zoomed-in views: loaded (once) when the chart mounts
-    const [detailed, setDetailed] = useState<DetailedWorld | undefined>(undefined)
-    useEffect(
-        () => {
-            let mounted = true
-            detailedWorld().then(world => {
-                if (mounted) setDetailed(world)
-            })
-            return (): void => {
-                mounted = false
-            }
-        },
-        []
-    )
+    const detailed = useLoaded(detailedWorld, true)
     const basemap = useMemo(() => byZoom(LAND, detailed?.land), [detailed])
     // (Albers USA shows the lower 48 states, with Alaska and Hawaii moved in: each in a rectangle of
     // its own, which would show its neighbors' land, too, overlapping -- so it's drawn with the
-    // United States alone)
+    // United States alone, in more detail as the view zooms in)
     const albersUsa = projection === 'albersUsa'
+    const showRoads = useGeoChartStore(state => state.showRoads)
+    const setShowRoads = useGeoChartStore(state => state.setShowRoads)
+    const showStates = useGeoChartStore(state => state.showStates)
+    const setShowStates = useGeoChartStore(state => state.setShowStates)
+    const showRivers = useGeoChartStore(state => state.showRivers)
+    const setShowRivers = useGeoChartStore(state => state.setShowRivers)
+    const showCities = useGeoChartStore(state => state.showCities)
+    const setShowCities = useGeoChartStore(state => state.setShowCities)
+    // the United States in detail, and its roads, for the Albers USA projection: each loaded (once)
+    // when first wanted
+    const us = useLoaded(usDetail, albersUsa)
+    const roads = useLoaded(usRoads, albersUsa && showRoads)
+    const water = useLoaded(usLakesAndRivers, albersUsa)
+    const cities = useLoaded(usCities, albersUsa && showCities)
+    const usOutline = useMemo(() => usOutlineOf(detailed, us), [detailed, us])
+    const usLayers = useMemo(
+        () => albersUsa ? [
+            ...(water !== undefined ? waterLayersOf(water, theme, showRivers) : []),
+            ...(showStates && us !== undefined ? stateLayersOf(us, theme) : []),
+            ...(showRoads && roads !== undefined ? roadLayersOf(roads, theme) : []),
+            ...(showCities && cities !== undefined ? [cityLayerOf(cities, theme)] : []),
+        ] : [],
+        [albersUsa, water, showRivers, showStates, us, showRoads, roads, showCities, cities, theme]
+    )
     const borders = useMemo(() => byZoom(COUNTRY_BORDERS, detailed?.borders), [detailed])
     // the countries, tinted by their number of towers (a choropleth), and named, those with towers
     const layers = useMemo<Array<GeoLayer>>(
@@ -504,6 +678,38 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 onChange={() => setShowGraticule(!showGraticule)}
                             />
                             <Checkbox
+                                checked={showStates}
+                                label="states & counties (Albers USA)"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setShowStates(!showStates)}
+                            />
+                            <Checkbox
+                                checked={showRivers}
+                                label="rivers (Albers USA)"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setShowRivers(!showRivers)}
+                            />
+                            <Checkbox
+                                checked={showCities}
+                                label="cities (Albers USA)"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setShowCities(!showCities)}
+                            />
+                            <Checkbox
+                                checked={showRoads}
+                                label="roads (Albers USA)"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setShowRoads(!showRoads)}
+                            />
+                            <Checkbox
                                 checked={showCountries}
                                 label="countries"
                                 backgroundColor={theme.backgroundColor}
@@ -571,9 +777,9 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                 >
                     <GeoPlot<CellEvent>
                         projection={projection}
-                        basemap={albersUsa ? UNITED_STATES : basemap}
+                        basemap={albersUsa ? usOutline : basemap}
                         borders={showBorders && !albersUsa ? borders : undefined}
-                        layers={albersUsa ? [] : layers}
+                        layers={albersUsa ? usLayers : layers}
                         fitTo={albersUsa ? UNITED_STATES : focus === 'world' ? undefined : FOCUS_SHAPES[focus]}
                         showGraticule={showGraticule}
                         radiusOf={sizeBySignal ? radiusBySignal : undefined}
@@ -590,6 +796,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         groupColors={groupColorOf}
                         autoRotate={autoRotate ? AUTO_ROTATE_SPEED : undefined}
                         zoomMaxScaleFactor={MAX_ZOOM}
+                        isolateHoveredSeries={false}
                         viewState={geoView}
                         onViewChange={setGeoView}
                         onZoomReset={handleZoomReset}
