@@ -42,6 +42,7 @@ import {
     type DrawnMarker,
     type GeoTooltipMetadata,
     keyOf,
+    legendSeriesOf,
     markerAt,
     markerKeyOf,
     pieGroupsOf,
@@ -490,7 +491,7 @@ export function GeoPlot<P>(props: Props<P>): null {
     const {visibilityState: tooltipVisible} = useTooltip()
 
     // the series hovered in the legend (see `hoveredSeries`)
-    const {hoveredSeriesName} = useHoveredSeries()
+    const {hoveredSeriesName, setHoveredSeriesName} = useHoveredSeries()
 
     const {
         projection: projectionProp = 'orthographic',
@@ -898,6 +899,9 @@ export function GeoPlot<P>(props: Props<P>): null {
                         mouseOverHandlerFor(tooltipId)?.(
                             nameOf(updated), now.aggregate.lastTime, {series: [], metadata: updated}, mouseRef.current
                         )
+                        // (the handlers take the roll-up's name as the series hovered: the legend
+                        // highlights the hovered wedge's series instead, if it's of one)
+                        setHoveredSeriesName(legendSeriesOf(updated, dataSource?.series))
                     }
                 }
 
@@ -915,7 +919,7 @@ export function GeoPlot<P>(props: Props<P>): null {
             markerSettings, eventStyle, aggregateStyle, fadeOptions, onAutoRollupChangeRef, flashDuration,
             flashMergeDistance, seriesStyles, seriesFilter, color, backgroundColor, dataSource, onUpdateChartTime, mode, rollup,
             autoRollups, clusterDistance, aggregateShape, hoveredSeriesName, isolateHoveredSeries,
-            mouseOverHandlerFor, mouseLeaveHandlerFor,
+            mouseOverHandlerFor, mouseLeaveHandlerFor, setHoveredSeriesName,
         ]
     )
 
@@ -1170,6 +1174,10 @@ export function GeoPlot<P>(props: Props<P>): null {
                 }
                 const time = target.kind === 'event' ? target.datum.time : target.aggregate.lastTime
                 mouseOverHandlerFor(tooltipId)?.(nameOf(target), time, tooltipData, [x, y])
+                // (for an aggregate, the handlers take its roll-up's name as the series hovered: the
+                // legend highlights the hovered wedge's series instead, if it's of one, and is left as
+                // it is otherwise)
+                if (target.kind === 'aggregate') setHoveredSeriesName(legendSeriesOf(target, dataSource?.series))
                 canvasContext.requestRedraw()
             }
 
@@ -1182,7 +1190,8 @@ export function GeoPlot<P>(props: Props<P>): null {
         },
         [
             canvasContext, chartId, mouseOverHandlerFor, mouseLeaveHandlerFor, tooltipVisible,
-            projection, setUp, width, height, margin.left, margin.top, aggregateShape
+            projection, setUp, width, height, margin.left, margin.top, aggregateShape, dataSource?.series,
+            setHoveredSeriesName,
         ]
     )
 

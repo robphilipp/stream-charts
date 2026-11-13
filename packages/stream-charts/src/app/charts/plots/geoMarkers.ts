@@ -263,6 +263,17 @@ export const markerKeyOf = <P, >(target: GeoTooltipMetadata<P>): unknown =>
 export const keyOf = <P, >(target: GeoTooltipMetadata<P>): unknown =>
     target.kind === 'event' ? target.datum : `${markerKeyOf(target)}::${target.group ?? ''}`
 
+/**
+ * @param target What's under the mouse
+ * @param series The data source's series, by name
+ * @return The series it's of, for the legend to highlight: the event's series, or, for an
+ * aggregate's pie, the series the group under the mouse is named for (e.g. a carrier); `null` when
+ * it's of no one series (so that the legend is left as it is)
+ */
+export const legendSeriesOf = <P, >(target: GeoTooltipMetadata<P>, series: ReadonlyMap<string, unknown> | undefined): string | null =>
+    target.kind === 'event' ? target.seriesName :
+        target.group !== undefined && series?.has(target.group) === true ? target.group : null
+
 // a drawn marker (an event's, or an aggregate's circle), for hit-testing the mouse (in canvas
 // coordinates), and what it shows
 export type DrawnMarker<P> = {

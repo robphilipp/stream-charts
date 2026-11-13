@@ -14,6 +14,7 @@ import {
     wedgeBearingsOf,
     wedgeIndexAt,
     wedgeOf,
+    legendSeriesOf,
 } from "./geoMarkers";
 import type {GeoAggregate} from "../datasources/geoRollups";
 import {geoDatumOf} from "../series/geoSeries";
@@ -200,3 +201,22 @@ describe('the auto mode\'s levels', () => {
     })
 })
 
+
+describe('the series hovered, for the legend', () => {
+    const aggregate: GeoAggregate = {
+        id: 'cell', latitude: 0, longitude: 0, count: 2, sensorCount: 1, values: {}, firstTime: 0, lastTime: 0, measures: {},
+        groups: [{group: 'Aurora', count: 1, values: {}}, {group: 'iPhone', count: 1, values: {}}],
+    }
+    const series = new Map([['Aurora', {}], ['Zenith', {}]])
+
+    it('is an event\'s series, or the series a hovered wedge\'s group is named for', () => {
+        expect(legendSeriesOf({kind: 'event', seriesName: 'Zenith', datum: geoDatumOf('s', 0, 0, 0, null)}, series)).toBe('Zenith')
+        expect(legendSeriesOf({kind: 'aggregate', rollup: 'cells', aggregate, group: 'Aurora'}, series)).toBe('Aurora')
+    })
+
+    it('is none for an aggregate of no one series (so the legend is left as it is)', () => {
+        expect(legendSeriesOf({kind: 'aggregate', rollup: 'cells', aggregate}, series)).toBeNull()
+        expect(legendSeriesOf({kind: 'aggregate', rollup: 'cells', aggregate, group: 'iPhone'}, series)).toBeNull()
+        expect(legendSeriesOf({kind: 'aggregate', rollup: 'cells', aggregate, group: 'Aurora'}, undefined)).toBeNull()
+    })
+})
