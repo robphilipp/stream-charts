@@ -675,7 +675,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         backgroundColor={theme.backgroundColor}
                         borderColor={theme.disabledBackgroundColor}
                         borderRadius={10}
-                        minHeight={55}
+                        minHeight={46}
                         autoExpandOnMouseEnter={false}
                     >
                         <CommonExecutionControls
@@ -830,7 +830,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         backgroundColor={theme.backgroundColor}
                         borderColor={theme.disabledBackgroundColor}
                         borderRadius={10}
-                        minHeight={55}
+                        minHeight={46}
                         autoExpandOnMouseEnter={false}
                     >
                         <ChartControlsHeader type={"header"} theme={theme}>
