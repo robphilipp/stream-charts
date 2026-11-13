@@ -181,7 +181,7 @@ const CITY_ZOOMS: Array<{minZoom: number, rank: number}> = [{minZoom: 0, rank: 2
 /**
  * The layers of the United States' lakes and rivers: the rivers (the less important only zoomed in),
  * under the lakes (which hide the rivers' lines through them), in the ocean's color, as the plot
- * draws it: its tint of the chart's color (see the GeoPlot's `oceanColor`), over the background --
+ * draws it: its tint of the chart's color (see the GeoPlot's `mapColors`), over the background --
  * opaque, so that the land doesn't show through
  * @param water The lakes and rivers
  * @param theme The theme
@@ -467,7 +467,7 @@ function projectionIconOf(projection: GeoProjectionName, color: string): JSX.Ele
  */
 function showIconOf(mode: GeoShow, color: string): JSX.Element {
     switch (mode) {
-        case 'points': return <EventsIcon color={color}/>
+        case 'events': return <EventsIcon color={color}/>
         case 'aggregates': return <AggregatesIcon color={color}/>
         case 'groups': return <PieIcon color={color}/>
         default: return <ZoomAggregatesIcon color={color}/>
@@ -949,26 +949,27 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         showGraticule={showGraticule}
                         radiusOf={sizeBySignal ? radiusBySignal : undefined}
                         colorOf={colorBySignalOn ? colorBySignal : undefined}
-                        fadeDuration={fadeOlder ? FADE_DURATION : undefined}
-                        flashDuration={flashLocated || flashActual ? FLASH_DURATION : undefined}
-                        flashes={phoneFlashes}
-                        mode={mode === 'points' || mode === 'auto' ? mode : 'aggregates'}
+                        fade={fadeOlder ? {duration: FADE_DURATION} : undefined}
+                        flash={flashLocated || flashActual ? {duration: FLASH_DURATION, which: phoneFlashes} : undefined}
+                        mode={mode === 'events' || mode === 'auto' ? mode : 'aggregates'}
                         autoRollups={AUTO_ROLLUP_NAMES}
                         onAutoRollupChange={setAutoRollup}
                         rollup={rollupName}
-                        colorBy={shownColorBy === 'none' || mode === 'auto' ? undefined : shownColorBy}
-                        colorScheme={colorScheme}
-                        aggregateShape={mode === 'groups' || mode === 'auto' ? 'pies' : rollupName === BY_GRID_CELL ? 'cells' : 'circles'}
-                        groupColors={groupColorOf}
+                        aggregates={{
+                            shape: mode === 'groups' || mode === 'auto' ? 'pies' : rollupName === BY_GRID_CELL ? 'cells' : 'circles',
+                            colorBy: shownColorBy === 'none' || mode === 'auto' ? undefined : shownColorBy,
+                            colorScheme,
+                            groupColors: groupColorOf,
+                        }}
                         autoRotate={autoRotate ? AUTO_ROTATE_SPEED : undefined}
                         zoomMaxScaleFactor={MAX_ZOOM}
-                        isolateHoveredSeries={false}
+                        hoveredSeries="highlight"
                         viewState={geoView}
                         onViewChange={setGeoView}
                         onZoomReset={handleZoomReset}
                     />
                     <Legend
-                        visible={showLegend && (mode === 'points' || mode === 'auto')}
+                        visible={showLegend && (mode === 'events' || mode === 'auto')}
                         location={LegendLocation.TOP_LEFT}
                         style={{
                             fontColor: theme.color,

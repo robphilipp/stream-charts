@@ -327,13 +327,15 @@ export function AirQualityMap(): JSX.Element {
                     basemap={LAND}
                     borders={BORDERS}
                     radiusOf={datum => 2 + datum.payload.pm25 / 8}
-                    fadeDuration={5 * 60_000}
-                    mode={rollup === undefined ? 'points' : 'aggregates'}
+                    fade={{duration: 5 * 60_000}}
+                    mode={rollup === undefined ? 'events' : 'aggregates'}
                     rollup={rollup}
-                    colorBy={rollup === 'unhealthy' ? 'peak PM2.5' : 'mean PM2.5'}
-                    aggregateShape={rollup === 'unhealthy' ? 'cells' : 'circles'}
-                    colorDomain={[0, 50]}
-                    colorScheme={pm25Colors}
+                    aggregates={{
+                        shape: rollup === 'unhealthy' ? 'cells' : 'circles',
+                        colorBy: rollup === 'unhealthy' ? 'peak PM2.5' : 'mean PM2.5',
+                        colorDomain: [0, 50],
+                        colorScheme: pm25Colors,
+                    }}
                 />
                 <Legend
                     visible={rollup === undefined}
@@ -363,10 +365,10 @@ Going through the plot's properties:
 - **`projection`, `center`, `viewState`, `onViewChange`** – the projection, the center the view returns to when it's reset, and the view to start with (and to keep). Dragging turns the view, and holding shift while scrolling zooms it, about the mouse.
 - **`basemap`, `borders`** – the map, from step 4.
 - **`radiusOf`** – sizes each reading's marker by its PM2.5. (`colorOf` would color it, too – we leave the color to the series.) The markers are circles on the earth, drawn through the projection, so they're shaped like the land around them.
-- **`fadeDuration`** – fades the readings as they age, over five minutes, so the newest stand out.
+- **`fade`** – fades the readings as they age, over five minutes, so the newest stand out.
 - **`mode`, `rollup`** – each reading, or a roll-up's aggregates.
-- **`colorBy`, `colorDomain`, `colorScheme`** – colors the aggregates by their mean (or, for the unhealthy readings, peak) PM2.5, on a fixed scale from 0 to 50 µg/m³, so a color means the same thing from one moment to the next. Their size shows their number of readings (`sizeBy`, which defaults to `count`). Keys for both are drawn in the corner.
-- **`aggregateShape`** – draws the "unhealthy" grid's aggregates as their cells.
+- **`aggregates`** – how the aggregates are drawn: its `colorBy`, `colorDomain`, and `colorScheme` color them by their mean (or, for the unhealthy readings, peak) PM2.5, on a fixed scale from 0 to 50 µg/m³, so a color means the same thing from one moment to the next. Their size shows their number of readings (`sizeBy`, which defaults to `count`). Keys for both are drawn in the corner.
+  Its `shape` draws the "unhealthy" grid's aggregates as their cells.
 
 The tooltip's formatters show the times as minutes into the session, and the payload as a city and a reading; the measures come with their own units and formats (step 3). Hover over a city's circle, and the tooltip lists its readings and monitors, its mean, median, and peak PM2.5, its share of unhealthy readings, and how many readings each monitor reported. The geo chart's tooltip also works while the data streams: a reading's marker stays where the reading was taken – even a train's – so there's nothing to chase.
 
@@ -639,13 +641,15 @@ export function AirQualityMap(): JSX.Element {
                     basemap={LAND}
                     borders={BORDERS}
                     radiusOf={datum => 2 + datum.payload.pm25 / 8}
-                    fadeDuration={5 * 60_000}
-                    mode={rollup === undefined ? 'points' : 'aggregates'}
+                    fade={{duration: 5 * 60_000}}
+                    mode={rollup === undefined ? 'events' : 'aggregates'}
                     rollup={rollup}
-                    colorBy={rollup === 'unhealthy' ? 'peak PM2.5' : 'mean PM2.5'}
-                    aggregateShape={rollup === 'unhealthy' ? 'cells' : 'circles'}
-                    colorDomain={[0, 50]}
-                    colorScheme={pm25Colors}
+                    aggregates={{
+                        shape: rollup === 'unhealthy' ? 'cells' : 'circles',
+                        colorBy: rollup === 'unhealthy' ? 'peak PM2.5' : 'mean PM2.5',
+                        colorDomain: [0, 50],
+                        colorScheme: pm25Colors,
+                    }}
                 />
                 <Legend
                     visible={rollup === undefined}

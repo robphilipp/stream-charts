@@ -54,7 +54,7 @@ export type GeoFocus = 'world' | 'europe' | 'uk' | 'london' | 'usa'
  * What the geo plot shows: clusters of events or the events, by the zoom (auto); each event; the
  * aggregates; or the aggregates divided by their groups (pies: a wedge per group)
  */
-export type GeoShow = 'auto' | 'points' | 'aggregates' | 'groups'
+export type GeoShow = 'auto' | 'events' | 'aggregates' | 'groups'
 
 // a signal weaker than this (dBm) is weak (calls drop, data slows)
 export const WEAK_SIGNAL = -110

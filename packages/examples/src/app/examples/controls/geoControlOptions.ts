@@ -5,7 +5,7 @@ import type {GeoFocus, GeoShow} from "../appstate/geoChartStore.ts";
 // the geo example's choices of what the plot shows (see `GeoAggregateControls`)
 export const MODE_OPTIONS: Array<DropDownOption<GeoShow>> = [
     {value: 'auto', label: 'Auto (by zoom)'},
-    {value: 'points', label: 'Events'},
+    {value: 'events', label: 'Events'},
     {value: 'aggregates', label: 'Aggregates'},
     {value: 'groups', label: 'Aggregates, by group'},
 ]

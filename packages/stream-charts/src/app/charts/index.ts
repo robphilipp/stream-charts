@@ -54,8 +54,16 @@ export {RasterPlot, type Props as RasterPlotProps} from "./plots/RasterPlot"
 export {PoincarePlot, type Props as PoincarePlotProps, type PoincarePlotZoomState} from "./plots/PoincarePlot"
 export {BarPlot, type Props as BarPlotProps, type BarPlotZoomState, type BarChartElementId} from "./plots/BarPlot"
 export {OutlierPlot, type Props as OutlierPlotProps, type OutlierBandTooltipMetadata} from "./plots/OutlierPlot"
-export {GeoPlot, type Props as GeoPlotProps} from "./plots/GeoPlot"
-export {GeoProjections, type GeoFlash, type GeoPlotViewState, type GeoProjectionName, type GeoTooltipMetadata} from "./plots/geoProjections"
+export {
+    GeoPlot,
+    type GeoAggregateOptions,
+    type GeoFadeOptions,
+    type GeoMapColors,
+    type Props as GeoPlotProps,
+} from "./plots/GeoPlot"
+export {GeoProjections, type GeoPlotViewState, type GeoProjectionName} from "./plots/geoProjections"
+export {type GeoTooltipMetadata} from "./plots/geoMarkers"
+export {type GeoFlash, type GeoFlashOptions} from "./plots/geoFlashes"
 export {type GeoDetail, type GeoLayer, type GeoMapData} from "./plots/geoLayers"
 export {assignAxes, type AxesAssignment, type Series} from "./plots/plot"
 export {NoCurveFactory, BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./plots/constants"

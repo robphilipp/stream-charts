@@ -100,7 +100,7 @@ export function bySensor<P>(options: {position?: 'latest' | 'mean'} = {}): GeoBi
 
 /**
  * Puts events into the cells of a latitude-longitude grid, starting from (-180°, -90°). The cells
- * are areas (drawn as such, see the `GeoPlot`'s `aggregateShape`), and wrap around at the
+ * are areas (drawn as such, see the `GeoPlot`'s `aggregates`), and wrap around at the
  * antimeridian; the top row ends at the north pole.
  * @param degrees The size (degrees) of a cell, in both latitude and longitude
  * @return The binning
@@ -781,11 +781,13 @@ export class GeoRollupState<P> {
     }
 
     /**
-     * Adds an event (when the roll-up's filter takes it)
+     * Adds an event (when the roll-up's filter takes it). An event already added (the same object)
+     * isn't added again, so that it's counted once, and removed for good when it's next removed.
      * @param datum The event
      * @param seriesName The name of the event's series
      */
     add(datum: GeoDatum<P>, seriesName: string): void {
+        if (this.placements.has(datum)) return
         if (this.rollup.filter !== undefined && !this.rollup.filter(datum, seriesName)) return
         const id = this.binning.cellIdOf(datum)
         let cell = this.cells.get(id)

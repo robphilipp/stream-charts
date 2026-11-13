@@ -19,7 +19,7 @@ There's no theme object in the [stream-charts](https://www.npmjs.com/package/str
 | `<BarPlot>`                       | its series styles (see `defaultBarSeriesStyle(color)`) – the bars, and the lines for the mean and min/max |
 | `<OutlierPlot>`                   | the series' color (the line, and its bands), and `outlierMarkerColors`              |
 | `<PoincarePlot>`                  | the series' colors, and `lineStartColor`/`lineEndColor` when colorizing the lines   |
-| `<GeoPlot>`                       | the series' colors (or `colorOf`); the map's colors (`oceanColor`, `landColor`, `borderColor`, `graticuleColor`, `outlineColor`), which default to tints of the chart's `color`; and the aggregates' `aggregateColor` and `colorScheme` |
+| `<GeoPlot>`                       | the series' colors (or `colorOf`); the map's colors (`mapColors`: `ocean`, `land`, `borders`, `graticule`, `outline`), which default to tints of the chart's `color`; and the aggregates' `aggregateColor` and `colorScheme` |
 
 The tooltip contents (the tables, the autocorrelation sparkline, and so on) draw in the tooltip's `fontColor`, so they follow the tooltip.
 

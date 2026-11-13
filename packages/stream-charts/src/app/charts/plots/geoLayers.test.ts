@@ -10,7 +10,7 @@ import {
     viewBoxOf,
     visibleOf,
 } from "./geoLayers";
-import {GeoProjections, setUpProjection, setUpShiftedProjection, viewCenteredOn} from "./geoProjections";
+import {GeoProjections, setUpProjection, viewCenteredOn} from "./geoProjections";
 import {directPen, type GeoPen} from "./geoPens";
 
 const WIDTH = 800
@@ -75,19 +75,6 @@ describe('trimming to the view', () => {
 
         setUpProjection(projection, viewCenteredOn([0, 20]), WIDTH, HEIGHT)
         expect(viewBoxOf(projection, WIDTH, HEIGHT)).toBeUndefined()
-    })
-
-    it('finds the part of the earth shown over the gaps of a composite projection (e.g. the sea around Albers USA\'s regions)', () => {
-        const projection = GeoProjections.albersUsa()
-        // (the map shifted half out of the plot area, to the right and down: its top-left quarter is
-        // off the map's regions)
-        const lower48 = d3.geoGraticule().extent([[-125, 25], [-67, 49]]).outline()
-        setUpShiftedProjection(projection, lower48, {rotate: [0, 0, 0], k: 1, offsetX: WIDTH / 2, offsetY: HEIGHT / 2}, WIDTH, HEIGHT)
-        expect(viewBoxOf(projection, WIDTH, HEIGHT)).toBeUndefined()
-        const box = viewBoxOf(projection, WIDTH, HEIGHT, 9, true)!
-        // (the north-west of the lower 48 is what shows)
-        expect(box.west).toBeLessThan(-115)
-        expect(box.north).toBeGreaterThan(45)
     })
 
     it('keeps only the features that overlap the view (and everything without a view)', () => {

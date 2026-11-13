@@ -43,7 +43,11 @@ export interface GeoDataSourceOptions<P> {
 export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, GeoDatum<P>, GeoSeries<P>> {
     private dropDataAfter: number
     private readonly onUpdateData: ((seriesName: string, data: Array<GeoDatum<P>>) => void) | undefined
+    private rollups: Record<string, GeoRollup<P>> = {}
     private rollupStates = new Map<string, GeoRollupState<P>>()
+    // each roll-up of only some of the series (see `aggregates`): the latest asked for, by roll-up,
+    // with the filter it's for (its source and flags), kept up to date like the roll-ups themselves
+    private filteredStates = new Map<string, {filter: string, state: GeoRollupState<P>}>()
 
     /**
      * Creates a geo data source (stopped: call {@link start} to start it)
@@ -62,11 +66,51 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      * @param rollups The roll-ups, by name
      */
     setRollups(rollups: Record<string, GeoRollup<P>>): void {
-        this.rollupStates = new Map(Object.entries(rollups).map(([name, rollup]) => {
-            const state = new GeoRollupState<P>(rollup)
-            this.seriesMap.forEach(series => series.data.forEach(datum => state.add(datum, series.name)))
-            return [name, state]
-        }))
+        this.rollups = rollups
+        this.rollupStates = new Map(Object.entries(rollups).map(([name, rollup]) => [name, this.rolledUp(rollup)]))
+        this.filteredStates.clear()
+    }
+
+    /**
+     * @param rollup A roll-up
+     * @return Its state, rolling up the events held now
+     */
+    private rolledUp(rollup: GeoRollup<P>): GeoRollupState<P> {
+        const state = new GeoRollupState<P>(rollup)
+        this.seriesMap.forEach(series => series.data.forEach(datum => state.add(datum, series.name)))
+        return state
+    }
+
+    /**
+     * @param rollupName The name of a roll-up
+     * @param seriesFilter The series whose events count (all of them when not given)
+     * @return The roll-up's state: of all the series' events, when the filter takes every series; and
+     * otherwise of the events of the series it takes (rolled up when first asked for, and then kept
+     * up to date, until another filter is asked for); `undefined` for an unknown roll-up
+     */
+    private stateOf(rollupName: string, seriesFilter: RegExp | undefined): GeoRollupState<P> | undefined {
+        const all = this.rollupStates.get(rollupName)
+        const rollup = this.rollups[rollupName]
+        if (all === undefined || rollup === undefined || seriesFilter === undefined) return all
+        if (this.seriesList().every(series => series.name.match(seriesFilter))) return all
+        const filter = `${seriesFilter.source}/${seriesFilter.flags}`
+        const kept = this.filteredStates.get(rollupName)
+        if (kept !== undefined && kept.filter === filter) return kept.state
+        const state = this.rolledUp({
+            ...rollup,
+            filter: (datum, seriesName) =>
+                seriesName.match(seriesFilter) !== null && (rollup.filter?.(datum, seriesName) ?? true),
+        })
+        this.filteredStates.set(rollupName, {filter, state})
+        return state
+    }
+
+    /**
+     * @return The states kept up to date as events arrive and are dropped: the roll-ups', and their
+     * filtered copies'
+     */
+    private allStates(): Array<GeoRollupState<P>> {
+        return [...this.rollupStates.values(), ...Array.from(this.filteredStates.values(), ({state}) => state)]
     }
 
     /**
@@ -76,10 +120,12 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      * @param cellId The cell's ID (see {@link GeoAggregate.id})
      * @param group One of the cell's groups (see {@link GeoAggregate.groups}); all its events when
      * not given
+     * @param seriesFilter The series whose events count (see {@link aggregates}); all of them when
+     * not given
      * @return The events, oldest first (a copy; empty for an unknown roll-up, cell, or group)
      */
-    eventsOf(rollupName: string, cellId: string, group?: string): Array<GeoDatum<P>> {
-        return this.rollupStates.get(rollupName)?.eventsOf(cellId, group) ?? []
+    eventsOf(rollupName: string, cellId: string, group?: string, seriesFilter?: RegExp): Array<GeoDatum<P>> {
+        return this.stateOf(rollupName, seriesFilter)?.eventsOf(cellId, group) ?? []
     }
 
     /**
@@ -100,11 +146,16 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
 
     /**
      * @param rollupName The name of a roll-up
+     * @param seriesFilter The series whose events count (e.g. the chart's series filter); all of them
+     * when not given. The roll-up of only some of the series is rolled up from the events held when
+     * it's first asked for, and then kept up to date as events arrive and are dropped, until another
+     * filter is asked for (one is kept for each roll-up) -- so asking again with the same filter is
+     * as quick as asking for all the series.
      * @return The roll-up's aggregates, one per cell (empty for an unknown roll-up). The same
      * array is returned until the roll-up's cells change.
      */
-    aggregates(rollupName: string): Array<GeoAggregate> {
-        return this.rollupStates.get(rollupName)?.aggregates() ?? []
+    aggregates(rollupName: string, seriesFilter?: RegExp): Array<GeoAggregate> {
+        return this.stateOf(rollupName, seriesFilter)?.aggregates() ?? []
     }
 
     /**
@@ -140,16 +191,31 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
             if (this.onUpdateData) this.onUpdateData(name, newData)
 
             series.data.push(...newData)
-            this.rollupStates.forEach(state => newData.forEach(datum => state.add(datum, name)))
+            this.allStates().forEach(state => newData.forEach(datum => state.add(datum, name)))
         })
 
         const currentTime = Math.max(this.latestTime(), geoChartDataLatestTime(data))
         if (!Number.isFinite(currentTime) || !Number.isFinite(this.dropDataAfter)) return
+        const states = this.allStates()
         this.seriesMap.forEach(series => {
             while (series.data.length > 0 && currentTime - series.data[0].time > this.dropDataAfter) {
                 const dropped = series.data.shift()
-                if (dropped !== undefined) this.rollupStates.forEach(state => state.remove(dropped))
+                if (dropped !== undefined) states.forEach(state => state.remove(dropped))
             }
         })
     }
+}
+
+/**
+ * @param dataSource A data source
+ * @return Whether it's a {@link GeoDataSource}: an instance of the class, or, should the application
+ * hold more than one copy of this library (whose classes differ), an object with its roll-ups'
+ * methods
+ * @template P The type of the events' payload
+ */
+export function isGeoDataSource<P>(dataSource: unknown): dataSource is GeoDataSource<P> {
+    if (dataSource instanceof GeoDataSource) return true
+    if (dataSource === null || typeof dataSource !== 'object') return false
+    const methods = dataSource as Record<string, unknown>
+    return ['aggregates', 'eventsOf', 'rollupNames', 'rollupCellSize'].every(name => typeof methods[name] === 'function')
 }

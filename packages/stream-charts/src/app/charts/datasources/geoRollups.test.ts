@@ -17,7 +17,7 @@ import {
     sumOf,
 } from "./geoRollups";
 import {type GeoDatum, geoDatumOf, geoSeriesFrom} from "../series/geoSeries";
-import {GeoDataSource} from "./geoDataSource";
+import {GeoDataSource, isGeoDataSource} from "./geoDataSource";
 import {type GeoChartData, geoChartDataOf} from "../observables/geo";
 
 type Reading = { magnitude: number, kind: string }
@@ -451,6 +451,53 @@ describe('GeoDataSource roll-ups', () => {
         expect(dataSource.eventsOf('by location', cell.id, 'TKY-1').map(event => event.time)).toEqual([1, 3])
         expect(dataSource.eventsOf('by location', cell.id, 'nobody')).toEqual([])
         expect(dataSource.eventsOf('unknown', cell.id)).toEqual([])
+    })
+
+    it('rolls up only the series a filter takes, kept up to date as events arrive and are dropped', () => {
+        const {dataSource, emit} = startedSource(100)
+        // (a tokyo event, at time 0, in the seismic series; and a london one, in the weather series)
+        emit(geoChartDataOf(new Map([['weather', [reading('LON-1', 51.51, -0.13, 10, 7)]]])))
+        expect(dataSource.aggregates('by location').map(a => a.count)).toEqual([1, 1])
+        const seismic = /^seismic$/
+        expect(dataSource.aggregates('by location', seismic).map(a => [a.latitude, a.count])).toEqual([[35.68, 1]])
+
+        // a new seismic event in london counts; a new weather one doesn't
+        emit(geoChartDataOf(new Map([
+            ['seismic', [reading('LON-2', 51.51, -0.13, 60, 3)]],
+            ['weather', [reading('LON-1', 51.51, -0.13, 70, 9)]],
+        ])))
+        const filtered = new Map(dataSource.aggregates('by location', seismic).map(a => [a.latitude, a]))
+        expect(filtered.get(51.51)).toMatchObject({count: 1, values: {peak: 3}})
+        expect(dataSource.eventsOf('by location', filtered.get(51.51)!.id, undefined, seismic).map(e => e.sensorId)).toEqual(['LON-2'])
+        expect(dataSource.eventsOf('by location', filtered.get(51.51)!.id).map(e => e.sensorId)).toEqual(['LON-1', 'LON-2', 'LON-1'])
+
+        // the tokyo event ages out of the filtered roll-up, too
+        emit(geoChartDataOf(new Map([['weather', [reading('LON-1', 51.51, -0.13, 150, 1)]]])))
+        expect(dataSource.aggregates('by location', seismic).map(a => [a.latitude, a.count])).toEqual([[51.51, 1]])
+    })
+
+    it('uses the roll-up of all the series for a filter that takes all of them', () => {
+        const {dataSource} = startedSource()
+        expect(dataSource.aggregates('by location', /./)).toBe(dataSource.aggregates('by location'))
+        expect(dataSource.aggregates('by location', /^nothing$/)).toEqual([])
+    })
+
+    it('counts an event added twice once', () => {
+        const state = new GeoRollupState<Reading>({cellOf: bySensor()})
+        const event = reading('TKY-1', 35.68, 139.69, 0)
+        state.add(event, 's')
+        state.add(event, 's')
+        expect(state.aggregates().map(a => a.count)).toEqual([1])
+        state.remove(event)
+        expect(state.aggregates()).toEqual([])
+    })
+
+    it('tells a geo data source from another, even another copy of the class', () => {
+        const {dataSource} = startedSource()
+        expect(isGeoDataSource(dataSource)).toBe(true)
+        expect(isGeoDataSource({...dataSource, aggregates: () => [], eventsOf: () => [], rollupNames: () => [], rollupCellSize: () => undefined})).toBe(true)
+        expect(isGeoDataSource({aggregates: () => []})).toBe(false)
+        expect(isGeoDataSource(undefined)).toBe(false)
     })
 
     it('rolls up the events held now when its roll-ups are replaced', () => {

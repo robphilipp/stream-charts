@@ -3,10 +3,11 @@ import * as d3 from "d3"
 import {type Sparkline, sparklineFor, type TooltipStyle} from "./tooltipUtils"
 import {TooltipContent} from "./TooltipContent"
 import type {GeoDatum} from "../series/geoSeries"
-import type {GeoTooltipMetadata} from "../plots/geoProjections"
+import type {GeoTooltipMetadata} from "../plots/geoMarkers"
 import {formatMeasure, type GeoAggregate, type GeoAggregateGroup, type GeoCellBounds} from "../datasources/geoRollups"
 import {formatLatLon, formatTime} from "../utils"
 import {useDataSource} from "../hooks/useDataSource"
+import {isGeoDataSource} from "../datasources/geoDataSource"
 import type {GeoChartData} from "../observables/geo"
 import type {GeoSeries} from "../series/geoSeries"
 
@@ -344,10 +345,8 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
     // the events behind the sparklines: an event's sensor's (in its series), or a cell's (or one of
     // its groups', from the roll-up), held by the data source
     const dataSource = useDataSource<GeoChartData<P>, GeoDatum<P>, GeoSeries<P>>()
-    const eventsOf = (rollup: string, cellId: string, group?: string): Array<GeoDatum<P>> =>
-        dataSource !== undefined && 'eventsOf' in dataSource ?
-            (dataSource as unknown as {eventsOf: (rollup: string, cellId: string, group?: string) => Array<GeoDatum<P>>}).eventsOf(rollup, cellId, group) :
-            []
+    const eventsOf = (rollup: string, cellId: string, group: string | undefined, seriesFilter: RegExp | undefined): Array<GeoDatum<P>> =>
+        isGeoDataSource<P>(dataSource) ? dataSource.eventsOf(rollup, cellId, group, seriesFilter) : []
 
     /**
      * Takes what's under the mouse, with the sparklines of its sensors' readings
@@ -366,13 +365,14 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
             return {target, sparkline: sparklineOf(events, sparklineValueOf, true, datum.time), groupSparklines}
         }
 
-        const {rollup, aggregate, group: hoveredGroup} = target
+        // (the events of the series the aggregate counts, see `GeoTooltipMetadata`)
+        const {rollup, aggregate, group: hoveredGroup, seriesFilter} = target
         let sparkline: Readings | undefined = undefined
         if (aggregate.groups.length === 0 && aggregate.sensorCount === 1) {
-            sparkline = sparklineOf(eventsOf(rollup, aggregate.id), sparklineValueOf, true)
+            sparkline = sparklineOf(eventsOf(rollup, aggregate.id, undefined, seriesFilter), sparklineValueOf, true)
         }
         listedGroups(aggregate.groups, maxGroups, hoveredGroup).forEach(group => {
-            const events = eventsOf(rollup, aggregate.id, group.group)
+            const events = eventsOf(rollup, aggregate.id, group.group, seriesFilter)
             if (!oneSensorsEvents(events)) return
             const groupSparkline = sparklineOf(events, sparklineValueOf, group.group === hoveredGroup)
             if (groupSparkline !== undefined) groupSparklines.set(group.group, groupSparkline)
