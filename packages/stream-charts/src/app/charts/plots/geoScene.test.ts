@@ -141,15 +141,23 @@ describe('a frame', () => {
         expect(frameWith().fadeLevelOf(0)).toBe(0)
     })
 
-    it('shows only the hovered series when isolating it, and dims the others when highlighting it', () => {
+    it('shows only the hovered series when isolating it, and the others too when highlighting it', () => {
         const isolating = frameWith({hoveredSeriesName: 'a', isolateHoveredSeries: true})
         expect(isolating.shownWithHovered('a')).toBe(true)
         expect(isolating.shownWithHovered('b')).toBe(false)
         const highlighting = frameWith({hoveredSeriesName: 'a', isolateHoveredSeries: false})
         expect(highlighting.shownWithHovered('b')).toBe(true)
-        expect(highlighting.dimmingOf('a')).toBe(1)
-        expect(highlighting.dimmingOf('b')).toBeLessThan(1)
-        expect(frameWith().dimmingOf('b')).toBe(1)
+    })
+
+    it('draws the hovered series at full opacity, so it stands out, and the others a little fainter', () => {
+        const hovering = frameWith({hoveredSeriesName: 'a'})
+        expect(hovering.opacityOf('a', 0.5)).toBe(1)
+        // (but for its fading)
+        expect(hovering.opacityOf('a', 0.5, 0.25)).toBe(0.25)
+        // (the others still readable: more than half their own opacity)
+        expect(hovering.opacityOf('b', 0.5)).toBeCloseTo(0.3, 9)
+        expect(hovering.opacityOf('b', 0.5, 0.5)).toBeCloseTo(0.15, 9)
+        expect(frameWith().opacityOf('b', 0.5, 0.5)).toBe(0.25)
     })
 })
 
@@ -263,7 +271,7 @@ describe('the aggregates', () => {
         expect(scene.markers).toEqual([])
     })
 
-    it('divides a pie into a wedge per group, and dims the other groups while one is hovered in the legend', () => {
+    it('divides a pie into a wedge per group, and, while one is hovered, draws its wedges at full opacity', () => {
         const pie = aggregateOf('pie', 0, 0, 4, [['a', 3], ['b', 1]])
         const style = aggregateStyle({shape: 'pies', groupColors: group => group === 'a' ? 'red' : 'blue'})
 
@@ -274,8 +282,8 @@ describe('the aggregates', () => {
         const hovered = recordingContext()
         drawAggregates(hovered.context, frameWith({hoveredSeriesName: 'a'}), [pie], 'cells', style, new Map(), undefined)
         const [a, b] = fillsOf(hovered)
-        expect(a).toEqual({fill: 'red', alpha: 0.5})
-        expect(b.alpha).toBeLessThan(0.5)
+        expect(a).toEqual({fill: 'red', alpha: 1})
+        expect(b.alpha).toBeCloseTo(0.3, 9)
     })
 
     it('hands out the categorical colors to the groups without colors of their own, and keeps them', () => {
@@ -375,13 +383,13 @@ describe('the events', () => {
         expect(fillColorsOf(isolated)).toEqual(['blue'])
     })
 
-    it('draws the series hovered in the legend over the others, which are dimmed, when highlighting it', () => {
+    it('draws the hovered series over the others, at full opacity, when highlighting it', () => {
         const recording = recordingContext()
         drawEvents(recording.context, frameWith({hoveredSeriesName: 'a', isolateHoveredSeries: false}), series(), eventStyle(), undefined)
         const fills = fillsOf(recording)
         expect(fills.map(({fill}) => fill)).toEqual(['blue', 'green', 'red'])
-        expect(fills[2].alpha).toBeCloseTo(0.8, 9)
-        expect(fills[0].alpha).toBeLessThan(0.8)
+        expect(fills[2].alpha).toBe(1)
+        expect(fills[0].alpha).toBeCloseTo(0.8 * 0.6, 9)
     })
 
     it('can hover the other series\' events while highlighting a series, but not while isolating it', () => {

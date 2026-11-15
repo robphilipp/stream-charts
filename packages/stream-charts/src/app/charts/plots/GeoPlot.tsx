@@ -341,11 +341,12 @@ export interface Props<P> {
     /**
      * What hovering a series does -- its entry in the legend, or, on the map, one of its events (or
      * an aggregate's wedge whose group is named for it): show that series' events alone (`isolate`,
-     * the default -- a map's series often overlap at the same places), or dim the others' and draw
-     * its over them (`highlight`). Either way, the events and their flashes are affected (in
-     * `isolate`, the other series' events can't be hovered until the mouse leaves the event); and
-     * the aggregates' pies, when the hovered series names one of their groups, dim the other
-     * groups' wedges.
+     * the default -- a map's series often overlap at the same places), or draw its events over the
+     * others', at full opacity, so that they stand out, with the others a little fainter, but still
+     * readable (`highlight`). Either way, the events and their flashes are affected (in `isolate`,
+     * the other series' events can't be hovered until the mouse leaves the event); and the
+     * aggregates' pies, when the hovered series names one of their groups, draw its wedges at full
+     * opacity, and the other groups' a little fainter.
      */
     hoveredSeries?: 'isolate' | 'highlight'
     /**

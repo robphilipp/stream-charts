@@ -28,9 +28,10 @@ const MAP_CLIP_MARGIN = 4
 const FADE_LEVELS = 12
 // how faint (a fraction of their opacity) faded events become, by default (see `GeoFadeOptions`)
 const DEFAULT_FADED_OPACITY = 0.15
-// the opacity (a fraction of their own) of the other series' events, while a series is hovered in
-// the legend (when it's highlighted rather than isolated, see `hoveredSeries`)
-const DIMMED_OPACITY = 0.2
+// while a series is hovered (see `hoveredSeries`), the opacity (a fraction of their own) of the other
+// series' events, and of the other groups' wedges: a little fainter, so that the hovered series,
+// drawn at full opacity, stands out, while the others stay readable
+const OTHERS_OPACITY = 0.6
 // the most markers in a path (filled at once): filling a path takes time that grows faster than its
 // number of shapes (four times as many shapes take over ten times as long), so a color and fading's
 // markers are split into paths of at most this many
@@ -282,10 +283,12 @@ export interface GeoFrame {
     shownWithHovered: (seriesName: string) => boolean
     /**
      * @param name A series' name (or an aggregate's group's)
-     * @return The opacity (a fraction of its own) it's drawn with: dimmed while another series is
-     * hovered in the legend
+     * @param opacity Its opacity, when no series is hovered
+     * @param fading How faded it is (a fraction of its opacity, see `fadingOf`)
+     * @return The opacity it's drawn with: while a series is hovered, full (but for its fading) for
+     * the hovered series, so that it stands out, and a little fainter for the others
      */
-    dimmingOf: (name: string) => number
+    opacityOf: (name: string, opacity: number, fading?: number) => number
     // the series hovered in the legend (`null` when none is)
     hoveredSeriesName: string | null
     // what identifies the marker under the mouse (see `markerKeyOf`), if any
@@ -359,7 +362,10 @@ export function frameOf(options: {
         fadingOf,
         shownWithHovered: seriesName =>
             !isolateHoveredSeries || hoveredSeriesName === null || seriesName === hoveredSeriesName,
-        dimmingOf: name => hoveredSeriesName !== null && name !== hoveredSeriesName ? DIMMED_OPACITY : 1,
+        opacityOf: (name, opacity, fading = 1) =>
+            hoveredSeriesName === null ? opacity * fading :
+                name === hoveredSeriesName ? fading :
+                    opacity * fading * OTHERS_OPACITY,
     }
 }
 
@@ -538,7 +544,9 @@ export function drawAggregates<P>(
     const hoveredIsGroup = hoveredSeriesName !== null && aggregates.some(
         aggregate => aggregate.groups.some(group => group.group === hoveredSeriesName)
     )
-    const wedgeDimmingOf = (group: GeoAggregateGroup): number => hoveredIsGroup ? frame.dimmingOf(group.group) : 1
+    const wedgeOpacityOf = (group: GeoAggregateGroup, fading: number): number => hoveredIsGroup ?
+        frame.opacityOf(group.group, aggregateOpacity, fading) :
+        aggregateOpacity * fading
 
     aggregates.filter(asCells).forEach(aggregate => {
         const {west, south, east, north} = aggregate.bounds!
@@ -564,7 +572,8 @@ export function drawAggregates<P>(
             if (at === undefined) return
             const [x, y] = at
             const fill = fillOf(aggregate)
-            const opacity = aggregateOpacity * fadingOf(fadeLevelOf(aggregate.lastTime))
+            const fading = fadingOf(fadeLevelOf(aggregate.lastTime))
+            const opacity = aggregateOpacity * fading
             // a pie's wedges: one per group, clockwise from north (see `pieGroupsOf`), each its share
             // of the cell's events
             const center: [number, number] = [aggregate.longitude, aggregate.latitude]
@@ -581,7 +590,7 @@ export function drawAggregates<P>(
                 // (each outlined as a circle is: in a darker shade of its own fill)
                 wedges.forEach(({group, shape: wedge}) => {
                     const wedgeFill = wedgeFillOf(group)
-                    context.globalAlpha = opacity * wedgeDimmingOf(group)
+                    context.globalAlpha = wedgeOpacityOf(group, fading)
                     context.beginPath()
                     path(wedge)
                     context.fillStyle = wedgeFill
@@ -591,7 +600,7 @@ export function drawAggregates<P>(
                     context.stroke()
                 })
             } else {
-                context.globalAlpha = opacity * (asPie(aggregate) ? wedgeDimmingOf(aggregate.groups[0]) : 1)
+                context.globalAlpha = asPie(aggregate) ? wedgeOpacityOf(aggregate.groups[0], fading) : opacity
                 context.beginPath()
                 path(circleAt(aggregate.latitude, aggregate.longitude, radius))
                 context.fillStyle = circleFill
@@ -764,11 +773,10 @@ export function drawEvents<P>(
         })
 
         // the faintest first, so that the newest events are drawn over the older ones
-        const dimming = frame.dimmingOf(series.name)
         Array.from(paths.values())
             .sort((a, b) => b.level - a.level)
             .forEach(({fill, level, paths: markerPaths}) => {
-                context.globalAlpha = dimming * markerOpacity * fadingOf(level)
+                context.globalAlpha = frame.opacityOf(series.name, markerOpacity, fadingOf(level))
                 context.fillStyle = fill
                 markerPaths.forEach(markerPath => context.fill(markerPath))
             })
@@ -817,7 +825,8 @@ export function drawFlashes<P>(
             (style.seriesStyles.get(seriesName) ?? defaultLineStyle()).color
         return [{
             x: at[0], y: at[1], start: flash.start, duration: flash.duration, color: ringColor, ring, latitude, longitude,
-            dimming: frame.dimmingOf(seriesName),
+            // (how its series is drawn while one is hovered: fully, or a little fainter)
+            emphasis: frame.opacityOf(seriesName, 1),
         }]
     })
     flashGroupsOf(rings, style.mergeDistance).forEach(group => {
@@ -828,7 +837,7 @@ export function drawFlashes<P>(
         const latitude = mean(ring => ring.latitude)
         const longitude = mean(ring => ring.longitude)
         const {radius, opacity} = earliest.ring
-        context2D.globalAlpha = opacity * Math.max(...group.map(ring => ring.dimming))
+        context2D.globalAlpha = opacity * Math.max(...group.map(ring => ring.emphasis))
         context2D.strokeStyle = earliest.color
         context2D.lineWidth = 2 + Math.min(3, Math.log2(group.length))
         context2D.beginPath()
