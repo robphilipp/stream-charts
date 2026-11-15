@@ -48,6 +48,9 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
     // each roll-up of only some of the series (see `aggregates`): the latest asked for, by roll-up,
     // with the filter it's for (its source and flags), kept up to date like the roll-ups themselves
     private filteredStates = new Map<string, {filter: string, state: GeoRollupState<P>}>()
+    // each sensor's events, by series and sensor (see `sensorKeyOf`), oldest first: e.g. for a
+    // tooltip's sparkline of a sensor's readings, without searching its series
+    private readonly sensorEvents = new Map<string, Array<GeoDatum<P>>>()
 
     /**
      * Creates a geo data source (stopped: call {@link start} to start it)
@@ -57,7 +60,70 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
         super(options.initialData, options.generator)
         this.dropDataAfter = options.dropDataAfter ?? Infinity
         this.onUpdateData = options.onUpdateData
+        this.seriesMap.forEach(series => series.data.forEach(datum => this.addSensorEvent(series.name, datum)))
         this.setRollups(options.rollups ?? {})
+    }
+
+    /**
+     * @param seriesName The name of a series
+     * @param sensorId The ID of one of its sensors
+     * @return The key of the sensor's events (see `sensorEvents`)
+     */
+    private static sensorKeyOf(seriesName: string, sensorId: string): string {
+        return `${seriesName}\u0000${sensorId}`
+    }
+
+    /**
+     * Adds an event to its sensor's events (the latest)
+     * @param seriesName The name of the event's series
+     * @param datum The event
+     */
+    private addSensorEvent(seriesName: string, datum: GeoDatum<P>): void {
+        const key = GeoDataSource.sensorKeyOf(seriesName, datum.sensorId)
+        const events = this.sensorEvents.get(key)
+        if (events === undefined) this.sensorEvents.set(key, [datum])
+        else events.push(datum)
+    }
+
+    /**
+     * Takes a dropped event out of its sensor's events (usually the oldest)
+     * @param seriesName The name of the event's series
+     * @param datum The event
+     */
+    private removeSensorEvent(seriesName: string, datum: GeoDatum<P>): void {
+        const key = GeoDataSource.sensorKeyOf(seriesName, datum.sensorId)
+        const events = this.sensorEvents.get(key)
+        if (events === undefined) return
+        if (events[0] === datum) {
+            events.shift()
+        } else {
+            const index = events.indexOf(datum)
+            if (index >= 0) events.splice(index, 1)
+        }
+        if (events.length === 0) this.sensorEvents.delete(key)
+    }
+
+    /**
+     * The events of one of a series' sensors -- e.g. for a sparkline of the sensor's readings in a
+     * tooltip -- kept as events arrive and are dropped, so that they're found without searching the
+     * series
+     * @param seriesName The name of the series
+     * @param sensorId The sensor's ID
+     * @return The sensor's events in the series, oldest first (a copy; empty for an unknown series or
+     * sensor)
+     */
+    sensorEventsOf(seriesName: string, sensorId: string): Array<GeoDatum<P>> {
+        return [...(this.sensorEvents.get(GeoDataSource.sensorKeyOf(seriesName, sensorId)) ?? [])]
+    }
+
+    /**
+     * @param seriesName The name of a series
+     * @param sensorId The ID of one of its sensors
+     * @return The sensor's latest event in the series (`undefined` for an unknown series or sensor)
+     */
+    latestSensorEventOf(seriesName: string, sensorId: string): GeoDatum<P> | undefined {
+        const events = this.sensorEvents.get(GeoDataSource.sensorKeyOf(seriesName, sensorId))
+        return events?.[events.length - 1]
     }
 
     /**
@@ -195,6 +261,7 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
             if (this.onUpdateData) this.onUpdateData(name, newData)
 
             series.data.push(...newData)
+            newData.forEach(datum => this.addSensorEvent(name, datum))
             this.allStates().forEach(state => newData.forEach(datum => state.add(datum, name)))
         })
 
@@ -204,7 +271,9 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
         this.seriesMap.forEach(series => {
             while (series.data.length > 0 && currentTime - series.data[0].time > this.dropDataAfter) {
                 const dropped = series.data.shift()
-                if (dropped !== undefined) states.forEach(state => state.remove(dropped))
+                if (dropped === undefined) continue
+                this.removeSensorEvent(series.name, dropped)
+                states.forEach(state => state.remove(dropped))
             }
         })
     }
@@ -221,5 +290,6 @@ export function isGeoDataSource<P>(dataSource: unknown): dataSource is GeoDataSo
     if (dataSource instanceof GeoDataSource) return true
     if (dataSource === null || typeof dataSource !== 'object') return false
     const methods = dataSource as Record<string, unknown>
-    return ['aggregates', 'eventsOf', 'rollupNames', 'rollupCellSize'].every(name => typeof methods[name] === 'function')
+    return ['aggregates', 'eventsOf', 'rollupNames', 'rollupCellSize', 'sensorEventsOf', 'latestSensorEventOf']
+        .every(name => typeof methods[name] === 'function')
 }

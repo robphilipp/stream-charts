@@ -359,9 +359,11 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
 
         if (target.kind === 'event') {
             const {seriesName, datum} = target
+            // (kept by the data source, by sensor; searched for in the series, from another source)
             const series = dataSource?.series.get(seriesName)
-            const events = series === undefined ? [] :
-                Array.from(series.data).filter(event => event.sensorId === datum.sensorId)
+            const events = isGeoDataSource<P>(dataSource) ? dataSource.sensorEventsOf(seriesName, datum.sensorId) :
+                series === undefined ? [] :
+                    Array.from(series.data).filter(event => event.sensorId === datum.sensorId)
             return {target, sparkline: sparklineOf(events, sparklineValueOf, true, datum.time), groupSparklines}
         }
 

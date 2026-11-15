@@ -676,8 +676,10 @@ export function GeoPlot<P>(props: Props<P>): null {
     const geometryRef = useRef<{view: GeoPlotViewState, settings: object, byDatum: WeakMap<GeoDatum<P>, MarkerGeometry>} | undefined>(undefined)
     // the categorical colors handed out to the groups (see `groupColors`), by group
     const groupColorsRef = useRef<Map<string, string>>(new Map())
-    // what's under the mouse (an event, or an aggregate)
+    // what's under the mouse (an event, or an aggregate); and, for an event, its sensor's latest event
+    // when the tooltip was last taken (so that it's taken anew as the sensor reports)
     const hoveredRef = useRef<GeoTooltipMetadata<P> | undefined>(undefined)
+    const hoveredSensorLatestRef = useRef<GeoDatum<P> | undefined>(undefined)
     // the roll-up shown (`undefined` for the events): in the `auto` mode, the level last chosen (`null`
     // before the first), for its hysteresis (see `autoLevelOf`); and in any mode, for hit-testing
     const autoLevelRef = useRef<string | undefined | null>(null)
@@ -882,7 +884,8 @@ export function GeoPlot<P>(props: Props<P>): null {
 
                 // while the data changes under a resting mouse (the data source running), keep the
                 // tooltip current: close it when what it shows is gone (e.g. dropped as too old, or
-                // out of view), and update it when the aggregate it shows has changed
+                // out of view), and update it when the aggregate it shows has changed, or the event's
+                // sensor has new readings (for its sparkline)
                 const hoveredTarget = hoveredRef.current
                 if (hoveredTarget !== undefined) {
                     const tooltipId = `tooltip-${chartId}`
@@ -904,6 +907,14 @@ export function GeoPlot<P>(props: Props<P>): null {
                         // (the handlers take the roll-up's name as the series hovered: the legend
                         // highlights the hovered wedge's series instead, if it's of one)
                         setHoveredSeriesName(legendSeriesOf(updated, dataSource?.series))
+                    } else if (now.kind === 'event' && isGeoDataSource<P>(dataSource)) {
+                        const latest = dataSource.latestSensorEventOf(now.seriesName, now.datum.sensorId)
+                        if (latest !== hoveredSensorLatestRef.current) {
+                            hoveredSensorLatestRef.current = latest
+                            mouseOverHandlerFor(tooltipId)?.(
+                                nameOf(now), now.datum.time, {series: [now.datum], metadata: now}, mouseRef.current
+                            )
+                        }
                     }
                 }
 
@@ -1170,6 +1181,9 @@ export function GeoPlot<P>(props: Props<P>): null {
                 leave()
                 if (target === undefined) return
                 hoveredRef.current = target
+                hoveredSensorLatestRef.current = target.kind === 'event' && isGeoDataSource<P>(dataSource) ?
+                    dataSource.latestSensorEventOf(target.seriesName, target.datum.sensorId) :
+                    undefined
                 const tooltipData: TooltipData<GeoDatum<P>, GeoTooltipMetadata<P>> = {
                     series: target.kind === 'event' ? [target.datum] : [],
                     metadata: target
@@ -1192,7 +1206,7 @@ export function GeoPlot<P>(props: Props<P>): null {
         },
         [
             canvasContext, chartId, mouseOverHandlerFor, mouseLeaveHandlerFor, tooltipVisible,
-            projection, setUp, width, height, margin.left, margin.top, aggregateShape, dataSource?.series,
+            projection, setUp, width, height, margin.left, margin.top, aggregateShape, dataSource,
             setHoveredSeriesName,
         ]
     )

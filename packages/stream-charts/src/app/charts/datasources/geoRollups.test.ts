@@ -476,6 +476,26 @@ describe('GeoDataSource roll-ups', () => {
         expect(dataSource.aggregates('by location', seismic).map(a => [a.latitude, a.count])).toEqual([[51.51, 1]])
     })
 
+    it('keeps each sensor\'s events, oldest first, as events arrive and are dropped', () => {
+        const {dataSource, emit} = startedSource(100)
+        // (TKY-1's event at time 0 is in the initial data)
+        emit(geoChartDataOf(new Map([
+            ['seismic', [reading('TKY-1', 35.68, 139.69, 50, 4), reading('TKY-2', 35.68, 139.69, 60, 1)]],
+            ['weather', [reading('TKY-1', 35.68, 139.69, 70, 9)]],
+        ])))
+        expect(dataSource.sensorEventsOf('seismic', 'TKY-1').map(event => event.time)).toEqual([0, 50])
+        expect(dataSource.latestSensorEventOf('seismic', 'TKY-1')?.time).toBe(50)
+        // (a sensor's events are its series': the weather series' TKY-1 is another sensor)
+        expect(dataSource.sensorEventsOf('weather', 'TKY-1').map(event => event.time)).toEqual([70])
+        expect(dataSource.sensorEventsOf('seismic', 'nobody')).toEqual([])
+
+        // the events up to time 50 age out
+        emit(geoChartDataOf(new Map([['seismic', [reading('TKY-1', 35.68, 139.69, 155, 2)]]])))
+        expect(dataSource.sensorEventsOf('seismic', 'TKY-1').map(event => event.time)).toEqual([155])
+        expect(dataSource.sensorEventsOf('seismic', 'TKY-2').map(event => event.time)).toEqual([60])
+        expect(dataSource.latestSensorEventOf('seismic', 'nobody')).toBeUndefined()
+    })
+
     it('stops keeping a filtered roll-up up to date once it\'s no longer asked for', () => {
         const {dataSource, emit} = startedSource()
         emit(geoChartDataOf(new Map([['weather', [reading('LON-1', 51.51, -0.13, 10, 7)]]])))
@@ -508,7 +528,7 @@ describe('GeoDataSource roll-ups', () => {
     it('tells a geo data source from another, even another copy of the class', () => {
         const {dataSource} = startedSource()
         expect(isGeoDataSource(dataSource)).toBe(true)
-        expect(isGeoDataSource({...dataSource, aggregates: () => [], eventsOf: () => [], rollupNames: () => [], rollupCellSize: () => undefined})).toBe(true)
+        expect(isGeoDataSource({...dataSource, aggregates: () => [], eventsOf: () => [], rollupNames: () => [], rollupCellSize: () => undefined, sensorEventsOf: () => [], latestSensorEventOf: () => undefined})).toBe(true)
         expect(isGeoDataSource({aggregates: () => []})).toBe(false)
         expect(isGeoDataSource(undefined)).toBe(false)
     })
