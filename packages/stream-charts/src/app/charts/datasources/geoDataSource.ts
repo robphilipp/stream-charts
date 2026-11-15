@@ -86,13 +86,17 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      * @param seriesFilter The series whose events count (all of them when not given)
      * @return The roll-up's state: of all the series' events, when the filter takes every series; and
      * otherwise of the events of the series it takes (rolled up when first asked for, and then kept
-     * up to date, until another filter is asked for); `undefined` for an unknown roll-up
+     * up to date, until another filter is asked for, or none is -- so that a copy no longer asked for
+     * isn't kept up to date); `undefined` for an unknown roll-up
      */
     private stateOf(rollupName: string, seriesFilter: RegExp | undefined): GeoRollupState<P> | undefined {
         const all = this.rollupStates.get(rollupName)
         const rollup = this.rollups[rollupName]
-        if (all === undefined || rollup === undefined || seriesFilter === undefined) return all
-        if (this.seriesList().every(series => series.name.match(seriesFilter))) return all
+        if (all === undefined || rollup === undefined) return all
+        if (seriesFilter === undefined || this.seriesList().every(series => series.name.match(seriesFilter))) {
+            this.filteredStates.delete(rollupName)
+            return all
+        }
         const filter = `${seriesFilter.source}/${seriesFilter.flags}`
         const kept = this.filteredStates.get(rollupName)
         if (kept !== undefined && kept.filter === filter) return kept.state
@@ -149,8 +153,8 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      * @param seriesFilter The series whose events count (e.g. the chart's series filter); all of them
      * when not given. The roll-up of only some of the series is rolled up from the events held when
      * it's first asked for, and then kept up to date as events arrive and are dropped, until another
-     * filter is asked for (one is kept for each roll-up) -- so asking again with the same filter is
-     * as quick as asking for all the series.
+     * filter, or none, is asked for (one is kept for each roll-up) -- so asking again with the same
+     * filter is as quick as asking for all the series.
      * @return The roll-up's aggregates, one per cell (empty for an unknown roll-up). The same
      * array is returned until the roll-up's cells change.
      */

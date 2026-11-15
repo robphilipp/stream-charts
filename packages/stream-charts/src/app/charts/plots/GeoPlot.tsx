@@ -339,11 +339,13 @@ export interface Props<P> {
      */
     zoomMaxScaleFactor?: number
     /**
-     * What hovering a series in the legend does: show that series' events alone (`isolate`, the
-     * default -- a map's series often overlap at the same places), or dim the others' and draw its
-     * over them (`highlight`). Either way, the events and their flashes are affected; and the
-     * aggregates' pies, when the hovered series names one of their groups, dim the other groups'
-     * wedges.
+     * What hovering a series does -- its entry in the legend, or, on the map, one of its events (or
+     * an aggregate's wedge whose group is named for it): show that series' events alone (`isolate`,
+     * the default -- a map's series often overlap at the same places), or dim the others' and draw
+     * its over them (`highlight`). Either way, the events and their flashes are affected (in
+     * `isolate`, the other series' events can't be hovered until the mouse leaves the event); and
+     * the aggregates' pies, when the hovered series names one of their groups, dim the other
+     * groups' wedges.
      */
     hoveredSeries?: 'isolate' | 'highlight'
     /**

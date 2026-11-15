@@ -121,6 +121,9 @@ export function detailOf(data: GeoMapData, zoom: number): d3.GeoPermissibleObjec
 export const layerShownAt = (layer: GeoLayer, zoom: number): boolean =>
     zoom >= (layer.minZoom ?? 0) && zoom <= (layer.maxZoom ?? Infinity)
 
+// the features made for bare geometries (see `featuresOf`), by geometry
+const geometryFeatures = new WeakMap<object, GeoJSON.Feature>()
+
 /**
  * @param object GeoJSON
  * @return Its features: a feature collection's, a feature itself, or a geometry as a feature
@@ -130,7 +133,14 @@ export function featuresOf(object: d3.GeoPermissibleObjects): Array<GeoJSON.Feat
     if (geo.type === 'FeatureCollection') return geo.features
     if (geo.type === 'Feature') return [geo]
     if (geo.type === 'Sphere') return []
-    return [{type: 'Feature', geometry: geo as GeoJSON.Geometry, properties: {}}]
+    // (a bare geometry's feature, made once: the caches of what's drawn, e.g. the shapes projected
+    // in the shift view mode, and the labels' places, are kept by the feature)
+    let feature = geometryFeatures.get(geo)
+    if (feature === undefined) {
+        feature = {type: 'Feature', geometry: geo as GeoJSON.Geometry, properties: {}}
+        geometryFeatures.set(geo, feature)
+    }
+    return [feature]
 }
 
 /**

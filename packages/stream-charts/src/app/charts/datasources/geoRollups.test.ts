@@ -476,6 +476,19 @@ describe('GeoDataSource roll-ups', () => {
         expect(dataSource.aggregates('by location', seismic).map(a => [a.latitude, a.count])).toEqual([[51.51, 1]])
     })
 
+    it('stops keeping a filtered roll-up up to date once it\'s no longer asked for', () => {
+        const {dataSource, emit} = startedSource()
+        emit(geoChartDataOf(new Map([['weather', [reading('LON-1', 51.51, -0.13, 10, 7)]]])))
+        const filtered = (): number => (dataSource as unknown as {filteredStates: Map<string, unknown>}).filteredStates.size
+        dataSource.aggregates('by location', /^seismic$/)
+        expect(filtered()).toBe(1)
+        dataSource.aggregates('by location')
+        expect(filtered()).toBe(0)
+        dataSource.aggregates('by location', /^seismic$/)
+        dataSource.aggregates('by location', /./)
+        expect(filtered()).toBe(0)
+    })
+
     it('uses the roll-up of all the series for a filter that takes all of them', () => {
         const {dataSource} = startedSource()
         expect(dataSource.aggregates('by location', /./)).toBe(dataSource.aggregates('by location'))

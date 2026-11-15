@@ -384,6 +384,13 @@ describe('the events', () => {
         expect(fills[0].alpha).toBeLessThan(0.8)
     })
 
+    it('can hover the other series\' events while highlighting a series, but not while isolating it', () => {
+        const highlighting = drawEvents(recordingContext().context, frameWith({hoveredSeriesName: 'a', isolateHoveredSeries: false}), series(), eventStyle(), undefined)
+        expect(highlighting.markers).toHaveLength(4)
+        const isolating = drawEvents(recordingContext().context, frameWith({hoveredSeriesName: 'a', isolateHoveredSeries: true}), series(), eventStyle(), undefined)
+        expect(isolating.markers.map(marker => marker.target.kind === 'event' && marker.target.seriesName)).toEqual(['a', 'a'])
+    })
+
     it('finds the hovered event\'s marker', () => {
         const all = series()
         const hovered = all[1].data.at(0)!

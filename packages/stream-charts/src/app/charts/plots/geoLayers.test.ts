@@ -52,6 +52,8 @@ describe('features', () => {
         expect(featuresOf({type: 'FeatureCollection', features: [feature]})).toEqual([feature])
         expect(featuresOf(feature)).toEqual([feature])
         expect(featuresOf(feature.geometry as d3.GeoPermissibleObjects)).toEqual([{type: 'Feature', geometry: feature.geometry, properties: {}}])
+        // (a bare geometry's feature is the same each time, so that what's kept by feature is kept)
+        expect(featuresOf(feature.geometry as d3.GeoPermissibleObjects)[0]).toBe(featuresOf(feature.geometry as d3.GeoPermissibleObjects)[0])
     })
 })
 

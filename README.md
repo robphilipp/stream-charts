@@ -96,7 +96,7 @@ npm install stream-charts react react-dom rxjs d3
 
 > This README describes version 2, whose API is different from version 1's. To upgrade from 1.x, see [migrating from 1.x](#migrating).
 
-`stream-charts` has four peer dependencies: React 19 (`react`, `react-dom`), [RxJS](https://rxjs.dev) 7, and [d3](https://d3js.org) 7. Your application uses them directly – to render the components, create the observables that feed the charts, and pass d3 scales and curves to the axes and plots – so the library shares your copies rather than bringing its own. TypeScript users get d3's type definitions (`@types/d3`) with the library.
+`stream-charts` has four peer dependencies: React 19.2 or later (`react`, `react-dom`), [RxJS](https://rxjs.dev) 7, and [d3](https://d3js.org) 7. Your application uses them directly – to render the components, create the observables that feed the charts, and pass d3 scales and curves to the axes and plots – so the library shares your copies rather than bringing its own. TypeScript users get d3's type definitions (`@types/d3`) with the library.
 
 ### <span id="quick-start">quick start</span> [↑](#content "back to contents")
 
@@ -888,7 +888,7 @@ const borders = mesh(countries, countries.objects.countries, (a, b) => a !== b)
 | `panEnabled`, `zoomEnabled` | `boolean` | Whether dragging moves the view, and the wheel zooms it (both default `true`). |
 | `zoomKeyModifiersRequired` | `boolean` | Whether zooming needs shift or ctrl held down (default `true`). |
 | `zoomMaxScaleFactor` | `number` | How far the view can zoom in (default 20×). |
-| `hoveredSeries` | `'isolate' \| 'highlight'` | What hovering a series in the legend does: show only that series' events (and their flashes), `isolate`, the default – a map's series often overlap – or dim the others' and draw its over them, `highlight`. Either way, when the hovered series names one of the aggregates' groups, the pies dim the other groups' wedges. |
+| `hoveredSeries` | `'isolate' \| 'highlight'` | What hovering a series does – its legend entry, or, on the map, one of its events (or a pie's wedge whose group is named for it): show only that series' events (and their flashes), `isolate`, the default – a map's series often overlap – or dim the others' and draw its over them, `highlight`. Either way, when the hovered series names one of the aggregates' groups, the pies dim the other groups' wedges. |
 | `autoRotate` | `number` | Turns the globe by itself, at this many degrees per second, pausing while it's dragged or an event is hovered. The plot redraws up to 60 times a second while it turns (the demo's few thousand events take about 8 ms a redraw), so with many tens of thousands of events held, show a roll-up instead, or keep fewer events. |
 | `viewState`, `onViewChange` | `GeoPlotViewState`, `(view) => void` | Keep the view (rotation, zoom, and a flat map's offset) across remounts: store what `onViewChange` hands you, and pass it back as `viewState`. |
 | `onZoomReset` | `(resetZoom: () => void) => void` | Hands you a function that resets the view, for example for a **Reset** button. |
