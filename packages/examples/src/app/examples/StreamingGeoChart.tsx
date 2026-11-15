@@ -1,4 +1,4 @@
-import {type JSX, useCallback, useEffect, useMemo, useRef, useState} from "react"
+import {cloneElement, type JSX, type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from "react"
 import * as d3 from "d3"
 import {
     Grid,
@@ -38,7 +38,7 @@ import {CommonExecutionControls} from "./controls/CommonExecutionControls.tsx"
 import {
     AggregatesIcon, AutoRotateIcon, BordersIcon, ChoroplethIcon, CitiesIcon, CompositeMapIcon, ConicMapIcon, EventsIcon,
     FadeIcon, FlashActualIcon, FlashIcon, FlatMapIcon, FocusIcon, GlobeIcon, GraticuleIcon, PieIcon, RiversIcon, RoadsIcon,
-    SignalColorIcon, SizeByIcon, StatesIcon, WorldMapIcon, ZoomAggregatesIcon,
+    SignalColorIcon, SizeByIcon, StreetsIcon, StatesIcon, WorldMapIcon, ZoomAggregatesIcon,
 } from "../ui/Icons.tsx"
 import {HoverHint} from "../ui/HoverHint.tsx"
 import type {DropDownOption} from "../ui/DropDown.tsx"
@@ -87,6 +87,7 @@ import {
     type UsWater,
 } from "./dataproviders/worldMap.ts"
 import {FocusControl} from "./controls/FocusControl.tsx"
+import {useStreetLayers} from "./useStreetLayers.ts"
 
 const CHART_ID = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
 
@@ -563,6 +564,8 @@ export function StreamingGeoChart(props: Props): JSX.Element {
     const albersUsa = projection === 'albersUsa'
     const showRoads = useGeoChartStore(state => state.showRoads)
     const setShowRoads = useGeoChartStore(state => state.setShowRoads)
+    const showStreets = useGeoChartStore(state => state.showStreets)
+    const setShowStreets = useGeoChartStore(state => state.setShowStreets)
     const showStates = useGeoChartStore(state => state.showStates)
     const setShowStates = useGeoChartStore(state => state.setShowStates)
     const showRivers = useGeoChartStore(state => state.showRivers)
@@ -585,6 +588,8 @@ export function StreamingGeoChart(props: Props): JSX.Element {
         ] : [],
         [albersUsa, water, showRivers, showStates, us, showRoads, roads, showCities, cities, theme]
     )
+    // the street map, loaded as the view zooms in (over the land and its layers, under the cities)
+    const {layers: streetLayers, handleViewBoxChange} = useStreetLayers(showStreets, theme)
     const borders = useMemo(() => byZoom(COUNTRY_BORDERS, detailed?.borders), [detailed])
     // the countries, tinted by their number of towers (a choropleth), and named, those with towers
     const layers = useMemo<Array<GeoLayer>>(
@@ -595,6 +600,17 @@ export function StreamingGeoChart(props: Props): JSX.Element {
             label: (feature): string | undefined => towersIn(feature) > 0 ? feature.properties?.name : undefined,
         }] : [],
         [showCountries, detailed]
+    )
+
+    // the map's layers: the United States' (with Albers USA) or the countries, with the streets over
+    // them (and, with Albers USA, under its cities' dots, the layer of points)
+    const mapLayers = useMemo(
+        (): Array<GeoLayer> => {
+            if (!albersUsa) return [...layers, ...streetLayers]
+            const isCities = (layer: GeoLayer): boolean => layer.pointRadius !== undefined
+            return [...usLayers.filter(layer => !isCities(layer)), ...streetLayers, ...usLayers.filter(isCities)]
+        },
+        [albersUsa, usLayers, layers, streetLayers]
     )
 
     const phoneFlashes = useMemo(
@@ -703,6 +719,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                     {optionIcon(theme, 'countries', showCountries, color => <ChoroplethIcon color={color}/>)}
                                     {optionIcon(theme, 'borders', showBorders, color => <BordersIcon color={color}/>)}
                                 </>}
+                                {optionIcon(theme, 'streets', showStreets, color => <StreetsIcon color={color}/>)}
                                 <VerticalDivider color={theme.disabledBackgroundColor} height={15}/>
                                 {optionIcon(theme, 'auto-rotate', autoRotate, color => <AutoRotateIcon color={color}/>)}
                             </>
@@ -799,6 +816,14 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                     />
                                 </> : null}
                             </>
+                            <Checkbox
+                                checked={showStreets}
+                                label="streets"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setShowStreets(!showStreets)}
+                            />
                             <Checkbox
                                 checked={showCountries}
                                 label="countries"
@@ -927,6 +952,8 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                 </div>
             </GridItem>
             <GridItem gridAreaName="chart">
+                {/* (the street map's credit, over the chart's bottom-left corner) */}
+                <Overlaid overlay={streetLayers.length > 0 ? <StreetsCredit theme={theme}/> : null}>
                 <Chart
                     chartId={CHART_ID}
                     width={useGridCellWidth()}
@@ -944,7 +971,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         projection={projection}
                         basemap={albersUsa ? usOutline : basemap}
                         borders={showBorders && !albersUsa ? borders : undefined}
-                        layers={albersUsa ? usLayers : layers}
+                        layers={mapLayers}
                         fitTo={albersUsa ? UNITED_STATES : focus === 'world' ? undefined : FOCUS_SHAPES[focus]}
                         showGraticule={showGraticule}
                         radiusOf={sizeBySignal ? radiusBySignal : undefined}
@@ -966,6 +993,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         hoveredSeries="highlight"
                         viewState={geoView}
                         onViewChange={setGeoView}
+                        onViewBoxChange={handleViewBoxChange}
                         onZoomReset={handleZoomReset}
                     />
                     <Legend
@@ -1004,8 +1032,47 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         />
                     </Tooltip>
                 </Chart>
+                </Overlaid>
             </GridItem>
         </Grid>
+    )
+}
+
+/**
+ * Lays something over a grid cell's element (e.g. a credit over a chart): the cell sizes its element
+ * by handing it its `width` and `height`, which this hands on to its child, and takes, so that the
+ * overlay can be placed within the element
+ * @param props The cell's size (from the cell), what's laid over the element, and the element
+ * @return The element, with the overlay over it
+ */
+function Overlaid(props: {width?: number, height?: number, overlay: ReactNode, children: JSX.Element}): JSX.Element {
+    const {width, height, overlay, children} = props
+    return (
+        <div style={{position: 'relative', width, height}}>
+            {width !== undefined && height !== undefined ? cloneElement(children, {width, height}) : children}
+            {overlay}
+        </div>
+    )
+}
+
+/**
+ * The street map's credit (its data's licence asks for it): OpenFreeMap's tiles, in OpenMapTiles'
+ * schema, of OpenStreetMap's data
+ * @param props The theme
+ * @return The credit, over the chart's bottom-left corner
+ */
+function StreetsCredit(props: {theme: Theme}): JSX.Element {
+    const {theme} = props
+    const link = {color: theme.color}
+    return (
+        <div style={{
+            position: 'absolute', left: 14, bottom: 14, padding: '1px 6px', fontSize: 10, borderRadius: 3,
+            color: theme.color, backgroundColor: `rgb(from ${theme.backgroundColor} r g b / 0.75)`,
+        }}>
+            <a style={link} href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a>{' '}
+            <a style={link} href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">© OpenMapTiles</a>{' '}
+            Data from <a style={link} href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>
+        </div>
     )
 }
 

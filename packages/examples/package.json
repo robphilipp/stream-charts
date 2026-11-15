@@ -26,11 +26,13 @@
     ]
   },
   "dependencies": {
+    "@mapbox/vector-tile": "^3.0.0",
     "@redux-devtools/extension": "^4.0.0",
     "@tanstack/react-router": "^1.170.18",
     "d3": "^7.9.0",
     "data-frame-ts": "^1.1.0",
     "fast-shift-array": "^0.1.6",
+    "pbf": "^5.1.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-markdown": "^10.1.0",

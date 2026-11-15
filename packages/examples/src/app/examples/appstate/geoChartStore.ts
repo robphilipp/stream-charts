@@ -230,6 +230,9 @@ type GeoChartState = {
     focus: GeoFocus
     // whether the United States' roads are drawn (with the Albers USA projection)
     showRoads: boolean
+    // whether the street map is drawn: OpenStreetMap's roads, loaded as the view zooms in (see
+    // `useStreetLayers`)
+    showStreets: boolean
     // whether the United States' states and counties are drawn (with the Albers USA projection)
     showStates: boolean
     // whether the United States' rivers, and its cities, are drawn (with the Albers USA projection)
@@ -271,6 +274,7 @@ const initialState: GeoChartState = {
     showCountries: true,
     focus: 'world',
     showRoads: true,
+    showStreets: false,
     showStates: true,
     showRivers: true,
     showCities: true,
@@ -300,6 +304,7 @@ type GeoChartActions = {
     setShowCountries: (showCountries: boolean) => void
     setFocus: (focus: GeoFocus) => void
     setShowRoads: (showRoads: boolean) => void
+    setShowStreets: (showStreets: boolean) => void
     setShowStates: (showStates: boolean) => void
     setShowRivers: (showRivers: boolean) => void
     setShowCities: (showCities: boolean) => void
@@ -357,6 +362,7 @@ export const useGeoChartStore: UseBoundStore<StoreApi<GeoChartStore>> = create<G
         setShowCountries: (showCountries: boolean): void => set({showCountries}),
         setFocus: (focus: GeoFocus): void => set({focus}),
         setShowRoads: (showRoads: boolean): void => set({showRoads}),
+        setShowStreets: (showStreets: boolean): void => set({showStreets}),
         setShowStates: (showStates: boolean): void => set({showStates}),
         setShowRivers: (showRivers: boolean): void => set({showRivers}),
         setShowCities: (showCities: boolean): void => set({showCities}),

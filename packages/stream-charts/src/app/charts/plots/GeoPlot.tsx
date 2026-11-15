@@ -19,7 +19,7 @@ import {isGeoDataSource} from "../datasources/geoDataSource"
 import type {GeoDatum, GeoSeries} from "../series/geoSeries"
 import {usePlotDimensions} from "../hooks/usePlotDimensions"
 import {type TooltipData, useTooltip} from "../hooks/useTooltip"
-import {type GeoLayer, type GeoMapData} from "./geoLayers"
+import {type GeoBox as GeoViewBox, type GeoLayer, type GeoMapData, viewBoxOf} from "./geoLayers"
 import {
     type GeoPlotViewState,
     type GeoProjectionName,
@@ -382,6 +382,17 @@ export interface Props<P> {
      */
     onViewChange?: (view: GeoPlotViewState) => void
     /**
+     * Called with the part of the earth in view as the view settles -- when it first shows, after
+     * it's dragged, zoomed, or reset, when the auto-rotation pauses, and when the plot's size or
+     * projection changes -- e.g. to load map data for it (streets, say, at a level of detail for the
+     * zoom), and hand it to the plot as `layers`
+     * @param box The longitudes and latitudes in view (a little larger, to be safe; `west` is past
+     * `east` across the antimeridian); `undefined` when the view shows half the earth or more
+     * @param pixelsPerDegree How many pixels a degree of arc spans at the view's center: e.g. for
+     * the zoom of web-map tiles that matches the view, `log2(pixelsPerDegree * 360 / 512)`
+     */
+    onViewBoxChange?: (box: GeoViewBox | undefined, pixelsPerDegree: number) => void
+    /**
      * Called whenever this plot (re)creates its zoom behavior, handing the caller a `resetZoom`
      * function that resets the view (its rotation and zoom) -- e.g. for a "Clear" action. Only
      * meaningful (called) while `zoomEnabled` is `true`.
@@ -527,6 +538,7 @@ export function GeoPlot<P>(props: Props<P>): null {
         hoveredSeries = 'isolate',
         viewState,
         onViewChange = noop,
+        onViewBoxChange = noop,
         onZoomReset = noop,
     } = props
     // (the option objects' settings, each on its own: an object handed in anew on each render, e.g.
@@ -635,9 +647,35 @@ export function GeoPlot<P>(props: Props<P>): null {
         [shifting, projection, base, width, height, fitPadding]
     )
 
-    // reports the view (see `onViewChange`)
+    // reports the part of the earth in view (see `onViewBoxChange`): in the shift view mode, a point
+    // off the map is only a gap in it (e.g. between a composite's regions)
+    const onViewBoxChangeRef = useLatest(onViewBoxChange)
+    const reportViewBox = useCallback(
+        (): void => {
+            if (!(width > 0 && height > 0)) return
+            setUp(viewRef.current)
+            onViewBoxChangeRef.current(viewBoxOf(projection, width, height, 9, shifting), projection.scale() * Math.PI / 180)
+        },
+        [setUp, projection, width, height, shifting, onViewBoxChangeRef]
+    )
+
+    // reports the view (see `onViewChange`), and the part of the earth in it
     const onViewChangeRef = useLatest(onViewChange)
-    const reportView = useCallback((): void => onViewChangeRef.current({...viewRef.current}), [onViewChangeRef])
+    const reportView = useCallback(
+        (): void => {
+            onViewChangeRef.current({...viewRef.current})
+            reportViewBox()
+        },
+        [onViewChangeRef, reportViewBox]
+    )
+    // (and the part of the earth in view when the plot first shows, and as its size or projection
+    // changes)
+    useEffect(
+        () => {
+            if (canvasContext !== null) reportViewBox()
+        },
+        [canvasContext, reportViewBox]
+    )
 
     // reports what the auto mode shows (see `onAutoRollupChange`)
     const onAutoRollupChangeRef = useLatest(onAutoRollupChange)

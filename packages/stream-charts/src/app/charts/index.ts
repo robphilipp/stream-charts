@@ -64,7 +64,7 @@ export {
 export {GeoProjections, type GeoPlotViewState, type GeoProjectionName} from "./plots/geoProjections"
 export {type GeoTooltipMetadata} from "./plots/geoMarkers"
 export {type GeoFlash, type GeoFlashOptions} from "./plots/geoFlashes"
-export {type GeoDetail, type GeoLayer, type GeoMapData} from "./plots/geoLayers"
+export {type GeoBox as GeoViewBox, type GeoDetail, type GeoLayer, type GeoMapData} from "./plots/geoLayers"
 export {assignAxes, type AxesAssignment, type Series} from "./plots/plot"
 export {NoCurveFactory, BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./plots/constants"
 export {

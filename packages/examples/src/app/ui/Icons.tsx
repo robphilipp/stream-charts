@@ -1172,3 +1172,18 @@ export function AutoRotateIcon(props: { color: string }): JSX.Element {
         </svg>
     )
 }
+
+/**
+ * A street grid: crossing streets, one of them a main road (the street map)
+ * @param props The icon's color
+ * @return The icon
+ */
+export function StreetsIcon(props: { color: string }): JSX.Element {
+    const {color} = props
+    return (
+        <svg width="15" height="15" style={{display: 'block', flexShrink: 0}}>
+            <path d="M1 4.5 L14 3.5 M1 10.5 L14 11.5 M4.5 1 L5 14 M10.5 1 L10 14" stroke={color} strokeWidth={1} strokeLinecap="round" opacity={0.7}/>
+            <path d="M1 13.5 L14 1.5" stroke={color} strokeWidth={2} strokeLinecap="round"/>
+        </svg>
+    )
+}
