@@ -993,6 +993,10 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                         }}
                         autoRotate={autoRotate ? AUTO_ROTATE_SPEED : undefined}
                         zoomMaxScaleFactor={MAX_ZOOM}
+                        // (the map's data -- Natural Earth's, the Census', and the street tiles' --
+                        // has its points close together, so it's drawn without resampling: much
+                        // quicker, zoomed in on the streets, and it looks the same)
+                        resample={false}
                         hoveredSeries="highlight"
                         viewState={geoView}
                         onViewChange={setGeoView}

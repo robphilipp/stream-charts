@@ -179,6 +179,7 @@ describe('the map', () => {
         graticuleColor: 'graticule',
         outlineColor: 'outline',
         color: '#000000',
+        resample: true,
         ...settings,
     })
     const view = {rotate: [0, 0, 0] as [number, number, number], k: 1, offsetY: 0}
@@ -213,6 +214,64 @@ describe('the map', () => {
         drawMap(context, projection, undefined, view, map(), WIDTH, HEIGHT)
         expect(clipped).not.toBeNull()
         expect(projection.clipExtent()).toBeNull()
+    })
+
+    /**
+     * @param resample Whether the map's data is resampled
+     * @return The projection's precision while the graticule is stroked and the land is filled, and
+     * after the map is drawn
+     */
+    const precisionsWith = (resample: boolean): {graticule: number, land: number, after: number} => {
+        const projection = globe()
+        const precisions: Array<number> = []
+        const recording = recordingContext()
+        const context = new Proxy(recording.context, {
+            get: (target, property) => property === 'fill' || property === 'stroke' ?
+                (): void => {
+                    precisions.push(projection.precision())
+                } :
+                Reflect.get(target, property),
+        })
+        drawMap(context, projection, undefined, view, map({resample}), WIDTH, HEIGHT)
+        // (the ocean's fill, the graticule's stroke, the land's fill, ...)
+        return {graticule: precisions[1], land: precisions[2], after: projection.precision()}
+    }
+
+    it('draws the map\'s data without resampling, when asked, but the graticule with it', () => {
+        const defaultPrecision = globe().precision()
+        expect(precisionsWith(false)).toEqual({graticule: defaultPrecision, land: 0, after: defaultPrecision})
+    })
+
+    it('resamples the map\'s data, by default', () => {
+        const defaultPrecision = globe().precision()
+        expect(precisionsWith(true)).toEqual({graticule: defaultPrecision, land: defaultPrecision, after: defaultPrecision})
+    })
+
+    it('draws only the graticule\'s lines that might show, zoomed in', () => {
+        /**
+         * @param k The zoom
+         * @return How many points of the graticule are handed to the projection
+         */
+        const graticulePointsAt = (k: number): number => {
+            const projection = globe()
+            let points = 0
+            const project = projection.stream.bind(projection)
+            projection.stream = (stream: d3.GeoStream): d3.GeoStream => {
+                const projected = project(stream)
+                // (the projected stream's own methods, but counting its points)
+                const counting = Object.create(projected) as d3.GeoStream
+                counting.point = (x: number, y: number): void => {
+                    points += 1
+                    projected.point(x, y)
+                }
+                return counting
+            }
+            const zoomedView = {...view, k}
+            projection.scale(projection.scale() * k)
+            drawMap(recordingContext().context, projection, undefined, zoomedView, map({basemap: undefined, borders: undefined}), WIDTH, HEIGHT)
+            return points
+        }
+        expect(graticulePointsAt(50)).toBeLessThan(graticulePointsAt(1) / 10)
     })
 
     it('fills the whole plot area for a composite projection, which has no sphere to fill or outline', () => {

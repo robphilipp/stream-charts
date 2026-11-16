@@ -36,6 +36,51 @@ const STREET_STYLES: Record<StreetClass, {light: string, dark: string, width: nu
 }
 
 /**
+ * A tile's layers: its land (the whole tile), its water, and its roads, by class
+ */
+type TileLayers = {land: GeoLayer, water: GeoLayer | undefined, roads: Map<StreetClass, GeoLayer>}
+
+// each tile's layers, by theme: made once, so that the plot's culling of them (which finds each of a
+// layer's lines' extent once, and keeps it with the layer's data) isn't done again as the view
+// changes, or as more tiles arrive
+const TILE_LAYERS = new WeakMap<TileStreets, Map<string, TileLayers>>()
+
+/**
+ * @param tile A tile's roads and water
+ * @param theme The theme
+ * @return The tile's layers (made once for the tile and the theme)
+ */
+function layersOfTile(tile: TileStreets, theme: Theme): TileLayers {
+    let byTheme = TILE_LAYERS.get(tile)
+    if (byTheme === undefined) {
+        byTheme = new Map()
+        TILE_LAYERS.set(tile, byTheme)
+    }
+    let layers = byTheme.get(theme.name)
+    if (layers === undefined) {
+        const {west, south, east, north} = tile.bounds
+        const shade = theme.name === 'light' ? 'light' : 'dark'
+        const roads = new Map<StreetClass, GeoLayer>()
+        STREET_CLASSES.forEach(roadClass => {
+            const coordinates = tile.roads.get(roadClass) ?? []
+            if (coordinates.length === 0) return
+            const style = STREET_STYLES[roadClass]
+            roads.set(roadClass, {data: {type: 'MultiLineString', coordinates}, stroke: style[shade], lineWidth: style.width})
+        })
+        layers = {
+            land: {
+                data: d3.geoGraticule().extent([[west, south], [east, north]]).outline(),
+                fill: tintOf(theme, LAND_TINT),
+            },
+            water: tile.water.length > 0 ? {data: {type: 'MultiPolygon', coordinates: tile.water}, fill: tintOf(theme, SEA_TINT)} : undefined,
+            roads,
+        }
+        byTheme.set(theme.name, layers)
+    }
+    return layers
+}
+
+/**
  * The street map: the roads in view, from OpenFreeMap's tiles, at a level of detail for the zoom --
  * loaded as the view settles (each tile once, and kept), and handed to the plot as layers -- and,
  * so that the coasts are as detailed as the roads, the tiles' land and water. Under the map's other
@@ -110,39 +155,28 @@ export function useStreetLayers(enabled: boolean, theme: Theme): {
         [tiles]
     )
 
-    // the land, under the map's other layers: each tile, filled with the land's color (solid: the
-    // plot's land is a tint of its color over its sea, which is a tint over the background)
-    const landLayers = useMemo(
-        (): Array<GeoLayer> => {
-            if (tiles.length === 0 || streets.length === 0) return []
-            const coordinates = streets.map(({bounds: {west, south, east, north}}) =>
-                (d3.geoGraticule().extent([[west, south], [east, north]]).outline() as GeoJSON.Polygon).coordinates
-            )
-            return [{data: {type: 'MultiPolygon', coordinates}, fill: tintOf(theme, LAND_TINT)}]
-        },
+    // each tile's layers (made once for the tile, see `layersOfTile`)
+    const tileLayers = useMemo(
+        (): Array<TileLayers> => tiles.length === 0 ? [] : streets.map(tile => layersOfTile(tile, theme)),
         [tiles, streets, theme]
     )
 
-    // over the map's other layers: the water, in the sea's color, and a layer for each class of road
-    // (its lines from every tile, as one shape, so that it's drawn as one path), the streets first,
-    // so that the main roads lie over them
+    // the land, under the map's other layers: each tile, filled with the land's color (solid: the
+    // plot's land is a tint of its color over its sea, which is a tint over the background)
+    const landLayers = useMemo(
+        (): Array<GeoLayer> => tileLayers.map(layers => layers.land),
+        [tileLayers]
+    )
+
+    // over the map's other layers: every tile's water, in the sea's color, and then each class of
+    // road, every tile's, the streets first, so that the main roads lie over them (across the tiles'
+    // edges, too)
     const layers = useMemo(
-        (): Array<GeoLayer> => {
-            if (tiles.length === 0 || streets.length === 0) return []
-            const shade = theme.name === 'light' ? 'light' : 'dark'
-            const water = streets.flatMap(tile => tile.water)
-            const roads = STREET_CLASSES.flatMap(roadClass => {
-                const coordinates = streets.flatMap(tile => tile.roads.get(roadClass) ?? [])
-                if (coordinates.length === 0) return []
-                const style = STREET_STYLES[roadClass]
-                return [{data: {type: 'MultiLineString', coordinates}, stroke: style[shade], lineWidth: style.width}]
-            })
-            return [
-                ...(water.length > 0 ? [{data: {type: 'MultiPolygon', coordinates: water}, fill: tintOf(theme, SEA_TINT)}] : []),
-                ...roads,
-            ] as Array<GeoLayer>
-        },
-        [tiles, streets, theme]
+        (): Array<GeoLayer> => [
+            ...tileLayers.flatMap(({water}) => water !== undefined ? [water] : []),
+            ...STREET_CLASSES.flatMap(roadClass => tileLayers.flatMap(({roads}) => roads.get(roadClass) ?? [])),
+        ],
+        [tileLayers]
     )
 
     return {landLayers, layers, handleViewBoxChange}

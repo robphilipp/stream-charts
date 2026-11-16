@@ -385,6 +385,9 @@ export interface GeoMapSettings {
     outlineColor: string
     // the chart's color (the layers' labels')
     color: string
+    // whether the map's data (the basemap, the layers, and the borders) is resampled as it's projected
+    // (see the plot's `resample`)
+    resample: boolean
 }
 
 /**
@@ -410,7 +413,7 @@ export function drawMap(
 ): void {
     const {
         graticule, showGraticule, basemap, borders, layers, oceanColor, landColor, borderColor, graticuleColor,
-        outlineColor, color,
+        outlineColor, color, resample,
     } = map
     // the map's data at this zoom (see `GeoMapData`). In the turn view mode, each view projects it
     // anew, so it's trimmed to the features that might show in the view (see `viewBoxOf`), and
@@ -449,7 +452,17 @@ export function drawMap(
         context2D.fillRect(0, 0, width, height)
     }
 
-    if (showGraticule) pen.draw(context2D, graticule, undefined, graticuleColor, 0.5)
+    // (the graticule, too, is trimmed to the lines that might show: zoomed in, d3 would otherwise
+    // resample every line of the hemisphere, at the view's scale, before clipping them away)
+    if (showGraticule) pen.draw(context2D, shown(graticule) ?? graticule, undefined, graticuleColor, 0.5)
+
+    // the map's data: in the turn view mode, projected without resampling, when that's asked for (see
+    // the plot's `resample`) -- its points are close enough together that the lines between them are
+    // straight on the screen, and resampling each line, at every view, is most of the cost of drawing
+    // a detailed map zoomed in. (The graticule and the sphere, drawn with few points, are resampled.)
+    const precision = projection.precision()
+    const unresampled = !resample && referenceShapes === undefined
+    if (unresampled) projection.precision(0)
     const land = shown(basemap)
     if (land !== undefined) pen.draw(context2D, land, landColor, undefined, 0)
     shownLayers.forEach(({layer, object}) => drawLayerShapes(context2D, pen, layer, object))
@@ -457,6 +470,7 @@ export function drawMap(
     if (lines !== undefined) pen.draw(context2D, lines, undefined, borderColor, 0.5)
     // (the labels over everything else of the map)
     shownLayers.forEach(({layer, object}) => drawLayerLabels(context2D, pen, layer, object, color, width, height))
+    if (unresampled) projection.precision(precision)
     if (wholeSphere) pen.draw(context2D, SPHERE, undefined, outlineColor, 1)
     if (clippable) projection.clipExtent(clipExtent)
 }

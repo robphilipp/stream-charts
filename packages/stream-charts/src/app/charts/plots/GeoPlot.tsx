@@ -339,6 +339,21 @@ export interface Props<P> {
      */
     zoomMaxScaleFactor?: number
     /**
+     * Whether the map's data -- the `basemap`, the `borders`, and the `layers` -- is resampled as it's
+     * projected: d3's adaptive resampling, which adds points along each line until it follows its
+     * curve on the screen (to within the projection's `precision`). Defaults to `true`. Turned off,
+     * the lines are drawn straight between the data's points, which, for map data whose points are
+     * close together (coastlines, borders, roads), looks the same, and is much quicker -- zoomed in on
+     * a detailed map, resampling every line of it, at every view, is most of the cost of drawing it.
+     * Leave it on for data with points far apart, whose lines should curve between them (e.g. a
+     * rectangle of four corners, which should follow its parallels, or a great-circle route of two
+     * points), or add points along them. The graticule, the sphere, the markers, and the aggregates
+     * are always resampled, since they're drawn with few points. (In the shift view mode, the map is
+     * projected once, at a starting view, and only scaled and slid after, so it's always resampled:
+     * it costs nothing as the view changes.)
+     */
+    resample?: boolean
+    /**
      * What hovering a series does -- its entry in the legend, or, on the map, one of its events (or
      * an aggregate's wedge whose group is named for it): show that series' events alone (`isolate`,
      * the default -- a map's series often overlap at the same places), or draw its events over the
@@ -533,6 +548,7 @@ export function GeoPlot<P>(props: Props<P>): null {
         zoomEnabled = true,
         zoomKeyModifiersRequired = true,
         zoomMaxScaleFactor = 20,
+        resample = true,
         autoRotate,
         viewMode = 'turn',
         hoveredSeries = 'isolate',
@@ -737,11 +753,11 @@ export function GeoPlot<P>(props: Props<P>): null {
     const mapSettings = useMemo(
         (): GeoMapSettings & {projection: d3.GeoProjection, setUp: unknown, referenceShapes: unknown, width: number, height: number} => ({
             projection, setUp, referenceShapes, width, height, graticule, showGraticule, basemap, borders, layers,
-            oceanColor, landColor, borderColor, graticuleColor, outlineColor, color,
+            oceanColor, landColor, borderColor, graticuleColor, outlineColor, color, resample,
         }),
         [
             projection, setUp, referenceShapes, width, height, graticule, showGraticule, basemap, borders, layers,
-            oceanColor, landColor, borderColor, graticuleColor, outlineColor, color,
+            oceanColor, landColor, borderColor, graticuleColor, outlineColor, color, resample,
         ]
     )
 
