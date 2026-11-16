@@ -1,10 +1,13 @@
+import * as d3 from "d3"
 import {VectorTile} from "@mapbox/vector-tile"
 import {PbfReader} from "pbf"
 import type {GeoViewBox} from "stream-charts"
 
 /*
     The streets for the geo example's street map: OpenStreetMap's roads, from OpenFreeMap's vector
-    tiles (in the OpenMapTiles schema, its `transportation` layer), loaded as the view needs them.
+    tiles (in the OpenMapTiles schema, its `transportation` layer), loaded as the view needs them --
+    and the water (the sea, lakes, and rivers: its `water` layer), so that the coasts are as detailed
+    as the roads.
 
     The tiles cover the earth in a grid that doubles at each zoom, and each holds its area's roads,
     generalized for its zoom: zoomed out, only the main roads; zoomed in, every street. So the view
@@ -34,9 +37,19 @@ export const STREET_CLASSES = ['service', 'minor', 'tertiary', 'secondary', 'pri
 export type StreetClass = typeof STREET_CLASSES[number]
 
 /**
- * A tile's roads: each class's lines, as `[longitude, latitude]` coordinates
+ * A polygon's rings (its outline, and any holes), as `[longitude, latitude]` coordinates
  */
-export type TileStreets = Map<StreetClass, Array<Array<[number, number]>>>
+export type PolygonRings = Array<Array<[number, number]>>
+
+/**
+ * A tile's map: its roads (each class's lines, as `[longitude, latitude]` coordinates), its water (the
+ * sea, lakes, and rivers, as polygons wound for d3-geo), and the part of the earth it covers
+ */
+export type TileStreets = {
+    roads: Map<StreetClass, Array<Array<[number, number]>>>
+    water: Array<PolygonRings>
+    bounds: {west: number, south: number, east: number, north: number}
+}
 
 /**
  * A tile's place in the grid of tiles: its zoom, and its column and row
@@ -113,6 +126,28 @@ export function viewTilesOf(box: GeoViewBox | undefined, pixelsPerDegree: number
 
 /**
  * @param tile A tile's place in the grid
+ * @return The part of the earth it covers (degrees)
+ */
+export function tileBoundsOf({z, x, y}: TileId): {west: number, south: number, east: number, north: number} {
+    const tiles = 2 ** z
+    const latitudeOf = (row: number): number => Math.atan(Math.sinh(Math.PI * (1 - 2 * row / tiles))) * 180 / Math.PI
+    return {west: x / tiles * 360 - 180, east: (x + 1) / tiles * 360 - 180, north: latitudeOf(y), south: latitudeOf(y + 1)}
+}
+
+/**
+ * @param rings A polygon's rings, as GeoJSON winds them (its outline anticlockwise)
+ * @return The rings as d3-geo winds them (its outline clockwise, on the sphere): reversed, should
+ * the polygon otherwise take in more than half the earth (which d3-geo would take for the outside of
+ * the polygon)
+ */
+export function d3WoundRingsOf(rings: PolygonRings): PolygonRings {
+    return d3.geoArea({type: 'Polygon', coordinates: rings}) > 2 * Math.PI ?
+        rings.map(ring => [...ring].reverse()) :
+        rings
+}
+
+/**
+ * @param tile A tile's place in the grid
  * @return Its key (e.g. for the tiles kept)
  */
 export const tileKeyOf = ({z, x, y}: TileId): string => `${z}/${x}/${y}`
@@ -121,25 +156,35 @@ export const tileKeyOf = ({z, x, y}: TileId): string => `${z}/${x}/${y}`
  * @param data A tile's vector-tile data
  * @param tile The tile's place in the grid
  * @return The tile's roads, by class (the other classes -- paths, tracks, railways, and so on --
- * left out)
+ * left out), its water, and the part of the earth it covers
  */
-export function streetsOfTile(data: ArrayBuffer, {z, x, y}: TileId): TileStreets {
-    const streets: TileStreets = new Map()
-    const layer = new VectorTile(new PbfReader(data)).layers.transportation
-    if (layer === undefined) return streets
-    for (let index = 0; index < layer.length; index++) {
-        const feature = layer.feature(index)
+export function streetsOfTile(data: ArrayBuffer, tile: TileId): TileStreets {
+    const {z, x, y} = tile
+    const layers = new VectorTile(new PbfReader(data)).layers
+    const roads: TileStreets['roads'] = new Map()
+    const transportation = layers.transportation
+    for (let index = 0; index < (transportation?.length ?? 0); index++) {
+        const feature = transportation.feature(index)
         const roadClass = feature.properties.class as StreetClass
         if (!STREET_CLASSES.includes(roadClass)) continue
         const {geometry} = feature.toGeoJSON(x, y, z)
         const lines = geometry.type === 'LineString' ? [geometry.coordinates] :
             geometry.type === 'MultiLineString' ? geometry.coordinates :
                 []
-        const kept = streets.get(roadClass) ?? []
+        const kept = roads.get(roadClass) ?? []
         lines.forEach(line => kept.push(line as Array<[number, number]>))
-        streets.set(roadClass, kept)
+        roads.set(roadClass, kept)
     }
-    return streets
+    const water: Array<PolygonRings> = []
+    const waterLayer = layers.water
+    for (let index = 0; index < (waterLayer?.length ?? 0); index++) {
+        const {geometry} = waterLayer.feature(index).toGeoJSON(x, y, z)
+        const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] :
+            geometry.type === 'MultiPolygon' ? geometry.coordinates :
+                []
+        polygons.forEach(polygon => water.push(d3WoundRingsOf(polygon as PolygonRings)))
+    }
+    return {roads, water, bounds: tileBoundsOf(tile)}
 }
 
 /**

@@ -589,7 +589,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
         [albersUsa, water, showRivers, showStates, us, showRoads, roads, showCities, cities, theme]
     )
     // the street map, loaded as the view zooms in (over the land and its layers, under the cities)
-    const {layers: streetLayers, handleViewBoxChange} = useStreetLayers(showStreets, theme)
+    const {landLayers: streetLandLayers, layers: streetLayers, handleViewBoxChange} = useStreetLayers(showStreets, theme)
     const borders = useMemo(() => byZoom(COUNTRY_BORDERS, detailed?.borders), [detailed])
     // the countries, tinted by their number of towers (a choropleth), and named, those with towers
     const layers = useMemo<Array<GeoLayer>>(
@@ -602,15 +602,18 @@ export function StreamingGeoChart(props: Props): JSX.Element {
         [showCountries, detailed]
     )
 
-    // the map's layers: the United States' (with Albers USA) or the countries, with the streets over
-    // them (and, with Albers USA, under its cities' dots, the layer of points)
+    // the map's layers: the United States' (with Albers USA) or the countries, between the street
+    // map's land (under them) and its water and streets (over them, and, with Albers USA, under its
+    // cities' dots, the layer of points)
     const mapLayers = useMemo(
         (): Array<GeoLayer> => {
-            if (!albersUsa) return [...layers, ...streetLayers]
+            if (!albersUsa) return [...streetLandLayers, ...layers, ...streetLayers]
             const isCities = (layer: GeoLayer): boolean => layer.pointRadius !== undefined
-            return [...usLayers.filter(layer => !isCities(layer)), ...streetLayers, ...usLayers.filter(isCities)]
+            return [
+                ...streetLandLayers, ...usLayers.filter(layer => !isCities(layer)), ...streetLayers, ...usLayers.filter(isCities),
+            ]
         },
-        [albersUsa, usLayers, layers, streetLayers]
+        [albersUsa, usLayers, layers, streetLandLayers, streetLayers]
     )
 
     const phoneFlashes = useMemo(

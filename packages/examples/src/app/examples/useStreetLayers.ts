@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from "react"
+import * as d3 from "d3"
 import type {GeoLayer, GeoViewBox} from "stream-charts"
 import type {Theme} from "../ui/Themes.ts"
 import {STREET_CLASSES, type StreetClass, StreetTiles, type TileStreets, tileKeyOf, viewTilesOf} from "./dataproviders/streetTiles.ts"
@@ -9,6 +10,18 @@ const STREET_TILES = new StreetTiles()
 // how long (ms) the view holds still before its tiles are loaded (so that a zoom of many wheel
 // steps, or a quick pan, loads only the tiles of where it ends up)
 const LOAD_DELAY = 150
+
+// the sea's and the land's colors as the plot draws them by default (a fraction of the way from the
+// background to the chart's color): the sea a 5% tint, and the land a 20% tint over it
+const SEA_TINT = 0.05
+const LAND_TINT = SEA_TINT + 0.2 * (1 - SEA_TINT)
+
+/**
+ * @param theme The theme
+ * @param tint How far (0 to 1) from the background toward the chart's color
+ * @return The color, solid
+ */
+const tintOf = (theme: Theme, tint: number): string => d3.interpolateRgb(theme.backgroundColor, theme.color)(tint)
 
 // each class of road's colors (by theme) and width (px): the main roads warmer and wider, the
 // streets paler and finer, so that the map stays readable under the events
@@ -24,13 +37,20 @@ const STREET_STYLES: Record<StreetClass, {light: string, dark: string, width: nu
 
 /**
  * The street map: the roads in view, from OpenFreeMap's tiles, at a level of detail for the zoom --
- * loaded as the view settles (each tile once, and kept), and handed to the plot as layers
+ * loaded as the view settles (each tile once, and kept), and handed to the plot as layers -- and,
+ * so that the coasts are as detailed as the roads, the tiles' land and water. Under the map's other
+ * layers, each tile is filled with the land's color, so that the land that the map's coarser coast
+ * leaves out is there; and over them, the tiles' water (the sea, lakes, and rivers) is filled with
+ * the sea's, so that the sea that its coarser coast takes in is sea, with the roads over it all.
  * @param enabled Whether the streets are shown
- * @param theme The theme (for the roads' colors)
- * @return The streets' layers (none while they're off, or the view is zoomed out past them), and the
+ * @param theme The theme (for the colors: the land and the sea's as the plot draws them, by default,
+ * and the roads')
+ * @return The layers under the map's other layers (the tiles' land), and over them (their water, and
+ * their roads) -- none while the streets are off, or the view is zoomed out past them -- and the
  * handler for the plot's `onViewBoxChange`
  */
 export function useStreetLayers(enabled: boolean, theme: Theme): {
+    landLayers: Array<GeoLayer>
     layers: Array<GeoLayer>
     handleViewBoxChange: (box: GeoViewBox | undefined, pixelsPerDegree: number) => void
 } {
@@ -90,21 +110,40 @@ export function useStreetLayers(enabled: boolean, theme: Theme): {
         [tiles]
     )
 
-    // a layer for each class of road (its lines from every tile, as one shape, so that it's drawn
-    // as one path), the streets first, so that the main roads lie over them
-    const layers = useMemo(
+    // the land, under the map's other layers: each tile, filled with the land's color (solid: the
+    // plot's land is a tint of its color over its sea, which is a tint over the background)
+    const landLayers = useMemo(
         (): Array<GeoLayer> => {
             if (tiles.length === 0 || streets.length === 0) return []
-            const shade = theme.name === 'light' ? 'light' : 'dark'
-            return STREET_CLASSES.flatMap(roadClass => {
-                const coordinates = streets.flatMap(tile => tile.get(roadClass) ?? [])
-                if (coordinates.length === 0) return []
-                const style = STREET_STYLES[roadClass]
-                return [{data: {type: 'MultiLineString', coordinates}, stroke: style[shade], lineWidth: style.width}]
-            })
+            const coordinates = streets.map(({bounds: {west, south, east, north}}) =>
+                (d3.geoGraticule().extent([[west, south], [east, north]]).outline() as GeoJSON.Polygon).coordinates
+            )
+            return [{data: {type: 'MultiPolygon', coordinates}, fill: tintOf(theme, LAND_TINT)}]
         },
         [tiles, streets, theme]
     )
 
-    return {layers, handleViewBoxChange}
+    // over the map's other layers: the water, in the sea's color, and a layer for each class of road
+    // (its lines from every tile, as one shape, so that it's drawn as one path), the streets first,
+    // so that the main roads lie over them
+    const layers = useMemo(
+        (): Array<GeoLayer> => {
+            if (tiles.length === 0 || streets.length === 0) return []
+            const shade = theme.name === 'light' ? 'light' : 'dark'
+            const water = streets.flatMap(tile => tile.water)
+            const roads = STREET_CLASSES.flatMap(roadClass => {
+                const coordinates = streets.flatMap(tile => tile.roads.get(roadClass) ?? [])
+                if (coordinates.length === 0) return []
+                const style = STREET_STYLES[roadClass]
+                return [{data: {type: 'MultiLineString', coordinates}, stroke: style[shade], lineWidth: style.width}]
+            })
+            return [
+                ...(water.length > 0 ? [{data: {type: 'MultiPolygon', coordinates: water}, fill: tintOf(theme, SEA_TINT)}] : []),
+                ...roads,
+            ] as Array<GeoLayer>
+        },
+        [tiles, streets, theme]
+    )
+
+    return {landLayers, layers, handleViewBoxChange}
 }

@@ -1,4 +1,5 @@
-import {MIN_STREETS_ZOOM, tileKeyOf, tileZoomOf, tilesOf, viewTilesOf} from "./streetTiles";
+import * as d3 from "d3";
+import {d3WoundRingsOf, MIN_STREETS_ZOOM, tileBoundsOf, tileKeyOf, tileZoomOf, tilesOf, viewTilesOf} from "./streetTiles";
 
 // (how many pixels a degree spans for a tile zoom: 2^z tiles of 512 px around the earth)
 const pixelsPerDegreeAt = (zoom: number): number => 512 * 2 ** zoom / 360
@@ -37,5 +38,32 @@ describe('the street map\'s tiles', () => {
         expect(tiles.length).toBeLessThanOrEqual(48)
         expect(tiles[0].z).toBeLessThan(12)
         expect(tiles[0].z).toBeGreaterThanOrEqual(MIN_STREETS_ZOOM)
+    })
+})
+
+describe('the street map\'s land and water', () => {
+    it('knows the part of the earth a tile covers', () => {
+        // (the whole earth's one tile, to the Web Mercator grid's edges)
+        const earth = tileBoundsOf({z: 0, x: 0, y: 0})
+        expect(earth.west).toBe(-180)
+        expect(earth.east).toBe(180)
+        expect(earth.north).toBeCloseTo(85.0511, 3)
+        expect(earth.south).toBeCloseTo(-85.0511, 3)
+        // (and a tile of central London holds it)
+        const london = tileBoundsOf({z: 10, x: 511, y: 340})
+        expect(london.west).toBeLessThan(-0.1)
+        expect(london.east).toBeGreaterThan(-0.1)
+        expect(london.south).toBeLessThan(51.5)
+        expect(london.north).toBeGreaterThan(51.5)
+    })
+
+    it('winds a polygon as d3-geo takes it: its outline clockwise, so that it\'s the small area inside', () => {
+        // (a square of 1 degree, wound as GeoJSON winds it: anticlockwise)
+        const square: Array<Array<[number, number]>> = [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+        expect(d3.geoArea({type: 'Polygon', coordinates: square})).toBeGreaterThan(2 * Math.PI)
+        const wound = d3WoundRingsOf(square)
+        expect(d3.geoArea({type: 'Polygon', coordinates: wound})).toBeLessThan(0.001)
+        // (one already wound clockwise is left as it is)
+        expect(d3WoundRingsOf(wound)).toBe(wound)
     })
 })
