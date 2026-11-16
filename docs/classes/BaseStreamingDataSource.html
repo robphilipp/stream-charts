@@ -20,13 +20,14 @@ data is ingested into the series, and how to find the latest time in the series.
 <li><span id="cd"><span class="tsd-kind-type-parameter">CD</span> <span class="tsd-signature-keyword">extends</span> <a href="../interfaces/ChartData.html" class="tsd-signature-type tsd-kind-interface">ChartData</a></span></li>
 <li><span id="d"><span class="tsd-kind-type-parameter">D</span></span></li>
 <li><span id="s"><span class="tsd-kind-type-parameter">S</span> <span class="tsd-signature-keyword">extends</span> <a href="../interfaces/BaseSeries.html" class="tsd-signature-type tsd-kind-interface">BaseSeries</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#d">D</a><span class="tsd-signature-symbol">&gt;</span></span></li></ul></section>
-<section class="tsd-panel tsd-hierarchy" data-refl="1142">
+<section class="tsd-panel tsd-hierarchy" data-refl="1382">
 <h4>Hierarchy (<a href="../hierarchy.html#BaseStreamingDataSource">View Summary</a>)</h4>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><span class="tsd-hierarchy-target">BaseStreamingDataSource</span>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><a href="TimeSeriesDataSource.html" class="tsd-signature-type tsd-kind-class">TimeSeriesDataSource</a></li>
 <li class="tsd-hierarchy-item"><a href="IteratesDataSource.html" class="tsd-signature-type tsd-kind-class">IteratesDataSource</a></li>
+<li class="tsd-hierarchy-item"><a href="GeoDataSource.html" class="tsd-signature-type tsd-kind-class">GeoDataSource</a></li>
 <li class="tsd-hierarchy-item"><a href="OrdinalDataSource.html" class="tsd-signature-type tsd-kind-class">OrdinalDataSource</a></li>
 <li class="tsd-hierarchy-item"><a href="OutlierDataSource.html" class="tsd-signature-type tsd-kind-class">OutlierDataSource</a></li></ul></li></ul></section>
 <section class="tsd-panel">
@@ -34,7 +35,7 @@ data is ingested into the series, and how to find the latest time in the series.
 <ul class="tsd-hierarchy">
 <li><a href="../interfaces/StreamingDataSource.html" class="tsd-signature-type tsd-kind-interface">StreamingDataSource</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#cd">CD</a><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#d">D</a><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#s">S</a><span class="tsd-signature-symbol">&gt;</span></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L84">datasources/StreamingDataSource.ts:84</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L84">datasources/StreamingDataSource.ts:84</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -92,7 +93,7 @@ mutates them in place as data arrives.</p>
 </div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <a href="" class="tsd-signature-type tsd-kind-class">BaseStreamingDataSource</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#cd">CD</a><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#d">D</a><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#s">S</a><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L104">datasources/StreamingDataSource.ts:104</a></li></ul></aside></div></li></ul></section></section></details>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L104">datasources/StreamingDataSource.ts:104</a></li></ul></aside></div></li></ul></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="properties-1">Properties<a href="#properties-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -105,7 +106,7 @@ already in <a href="../interfaces/StreamingDataSource.html#series" class="tsd-ki
 </div><aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/StreamingDataSource.html">StreamingDataSource</a>.<a href="../interfaces/StreamingDataSource.html#chartdataupdatesobservable">chartDataUpdatesObservable</a></p>
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L96">datasources/StreamingDataSource.ts:96</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L96">datasources/StreamingDataSource.ts:96</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="isrunningobservable"><code class="tsd-tag">Readonly</code><span>is<wbr/>Running<wbr/>Observable</span><a href="#isrunningobservable" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">isRunningObservable</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = ...</span></div>
@@ -113,12 +114,12 @@ already in <a href="../interfaces/StreamingDataSource.html#series" class="tsd-ki
 </div><aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/StreamingDataSource.html">StreamingDataSource</a>.<a href="../interfaces/StreamingDataSource.html#isrunningobservable">isRunningObservable</a></p>
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L97">datasources/StreamingDataSource.ts:97</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L97">datasources/StreamingDataSource.ts:97</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-protected">
 <h3 class="tsd-anchor-link" id="seriesmap"><code class="tsd-tag">Protected</code> <code class="tsd-tag">Readonly</code><span>series<wbr/>Map</span><a href="#seriesmap" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">seriesMap</span><span class="tsd-signature-symbol">:</span> <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map" class="tsd-signature-type external" target="_blank">Map</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#s">S</a><span class="tsd-signature-symbol">&gt;</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L87">datasources/StreamingDataSource.ts:87</a></li></ul></aside></section></section></details>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L87">datasources/StreamingDataSource.ts:87</a></li></ul></aside></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Accessors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="accessors-1">Accessors<a href="#accessors-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -134,7 +135,7 @@ already in <a href="../interfaces/StreamingDataSource.html#series" class="tsd-ki
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/StreamingDataSource.html">StreamingDataSource</a>.<a href="../interfaces/StreamingDataSource.html#running">running</a></p>
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L121">datasources/StreamingDataSource.ts:121</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L121">datasources/StreamingDataSource.ts:121</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="series"><span>series</span><a href="#series" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -147,7 +148,7 @@ already in <a href="../interfaces/StreamingDataSource.html#series" class="tsd-ki
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/StreamingDataSource.html">StreamingDataSource</a>.<a href="../interfaces/StreamingDataSource.html#series">series</a></p>
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L113">datasources/StreamingDataSource.ts:113</a></li></ul></aside></div></li></ul></section></section></details>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L113">datasources/StreamingDataSource.ts:113</a></li></ul></aside></div></li></ul></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="methods-1">Methods<a href="#methods-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -162,7 +163,7 @@ already in <a href="../interfaces/StreamingDataSource.html#series" class="tsd-ki
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/StreamingDataSource.html">StreamingDataSource</a>.<a href="../interfaces/StreamingDataSource.html#dispose">dispose</a></p>
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L188">datasources/StreamingDataSource.ts:188</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L188">datasources/StreamingDataSource.ts:188</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-protected">
 <h3 class="tsd-anchor-link" id="ingest"><code class="tsd-tag">Protected</code> <code class="tsd-tag">Abstract</code><span>ingest</span><a href="#ingest" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-protected">
@@ -179,7 +180,7 @@ already in <a href="../interfaces/StreamingDataSource.html#series" class="tsd-ki
 </div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L205">datasources/StreamingDataSource.ts:205</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L205">datasources/StreamingDataSource.ts:205</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="latesttime"><code class="tsd-tag">Abstract</code><span>latest<wbr/>Time</span><a href="#latesttime" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -191,7 +192,7 @@ already in <a href="../interfaces/StreamingDataSource.html#series" class="tsd-ki
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/StreamingDataSource.html">StreamingDataSource</a>.<a href="../interfaces/StreamingDataSource.html#latesttime">latestTime</a></p>
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L199">datasources/StreamingDataSource.ts:199</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L199">datasources/StreamingDataSource.ts:199</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="serieslist"><span>series<wbr/>List</span><a href="#serieslist" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -202,7 +203,7 @@ already in <a href="../interfaces/StreamingDataSource.html#series" class="tsd-ki
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/StreamingDataSource.html">StreamingDataSource</a>.<a href="../interfaces/StreamingDataSource.html#serieslist">seriesList</a></p>
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L128">datasources/StreamingDataSource.ts:128</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L128">datasources/StreamingDataSource.ts:128</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="setgenerator"><span>set<wbr/>Generator</span><a href="#setgenerator" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -225,7 +226,7 @@ by the next <a href="#start" class="tsd-kind-method">start</a>.</p>
 </div></div><aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/StreamingDataSource.html">StreamingDataSource</a>.<a href="../interfaces/StreamingDataSource.html#setgenerator">setGenerator</a></p>
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L178">datasources/StreamingDataSource.ts:178</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L178">datasources/StreamingDataSource.ts:178</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="start"><span>start</span><a href="#start" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -241,7 +242,7 @@ or has been disposed.</p>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/StreamingDataSource.html">StreamingDataSource</a>.<a href="../interfaces/StreamingDataSource.html#start">start</a></p>
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L139">datasources/StreamingDataSource.ts:139</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L139">datasources/StreamingDataSource.ts:139</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="stop"><span>stop</span><a href="#stop" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -254,7 +255,7 @@ in the background once this returns.</p>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/StreamingDataSource.html">StreamingDataSource</a>.<a href="../interfaces/StreamingDataSource.html#stop">stop</a></p>
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/a066aec9c6151b8f57e5608a7502f7565dab9f78/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L166">datasources/StreamingDataSource.ts:166</a></li></ul></aside></div></li></ul></section></section></details></div>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L166">datasources/StreamingDataSource.ts:166</a></li></ul></aside></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

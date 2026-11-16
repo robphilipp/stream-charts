@@ -344,7 +344,7 @@ Every data source has the same lifecycle and the same read-only view of its data
 Three data sources keep extra state that their plots use:
 - `OrdinalDataSource.stats` holds the lifetime and windowed statistics (min, max, mean) of each category, which keep accumulating while no plot is mounted.
 - `IteratesDataSource.droppedCountFor(seriesName)` counts the points dropped from a series, so that the Poincaré plot's colorized lines keep their colors as old points are dropped.
-- `GeoDataSource` keeps its [roll-ups](#geo-rollups) up to date as events arrive and are dropped: read them with `aggregates(rollupName)` and `rollupNames()`, and replace them with `setRollups(rollups)`.
+- `GeoDataSource` keeps its [roll-ups](#geo-rollups) up to date as events arrive and are dropped: read them with `aggregates(rollupName, seriesFilter?)` (of only the series a filter takes, when given), `eventsOf(rollupName, cellId, group?, seriesFilter?)`, `rollupCellSize(rollupName)`, and `rollupNames()`, and replace them with `setRollups(rollups)`. It keeps each sensor's events, too: `sensorEventsOf(seriesName, sensorId)` and `latestSensorEventOf(seriesName, sensorId)`.
 
 To build a data source for some other shape of data, extend `BaseStreamingDataSource` and implement `ingest(data)` and `latestTime()`.
 
@@ -868,6 +868,8 @@ import countries from "world-atlas/countries-110m.json"
 const land = feature(countries, countries.objects.land)
 const borders = mesh(countries, countries.objects.countries, (a, b) => a !== b)
 ```
+
+Map data can also be loaded for the view as it settles: `onViewBoxChange` reports the part of the earth in view and its zoom, so you can fetch what's there and hand it to the plot as `layers`. The demo's street map does this, with OpenStreetMap's roads – and coasts as detailed as the roads – from [OpenFreeMap](https://openfreemap.org)'s vector tiles, more detailed the further you zoom in.
 
 **Moving around.** Dragging turns a globe under the mouse; a flat map shifts east and west, and, once zoomed in, north and south. The wheel zooms about the mouse (hold shift or ctrl, by default). The markers are circles on the earth, drawn through the projection, so they flatten toward a globe's edge and stretch toward a Mercator map's poles, like the land. Unlike the other plots, the geo plot's tooltips show while the data source is running.
 

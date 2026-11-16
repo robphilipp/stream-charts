@@ -1,0 +1,450 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>GeoDataSource | stream-charts</title><meta name="description" content="Documentation for stream-charts"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">stream-charts</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="" aria-current="page">GeoDataSource</a></li></ul>
+<h1>Class GeoDataSource&lt;P&gt;</h1></div>
+<section class="tsd-panel tsd-comment">
+<div class="tsd-comment tsd-typography"><p>A data source for geo charts (the <a href="../functions/GeoPlot.html" class="tsd-kind-function">GeoPlot</a>): it holds a series of sensor events for each
+group of sensors, drops events once they're older than <code>dropDataAfter</code>, and keeps its roll-ups
+(aggregates of the events, by place) up to date as events arrive and are dropped</p>
+</div></section>
+<section class="tsd-panel">
+<h4>Type Parameters</h4>
+<ul class="tsd-type-parameter-list">
+<li><span id="p"><span class="tsd-kind-type-parameter">P</span></span>
+<div class="tsd-comment tsd-typography"><p>The type of the events' payload</p>
+</div></li></ul></section>
+<section class="tsd-panel tsd-hierarchy" data-refl="1550">
+<h4>Hierarchy (<a href="../hierarchy.html#GeoDataSource">View Summary</a>)</h4>
+<ul class="tsd-hierarchy">
+<li class="tsd-hierarchy-item"><a href="BaseStreamingDataSource.html" class="tsd-signature-type tsd-kind-class">BaseStreamingDataSource</a><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/GeoChartData.html" class="tsd-signature-type tsd-kind-interface">GeoChartData</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <a href="../interfaces/GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <a href="../types/GeoSeries.html" class="tsd-signature-type tsd-kind-type-alias">GeoSeries</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>
+<ul class="tsd-hierarchy">
+<li class="tsd-hierarchy-item"><span class="tsd-hierarchy-target">GeoDataSource</span></li></ul></li></ul></section><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoDataSource.ts#L43">datasources/geoDataSource.ts:43</a></li></ul></aside>
+<section class="tsd-panel-group tsd-index-group">
+<section class="tsd-panel tsd-index-panel">
+<details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h5 class="tsd-index-heading uppercase">Index</h5></summary>
+<div class="tsd-accordion-details">
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="constructors">Constructors<a href="#constructors" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#constructor" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Constructor"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a>
+</div></section>
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="properties">Properties<a href="#properties" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#chartdataupdatesobservable" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>chart<wbr/>Data<wbr/>Updates<wbr/>Observable</span></a>
+<a href="#isrunningobservable" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>is<wbr/>Running<wbr/>Observable</span></a>
+<a href="#seriesmap" class="tsd-index-link tsd-is-protected tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>series<wbr/>Map</span></a>
+</div></section>
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="accessors">Accessors<a href="#accessors" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#running" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Accessor"><use href="../assets/icons.svg#icon-262144"></use></svg><span>running</span></a>
+<a href="#series" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Accessor"><use href="../assets/icons.svg#icon-262144"></use></svg><span>series</span></a>
+</div></section>
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="methods">Methods<a href="#methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#aggregates" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>aggregates</span></a>
+<a href="#dispose" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>dispose</span></a>
+<a href="#eventsof" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>events<wbr/>Of</span></a>
+<a href="#ingest" class="tsd-index-link tsd-is-protected"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>ingest</span></a>
+<a href="#latestsensoreventof" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>latest<wbr/>Sensor<wbr/>Event<wbr/>Of</span></a>
+<a href="#latesttime" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>latest<wbr/>Time</span></a>
+<a href="#rollupcellsize" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>rollup<wbr/>Cell<wbr/>Size</span></a>
+<a href="#rollupnames" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>rollup<wbr/>Names</span></a>
+<a href="#sensoreventsof" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>sensor<wbr/>Events<wbr/>Of</span></a>
+<a href="#serieslist" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>series<wbr/>List</span></a>
+<a href="#setdropdataafter" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Drop<wbr/>Data<wbr/>After</span></a>
+<a href="#setgenerator" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Generator</span></a>
+<a href="#setrollups" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Rollups</span></a>
+<a href="#start" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>start</span></a>
+<a href="#stop" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>stop</span></a>
+</div></section></div></details></section></section>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Constructors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="constructors-1">Constructors<a href="#constructors-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="constructor"><span>constructor</span><a href="#constructor" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="constructorgeodatasource"><span class="tsd-signature-keyword">new</span> <span class="tsd-kind-constructor-signature">GeoDataSource</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#constructorgeodatasourcep">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">options</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/GeoDataSourceOptions.html" class="tsd-signature-type tsd-kind-interface">GeoDataSourceOptions</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">GeoDataSource</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><a href="#constructorgeodatasource" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Creates a geo data source (stopped: call <a href="#start" class="tsd-kind-method">start</a> to start it)</p>
+</div>
+<section class="tsd-panel">
+<h4>Type Parameters</h4>
+<ul class="tsd-type-parameter-list">
+<li><span id="constructorgeodatasourcep"><span class="tsd-kind-type-parameter">P</span></span>
+<div class="tsd-comment tsd-typography"><p>The type of the events' payload</p>
+</div></li></ul></section>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">options</span>: <a href="../interfaces/GeoDataSourceOptions.html" class="tsd-signature-type tsd-kind-interface">GeoDataSourceOptions</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>The initial data, the generator, the data-retention settings, and the roll-ups</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <a href="" class="tsd-signature-type tsd-kind-class">GeoDataSource</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
+<p>Overrides <a href="BaseStreamingDataSource.html">BaseStreamingDataSource</a>.<a href="BaseStreamingDataSource.html#constructor">constructor</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoDataSource.ts#L59">datasources/geoDataSource.ts:59</a></li></ul></aside></div></li></ul></section></section></details>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="properties-1">Properties<a href="#properties-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member tsd-is-inherited">
+<h3 class="tsd-anchor-link" id="chartdataupdatesobservable"><code class="tsd-tag">Readonly</code><span>chart<wbr/>Data<wbr/>Updates<wbr/>Observable</span><a href="#chartdataupdatesobservable" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">chartDataUpdatesObservable</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/GeoChartData.html" class="tsd-signature-type tsd-kind-interface">GeoChartData</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = ...</span></div>
+<div class="tsd-comment tsd-typography"><p>Emits each chunk of chart data <em>after</em> it has been ingested into <a href="../interfaces/StreamingDataSource.html#series" class="tsd-kind-property">series</a>. Hot: a
+subscriber only sees data that arrives after it subscribes (everything before that is
+already in <a href="../interfaces/StreamingDataSource.html#series" class="tsd-kind-property">series</a>).</p>
+</div><aside class="tsd-sources">
+<p>Inherited from <a href="BaseStreamingDataSource.html">BaseStreamingDataSource</a>.<a href="BaseStreamingDataSource.html#chartdataupdatesobservable">chartDataUpdatesObservable</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L96">datasources/StreamingDataSource.ts:96</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-inherited">
+<h3 class="tsd-anchor-link" id="isrunningobservable"><code class="tsd-tag">Readonly</code><span>is<wbr/>Running<wbr/>Observable</span><a href="#isrunningobservable" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">isRunningObservable</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = ...</span></div>
+<div class="tsd-comment tsd-typography"><p>Emits whether the source is running, starting with the current value</p>
+</div><aside class="tsd-sources">
+<p>Inherited from <a href="BaseStreamingDataSource.html">BaseStreamingDataSource</a>.<a href="BaseStreamingDataSource.html#isrunningobservable">isRunningObservable</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L97">datasources/StreamingDataSource.ts:97</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-protected tsd-is-inherited">
+<h3 class="tsd-anchor-link" id="seriesmap"><code class="tsd-tag">Protected</code> <code class="tsd-tag">Readonly</code><span>series<wbr/>Map</span><a href="#seriesmap" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">seriesMap</span><span class="tsd-signature-symbol">:</span> <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map" class="tsd-signature-type external" target="_blank">Map</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <a href="../types/GeoSeries.html" class="tsd-signature-type tsd-kind-type-alias">GeoSeries</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></div><aside class="tsd-sources">
+<p>Inherited from <a href="BaseStreamingDataSource.html">BaseStreamingDataSource</a>.<a href="BaseStreamingDataSource.html#seriesmap">seriesMap</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L87">datasources/StreamingDataSource.ts:87</a></li></ul></aside></section></section></details>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Accessors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="accessors-1">Accessors<a href="#accessors-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member tsd-is-inherited">
+<h3 class="tsd-anchor-link" id="running"><span>running</span><a href="#running" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited">
+<li>
+<div class="tsd-signature" id="runningrunning"><span class="tsd-signature-keyword">get</span> <span class="tsd-kind-get-signature">running</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Whether the source is currently subscribed to its generator</p>
+</div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4><p><code>true</code> while the source is running; <code>false</code> otherwise</p>
+<aside class="tsd-sources">
+<p>Inherited from BaseStreamingDataSource.running</p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L121">datasources/StreamingDataSource.ts:121</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-inherited">
+<h3 class="tsd-anchor-link" id="series"><span>series</span><a href="#series" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited">
+<li>
+<div class="tsd-signature" id="seriesseries"><span class="tsd-signature-keyword">get</span> <span class="tsd-kind-get-signature">series</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ReadonlyMap</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="BaseStreamingDataSource.html#s">S</a><span class="tsd-signature-symbol">&gt;</span></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>The live series, keyed by series name, in insertion order (see <a href="../interfaces/StreamingDataSource.html#series" class="tsd-kind-property">StreamingDataSource.series</a>)</p>
+</div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">ReadonlyMap</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="BaseStreamingDataSource.html#s">S</a><span class="tsd-signature-symbol">&gt;</span></h4><p>The series map (mutated in place as data arrives)</p>
+<aside class="tsd-sources">
+<p>Inherited from BaseStreamingDataSource.series</p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L113">datasources/StreamingDataSource.ts:113</a></li></ul></aside></div></li></ul></section></section></details>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="methods-1">Methods<a href="#methods-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="aggregates"><span>aggregates</span><a href="#aggregates" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="aggregates-1"><span class="tsd-kind-call-signature">aggregates</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">rollupName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">seriesFilter</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">RegExp</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/GeoAggregate.html" class="tsd-signature-type tsd-kind-interface">GeoAggregate</a><span class="tsd-signature-symbol">[]</span><a href="#aggregates-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">rollupName</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>The name of a roll-up</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">seriesFilter</span>: <span class="tsd-signature-type">RegExp</span></span>
+<div class="tsd-comment tsd-typography"><p>The series whose events count (e.g. the chart's series filter); all of them
+when not given. The roll-up of only some of the series is rolled up from the events held when
+it's first asked for, and then kept up to date as events arrive and are dropped, until another
+filter, or none, is asked for (one is kept for each roll-up) -- so asking again with the same
+filter is as quick as asking for all the series.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <a href="../interfaces/GeoAggregate.html" class="tsd-signature-type tsd-kind-interface">GeoAggregate</a><span class="tsd-signature-symbol">[]</span></h4><p>The roll-up's aggregates, one per cell (empty for an unknown roll-up). The same
+array is returned until the roll-up's cells change.</p>
+<aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoDataSource.ts#L227">datasources/geoDataSource.ts:227</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-inherited">
+<h3 class="tsd-anchor-link" id="dispose"><span>dispose</span><a href="#dispose" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited">
+<li class="tsd-is-inherited">
+<div class="tsd-signature tsd-anchor-link" id="dispose-1"><span class="tsd-kind-call-signature">dispose</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#dispose-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Stops the source and completes its observables. A disposed source can't be started again.</p>
+</div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<p>Inherited from <a href="BaseStreamingDataSource.html">BaseStreamingDataSource</a>.<a href="BaseStreamingDataSource.html#dispose">dispose</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L188">datasources/StreamingDataSource.ts:188</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="eventsof"><span>events<wbr/>Of</span><a href="#eventsof" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="eventsof-1"><span class="tsd-kind-call-signature">eventsOf</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">rollupName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">cellId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">group</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">seriesFilter</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">RegExp</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[]</span><a href="#eventsof-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>The events of one of a roll-up's cells (or of one of the cell's groups) -- e.g. for a sparkline
+of a sensor's readings in a tooltip</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">rollupName</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>The name of the roll-up</p>
+</div></li>
+<li><span><span class="tsd-kind-parameter">cellId</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>The cell's ID (see <a href="../interfaces/GeoAggregate.html#id" class="tsd-kind-property">GeoAggregate.id</a>)</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">group</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>One of the cell's groups (see <a href="../interfaces/GeoAggregate.html#groups" class="tsd-kind-property">GeoAggregate.groups</a>); all its events when
+not given</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">seriesFilter</span>: <span class="tsd-signature-type">RegExp</span></span>
+<div class="tsd-comment tsd-typography"><p>The series whose events count (see <a href="#aggregates" class="tsd-kind-method">aggregates</a>); all of them when
+not given</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <a href="../interfaces/GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[]</span></h4><p>The events, oldest first (a copy; empty for an unknown roll-up, cell, or group)</p>
+<aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoDataSource.ts#L197">datasources/geoDataSource.ts:197</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-protected">
+<h3 class="tsd-anchor-link" id="ingest"><code class="tsd-tag">Protected</code><span>ingest</span><a href="#ingest" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-protected">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="ingest-1"><span class="tsd-kind-call-signature">ingest</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">data</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/GeoChartData.html" class="tsd-signature-type tsd-kind-interface">GeoChartData</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#ingest-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Adds each series' new events to it (registering a series the first time it shows up), then
+drops, from <em>every</em> series, the events older than <code>dropDataAfter</code> relative to the latest
+event so far -- so a group of sensors that has gone quiet still ages out. Calls
+<code>onUpdateData</code> with each series' new events.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">data</span>: <a href="../interfaces/GeoChartData.html" class="tsd-signature-type tsd-kind-interface">GeoChartData</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>The chunk of chart data emitted by the generator</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<p>Overrides <a href="BaseStreamingDataSource.html">BaseStreamingDataSource</a>.<a href="BaseStreamingDataSource.html#ingest">ingest</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoDataSource.ts#L256">datasources/geoDataSource.ts:256</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="latestsensoreventof"><span>latest<wbr/>Sensor<wbr/>Event<wbr/>Of</span><a href="#latestsensoreventof" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="latestsensoreventof-1"><span class="tsd-kind-call-signature">latestSensorEventOf</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">seriesName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">sensorId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><a href="#latestsensoreventof-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">seriesName</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>The name of a series</p>
+</div></li>
+<li><span><span class="tsd-kind-parameter">sensorId</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>The ID of one of its sensors</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <a href="../interfaces/GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><p>The sensor's latest event in the series (<code>undefined</code> for an unknown series or sensor)</p>
+<aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoDataSource.ts#L124">datasources/geoDataSource.ts:124</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="latesttime"><span>latest<wbr/>Time</span><a href="#latesttime" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="latesttime-1"><span class="tsd-kind-call-signature">latestTime</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><a href="#latesttime-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">number</span></h4><p>The time of the latest event over all the series, or <code>-Infinity</code> when there are none</p>
+<aside class="tsd-sources">
+<p>Overrides <a href="BaseStreamingDataSource.html">BaseStreamingDataSource</a>.<a href="BaseStreamingDataSource.html#latesttime">latestTime</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoDataSource.ts#L242">datasources/geoDataSource.ts:242</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="rollupcellsize"><span>rollup<wbr/>Cell<wbr/>Size</span><a href="#rollupcellsize" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="rollupcellsize-1"><span class="tsd-kind-call-signature">rollupCellSize</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">rollupName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><a href="#rollupcellsize-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">rollupName</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>The name of a roll-up</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><p>The size (degrees) of the roll-up's cells, when its binning says (e.g. <code>byGridCell</code>'s,
+and <code>byLocation</code>'s); <code>undefined</code> for an unknown roll-up, or one whose cells vary</p>
+<aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoDataSource.ts#L206">datasources/geoDataSource.ts:206</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="rollupnames"><span>rollup<wbr/>Names</span><a href="#rollupnames" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="rollupnames-1"><span class="tsd-kind-call-signature">rollupNames</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><a href="#rollupnames-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h4><p>The names of the roll-ups</p>
+<aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoDataSource.ts#L213">datasources/geoDataSource.ts:213</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="sensoreventsof"><span>sensor<wbr/>Events<wbr/>Of</span><a href="#sensoreventsof" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="sensoreventsof-1"><span class="tsd-kind-call-signature">sensorEventsOf</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">seriesName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">sensorId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[]</span><a href="#sensoreventsof-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>The events of one of a series' sensors -- e.g. for a sparkline of the sensor's readings in a
+tooltip -- kept as events arrive and are dropped, so that they're found without searching the
+series</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">seriesName</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>The name of the series</p>
+</div></li>
+<li><span><span class="tsd-kind-parameter">sensorId</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>The sensor's ID</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <a href="../interfaces/GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[]</span></h4><p>The sensor's events in the series, oldest first (a copy; empty for an unknown series or
+sensor)</p>
+<aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoDataSource.ts#L115">datasources/geoDataSource.ts:115</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-inherited">
+<h3 class="tsd-anchor-link" id="serieslist"><span>series<wbr/>List</span><a href="#serieslist" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited">
+<li class="tsd-is-inherited">
+<div class="tsd-signature tsd-anchor-link" id="serieslist-1"><span class="tsd-kind-call-signature">seriesList</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <a href="../types/GeoSeries.html" class="tsd-signature-type tsd-kind-type-alias">GeoSeries</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[]</span><a href="#serieslist-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<h4 class="tsd-returns-title">Returns <a href="../types/GeoSeries.html" class="tsd-signature-type tsd-kind-type-alias">GeoSeries</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[]</span></h4><p>The series, as an array, in insertion order</p>
+<aside class="tsd-sources">
+<p>Inherited from <a href="BaseStreamingDataSource.html">BaseStreamingDataSource</a>.<a href="BaseStreamingDataSource.html#serieslist">seriesList</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L128">datasources/StreamingDataSource.ts:128</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="setdropdataafter"><span>set<wbr/>Drop<wbr/>Data<wbr/>After</span><a href="#setdropdataafter" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="setdropdataafter-1"><span class="tsd-kind-call-signature">setDropDataAfter</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">dropDataAfter</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#setdropdataafter-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Changes how long events are kept; takes effect as the next events arrive</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">dropDataAfter</span>: <span class="tsd-signature-type">number</span></span>
+<div class="tsd-comment tsd-typography"><p>Events older than this (ms) are dropped</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoDataSource.ts#L235">datasources/geoDataSource.ts:235</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-inherited">
+<h3 class="tsd-anchor-link" id="setgenerator"><span>set<wbr/>Generator</span><a href="#setgenerator" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited">
+<li class="tsd-is-inherited">
+<div class="tsd-signature tsd-anchor-link" id="setgenerator-1"><span class="tsd-kind-call-signature">setGenerator</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">generator</span><span class="tsd-signature-symbol">:</span> <a href="../types/DataGenerator.html" class="tsd-signature-type tsd-kind-type-alias">DataGenerator</a><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/GeoChartData.html" class="tsd-signature-type tsd-kind-interface">GeoChartData</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <a href="../types/GeoSeries.html" class="tsd-signature-type tsd-kind-type-alias">GeoSeries</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#setgenerator-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Replaces the generator, e.g. when the data-update period changes. The new generator is used
+by the next <a href="#start" class="tsd-kind-method">start</a>.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">generator</span>: <a href="../types/DataGenerator.html" class="tsd-signature-type tsd-kind-type-alias">DataGenerator</a><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/GeoChartData.html" class="tsd-signature-type tsd-kind-interface">GeoChartData</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <a href="../types/GeoSeries.html" class="tsd-signature-type tsd-kind-type-alias">GeoSeries</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>The new generator</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+<div class="tsd-comment tsd-typography">
+<div class="tsd-tag-throws">
+<h4 class="tsd-anchor-link" id="throws">Throws<a href="#throws" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>Error when the source is running (the generator can only be replaced while stopped)</p>
+</div></div><aside class="tsd-sources">
+<p>Inherited from <a href="BaseStreamingDataSource.html">BaseStreamingDataSource</a>.<a href="BaseStreamingDataSource.html#setgenerator">setGenerator</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L178">datasources/StreamingDataSource.ts:178</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="setrollups"><span>set<wbr/>Rollups</span><a href="#setrollups" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="setrollups-1"><span class="tsd-kind-call-signature">setRollups</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">rollups</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <a href="../interfaces/GeoRollup.html" class="tsd-signature-type tsd-kind-interface">GeoRollup</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#setrollups-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Replaces the roll-ups, rolling up the events held now (from then on, they're kept up to date
+as events arrive and are dropped)</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">rollups</span>: <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <a href="../interfaces/GeoRollup.html" class="tsd-signature-type tsd-kind-interface">GeoRollup</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>The roll-ups, by name</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoDataSource.ts#L134">datasources/geoDataSource.ts:134</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-inherited">
+<h3 class="tsd-anchor-link" id="start"><span>start</span><a href="#start" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited">
+<li class="tsd-is-inherited">
+<div class="tsd-signature tsd-anchor-link" id="start-1"><span class="tsd-kind-call-signature">start</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#start-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Subscribes to the generator, handing it the current series, so that a restarted source
+resumes from the data accumulated so far. Each chunk of data the generator emits is ingested
+into the series, and then emitted through <a href="#chartdataupdatesobservable" class="tsd-kind-property">chartDataUpdatesObservable</a>. When the
+generator fails or completes, the source stops. A no-op when the source is already running,
+or has been disposed.</p>
+</div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<p>Inherited from <a href="BaseStreamingDataSource.html">BaseStreamingDataSource</a>.<a href="BaseStreamingDataSource.html#start">start</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L139">datasources/StreamingDataSource.ts:139</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-inherited">
+<h3 class="tsd-anchor-link" id="stop"><span>stop</span><a href="#stop" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited">
+<li class="tsd-is-inherited">
+<div class="tsd-signature tsd-anchor-link" id="stop-1"><span class="tsd-kind-call-signature">stop</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#stop-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Unsubscribes from the generator (a no-op when not running). Nothing keeps generating data
+in the background once this returns.</p>
+</div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<p>Inherited from <a href="BaseStreamingDataSource.html">BaseStreamingDataSource</a>.<a href="BaseStreamingDataSource.html#stop">stop</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/StreamingDataSource.ts#L166">datasources/StreamingDataSource.ts:166</a></li></ul></aside></div></li></ul></section></section></details></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details">
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Constructors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Constructors</summary>
+<div><a href="#constructor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Constructor"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details>
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
+<div><a href="#chartdataupdatesobservable" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>chart<wbr/>Data<wbr/>Updates<wbr/>Observable</span></a><a href="#isrunningobservable" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>is<wbr/>Running<wbr/>Observable</span></a><a href="#seriesmap" class="tsd-is-protected tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>series<wbr/>Map</span></a></div></details>
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Accessors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Accessors</summary>
+<div><a href="#running" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Accessor"><use href="../assets/icons.svg#icon-262144"></use></svg><span>running</span></a><a href="#series" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Accessor"><use href="../assets/icons.svg#icon-262144"></use></svg><span>series</span></a></div></details>
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Methods</summary>
+<div><a href="#aggregates"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>aggregates</span></a><a href="#dispose" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>dispose</span></a><a href="#eventsof"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>events<wbr/>Of</span></a><a href="#ingest" class="tsd-is-protected"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>ingest</span></a><a href="#latestsensoreventof"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>latest<wbr/>Sensor<wbr/>Event<wbr/>Of</span></a><a href="#latesttime"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>latest<wbr/>Time</span></a><a href="#rollupcellsize"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>rollup<wbr/>Cell<wbr/>Size</span></a><a href="#rollupnames"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>rollup<wbr/>Names</span></a><a href="#sensoreventsof"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>sensor<wbr/>Events<wbr/>Of</span></a><a href="#serieslist" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>series<wbr/>List</span></a><a href="#setdropdataafter"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Drop<wbr/>Data<wbr/>After</span></a><a href="#setgenerator" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Generator</span></a><a href="#setrollups"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Rollups</span></a><a href="#start" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>start</span></a><a href="#stop" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>stop</span></a></div></details></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="../index.html">stream-charts</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>
