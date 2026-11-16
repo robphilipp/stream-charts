@@ -5,9 +5,9 @@ The geo chart plots events from sensors at places on the earth – on a globe, o
 #### what you're looking at
 
 <figure>
-    <img src="./images/geo-chart.png" alt="The geo chart example, zoomed into London: the towers of six carriers, as dots in the carriers' colors, and the magenta blips of the phones' estimated locations, trailing between them, the older ones fading, with rings flashing out from the newest, and a legend of the carriers">
+    <img src="./images/geo-chart.png" alt="The geo chart example, zoomed into central London over the street map: the towers of six carriers, as dots in the carriers' colors, and the magenta blips of the phones' estimated locations, trailing between them along the streets, the older ones fading, with rings flashing out from the newest, the Thames winding through, and a legend of the carriers">
     <figcaption>
-        <b>Figure 14</b> The geo chart after running for a minute and a half, zoomed into London. The colored dots are the six carriers' towers, each the pings it received, sized by their signal's strength. The magenta blips are the phones' locations, estimated from the towers – each phone leaves a trail, the older blips fainter – and the rings are the newest locations flashing (magenta), and the phones' actual places (small, orange).
+        <b>Figure 14</b> The geo chart after running for a minute and a half, zoomed into central London, over the street map. The colored dots are the six carriers' towers, each the pings it received, sized by their signal's strength. The magenta blips are the phones' locations, estimated from the towers – each phone leaves a trail, the older blips fainter – and the rings are the newest locations flashing (magenta), and the phones' actual places (small, orange).
     </figcaption>
 </figure>
 
@@ -37,9 +37,9 @@ The flashes calm down from afar, too: flashes of the same color and length that 
 #### aggregates
 
 <figure>
-    <img src="./images/geo-aggregates.png" alt="The geo chart showing aggregates: a circle at each tower, sized by its number of pings, and colored by their mean signal strength, from red (weak) to yellow (strong), with a key for the sizes and the colors in the bottom-right corner">
+    <img src="./images/geo-aggregates.png" alt="The geo chart showing aggregates over the street map of central London: a circle at each tower, sized by its number of pings, and colored by their mean signal strength, from red (weak) to yellow (strong), among the streets, the Thames, and the parks' lakes, with a key for the sizes and the colors in the bottom-right corner">
     <figcaption>
-        <b>Figure 15</b> The same data, rolled up "by tower": one circle per tower, its area showing how many pings it received, and its color their mean signal strength – red for weak, yellow for strong. The key, in the corner, says what the sizes and colors mean.
+        <b>Figure 15</b> The same data, rolled up "by tower", over the street map of central London: one circle per tower, its area showing how many pings it received, and its color their mean signal strength – red for weak, yellow for strong. The key, in the corner, says what the sizes and colors mean.
     </figcaption>
 </figure>
 

@@ -10,6 +10,13 @@ The scatter-chart tutorial built a chart of readings over time. This one builds 
 
 Our sensors measure air quality – fine particulate matter, PM2.5, in µg/m³ – across Europe: two or three monitors in each of eight cities, and two monitors riding trains between cities. By the end, you'll have the chart, and you'll know where to plug in your real sensors.
 
+<figure>
+    <img src="./images/geo-tutorial.png" alt="The tutorial's chart: Europe, in the azimuthal equal-area projection, with the air-quality monitors' readings as circles, sized by their PM2.5 – the city monitors in blue, in eight cities from Madrid to Athens, and the train monitors in purple, between them – and a legend of the two series" width="640px">
+    <figcaption>
+        <b>Figure 18</b> The chart we'll build, after its readings have streamed for a while: each reading a circle, at its monitor, sized by its PM2.5 – the city monitors in blue, and the train monitors in purple, riding between the cities. Pick a roll-up, and it shows the readings aggregated instead.
+    </figcaption>
+</figure>
+
 The code imports the library from the `stream-charts` package, just as your own application would. Every piece of it was run as you see it here.
 
 #### step 1: the readings

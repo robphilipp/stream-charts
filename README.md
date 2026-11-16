@@ -849,12 +849,12 @@ Events from sensors at places on the earth, drawn on a globe or a map with [d3-g
 
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/geo-chart-dark.png">
-    <img src="packages/examples/public/images/geo-chart-light.png" alt="the geo chart example, zoomed into London: six carriers' cell towers as colored dots, the trails of the phones' estimated locations between them, the older ones fading, and rings flashing out from the newest">
+    <img src="packages/examples/public/images/geo-chart-light.png" alt="the geo chart example, zoomed into central London over the demo's street map: six carriers' cell towers as colored dots, the trails of the phones' estimated locations between them, the older ones fading, and rings flashing out from the newest">
 </picture>
 
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/geo-aggregates-dark.png">
-    <img src="packages/examples/public/images/geo-aggregates-light.png" alt="the geo chart showing aggregates: a circle at each cell tower, sized by its number of pings and colored by their mean signal strength, from red (weak) to yellow (strong), with a size and a color key">
+    <img src="packages/examples/public/images/geo-aggregates-light.png" alt="the geo chart showing aggregates over the demo's street map of central London: a circle at each cell tower, sized by its number of pings and colored by their mean signal strength, from red (weak) to yellow (strong), with a size and a color key">
 </picture>
 
 [▶ watch it stream](packages/examples/public/images/geo-chart-streaming.gif) (animated)
