@@ -81,6 +81,7 @@ import {
     usCities,
     type UsDetail,
     usDetail,
+    finestCountries,
     usLakesAndRivers,
     type UsRoad,
     usRoads,
@@ -112,6 +113,17 @@ const FOCUS_SHAPES = {
 // the countries' tints, by their number of towers (none for a country without any)
 const MOST_TOWERS = Math.max(...TOWERS_BY_COUNTRY.values())
 const towersColor = (towers: number): string => d3.interpolateBlues(0.3 + 0.7 * towers / MOST_TOWERS)
+
+// with the street map on, the countries' tints fade out as the view zooms in to its streets, in
+// steps (each a zoom range, and the tints' opacity in it) -- the street map's coasts are finer than
+// any of the countries' outlines, so a tint would leave out the land along them -- and are gone from
+// the last step's end (about a city's size, at the chart's usual size)
+const COUNTRY_TINT_OPACITY = 0.45
+const COUNTRY_TINT_FADE: Array<{minZoom: number, maxZoom: number, opacity: number}> = [
+    {minZoom: 0, maxZoom: 40, opacity: COUNTRY_TINT_OPACITY},
+    {minZoom: 40, maxZoom: 80, opacity: 0.3},
+    {minZoom: 80, maxZoom: 160, opacity: 0.15},
+]
 
 /**
  * @param feature A country
@@ -589,17 +601,32 @@ export function StreamingGeoChart(props: Props): JSX.Element {
         [albersUsa, water, showRivers, showStates, us, showRoads, roads, showCities, cities, theme]
     )
     // the street map, loaded as the view zooms in (over the land and its layers, under the cities)
-    const {landLayers: streetLandLayers, layers: streetLayers, handleViewBoxChange} = useStreetLayers(showStreets, theme)
+    // and the places' names, from the same tiles (with Albers USA, its cities are the United States')
+    const {
+        landLayers: streetLandLayers, layers: streetLayers, placeLayers, handleViewBoxChange,
+    } = useStreetLayers(showStreets, showCities && !albersUsa, theme)
     const borders = useMemo(() => byZoom(COUNTRY_BORDERS, detailed?.borders), [detailed])
-    // the countries, tinted by their number of towers (a choropleth), and named, those with towers
+    // the countries, tinted by their number of towers (a choropleth), and named, those with towers.
+    // With the street map showing, the tints are of the finest countries (1:10m), closest to its
+    // coasts, and fade out as the view zooms in to its streets (see `COUNTRY_TINT_FADE`)
+    const streetsShown = streetLandLayers.length > 0
+    const finest = useLoaded(finestCountries, showCountries && showStreets)
     const layers = useMemo<Array<GeoLayer>>(
-        () => showCountries ? [{
-            data: byZoom(COUNTRIES, detailed?.countries),
-            fill: (feature): string | undefined => towersIn(feature) > 0 ? towersColor(towersIn(feature)) : undefined,
-            opacity: 0.45,
-            label: (feature): string | undefined => towersIn(feature) > 0 ? feature.properties?.name : undefined,
-        }] : [],
-        [showCountries, detailed]
+        () => {
+            if (!showCountries) return []
+            const data = streetsShown && finest !== undefined ? finest : byZoom(COUNTRIES, detailed?.countries)
+            const fill = (feature: GeoJSON.Feature): string | undefined =>
+                towersIn(feature) > 0 ? towersColor(towersIn(feature)) : undefined
+            const label = (feature: GeoJSON.Feature): string | undefined =>
+                towersIn(feature) > 0 ? feature.properties?.name : undefined
+            if (!showStreets) return [{data, fill, opacity: COUNTRY_TINT_OPACITY, label}]
+            // (each step's zooms end just short of the next's, so that no zoom is in two of them)
+            return [
+                ...COUNTRY_TINT_FADE.map(({minZoom, maxZoom, opacity}) => ({data, fill, opacity, minZoom, maxZoom: maxZoom * (1 - 1e-9)})),
+                {data, label},
+            ]
+        },
+        [showCountries, showStreets, streetsShown, finest, detailed]
     )
 
     // the map's layers: the United States' (with Albers USA) or the countries, between the street
@@ -607,13 +634,13 @@ export function StreamingGeoChart(props: Props): JSX.Element {
     // cities' dots, the layer of points)
     const mapLayers = useMemo(
         (): Array<GeoLayer> => {
-            if (!albersUsa) return [...streetLandLayers, ...layers, ...streetLayers]
+            if (!albersUsa) return [...streetLandLayers, ...layers, ...streetLayers, ...placeLayers]
             const isCities = (layer: GeoLayer): boolean => layer.pointRadius !== undefined
             return [
                 ...streetLandLayers, ...usLayers.filter(layer => !isCities(layer)), ...streetLayers, ...usLayers.filter(isCities),
             ]
         },
-        [albersUsa, usLayers, layers, streetLandLayers, streetLayers]
+        [albersUsa, usLayers, layers, streetLandLayers, streetLayers, placeLayers]
     )
 
     const phoneFlashes = useMemo(
@@ -721,6 +748,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                 </> : <>
                                     {optionIcon(theme, 'countries', showCountries, color => <ChoroplethIcon color={color}/>)}
                                     {optionIcon(theme, 'borders', showBorders, color => <BordersIcon color={color}/>)}
+                                    {optionIcon(theme, 'cities', showCities, color => <CitiesIcon color={color}/>)}
                                 </>}
                                 {optionIcon(theme, 'streets', showStreets, color => <StreetsIcon color={color}/>)}
                                 <VerticalDivider color={theme.disabledBackgroundColor} height={15}/>
@@ -802,14 +830,6 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                         onChange={() => setShowRivers(!showRivers)}
                                     />
                                     <Checkbox
-                                        checked={showCities}
-                                        label="cities"
-                                        backgroundColor={theme.backgroundColor}
-                                        borderColor={theme.color}
-                                        labelColor={theme.color}
-                                        onChange={() => setShowCities(!showCities)}
-                                    />
-                                    <Checkbox
                                         checked={showRoads}
                                         label="roads"
                                         backgroundColor={theme.backgroundColor}
@@ -819,6 +839,16 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                                     />
                                 </> : null}
                             </>
+                            {/* (the United States' cities with Albers USA, and otherwise the places' names
+                                from the street map's tiles) */}
+                            <Checkbox
+                                checked={showCities}
+                                label="cities"
+                                backgroundColor={theme.backgroundColor}
+                                borderColor={theme.color}
+                                labelColor={theme.color}
+                                onChange={() => setShowCities(!showCities)}
+                            />
                             <Checkbox
                                 checked={showStreets}
                                 label="streets"
@@ -956,7 +986,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
             </GridItem>
             <GridItem gridAreaName="chart">
                 {/* (the street map's credit, over the chart's bottom-left corner) */}
-                <Overlaid overlay={streetLayers.length > 0 ? <StreetsCredit theme={theme}/> : null}>
+                <Overlaid overlay={streetLayers.length > 0 || placeLayers.length > 0 ? <StreetsCredit theme={theme}/> : null}>
                 <Chart
                     chartId={CHART_ID}
                     width={useGridCellWidth()}

@@ -31,6 +31,13 @@ describe('the street map\'s tiles', () => {
         expect(viewTilesOf({west: -10, south: 40, east: 10, north: 60}, pixelsPerDegreeAt(MIN_STREETS_ZOOM - 1))).toEqual([])
     })
 
+    it('takes the whole earth\'s tiles, for the places, at a zoom with few enough, for a view of half the earth', () => {
+        const tiles = viewTilesOf(undefined, pixelsPerDegreeAt(3), 0)
+        // (zoom 3's 64 tiles are too many: zoom 2's 16)
+        expect(tiles.length).toBe(16)
+        expect(tiles.every(tile => tile.z === 2)).toBe(true)
+    })
+
     it('takes the next zoom out, rather than too many tiles, for a large view', () => {
         const box = {west: -2, south: 50, east: 2, north: 53}
         const tiles = viewTilesOf(box, pixelsPerDegreeAt(12))

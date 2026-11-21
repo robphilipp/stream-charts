@@ -2,7 +2,9 @@ import {useCallback, useEffect, useMemo, useRef, useState} from "react"
 import * as d3 from "d3"
 import type {GeoLayer, GeoViewBox} from "stream-charts"
 import type {Theme} from "../ui/Themes.ts"
-import {STREET_CLASSES, type StreetClass, StreetTiles, type TileStreets, tileKeyOf, viewTilesOf} from "./dataproviders/streetTiles.ts"
+import {
+    MIN_STREETS_ZOOM, PLACE_CLASSES, type Place, STREET_CLASSES, type StreetClass, StreetTiles, type TileStreets, tileKeyOf, viewTilesOf,
+} from "./dataproviders/streetTiles.ts"
 
 // the tiles' roads, loaded once and kept for every geo chart (see `StreetTiles`)
 const STREET_TILES = new StreetTiles()
@@ -87,16 +89,24 @@ function layersOfTile(tile: TileStreets, theme: Theme): TileLayers {
  * layers, each tile is filled with the land's color, so that the land that the map's coarser coast
  * leaves out is there; and over them, the tiles' water (the sea, lakes, and rivers) is filled with
  * the sea's, so that the sea that its coarser coast takes in is sea, with the roads over it all.
- * @param enabled Whether the streets are shown
+ *
+ * And the places' names, from the same tiles: dots, named where the names don't overlap, the larger
+ * places first. The tiles of each zoom hold the places that suit it, so, zoomed out, only the largest
+ * cities are named, and, the further in, the smaller cities, the towns, the villages, and, at the
+ * streets' level, the suburbs and neighbourhoods. (The places' tiles are taken at any zoom, the
+ * whole earth's when it's all in view; the streets only from their own zoom in.)
+ * @param showStreets Whether the streets are shown
+ * @param showPlaces Whether the places' names are shown
  * @param theme The theme (for the colors: the land and the sea's as the plot draws them, by default,
- * and the roads')
+ * the roads', and the places')
  * @return The layers under the map's other layers (the tiles' land), and over them (their water, and
- * their roads) -- none while the streets are off, or the view is zoomed out past them -- and the
- * handler for the plot's `onViewBoxChange`
+ * their roads) -- none while the streets are off, or the view is zoomed out past them -- the layer
+ * of the places (to draw over everything else), and the handler for the plot's `onViewBoxChange`
  */
-export function useStreetLayers(enabled: boolean, theme: Theme): {
+export function useStreetLayers(showStreets: boolean, showPlaces: boolean, theme: Theme): {
     landLayers: Array<GeoLayer>
     layers: Array<GeoLayer>
+    placeLayers: Array<GeoLayer>
     handleViewBoxChange: (box: GeoViewBox | undefined, pixelsPerDegree: number) => void
 } {
     // the part of the earth in view, as the plot last reported it
@@ -106,10 +116,13 @@ export function useStreetLayers(enabled: boolean, theme: Theme): {
         []
     )
 
-    // the tiles the view takes (none while the streets are off, or the view is zoomed out past them)
+    // the tiles the view takes: with the places shown, at any zoom; otherwise, none while the
+    // streets are off, or the view is zoomed out past them
     const tiles = useMemo(
-        () => enabled && view !== undefined ? viewTilesOf(view.box, view.pixelsPerDegree) : [],
-        [enabled, view]
+        () => (showStreets || showPlaces) && view !== undefined ?
+            viewTilesOf(view.box, view.pixelsPerDegree, showPlaces ? 0 : MIN_STREETS_ZOOM) :
+            [],
+        [showStreets, showPlaces, view]
     )
 
     // the roads shown: the tiles of the view loaded so far -- and, until they've all loaded, the
@@ -156,9 +169,11 @@ export function useStreetLayers(enabled: boolean, theme: Theme): {
     )
 
     // each tile's layers (made once for the tile, see `layersOfTile`)
+    // (only those of the streets' zooms: the places' tiles zoomed out past them aren't drawn)
     const tileLayers = useMemo(
-        (): Array<TileLayers> => tiles.length === 0 ? [] : streets.map(tile => layersOfTile(tile, theme)),
-        [tiles, streets, theme]
+        (): Array<TileLayers> => tiles.length === 0 || !showStreets ? [] :
+            streets.filter(({tile}) => tile.z >= MIN_STREETS_ZOOM).map(tile => layersOfTile(tile, theme)),
+        [tiles, streets, theme, showStreets]
     )
 
     // the land, under the map's other layers: each tile, filled with the land's color (solid: the
@@ -179,5 +194,31 @@ export function useStreetLayers(enabled: boolean, theme: Theme): {
         [tileLayers]
     )
 
-    return {landLayers, layers, handleViewBoxChange}
+    // the places of the tiles shown (each once: while new tiles load, the previous view's, of
+    // another zoom, may hold the same place), the larger first, so that their names are placed first
+    const placeLayers = useMemo(
+        (): Array<GeoLayer> => {
+            if (tiles.length === 0 || !showPlaces) return []
+            const places = new Map<string, Place>()
+            streets.forEach(tile => tile.places.forEach(place => {
+                const [longitude, latitude] = place.geometry.coordinates
+                places.set(`${place.properties.name}|${longitude.toFixed(2)}|${latitude.toFixed(2)}`, place)
+            }))
+            if (places.size === 0) return []
+            const importance = (place: Place): number => PLACE_CLASSES.indexOf(place.properties.class)
+            const features = [...places.values()].sort((a, b) =>
+                importance(a) - importance(b) || a.properties.rank - b.properties.rank
+            )
+            return [{
+                data: {type: 'FeatureCollection', features},
+                fill: theme.color,
+                pointRadius: 2,
+                label: (feature): string | undefined => feature.properties?.name,
+                labelFont: '10px sans-serif',
+            }]
+        },
+        [tiles, streets, theme, showPlaces]
+    )
+
+    return {landLayers, layers, placeLayers, handleViewBoxChange}
 }

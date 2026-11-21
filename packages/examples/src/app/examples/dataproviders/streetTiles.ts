@@ -13,6 +13,10 @@ import type {GeoViewBox} from "stream-charts"
     generalized for its zoom: zoomed out, only the main roads; zoomed in, every street. So the view
     takes the tiles of the zoom that matches its own (see `tileZoomOf`) that cover it (see
     `tilesOf`), each loaded once, and kept (the most recently used, see `StreetTiles`).
+
+    The tiles also hold the places (their `place` layer): from the most zoomed-out tiles, only the
+    largest cities, and, the further in, the smaller ones, the towns, the villages, and, at the most
+    detailed, the suburbs and neighbourhoods -- so their names come with the zoom, too.
  */
 
 // OpenFreeMap's description of its tiles (TileJSON), which names the URL of the current tiles
@@ -37,6 +41,19 @@ export const STREET_CLASSES = ['service', 'minor', 'tertiary', 'secondary', 'pri
 export type StreetClass = typeof STREET_CLASSES[number]
 
 /**
+ * The classes of the places named (OpenMapTiles' `class`), the most important first: the larger
+ * places' names are placed before the smaller ones', so that, where they'd overlap, the larger win
+ */
+export const PLACE_CLASSES = ['city', 'town', 'village', 'suburb', 'hamlet', 'quarter', 'neighbourhood'] as const
+export type PlaceClass = typeof PLACE_CLASSES[number]
+
+/**
+ * A place: its name (in English, where the tiles have it), its class, and its rank among the places
+ * (OpenMapTiles' `rank`: 1 the most important; places without one rank after those with one)
+ */
+export type Place = GeoJSON.Feature<GeoJSON.Point, {name: string, class: PlaceClass, rank: number}>
+
+/**
  * A polygon's rings (its outline, and any holes), as `[longitude, latitude]` coordinates
  */
 export type PolygonRings = Array<Array<[number, number]>>
@@ -46,8 +63,10 @@ export type PolygonRings = Array<Array<[number, number]>>
  * sea, lakes, and rivers, as polygons wound for d3-geo), and the part of the earth it covers
  */
 export type TileStreets = {
+    tile: TileId
     roads: Map<StreetClass, Array<Array<[number, number]>>>
     water: Array<PolygonRings>
+    places: Array<Place>
     bounds: {west: number, south: number, east: number, north: number}
 }
 
@@ -112,13 +131,15 @@ export function tilesOf(box: GeoViewBox, zoom: number): Array<TileId> {
 /**
  * @param box The longitudes and latitudes in view
  * @param pixelsPerDegree How many pixels a degree of arc spans at the view's center
+ * @param minZoom The least zoom of the tiles taken (by default, the streets')
  * @return The tiles that the view takes: those at the zoom that matches the view, or, should that
- * take too many (a large plot), the zooms out from it; none below the streets' zoom
+ * take too many (a large plot), the zooms out from it; none below the least zoom. (A view without a
+ * box -- e.g. a whole globe -- takes the whole earth's tiles, at a zoom with few enough of them.)
  */
-export function viewTilesOf(box: GeoViewBox | undefined, pixelsPerDegree: number): Array<TileId> {
-    if (box === undefined) return []
-    for (let zoom = tileZoomOf(pixelsPerDegree); zoom >= MIN_STREETS_ZOOM; zoom--) {
-        const tiles = tilesOf(box, zoom)
+export function viewTilesOf(box: GeoViewBox | undefined, pixelsPerDegree: number, minZoom: number = MIN_STREETS_ZOOM): Array<TileId> {
+    const viewBox = box ?? {west: -180, south: -85, east: 180, north: 85}
+    for (let zoom = tileZoomOf(pixelsPerDegree); zoom >= minZoom; zoom--) {
+        const tiles = tilesOf(viewBox, zoom)
         if (tiles.length <= MAX_TILES_IN_VIEW) return tiles
     }
     return []
@@ -184,7 +205,29 @@ export function streetsOfTile(data: ArrayBuffer, tile: TileId): TileStreets {
                 []
         polygons.forEach(polygon => water.push(d3WoundRingsOf(polygon as PolygonRings)))
     }
-    return {roads, water, bounds: tileBoundsOf(tile)}
+    // the places: those of the classes named, inside the tile (a tile also holds those just beyond
+    // its edges, which are its neighbours')
+    const bounds = tileBoundsOf(tile)
+    const places: Array<Place> = []
+    const placeLayer = layers.place
+    for (let index = 0; index < (placeLayer?.length ?? 0); index++) {
+        const feature = placeLayer.feature(index)
+        const {properties} = feature
+        const placeClass = properties.class as PlaceClass
+        if (!PLACE_CLASSES.includes(placeClass)) continue
+        const name = properties.name_en ?? properties['name:latin'] ?? properties.name
+        if (typeof name !== 'string' || name.length === 0) continue
+        const {geometry} = feature.toGeoJSON(x, y, z)
+        if (geometry.type !== 'Point') continue
+        const [longitude, latitude] = geometry.coordinates
+        if (longitude < bounds.west || longitude >= bounds.east || latitude < bounds.south || latitude >= bounds.north) continue
+        places.push({
+            type: 'Feature',
+            geometry,
+            properties: {name, class: placeClass, rank: typeof properties.rank === 'number' ? properties.rank : Infinity},
+        })
+    }
+    return {tile, roads, water, places, bounds}
 }
 
 /**

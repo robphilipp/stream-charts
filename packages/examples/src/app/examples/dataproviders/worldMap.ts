@@ -63,6 +63,15 @@ export async function detailedWorld(): Promise<DetailedWorld> {
 }
 
 /**
+ * @return The countries at the finest level of detail (1:10m), loaded (as a chunk of its own) on the
+ * first call: for tinting the countries under the street map, whose coasts are finer still
+ */
+export async function finestCountries(): Promise<typeof COUNTRIES> {
+    const world10m = (await import("world-atlas/countries-10m.json")).default as unknown as WorldTopology
+    return feature(world10m, world10m.objects.countries)
+}
+
+/**
  * A road of the United States (from Natural Earth's 1:10m roads): its level (`Interstate`,
  * `Federal`, `State`, ...), its rank (Natural Earth's scalerank, from 3, the most important, to 8),
  * and its name (e.g. its route number)
