@@ -27,7 +27,7 @@ change it in place and return it, as long as <code>initial</code> hands out a ne
 <div class="tsd-comment tsd-typography"><p>The type of the state</p>
 </div></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L142">datasources/geoRollups.ts:142</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L142">datasources/geoRollups.ts:142</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -65,7 +65,7 @@ change it in place and return it, as long as <code>initial</code> hands out a ne
 <h4 class="tsd-returns-title">Returns <a class="tsd-signature-type tsd-kind-type-parameter" href="#s">S</a></h4><p>The state with the event in it</p>
 </li></ul></li></ul></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L152">datasources/geoRollups.ts:152</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L152">datasources/geoRollups.ts:152</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="initial"><span>initial</span><a href="#initial" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">initial</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#s">S</a></div>
@@ -79,7 +79,7 @@ change it in place and return it, as long as <code>initial</code> hands out a ne
 <h4 class="tsd-returns-title">Returns <a class="tsd-signature-type tsd-kind-type-parameter" href="#s">S</a></h4><p>The state of a cell (or group) without any events</p>
 </li></ul></li></ul></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L146">datasources/geoRollups.ts:146</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L146">datasources/geoRollups.ts:146</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="remove"><span>remove</span><a href="#remove" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">remove</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">state</span><span class="tsd-signature-symbol">:</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#s">S</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">datum</span><span class="tsd-signature-symbol">:</span> <a href="GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#s">S</a></div>
@@ -99,10 +99,12 @@ change it in place and return it, as long as <code>initial</code> hands out a ne
 <li><span><span class="tsd-kind-parameter">datum</span>: <a href="GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span></span>
 <div class="tsd-comment tsd-typography"><p>The event that left (e.g. dropped as too old)</p>
 </div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <a class="tsd-signature-type tsd-kind-type-parameter" href="#s">S</a></h4><p>The state without the event</p>
+<h4 class="tsd-returns-title">Returns <a class="tsd-signature-type tsd-kind-type-parameter" href="#s">S</a></h4><p>The state without the event: it should take out what <code>add</code> put in for the event, so
+whatever it reads of the event should be read the same way (the built-in measures keep each
+event's value as it was counted, for this; a reducer can keep what it needs in its state)</p>
 </li></ul></li></ul></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L158">datasources/geoRollups.ts:158</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L160">datasources/geoRollups.ts:160</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="value"><span>value</span><a href="#value" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">value</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">state</span><span class="tsd-signature-symbol">:</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#s">S</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">number</span></div>
@@ -122,7 +124,7 @@ change it in place and return it, as long as <code>initial</code> hands out a ne
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">number</span></h4><p>The measure's value</p>
 </li></ul></li></ul></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/231ca8243b3d6014a76a39ce7356333edce0005a/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L163">datasources/geoRollups.ts:163</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L165">datasources/geoRollups.ts:165</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
