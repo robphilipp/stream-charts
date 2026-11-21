@@ -59,13 +59,6 @@ type GeoTooltipContents<P> = {
 }
 
 /**
- * @param events Events, oldest first
- * @return `true` when there are at least two of them, all from the same sensor
- */
-const oneSensorsEvents = <P, >(events: ReadonlyArray<GeoDatum<P>>): boolean =>
-    events.length >= 2 && events.every(event => event.sensorId === events[0].sensorId)
-
-/**
  * @param events A sensor's events, oldest first
  * @param valueOf The value of an event, to draw
  * @param full Whether it's a full sparkline (with axes), or an inline one
@@ -373,9 +366,11 @@ export function GeoPlotTooltipContent<P>(props: Props<P>): ReactElement | null {
         if (aggregate.groups.length === 0 && aggregate.sensorCount === 1) {
             sparkline = sparklineOf(eventsOf(rollup, aggregate.id, undefined, seriesFilter), sparklineValueOf, true)
         }
+        // (only a group of one sensor's events -- a sensor is its series and its ID, as the roll-ups
+        // count them -- so that a line never mixes sensors)
         listedGroups(aggregate.groups, maxGroups, hoveredGroup).forEach(group => {
+            if (group.sensorCount !== 1) return
             const events = eventsOf(rollup, aggregate.id, group.group, seriesFilter)
-            if (!oneSensorsEvents(events)) return
             const groupSparkline = sparklineOf(events, sparklineValueOf, group.group === hoveredGroup)
             if (groupSparkline !== undefined) groupSparklines.set(group.group, groupSparkline)
         })

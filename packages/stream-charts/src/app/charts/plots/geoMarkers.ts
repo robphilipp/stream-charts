@@ -134,6 +134,19 @@ export function wedgeIndexAt(shares: ReadonlyArray<number>, bearing: number): nu
 }
 
 /**
+ * @param aggregate An aggregate drawn as a pie
+ * @param place The place (longitude and latitude) under the mouse, when there's one
+ * @return The group whose wedge is in the direction of the place, from the pie's center (`undefined`
+ * when there's no place, or the aggregate has no groups)
+ */
+export function wedgeGroupAt(aggregate: GeoAggregate, place: [number, number] | undefined): string | undefined {
+    if (place === undefined || aggregate.groups.length === 0) return undefined
+    const groups = pieGroupsOf(aggregate.groups)
+    const index = wedgeIndexAt(groups.map(group => group.count), bearingOf([aggregate.longitude, aggregate.latitude], place))
+    return index >= 0 ? groups[index].group : undefined
+}
+
+/**
  * The ellipse a marker is drawn as: its center (px), its two radii (px), and the rotation (radians)
  * of its first radius' axis
  */

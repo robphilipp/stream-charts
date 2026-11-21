@@ -38,15 +38,13 @@ import {
 } from "./geoProjections"
 import {
     autoLevelOf,
-    bearingOf,
     type DrawnMarker,
     type GeoTooltipMetadata,
     keyOf,
     legendSeriesOf,
     markerAt,
     markerKeyOf,
-    pieGroupsOf,
-    wedgeIndexAt,
+    wedgeGroupAt,
 } from "./geoMarkers"
 import {type GeoFlashOptions, resolvedFlashes} from "./geoFlashes"
 import {ReferenceShapes} from "./geoPens"
@@ -724,7 +722,7 @@ export function GeoPlot<P>(props: Props<P>): null {
     // event), as last drawn into a layer of its own, by which draw function (which changes with the
     // events and the settings), for which view, and with what hovered -- so that the frames between
     // batches of events (e.g. as the flashes animate) copy it, rather than drawing every marker again
-    const sceneRef = useRef<{canvas: HTMLCanvasElement, draw: unknown, view: GeoPlotViewState, hoveredKey: unknown, scene: DrawnScene<P>} | undefined>(undefined)
+    const sceneRef = useRef<{canvas: HTMLCanvasElement, draw: unknown, view: GeoPlotViewState, hoveredSceneKey: unknown, scene: DrawnScene<P>} | undefined>(undefined)
     // each event's marker's geometry (see `MarkerGeometry`), for a view and the markers' settings, so
     // that redrawing the events under a resting view (e.g. as new events arrive) projects only the
     // new ones; not kept while the view is changing, since it changes on every frame then
@@ -820,6 +818,9 @@ export function GeoPlot<P>(props: Props<P>): null {
                 context2D.translate(margin.left, margin.top)
 
                 const hoveredKey = hoveredRef.current !== undefined ? markerKeyOf(hoveredRef.current) : undefined
+                // (what's hovered, as the scene draws it: the marker, and, for a pie, the wedge, whose
+                // outline is part of the scene)
+                const hoveredSceneKey = hoveredRef.current !== undefined ? keyOf(hoveredRef.current) : undefined
                 const frame = frameOf({
                     projection, width, height, margin, color, backgroundColor,
                     latestTime: dataSource?.latestTime() ?? 0,
@@ -909,7 +910,7 @@ export function GeoPlot<P>(props: Props<P>): null {
                 // otherwise drawn into the layer, and copied from it
                 const kept = sceneRef.current
                 let scene: DrawnScene<P>
-                if (kept !== undefined && kept.draw === draw && kept.view === view && kept.hoveredKey === hoveredKey) {
+                if (kept !== undefined && kept.draw === draw && kept.view === view && kept.hoveredSceneKey === hoveredSceneKey) {
                     context2D.drawImage(kept.canvas, 0, 0, width, height)
                     scene = kept.scene
                 } else {
@@ -924,7 +925,7 @@ export function GeoPlot<P>(props: Props<P>): null {
                         canvas.height = Math.round(height * dpr)
                         sceneContext.setTransform(dpr, 0, 0, dpr, 0, 0)
                         scene = drawScene(sceneContext)
-                        sceneRef.current = {canvas, draw, view, hoveredKey, scene}
+                        sceneRef.current = {canvas, draw, view, hoveredSceneKey, scene}
                         context2D.drawImage(canvas, 0, 0, width, height)
                     }
                 }
@@ -954,8 +955,17 @@ export function GeoPlot<P>(props: Props<P>): null {
                         hoveredRef.current = undefined
                         mouseLeaveHandlerFor(tooltipId)?.(nameOf(hoveredTarget))
                     } else if (now.kind === 'aggregate' && hoveredTarget.kind === 'aggregate' && now.aggregate !== hoveredTarget.aggregate) {
-                        const updated: GeoTooltipMetadata<P> = {...now, group: hoveredTarget.group}
+                        // (a pie's wedges turn as its groups' counts change, so the wedge under the
+                        // mouse is found again: it may be another group's now, or its group gone)
+                        let group: string | undefined = undefined
+                        if (aggregateShape === 'pies') {
+                            const [x, y] = mouseRef.current
+                            group = wedgeGroupAt(now.aggregate, placeUnder(projection, [x - margin.left, y - margin.top]))
+                        }
+                        const updated: GeoTooltipMetadata<P> = {...now, group}
                         hoveredRef.current = updated
+                        // (the scene outlined the wedge hovered before: drawn again, if it's another)
+                        if (group !== hoveredTarget.group) context.requestRedraw()
                         mouseOverHandlerFor(tooltipId)?.(
                             nameOf(updated), now.aggregate.lastTime, {series: [], metadata: updated}, mouseRef.current
                         )
@@ -1203,12 +1213,8 @@ export function GeoPlot<P>(props: Props<P>): null {
                     // the wedge under the mouse: by the bearing, from the circle's center, of the
                     // place under the mouse
                     setUp(viewRef.current)
-                    const place = placeUnder(projection, [x - margin.left, y - margin.top])
-                    const {longitude, latitude} = target.aggregate
-                    const groups = pieGroupsOf(target.aggregate.groups)
-                    const index = place === undefined ? -1 :
-                        wedgeIndexAt(groups.map(group => group.count), bearingOf([longitude, latitude], place))
-                    return index >= 0 ? {...target, group: groups[index].group} : target
+                    const group = wedgeGroupAt(target.aggregate, placeUnder(projection, [x - margin.left, y - margin.top]))
+                    return group !== undefined ? {...target, group} : target
                 }
                 const shownRollup = shownRollupRef.current
                 if (cellsRef.current.length === 0 || shownRollup === undefined) return undefined

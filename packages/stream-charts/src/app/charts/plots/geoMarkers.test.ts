@@ -12,6 +12,7 @@ import {
     markerAt,
     markerEllipseAt,
     wedgeBearingsOf,
+    wedgeGroupAt,
     wedgeIndexAt,
     wedgeOf,
     legendSeriesOf,
@@ -64,6 +65,22 @@ describe('pie wedges', () => {
         expect(wedgeIndexAt([1, 2, 1], 269)).toBe(1)
         expect(wedgeIndexAt([1, 2, 1], 300)).toBe(2)
         expect(wedgeIndexAt([], 45)).toBe(-1)
+    })
+
+    it('finds the group whose wedge is toward a place, as the counts change', () => {
+        const pie = (groups: Array<[string, number]>): GeoAggregate => ({
+            id: 'cell', latitude: 0, longitude: 0, count: 4, sensorCount: 2, values: {}, firstTime: 0, lastTime: 1,
+            measures: {}, groups: groups.map(([group, count]) => ({group, count, sensorCount: 1, values: {}})),
+        })
+        // (the wedges in order of the groups' names, clockwise from north: east is a bearing of 90°)
+        const east: [number, number] = [0.01, 0]
+        expect(wedgeGroupAt(pie([['a', 1], ['b', 3]]), east)).toBe('b')
+        // a's share grows past the east: its wedge holds it now
+        expect(wedgeGroupAt(pie([['a', 3], ['b', 1]]), east)).toBe('a')
+        // a's gone: b's wedge is the whole pie
+        expect(wedgeGroupAt(pie([['b', 4]]), east)).toBe('b')
+        expect(wedgeGroupAt(pie([]), east)).toBeUndefined()
+        expect(wedgeGroupAt(pie([['a', 1]]), undefined)).toBeUndefined()
     })
 })
 
@@ -205,7 +222,7 @@ describe('the auto mode\'s levels', () => {
 describe('the series hovered, for the legend', () => {
     const aggregate: GeoAggregate = {
         id: 'cell', latitude: 0, longitude: 0, count: 2, sensorCount: 1, values: {}, firstTime: 0, lastTime: 0, measures: {},
-        groups: [{group: 'Aurora', count: 1, values: {}}, {group: 'iPhone', count: 1, values: {}}],
+        groups: [{group: 'Aurora', count: 1, sensorCount: 1, values: {}}, {group: 'iPhone', count: 1, sensorCount: 1, values: {}}],
     }
     const series = new Map([['Aurora', {}], ['Zenith', {}]])
 

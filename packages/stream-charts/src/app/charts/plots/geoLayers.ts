@@ -199,6 +199,20 @@ export function boxesOverlap(a: GeoBox, b: GeoBox): boolean {
     return ranges(a).some(([aWest, aEast]) => ranges(b).some(([bWest, bEast]) => aWest <= bEast && bWest <= aEast))
 }
 
+/**
+ * @param outer A box
+ * @param inner Another box
+ * @return Whether the inner box lies wholly inside the outer one (either may cross the antimeridian)
+ */
+export function boxContains(outer: GeoBox, inner: GeoBox): boolean {
+    if (inner.south < outer.south || inner.north > outer.north) return false
+    const ranges = (box: GeoBox): Array<[number, number]> =>
+        box.west <= box.east ? [[box.west, box.east]] : [[box.west, 180], [-180, box.east]]
+    return ranges(inner).every(([innerWest, innerEast]) =>
+        ranges(outer).some(([outerWest, outerEast]) => outerWest <= innerWest && innerEast <= outerEast)
+    )
+}
+
 // each feature's box (see `d3.geoBounds`), found once
 const featureBoxes = new WeakMap<object, GeoBox>()
 
@@ -282,6 +296,21 @@ export function visibleOf(object: d3.GeoPermissibleObjects, viewBox: GeoBox | un
 }
 
 /**
+ * The features of a map's data that might be labelled in a view: those that lie wholly inside the
+ * view's box -- a shape's label is drawn only when it's wholly in view, which a shape that reaches
+ * beyond the box isn't. (Unlike {@link visibleOf}, the features are kept whole, and as they are: a
+ * feature trimmed to the view, e.g. a country zoomed in on one of its islands, would look wholly in
+ * view; and the places of the features' labels, worked out once for each feature, are kept by it.)
+ * @param object GeoJSON
+ * @param viewBox The view's box (see {@link viewBoxOf}); `undefined` (everything) keeps them all
+ * @return The features that might be labelled
+ */
+export function labelledOf(object: d3.GeoPermissibleObjects, viewBox: GeoBox | undefined): d3.GeoPermissibleObjects {
+    if (viewBox === undefined) return object
+    return {type: 'FeatureCollection', features: featuresOf(object).filter(feature => boxContains(viewBox, boxOf(feature)))}
+}
+
+/**
  * Draws a layer's shapes: all at once, when they're all the same color, or one feature at a time,
  * when their colors are functions of the features (and nothing, for a layer with neither a fill nor
  * an outline: only labels). Its points are drawn as dots (see the layer's `pointRadius`).
@@ -303,35 +332,38 @@ export function drawLayerShapes(
     const features = featuresOf(object)
     const points = features.filter(isPoint)
     context2D.save()
-    context2D.globalAlpha = opacity
-    if (points.length === 0 && typeof fill !== 'function' && typeof stroke !== 'function') {
-        pen.draw(context2D, object, fill, stroke, lineWidth)
-    } else if (points.length < features.length) {
-        features.forEach(feature => {
-            if (!isPoint(feature)) pen.draw(context2D, feature, fillOf(feature), strokeOf(feature), lineWidth)
+    try {
+        context2D.globalAlpha = opacity
+        if (points.length === 0 && typeof fill !== 'function' && typeof stroke !== 'function') {
+            pen.draw(context2D, object, fill, stroke, lineWidth)
+        } else if (points.length < features.length) {
+            features.forEach(feature => {
+                if (!isPoint(feature)) pen.draw(context2D, feature, fillOf(feature), strokeOf(feature), lineWidth)
+            })
+        }
+        // (the points as dots, drawn at their places, rather than projected with the shapes: in the shift
+        // view mode, the shapes are scaled with the zoom, and the dots shouldn't be)
+        points.forEach(feature => {
+            const featureFill = fillOf(feature)
+            const featureStroke = strokeOf(feature)
+            if (featureFill === undefined && featureStroke === undefined) return
+            const [x, y] = pen.centroid(feature)
+            if (!Number.isFinite(x) || !Number.isFinite(y)) return
+            context2D.beginPath()
+            context2D.arc(x, y, pointRadius, 0, 2 * Math.PI)
+            if (featureFill !== undefined) {
+                context2D.fillStyle = featureFill
+                context2D.fill()
+            }
+            if (featureStroke !== undefined) {
+                context2D.strokeStyle = featureStroke
+                context2D.lineWidth = lineWidth
+                context2D.stroke()
+            }
         })
+    } finally {
+        context2D.restore()
     }
-    // (the points as dots, drawn at their places, rather than projected with the shapes: in the shift
-    // view mode, the shapes are scaled with the zoom, and the dots shouldn't be)
-    points.forEach(feature => {
-        const featureFill = fillOf(feature)
-        const featureStroke = strokeOf(feature)
-        if (featureFill === undefined && featureStroke === undefined) return
-        const [x, y] = pen.centroid(feature)
-        if (!Number.isFinite(x) || !Number.isFinite(y)) return
-        context2D.beginPath()
-        context2D.arc(x, y, pointRadius, 0, 2 * Math.PI)
-        if (featureFill !== undefined) {
-            context2D.fillStyle = featureFill
-            context2D.fill()
-        }
-        if (featureStroke !== undefined) {
-            context2D.strokeStyle = featureStroke
-            context2D.lineWidth = lineWidth
-            context2D.stroke()
-        }
-    })
-    context2D.restore()
 }
 
 /**
@@ -359,35 +391,38 @@ export function drawLayerLabels(
     const {label, pointRadius = DEFAULT_POINT_RADIUS} = layer
     if (label === undefined) return
     context2D.save()
-    context2D.font = layer.labelFont ?? '11px sans-serif'
-    context2D.fillStyle = layer.labelColor ?? color
-    context2D.textBaseline = 'middle'
-    // the points' labels drawn so far (which the later points' labels mustn't overlap)
-    const placed: Array<PixelBounds> = []
-    featuresOf(object).forEach(feature => {
-        const text = label(feature)
-        if (text === undefined || text === '') return
-        if (isPoint(feature)) {
+    try {
+        context2D.font = layer.labelFont ?? '11px sans-serif'
+        context2D.fillStyle = layer.labelColor ?? color
+        context2D.textBaseline = 'middle'
+        // the points' labels drawn so far (which the later points' labels mustn't overlap)
+        const placed: Array<PixelBounds> = []
+        featuresOf(object).forEach(feature => {
+            const text = label(feature)
+            if (text === undefined || text === '') return
+            if (isPoint(feature)) {
+                const [x, y] = pen.centroid(feature)
+                if (!Number.isFinite(x) || !Number.isFinite(y)) return
+                const left = x + pointRadius + POINT_LABEL_GAP
+                const box: PixelBounds = [[left, y - POINT_LABEL_HEIGHT / 2], [left + context2D.measureText(text).width, y + POINT_LABEL_HEIGHT / 2]]
+                const [[bx0, by0], [bx1, by1]] = box
+                if (bx0 < 0 || by0 < 0 || bx1 > width || by1 > height) return
+                if (placed.some(([[px0, py0], [px1, py1]]) => bx0 < px1 && px0 < bx1 && by0 < py1 && py0 < by1)) return
+                placed.push(box)
+                context2D.textAlign = 'left'
+                context2D.fillText(text, left, y)
+                return
+            }
+            const [[x0, y0], [x1, y1]] = pen.bounds(feature)
+            if (!(x0 >= 0 && y0 >= 0 && x1 <= width && y1 <= height)) return
             const [x, y] = pen.centroid(feature)
             if (!Number.isFinite(x) || !Number.isFinite(y)) return
-            const left = x + pointRadius + POINT_LABEL_GAP
-            const box: PixelBounds = [[left, y - POINT_LABEL_HEIGHT / 2], [left + context2D.measureText(text).width, y + POINT_LABEL_HEIGHT / 2]]
-            const [[bx0, by0], [bx1, by1]] = box
-            if (bx0 < 0 || by0 < 0 || bx1 > width || by1 > height) return
-            if (placed.some(([[px0, py0], [px1, py1]]) => bx0 < px1 && px0 < bx1 && by0 < py1 && py0 < by1)) return
-            placed.push(box)
-            context2D.textAlign = 'left'
-            context2D.fillText(text, left, y)
-            return
-        }
-        const [[x0, y0], [x1, y1]] = pen.bounds(feature)
-        if (!(x0 >= 0 && y0 >= 0 && x1 <= width && y1 <= height)) return
-        const [x, y] = pen.centroid(feature)
-        if (!Number.isFinite(x) || !Number.isFinite(y)) return
-        const textWidth = context2D.measureText(text).width
-        if (textWidth > x1 - x0 || 12 > y1 - y0) return
-        context2D.textAlign = 'center'
-        context2D.fillText(text, x, y)
-    })
-    context2D.restore()
+            const textWidth = context2D.measureText(text).width
+            if (textWidth > x1 - x0 || 12 > y1 - y0) return
+            context2D.textAlign = 'center'
+            context2D.fillText(text, x, y)
+        })
+    } finally {
+        context2D.restore()
+    }
 }

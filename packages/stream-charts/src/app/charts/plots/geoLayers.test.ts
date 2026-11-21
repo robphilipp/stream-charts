@@ -1,11 +1,13 @@
 import * as d3 from "d3";
 import {
+    boxContains,
     boxesOverlap,
     detailOf,
     drawLayerLabels,
     drawLayerShapes,
     featuresOf,
     type GeoLayer,
+    labelledOf,
     layerShownAt,
     viewBoxOf,
     visibleOf,
@@ -113,6 +115,33 @@ describe('trimming to the view', () => {
             .toEqual({type: 'MultiPolygon', coordinates: [near]})
         const borders: GeoJSON.MultiLineString = {type: 'MultiLineString', coordinates: [[[0, 50], [1, 51]], [[100, -30], [101, -29]]]}
         expect(visibleOf(borders, box)).toEqual({type: 'MultiLineString', coordinates: [[[0, 50], [1, 51]]]})
+    })
+})
+
+describe('the features that might be labelled', () => {
+    it('finds whether a box lies wholly inside another, across the antimeridian too', () => {
+        const outer = {west: 0, south: 0, east: 10, north: 10}
+        expect(boxContains(outer, {west: 2, south: 2, east: 8, north: 8})).toBe(true)
+        expect(boxContains(outer, {west: 2, south: 2, east: 12, north: 8})).toBe(false)
+        expect(boxContains(outer, {west: 2, south: -1, east: 8, north: 8})).toBe(false)
+        expect(boxContains({west: 170, south: 0, east: -170, north: 10}, {west: 175, south: 2, east: -175, north: 8})).toBe(true)
+        expect(boxContains({west: 170, south: 0, east: -170, north: 10}, {west: 175, south: 2, east: -160, north: 8})).toBe(false)
+    })
+
+    it('keeps the features wholly inside the view, whole and as they are, and leaves out those that reach beyond it', () => {
+        // a country of two parts: an island in view, and its mainland far beyond it
+        const island = (square(0, 50, 1, 'island').geometry as GeoJSON.Polygon).coordinates
+        const mainland = (square(30, 20, 10, 'mainland').geometry as GeoJSON.Polygon).coordinates
+        const country: GeoJSON.Feature = {type: 'Feature', properties: {name: 'country'}, geometry: {type: 'MultiPolygon', coordinates: [island, mainland]}}
+        const small = square(1.5, 50.2, 0.5, 'small')
+        const collection: d3.GeoPermissibleObjects = {type: 'FeatureCollection', features: [country, small]}
+        const box = {west: -2, south: 48, east: 3, north: 53}
+        // (trimmed, the country looks as if it's all in view)
+        expect((visibleOf(collection, box) as GeoJSON.FeatureCollection).features.map(feature => feature.properties?.name)).toEqual(['country', 'small'])
+        const labelled = (labelledOf(collection, box) as GeoJSON.FeatureCollection).features
+        expect(labelled).toHaveLength(1)
+        expect(labelled[0]).toBe(small)
+        expect(labelledOf(collection, undefined)).toBe(collection)
     })
 })
 

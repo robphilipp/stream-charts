@@ -57,6 +57,27 @@ function rolledUp(rollup: GeoRollup<Reading>, events: Array<GeoDatum<Reading>>):
 
 const byId = (aggregates: Array<GeoAggregate>): Map<string, GeoAggregate> => new Map(aggregates.map(a => [a.id, a]))
 
+describe('sensors', () => {
+    it('counts two series\' sensors with the same ID as two sensors, in the cell and in its groups', () => {
+        const state = new GeoRollupState<Reading>({cellOf: byLocation(0.01), groupBy: datum => datum.payload.kind})
+        const carrierA = reading('tower-17', 35.68, 139.69, 1, 1, 'a')
+        const carrierB = reading('tower-17', 35.68, 139.69, 2, 1, 'a')
+        const carrierBLater = reading('tower-17', 35.68, 139.69, 3, 1, 'b')
+        state.add(carrierA, 'A')
+        state.add(carrierB, 'B')
+        state.add(carrierBLater, 'B')
+        const [cell] = state.aggregates()
+        expect(cell.sensorCount).toBe(2)
+        expect(cell.groups.map(group => [group.group, group.sensorCount])).toEqual([['a', 2], ['b', 1]])
+
+        // (and counts them back out as their events go)
+        state.remove(carrierA)
+        const [after] = state.aggregates()
+        expect(after.sensorCount).toBe(1)
+        expect(after.groups.map(group => [group.group, group.sensorCount])).toEqual([['a', 1], ['b', 1]])
+    })
+})
+
 describe('binning', () => {
     it('puts the events at the same place in one cell, whichever sensor reported them', () => {
         const aggregates = byId(rolledUp({cellOf: byLocation(0.01)}, [
@@ -284,6 +305,18 @@ describe('measures of your own', () => {
 })
 
 describe('units and formats', () => {
+    it('uses the default format, with a warning, for a format that isn\'t a d3-format specifier, rather than throwing', () => {
+        const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+        try {
+            expect(formatMeasure(1234.5678, {format: '.1x%', units: 'ms'})).toBe('1,234.568 ms')
+            expect(formatMeasure(2, {format: '.1x%'})).toBe('2')
+            // (warned about once)
+            expect(warn).toHaveBeenCalledTimes(1)
+        } finally {
+            warn.mockRestore()
+        }
+    })
+
     it('formats a value with its units: a space before most, none before % or °', () => {
         expect(formatMeasure(12.345, {units: 'ms'})).toBe('12.345 ms')
         expect(formatMeasure(1234.5678)).toBe('1,234.568')
@@ -381,6 +414,7 @@ describe('incremental roll-ups', () => {
                 Object.entries(expected.values).forEach(([name, value]) => expect(actual.values[name]).toBeCloseTo(value, 6))
                 expect(actual.groups.map(group => [group.group, group.count])).toEqual(expected.groups.map(group => [group.group, group.count]))
                 expected.groups.forEach((group, index) => {
+                    expect(actual.groups[index].sensorCount).toBe(group.sensorCount)
                     expect(actual.groups[index].values.peak).toBeCloseTo(group.values.peak, 9)
                     expect(actual.groups[index].values.median).toBeCloseTo(group.values.median, 9)
                     expect(actual.groups[index].values.spread).toBeCloseTo(group.values.spread, 6)

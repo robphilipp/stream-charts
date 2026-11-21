@@ -197,6 +197,29 @@ export interface GeoMeasureOptions {
 
 const DEFAULT_FORMAT = d3.format(',.3~f')
 
+// the formats compiled from their d3-format specifiers (each once: they're used on every frame, for
+// the keys, and every tooltip)
+const formats = new Map<string, (value: number) => string>()
+
+/**
+ * @param specifier A d3-format specifier (e.g. `',.1f'`)
+ * @return Its format, compiled once -- or, for a specifier that isn't one, the default format, with
+ * a warning (once), rather than an error thrown while the plot draws, or a tooltip renders
+ */
+export function formatOf(specifier: string): (value: number) => string {
+    let format = formats.get(specifier)
+    if (format === undefined) {
+        try {
+            format = d3.format(specifier)
+        } catch (error) {
+            console.warn(`stream-charts: "${specifier}" isn't a d3-format specifier (${String(error)}); the default format is used instead`)
+            format = DEFAULT_FORMAT
+        }
+        formats.set(specifier, format)
+    }
+    return format
+}
+
 /**
  * Formats a measure's value, with its units
  * @param value The value
@@ -209,7 +232,7 @@ export function formatMeasure(value: number, options?: GeoMeasureOptions, withUn
     if (!Number.isFinite(value)) return '---'
     const {units, format} = options ?? {}
     const number = format === undefined ? DEFAULT_FORMAT(value) :
-        typeof format === 'string' ? d3.format(format)(value) :
+        typeof format === 'string' ? formatOf(format)(value) :
             format(value)
     if (!withUnits || units === undefined || units === '') return number
     return /^[%°]/.test(units) ? `${number}${units}` : `${number} ${units}`
@@ -355,6 +378,11 @@ export interface GeoAggregateGroup {
      */
     readonly count: number
     /**
+     * The number of distinct sensors that reported the group's events (a sensor is its series and
+     * its ID: two series' sensors with the same ID are two sensors)
+     */
+    readonly sensorCount: number
+    /**
      * The group's measures, by name (see {@link GeoRollup.measures})
      */
     readonly values: Readonly<Record<string, number>>
@@ -385,7 +413,8 @@ export interface GeoAggregate {
      */
     readonly count: number
     /**
-     * The number of distinct sensors that reported the cell's events
+     * The number of distinct sensors that reported the cell's events (a sensor is its series and its
+     * ID: two series' sensors with the same ID are two sensors)
      */
     readonly sensorCount: number
     /**
@@ -614,13 +643,36 @@ class Tally<P> {
 const RADIANS = Math.PI / 180
 
 /**
+ * @param seriesName The name of an event's series
+ * @param sensorId Its sensor's ID
+ * @return The key of its sensor: its series and its ID (two series' sensors with the same ID are
+ * two sensors, as the data source keeps them)
+ */
+const sensorKeyOf = (seriesName: string, sensorId: string): string => `${seriesName}\u0000${sensorId}`
+
+/**
+ * Counts an event of a sensor in (or out of) a count of events by sensor, leaving out the sensors
+ * left without any
+ * @param counts The number of events by sensor
+ * @param sensor The sensor (see `sensorKeyOf`)
+ * @param change 1 to count an event in, -1 to count one out
+ */
+function countSensor(counts: Map<string, number>, sensor: string, change: 1 | -1): void {
+    const count = (counts.get(sensor) ?? 0) + change
+    if (count > 0) counts.set(sensor, count)
+    else counts.delete(sensor)
+}
+
+/**
  * A cell: its events (all of them, and by group), its sensors, and its position (for the `mean`
  * position, the running sum of its events' positions as unit vectors)
  */
 class Cell<P> {
     readonly all: Tally<P>
     readonly groups = new Map<string, Tally<P>>()
+    // the number of the cell's events from each of its sensors, and of each group's (by sensorKeyOf)
     private readonly sensors = new Map<string, number>()
+    private readonly groupSensors = new Map<string, Map<string, number>>()
     private readonly sum: [x: number, y: number, z: number] = [0, 0, 0]
     readonly id: string
     readonly bounds: GeoCellBounds | undefined
@@ -650,18 +702,22 @@ class Cell<P> {
      * Adds an event to the cell (and to its group)
      * @param datum The event
      * @param group The event's group, when the roll-up has groups
+     * @param seriesName The name of the event's series (which, with its sensor's ID, is its sensor)
      */
-    add(datum: GeoDatum<P>, group: string | undefined): void {
+    add(datum: GeoDatum<P>, group: string | undefined, seriesName: string): void {
         this.all.add(datum)
+        const sensor = sensorKeyOf(seriesName, datum.sensorId)
         if (group !== undefined) {
             let tally = this.groups.get(group)
             if (tally === undefined) {
                 tally = new Tally<P>(this.measures)
                 this.groups.set(group, tally)
+                this.groupSensors.set(group, new Map())
             }
             tally.add(datum)
+            countSensor(this.groupSensors.get(group)!, sensor, 1)
         }
-        this.sensors.set(datum.sensorId, (this.sensors.get(datum.sensorId) ?? 0) + 1)
+        countSensor(this.sensors, sensor, 1)
         this.addPosition(datum, 1)
     }
 
@@ -669,17 +725,22 @@ class Cell<P> {
      * Removes an event from the cell (and from its group)
      * @param datum The event
      * @param group The event's group, when the roll-up has groups
+     * @param seriesName The name of the event's series
      */
-    remove(datum: GeoDatum<P>, group: string | undefined): void {
+    remove(datum: GeoDatum<P>, group: string | undefined, seriesName: string): void {
         if (!this.all.remove(datum)) return
+        const sensor = sensorKeyOf(seriesName, datum.sensorId)
         if (group !== undefined) {
             const tally = this.groups.get(group)
             tally?.remove(datum)
-            if (tally !== undefined && tally.count === 0) this.groups.delete(group)
+            const groupSensors = this.groupSensors.get(group)
+            if (groupSensors !== undefined) countSensor(groupSensors, sensor, -1)
+            if (tally !== undefined && tally.count === 0) {
+                this.groups.delete(group)
+                this.groupSensors.delete(group)
+            }
         }
-        const sensorCount = (this.sensors.get(datum.sensorId) ?? 1) - 1
-        if (sensorCount > 0) this.sensors.set(datum.sensorId, sensorCount)
-        else this.sensors.delete(datum.sensorId)
+        countSensor(this.sensors, sensor, -1)
         this.addPosition(datum, -1)
     }
 
@@ -712,7 +773,9 @@ class Cell<P> {
             sensorCount: this.sensors.size,
             values: this.all.values(),
             groups: Array.from(this.groups.entries())
-                .map(([group, tally]) => ({group, count: tally.count, values: tally.values()}))
+                .map(([group, tally]) => ({
+                    group, count: tally.count, sensorCount: this.groupSensors.get(group)?.size ?? 0, values: tally.values(),
+                }))
                 .sort((a, b) => b.count - a.count || a.group.localeCompare(b.group)),
             firstTime: this.all.first?.time ?? NaN,
             lastTime: this.all.last?.time ?? NaN,
@@ -765,7 +828,7 @@ export class GeoRollupState<P> {
     // where each rolled-up event was put (its cell, and its group), so that removing it takes it out
     // of the same cell and group, even when the roll-up's functions would now answer differently
     // (e.g. a filter that reads a setting the user has since changed)
-    private readonly placements = new Map<GeoDatum<P>, {cellId: string, group: string | undefined}>()
+    private readonly placements = new Map<GeoDatum<P>, {cellId: string, group: string | undefined, seriesName: string}>()
     // the aggregates, as last read, until the cells change
     private cached: Array<GeoAggregate> | undefined = undefined
     private readonly rollup: GeoRollup<P>
@@ -778,6 +841,10 @@ export class GeoRollupState<P> {
         this.binning = binningFrom(rollup.cellOf)
         this.measures = Object.entries(rollup.measures ?? {})
         this.measureOptions = Object.fromEntries(this.measures.map(([name, measure]) => [name, measure.options ?? {}]))
+        // (a format that isn't one is warned about now, as the roll-up is set up)
+        this.measures.forEach(([, measure]) => {
+            if (typeof measure.options?.format === 'string') formatOf(measure.options.format)
+        })
     }
 
     /**
@@ -796,8 +863,8 @@ export class GeoRollupState<P> {
             this.cells.set(id, cell)
         }
         const group = this.rollup.groupBy?.(datum, seriesName)
-        cell.add(datum, group)
-        this.placements.set(datum, {cellId: id, group})
+        cell.add(datum, group, seriesName)
+        this.placements.set(datum, {cellId: id, group, seriesName})
         this.cached = undefined
     }
 
@@ -812,7 +879,7 @@ export class GeoRollupState<P> {
         this.placements.delete(datum)
         const cell = this.cells.get(placement.cellId)
         if (cell === undefined) return
-        cell.remove(datum, placement.group)
+        cell.remove(datum, placement.group, placement.seriesName)
         if (cell.all.count === 0) this.cells.delete(placement.cellId)
         this.cached = undefined
     }

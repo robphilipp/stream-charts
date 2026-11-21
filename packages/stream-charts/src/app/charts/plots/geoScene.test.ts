@@ -3,6 +3,7 @@ import {defaultLineStyle, type SeriesLineStyle} from "../axes/axes";
 import type {GeoAggregate} from "../datasources/geoRollups";
 import {geoDatumOf, type GeoDatum, geoSeriesFrom} from "../series/geoSeries";
 import {type DrawnMarker, markerKeyOf} from "./geoMarkers";
+import {setUpProjection, viewCenteredOn} from "./geoProjections";
 import {
     drawAggregates,
     drawEvents,
@@ -274,6 +275,41 @@ describe('the map', () => {
         expect(graticulePointsAt(50)).toBeLessThan(graticulePointsAt(1) / 10)
     })
 
+    it('doesn\'t label a shape zoomed in on one of its parts, as if it were all in view', () => {
+        // a country of two parts, an island and a mainland far away, and a small one by the island
+        const square = (west: number, south: number, size: number): GeoJSON.Position[][] =>
+            (d3.geoGraticule().extent([[west, south], [west + size, south + size]]).outline() as GeoJSON.Polygon).coordinates
+        const country: GeoJSON.Feature = {
+            type: 'Feature', properties: {name: 'country'},
+            geometry: {type: 'MultiPolygon', coordinates: [square(-0.3, 49.8, 0.4), square(30, 20, 10)]},
+        }
+        const small: GeoJSON.Feature = {type: 'Feature', properties: {name: 'small'}, geometry: {type: 'Polygon', coordinates: square(0.3, 50.1, 0.15)}}
+        const layer = {data: {type: 'FeatureCollection', features: [country, small]} as GeoJSON.FeatureCollection, label: (feature: GeoJSON.Feature): string => feature.properties?.name}
+        const projection = globe()
+        const zoomed = {...viewCenteredOn([0.1, 50.1]), k: 100}
+        setUpProjection(projection, zoomed, WIDTH, HEIGHT)
+        const recording = recordingContext()
+        drawMap(recording.context, projection, undefined, zoomed, map({basemap: undefined, borders: undefined, layers: [layer]}), WIDTH, HEIGHT)
+        const labels = recording.calls.filter(([name]) => name === 'fillText').map(([, text]) => text)
+        expect(labels).toEqual(['small'])
+    })
+
+    it('puts the projection\'s clipping and precision back, even when a layer\'s function throws', () => {
+        const projection = globe()
+        const precision = projection.precision()
+        const throwing: GeoJSON.Feature = {type: 'Feature', properties: {}, geometry: {type: 'Point', coordinates: [0, 0]}}
+        const layer = {
+            data: {type: 'FeatureCollection', features: [throwing]} as GeoJSON.FeatureCollection,
+            fill: (): string => {
+                throw new Error('a bad feature')
+            },
+        }
+        expect(() => drawMap(recordingContext().context, projection, undefined, view, map({resample: false, layers: [layer]}), WIDTH, HEIGHT))
+            .toThrow('a bad feature')
+        expect(projection.precision()).toBe(precision)
+        expect(projection.clipExtent()).toBeNull()
+    })
+
     it('fills the whole plot area for a composite projection, which has no sphere to fill or outline', () => {
         const projection = d3.geoAlbersUsa().fitSize([WIDTH, HEIGHT], land)
         const recording = recordingContext()
@@ -295,7 +331,7 @@ const aggregateOf = (
     id: string, latitude: number, longitude: number, count: number, groups: Array<[string, number]> = [],
 ): GeoAggregate => ({
     id, latitude, longitude, count, sensorCount: 1, values: {}, firstTime: 0, lastTime: 1000, measures: {},
-    groups: groups.map(([group, groupCount]) => ({group, count: groupCount, values: {}})),
+    groups: groups.map(([group, groupCount]) => ({group, count: groupCount, sensorCount: 1, values: {}})),
 })
 
 const aggregateStyle = (style: Partial<GeoAggregateStyle> = {}): GeoAggregateStyle => ({

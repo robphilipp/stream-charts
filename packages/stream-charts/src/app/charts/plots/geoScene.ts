@@ -3,7 +3,7 @@ import {defaultLineStyle, type SeriesLineStyle} from "../axes/axes"
 import {withAlpha} from "../styling/canvasStyle"
 import {formatMeasure, type GeoAggregate, type GeoAggregateGroup} from "../datasources/geoRollups"
 import type {GeoDatum, GeoSeries} from "../series/geoSeries"
-import {detailOf, drawLayerLabels, drawLayerShapes, type GeoLayer, type GeoMapData, layerShownAt, viewBoxOf, visibleOf} from "./geoLayers"
+import {detailOf, drawLayerLabels, drawLayerShapes, type GeoLayer, type GeoMapData, labelledOf, layerShownAt, viewBoxOf, visibleOf} from "./geoLayers"
 import {canTurn, isGlobe, type GeoPlotViewState, shiftOf} from "./geoProjections"
 import {type DrawnMarker, markerEllipseAt, type MarkerEllipse, markerKeyOf, pieGroupsOf, wedgeBearingsOf, wedgeOf} from "./geoMarkers"
 import {flashGroupsOf, flashRingOf, type ResolvedGeoFlash} from "./geoFlashes"
@@ -104,7 +104,9 @@ function groupKeyOf(aggregates: Array<GeoAggregate>, colorOf: (group: GeoAggrega
  * @param value A value for a key
  * @return The value, briefly (e.g. 1.2k, 3.45)
  */
-const keyLabel = (value: number): string => Math.abs(value) >= 1000 ? d3.format('.3~s')(value) : d3.format(',.3~g')(value)
+const SI_FORMAT = d3.format('.3~s')
+const NUMBER_FORMAT = d3.format(',.3~g')
+const keyLabel = (value: number): string => Math.abs(value) >= 1000 ? SI_FORMAT(value) : NUMBER_FORMAT(value)
 
 /**
  * The keys for the aggregates (in the bottom-right corner of the plot area): nested circles for
@@ -426,53 +428,66 @@ export function drawMap(
         const object = data !== undefined ? detailOf(data, k) : undefined
         return object !== undefined && viewBox !== undefined ? visibleOf(object, viewBox) : object
     }
+    // (and the features that might be labelled: whole, rather than trimmed, see `labelledOf`)
     const shownLayers = (layers ?? [])
         .filter(layer => layerShownAt(layer, k))
         .flatMap(layer => {
-            const object = shown(layer.data)
-            return object !== undefined ? [{layer, object}] : []
+            const detail = detailOf(layer.data, k)
+            if (detail === undefined) return []
+            const object = viewBox !== undefined ? visibleOf(detail, viewBox) : detail
+            const labelled = layer.label !== undefined ? labelledOf(detail, viewBox) : undefined
+            return [{layer, object, labelled}]
         })
     // (a composite projection clips each of its regions itself: it can't be clipped)
     const clippable = typeof projection.clipExtent === 'function'
     const clipExtent = clippable ? projection.clipExtent() : null
+    const precision = projection.precision()
+    const unresampled = !resample && referenceShapes === undefined
     if (clippable) {
         projection.clipExtent([[-MAP_CLIP_MARGIN, -MAP_CLIP_MARGIN], [width + MAP_CLIP_MARGIN, height + MAP_CLIP_MARGIN]])
     }
-    const pen = referenceShapes !== undefined ?
-        shiftedPen(referenceShapes, shiftOf(view, width, height)) :
-        directPen(d3.geoPath(projection, context2D))
+    // (the projection's clipping and precision are put back however the drawing ends -- a layer's
+    // colors and labels are the application's functions, which might throw -- since the markers,
+    // the aggregates, and finding what's under the mouse all use the same projection)
+    try {
+        const pen = referenceShapes !== undefined ?
+            shiftedPen(referenceShapes, shiftOf(view, width, height)) :
+            directPen(d3.geoPath(projection, context2D))
 
-    // the sphere (the oceans) -- or, for a projection that can't be turned (a composite, whose
-    // "sphere" is its regions' rectangles), the whole plot area
-    const wholeSphere = canTurn(projection)
-    if (wholeSphere) {
-        pen.draw(context2D, SPHERE, oceanColor, undefined, 0)
-    } else {
-        context2D.fillStyle = oceanColor
-        context2D.fillRect(0, 0, width, height)
+        // the sphere (the oceans) -- or, for a projection that can't be turned (a composite, whose
+        // "sphere" is its regions' rectangles), the whole plot area
+        const wholeSphere = canTurn(projection)
+        if (wholeSphere) {
+            pen.draw(context2D, SPHERE, oceanColor, undefined, 0)
+        } else {
+            context2D.fillStyle = oceanColor
+            context2D.fillRect(0, 0, width, height)
+        }
+
+        // (the graticule, too, is trimmed to the lines that might show: zoomed in, d3 would otherwise
+        // resample every line of the hemisphere, at the view's scale, before clipping them away)
+        if (showGraticule) pen.draw(context2D, shown(graticule) ?? graticule, undefined, graticuleColor, 0.5)
+
+        // the map's data: in the turn view mode, projected without resampling, when that's asked for (see
+        // the plot's `resample`) -- its points are close enough together that the lines between them are
+        // straight on the screen, and resampling each line, at every view, is most of the cost of drawing
+        // a detailed map zoomed in. (The graticule and the sphere, drawn with few points, are resampled.)
+        if (unresampled) projection.precision(0)
+        const land = shown(basemap)
+        if (land !== undefined) pen.draw(context2D, land, landColor, undefined, 0)
+        shownLayers.forEach(({layer, object}) => drawLayerShapes(context2D, pen, layer, object))
+        const lines = shown(borders)
+        if (lines !== undefined) pen.draw(context2D, lines, undefined, borderColor, 0.5)
+        // (the labels over everything else of the map)
+        shownLayers.forEach(({layer, labelled}) => {
+            if (labelled !== undefined) drawLayerLabels(context2D, pen, layer, labelled, color, width, height)
+        })
+        if (unresampled) projection.precision(precision)
+        if (wholeSphere) pen.draw(context2D, SPHERE, undefined, outlineColor, 1)
+    } finally {
+        projection.precision(precision)
+        if (clippable) projection.clipExtent(clipExtent)
     }
-
-    // (the graticule, too, is trimmed to the lines that might show: zoomed in, d3 would otherwise
-    // resample every line of the hemisphere, at the view's scale, before clipping them away)
-    if (showGraticule) pen.draw(context2D, shown(graticule) ?? graticule, undefined, graticuleColor, 0.5)
-
-    // the map's data: in the turn view mode, projected without resampling, when that's asked for (see
-    // the plot's `resample`) -- its points are close enough together that the lines between them are
-    // straight on the screen, and resampling each line, at every view, is most of the cost of drawing
-    // a detailed map zoomed in. (The graticule and the sphere, drawn with few points, are resampled.)
-    const precision = projection.precision()
-    const unresampled = !resample && referenceShapes === undefined
-    if (unresampled) projection.precision(0)
-    const land = shown(basemap)
-    if (land !== undefined) pen.draw(context2D, land, landColor, undefined, 0)
-    shownLayers.forEach(({layer, object}) => drawLayerShapes(context2D, pen, layer, object))
-    const lines = shown(borders)
-    if (lines !== undefined) pen.draw(context2D, lines, undefined, borderColor, 0.5)
-    // (the labels over everything else of the map)
-    shownLayers.forEach(({layer, object}) => drawLayerLabels(context2D, pen, layer, object, color, width, height))
-    if (unresampled) projection.precision(precision)
-    if (wholeSphere) pen.draw(context2D, SPHERE, undefined, outlineColor, 1)
-    if (clippable) projection.clipExtent(clipExtent)
 }
 
 /**
