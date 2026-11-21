@@ -1,3 +1,4 @@
+import {FastShiftArray} from "fast-shift-array";
 import {BaseStreamingDataSource, type DataGenerator} from "./StreamingDataSource";
 import {type GeoChartData, geoChartDataLatestTime} from "../observables/geo";
 import {type GeoDatum, type GeoSeries, geoSeriesFrom} from "../series/geoSeries";
@@ -38,6 +39,9 @@ export interface GeoDataSourceOptions<P> {
 // is kept up to date for without being asked for
 const MAX_FILTERED_COPIES = 4
 const STALE_FILTERED_COPY_BATCHES = 100
+// how many of a sensor's events may be dropped before its events' array is compacted (a sensor holds
+// far fewer events than a series, so it's compacted sooner)
+const SENSOR_COMPACTING_SIZE = 1024
 
 /**
  * A data source for geo charts (the {@link GeoPlot}): it holds a series of sensor events for each
@@ -57,9 +61,9 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
     // the number of batches of events taken in so far (for how long ago a filtered copy was asked for)
     private batches = 0
     // each sensor's events, by series and sensor (see `sensorKeyOf`), oldest first: e.g. for a
-    // tooltip's sparkline of a sensor's readings, without searching its series. (Its events are those
-    // from `head` on: dropping the oldest, as the data source does, just moves the head.)
-    private readonly sensorEvents = new Map<string, {events: Array<GeoDatum<P>>, head: number}>()
+    // tooltip's sparkline of a sensor's readings, without searching its series. (In a FastShiftArray,
+    // as the series' events are, so that dropping the oldest, as the data source does, is cheap.)
+    private readonly sensorEvents = new Map<string, FastShiftArray<GeoDatum<P>>>()
 
     /**
      * Creates a geo data source (stopped: call {@link start} to start it)
@@ -89,9 +93,9 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      */
     private addSensorEvent(seriesName: string, datum: GeoDatum<P>): void {
         const key = GeoDataSource.sensorKeyOf(seriesName, datum.sensorId)
-        const kept = this.sensorEvents.get(key)
-        if (kept === undefined) this.sensorEvents.set(key, {events: [datum], head: 0})
-        else kept.events.push(datum)
+        const events = this.sensorEvents.get(key)
+        if (events === undefined) this.sensorEvents.set(key, FastShiftArray.fromArray([datum], false, SENSOR_COMPACTING_SIZE))
+        else events.push(datum)
     }
 
     /**
@@ -101,21 +105,15 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      */
     private removeSensorEvent(seriesName: string, datum: GeoDatum<P>): void {
         const key = GeoDataSource.sensorKeyOf(seriesName, datum.sensorId)
-        const kept = this.sensorEvents.get(key)
-        if (kept === undefined) return
-        if (kept.events[kept.head] === datum) {
-            kept.head++
+        const events = this.sensorEvents.get(key)
+        if (events === undefined) return
+        if (events.get(0) === datum) {
+            events.shift()
         } else {
-            const index = kept.events.indexOf(datum, kept.head)
-            if (index >= 0) kept.events.splice(index, 1)
+            const index = events.indexOf(datum)
+            if (index >= 0) events.splice(index, 1)
         }
-        if (kept.head >= kept.events.length) {
-            this.sensorEvents.delete(key)
-        } else if (kept.head > 1024 && kept.head * 2 > kept.events.length) {
-            // (compacted once most of the array is behind the head)
-            kept.events = kept.events.slice(kept.head)
-            kept.head = 0
-        }
+        if (events.length === 0) this.sensorEvents.delete(key)
     }
 
     /**
@@ -128,8 +126,7 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      * sensor)
      */
     sensorEventsOf(seriesName: string, sensorId: string): Array<GeoDatum<P>> {
-        const kept = this.sensorEvents.get(GeoDataSource.sensorKeyOf(seriesName, sensorId))
-        return kept !== undefined ? kept.events.slice(kept.head) : []
+        return this.sensorEvents.get(GeoDataSource.sensorKeyOf(seriesName, sensorId))?.toArray() ?? []
     }
 
     /**
@@ -138,9 +135,8 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      * @return The sensor's latest event in the series (`undefined` for an unknown series or sensor)
      */
     latestSensorEventOf(seriesName: string, sensorId: string): GeoDatum<P> | undefined {
-        // (a sensor without events is forgotten, so a kept one's last event is its latest)
-        const kept = this.sensorEvents.get(GeoDataSource.sensorKeyOf(seriesName, sensorId))
-        return kept?.events[kept.events.length - 1]
+        const events = this.sensorEvents.get(GeoDataSource.sensorKeyOf(seriesName, sensorId))
+        return events?.get(events.length - 1)
     }
 
     /**
