@@ -1022,7 +1022,7 @@ export function StreamingGeoChart(props: Props): JSX.Element {
                             groupColors: groupColorOf,
                         }}
                         autoRotate={autoRotate ? AUTO_ROTATE_SPEED : undefined}
-                        zoomMaxScaleFactor={MAX_ZOOM}
+                        maxZoom={MAX_ZOOM}
                         // (the map's data -- Natural Earth's, the Census', and the street tiles' --
                         // has its points close together, so it's drawn without resampling: much
                         // quicker, zoomed in on the streets, and it looks the same)

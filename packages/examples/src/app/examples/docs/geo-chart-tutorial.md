@@ -262,7 +262,7 @@ const BORDERS = mesh(world, world.objects.countries, (a, b) => a !== b)
 
 // the view: it starts centered on Europe, zoomed in 4x, and is kept here as it changes, so that
 // it survives the chart being unmounted (any store would do)
-const EUROPE_CENTER: [number, number] = [12, 50]
+const EUROPE_CENTER = {latitude: 50, longitude: 12}
 const saved: {view: GeoPlotViewState} = {view: {rotate: [-12, -50, 0], k: 4, offsetY: 0}}
 ```
 
@@ -596,7 +596,7 @@ const BORDERS = mesh(world, world.objects.countries, (a, b) => a !== b)
 
 // the view: it starts centered on Europe, zoomed in 4x, and is kept here as it changes, so that
 // it survives the chart being unmounted (any store would do)
-const EUROPE_CENTER: [number, number] = [12, 50]
+const EUROPE_CENTER = {latitude: 50, longitude: 12}
 const saved: {view: GeoPlotViewState} = {view: {rotate: [-12, -50, 0], k: 4, offsetY: 0}}
 
 const SERIES_STYLES = new Map([

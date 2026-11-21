@@ -193,17 +193,17 @@ export interface Props<P> {
      */
     projection?: GeoProjectionName | d3.GeoProjection
     /**
-     * The `[longitude, latitude]` (degrees) at the center of the view when the plot first shows,
-     * and after its view is reset. Defaults to `[0, 20]`. Changing it re-centers the view. Not used
-     * with `fitTo`.
+     * The place (degrees) at the center of the view when the plot first shows, and after its view is
+     * reset, e.g. `{latitude: 37.77, longitude: -122.42}`. Defaults to `{latitude: 20, longitude: 0}`.
+     * Changing it re-centers the view. Not used with `fitTo`.
      */
-    center?: [longitude: number, latitude: number]
+    center?: {latitude: number, longitude: number}
     /**
      * A shape (GeoJSON, e.g. a country, or a state) that the view frames when the plot first shows,
      * and after its view is reset: centered on the shape, and zoomed in until it fills the plot area,
      * less `fitPadding`. Changing it re-frames the view; and until the user moves the view, the view
      * keeps the shape framed as the plot's size changes. (The zoom's limit is raised to the framing
-     * zoom, when that's past `zoomMaxScaleFactor`.)
+     * zoom, when that's past `maxZoom`.)
      */
     fitTo?: d3.GeoPermissibleObjects
     /**
@@ -333,9 +333,12 @@ export interface Props<P> {
      */
     zoomKeyModifiersRequired?: boolean
     /**
-     * How far the view can be zoomed in (a factor of the fitted view's scale). Defaults to 20.
+     * How far the view can be zoomed in: the most zoom, a factor of the scale that fits the whole
+     * earth (the same zoom as the layers' `minZoom` and `maxZoom`, and the view's `k`). Defaults to
+     * 20. (Named for the zoom, rather than the other plots' `zoomMaxScaleFactor`, whose factor is of
+     * the axis' range shown, and so limits zooming out.)
      */
-    zoomMaxScaleFactor?: number
+    maxZoom?: number
     /**
      * Whether the map's data -- the `basemap`, the `borders`, and the `layers` -- is resampled as it's
      * projected: d3's adaptive resampling, which adds points along each line until it follows its
@@ -452,7 +455,7 @@ function rollupCellSizesOf(dataSource: unknown, rollups: Array<string> | undefin
         .filter(({degrees}) => Number.isFinite(degrees) && degrees > 0)
 }
 
-const DEFAULT_CENTER: [number, number] = [0, 20]
+const DEFAULT_CENTER = {latitude: 20, longitude: 0}
 // in the shift view mode, how closely (px) the map's shapes, projected once (see `ReferenceShapes`),
 // follow their curves: finer than d3's default (√½ px), since they're scaled up as the view zooms in
 const REFERENCE_PRECISION = 0.1
@@ -545,7 +548,7 @@ export function GeoPlot<P>(props: Props<P>): null {
         panEnabled = true,
         zoomEnabled = true,
         zoomKeyModifiersRequired = true,
-        zoomMaxScaleFactor = 20,
+        maxZoom = 20,
         resample = true,
         autoRotate,
         viewMode = 'turn',
@@ -596,7 +599,7 @@ export function GeoPlot<P>(props: Props<P>): null {
 
     // the view (rotation, zoom, and a flat map's vertical shift), changed by dragging, zooming, and
     // the auto-rotation; starts as the view handed in (see `viewState`), or centered on `center`
-    const [centerLongitude, centerLatitude] = center
+    const {latitude: centerLatitude, longitude: centerLongitude} = center
     // whether the view shifts (and zooms), rather than turns (see `viewMode`): always for a projection
     // that can't be turned (a composite); and the shape it's fitted to before it's shifted or zoomed
     const shifting = viewMode === 'shift' || !canTurn(projection)
@@ -1020,7 +1023,7 @@ export function GeoPlot<P>(props: Props<P>): null {
         zoomEnabled,
         keyModifiersRequired: zoomKeyModifiersRequired,
         // (raised to the starting view's zoom, e.g. framing a small shape, see `fitTo`)
-        scaleExtent: [1, Math.max(zoomMaxScaleFactor, initialView.k)],
+        scaleExtent: [1, Math.max(maxZoom, initialView.k)],
         invertWheel: true,
         translateExtent: [[margin.left, margin.top], [width, height]],
         onPanStart: () => {
