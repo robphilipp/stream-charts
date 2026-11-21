@@ -34,6 +34,11 @@ export interface GeoDataSourceOptions<P> {
     rollups?: Record<string, GeoRollup<P>>
 }
 
+// the most filtered copies of a roll-up kept (see `stateOf`), and how many batches of events a copy
+// is kept up to date for without being asked for
+const MAX_FILTERED_COPIES = 4
+const STALE_FILTERED_COPY_BATCHES = 100
+
 /**
  * A data source for geo charts (the {@link GeoPlot}): it holds a series of sensor events for each
  * group of sensors, drops events once they're older than `dropDataAfter`, and keeps its roll-ups
@@ -45,12 +50,16 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
     private readonly onUpdateData: ((seriesName: string, data: Array<GeoDatum<P>>) => void) | undefined
     private rollups: Record<string, GeoRollup<P>> = {}
     private rollupStates = new Map<string, GeoRollupState<P>>()
-    // each roll-up of only some of the series (see `aggregates`): the latest asked for, by roll-up,
-    // with the filter it's for (its source and flags), kept up to date like the roll-ups themselves
-    private filteredStates = new Map<string, {filter: string, state: GeoRollupState<P>}>()
+    // the roll-ups of only some of the series (see `aggregates`): by roll-up, and by the filter each
+    // is for (its source and flags), the most recently asked for last, each with the batch of events
+    // it was last asked for in -- kept up to date like the roll-ups themselves, while they're asked for
+    private readonly filteredStates = new Map<string, Map<string, {state: GeoRollupState<P>, askedAt: number}>>()
+    // the number of batches of events taken in so far (for how long ago a filtered copy was asked for)
+    private batches = 0
     // each sensor's events, by series and sensor (see `sensorKeyOf`), oldest first: e.g. for a
-    // tooltip's sparkline of a sensor's readings, without searching its series
-    private readonly sensorEvents = new Map<string, Array<GeoDatum<P>>>()
+    // tooltip's sparkline of a sensor's readings, without searching its series. (Its events are those
+    // from `head` on: dropping the oldest, as the data source does, just moves the head.)
+    private readonly sensorEvents = new Map<string, {events: Array<GeoDatum<P>>, head: number}>()
 
     /**
      * Creates a geo data source (stopped: call {@link start} to start it)
@@ -80,9 +89,9 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      */
     private addSensorEvent(seriesName: string, datum: GeoDatum<P>): void {
         const key = GeoDataSource.sensorKeyOf(seriesName, datum.sensorId)
-        const events = this.sensorEvents.get(key)
-        if (events === undefined) this.sensorEvents.set(key, [datum])
-        else events.push(datum)
+        const kept = this.sensorEvents.get(key)
+        if (kept === undefined) this.sensorEvents.set(key, {events: [datum], head: 0})
+        else kept.events.push(datum)
     }
 
     /**
@@ -92,15 +101,21 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      */
     private removeSensorEvent(seriesName: string, datum: GeoDatum<P>): void {
         const key = GeoDataSource.sensorKeyOf(seriesName, datum.sensorId)
-        const events = this.sensorEvents.get(key)
-        if (events === undefined) return
-        if (events[0] === datum) {
-            events.shift()
+        const kept = this.sensorEvents.get(key)
+        if (kept === undefined) return
+        if (kept.events[kept.head] === datum) {
+            kept.head++
         } else {
-            const index = events.indexOf(datum)
-            if (index >= 0) events.splice(index, 1)
+            const index = kept.events.indexOf(datum, kept.head)
+            if (index >= 0) kept.events.splice(index, 1)
         }
-        if (events.length === 0) this.sensorEvents.delete(key)
+        if (kept.head >= kept.events.length) {
+            this.sensorEvents.delete(key)
+        } else if (kept.head > 1024 && kept.head * 2 > kept.events.length) {
+            // (compacted once most of the array is behind the head)
+            kept.events = kept.events.slice(kept.head)
+            kept.head = 0
+        }
     }
 
     /**
@@ -113,7 +128,8 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      * sensor)
      */
     sensorEventsOf(seriesName: string, sensorId: string): Array<GeoDatum<P>> {
-        return [...(this.sensorEvents.get(GeoDataSource.sensorKeyOf(seriesName, sensorId)) ?? [])]
+        const kept = this.sensorEvents.get(GeoDataSource.sensorKeyOf(seriesName, sensorId))
+        return kept !== undefined ? kept.events.slice(kept.head) : []
     }
 
     /**
@@ -122,8 +138,9 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      * @return The sensor's latest event in the series (`undefined` for an unknown series or sensor)
      */
     latestSensorEventOf(seriesName: string, sensorId: string): GeoDatum<P> | undefined {
-        const events = this.sensorEvents.get(GeoDataSource.sensorKeyOf(seriesName, sensorId))
-        return events?.[events.length - 1]
+        // (a sensor without events is forgotten, so a kept one's last event is its latest)
+        const kept = this.sensorEvents.get(GeoDataSource.sensorKeyOf(seriesName, sensorId))
+        return kept?.events[kept.events.length - 1]
     }
 
     /**
@@ -152,26 +169,37 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      * @param seriesFilter The series whose events count (all of them when not given)
      * @return The roll-up's state: of all the series' events, when the filter takes every series; and
      * otherwise of the events of the series it takes (rolled up when first asked for, and then kept
-     * up to date, until another filter is asked for, or none is -- so that a copy no longer asked for
-     * isn't kept up to date); `undefined` for an unknown roll-up
+     * up to date, so that callers with different filters -- e.g. two plots of one data source -- each
+     * keep theirs: up to MAX_FILTERED_COPIES for each roll-up, the least recently asked for dropped
+     * first, and any not asked for in STALE_FILTERED_COPY_BATCHES batches of events, so that a copy
+     * no longer asked for isn't kept up to date for long); `undefined` for an unknown roll-up
      */
     private stateOf(rollupName: string, seriesFilter: RegExp | undefined): GeoRollupState<P> | undefined {
         const all = this.rollupStates.get(rollupName)
         const rollup = this.rollups[rollupName]
         if (all === undefined || rollup === undefined) return all
-        if (seriesFilter === undefined || this.seriesList().every(series => series.name.match(seriesFilter))) {
-            this.filteredStates.delete(rollupName)
-            return all
-        }
+        if (seriesFilter === undefined || this.seriesList().every(series => series.name.match(seriesFilter))) return all
         const filter = `${seriesFilter.source}/${seriesFilter.flags}`
-        const kept = this.filteredStates.get(rollupName)
-        if (kept !== undefined && kept.filter === filter) return kept.state
-        const state = this.rolledUp({
+        let copies = this.filteredStates.get(rollupName)
+        if (copies === undefined) {
+            copies = new Map()
+            this.filteredStates.set(rollupName, copies)
+        }
+        const kept = copies.get(filter)
+        // (the most recently asked for last)
+        copies.delete(filter)
+        const state = kept?.state ?? this.rolledUp({
             ...rollup,
             filter: (datum, seriesName) =>
                 seriesName.match(seriesFilter) !== null && (rollup.filter?.(datum, seriesName) ?? true),
         })
-        this.filteredStates.set(rollupName, {filter, state})
+        copies.set(filter, {state, askedAt: this.batches})
+        // (the least recently asked for go, past the most kept)
+        while (copies.size > MAX_FILTERED_COPIES) {
+            const oldest = copies.keys().next().value
+            if (oldest === undefined) break
+            copies.delete(oldest)
+        }
         return state
     }
 
@@ -180,7 +208,10 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      * filtered copies'
      */
     private allStates(): Array<GeoRollupState<P>> {
-        return [...this.rollupStates.values(), ...Array.from(this.filteredStates.values(), ({state}) => state)]
+        return [
+            ...this.rollupStates.values(),
+            ...Array.from(this.filteredStates.values()).flatMap(copies => Array.from(copies.values(), ({state}) => state)),
+        ]
     }
 
     /**
@@ -254,6 +285,11 @@ export class GeoDataSource<P> extends BaseStreamingDataSource<GeoChartData<P>, G
      * @param data The chunk of chart data emitted by the generator
      */
     protected ingest(data: GeoChartData<P>): void {
+        // (the filtered copies no longer asked for are dropped, rather than kept up to date)
+        this.batches += 1
+        this.filteredStates.forEach(copies => copies.forEach(({askedAt}, filter) => {
+            if (this.batches - askedAt > STALE_FILTERED_COPY_BATCHES) copies.delete(filter)
+        }))
         data.newPoints.forEach((newData, name) => {
             const series = this.seriesMap.get(name) ?? geoSeriesFrom<P>(name)
             if (!this.seriesMap.has(name)) this.seriesMap.set(name, series)

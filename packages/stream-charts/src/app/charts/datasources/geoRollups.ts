@@ -153,7 +153,9 @@ export interface GeoReducer<P, S> {
     /**
      * @param state The state
      * @param datum The event that left (e.g. dropped as too old)
-     * @return The state without the event
+     * @return The state without the event: it should take out what `add` put in for the event, so
+     * whatever it reads of the event should be read the same way (the built-in measures keep each
+     * event's value as it was counted, for this; a reducer can keep what it needs in its state)
      */
     remove: (state: S, datum: GeoDatum<P>) => S
     /**
@@ -248,7 +250,7 @@ export const countOf = <P>(options?: GeoMeasureOptions): GeoMeasure<P> => ({kind
  * @param of The value of an event (e.g. `datum => datum.payload.magnitude`)
  * @param options The measure's units and format (see {@link GeoMeasureOptions})
  * @return The measure that sums the events' values (leaving out values that aren't finite numbers,
- * e.g. a missing reading's `NaN`)
+ * e.g. a missing reading's `NaN`; `NaN`, no value, when none of the events has one)
  * @template P The type of the events' payload
  */
 export const sumOf = <P>(of: (datum: GeoDatum<P>) => number, options?: GeoMeasureOptions): GeoMeasure<P> =>
@@ -447,9 +449,34 @@ export interface GeoAggregate {
  * with each event; and a measure of all the events is recalculated, when it's read, only after the
  * events changed
  */
+/**
+ * @param measures A roll-up's measures, by name
+ * @param datum An event
+ * @return The event's value for each of the measures that take one (sums, means, smallest, largest,
+ * and latest values), in the measures' order (`NaN` for the others): worked out once, as the event is
+ * rolled up, and kept with it, so that the event is taken back out by the same values it was counted
+ * by, even should what the measures read change in the meantime
+ */
+function measureValuesOf<P>(measures: ReadonlyArray<[string, GeoMeasure<P>]>, datum: GeoDatum<P>): Array<number> {
+    return measures.map(([, measure]) => {
+        switch (measure.kind) {
+            case 'sum':
+            case 'mean':
+            case 'min':
+            case 'max':
+            case 'latest':
+                return measure.of(datum)
+            default:
+                return NaN
+        }
+    })
+}
+
 class Tally<P> {
-    // the events, oldest first (from `head` on: removing the oldest just moves the head)
+    // the events, oldest first (from `head` on: removing the oldest just moves the head), and each
+    // event's measures' values, as it was counted (see `measureValuesOf`)
     private events: Array<GeoDatum<P>> = []
+    private eventValues: Array<ReadonlyArray<number>> = []
     private head = 0
     private readonly sums = new Map<string, number>()
     // the number of finite values in each sum (a value that isn't finite, e.g. a missing reading's
@@ -502,10 +529,12 @@ class Tally<P> {
     /**
      * Adds an event (the latest)
      * @param datum The event
+     * @param measureValues Its measures' values (see `measureValuesOf`)
      */
-    add(datum: GeoDatum<P>): void {
+    add(datum: GeoDatum<P>, measureValues: ReadonlyArray<number>): void {
         this.events.push(datum)
-        this.measures.forEach(([name, measure]) => {
+        this.eventValues.push(measureValues)
+        this.measures.forEach(([name, measure], index) => {
             if (measure.kind === 'count' || measure.kind === 'latest') return
             if (measure.kind === 'reduce') {
                 this.states.set(name, measure.reducer.add(this.states.get(name), datum))
@@ -515,7 +544,7 @@ class Tally<P> {
                 this.calculated.set(name, undefined)
                 return
             }
-            const value = measure.of(datum)
+            const value = measureValues[index]
             if (!Number.isFinite(value)) return
             if (measure.kind === 'sum' || measure.kind === 'mean') {
                 this.sums.set(name, (this.sums.get(name) ?? 0) + value)
@@ -537,19 +566,24 @@ class Tally<P> {
      * @return `true` when the event was found (and removed)
      */
     remove(datum: GeoDatum<P>): boolean {
+        let measureValues: ReadonlyArray<number>
         if (this.events[this.head] === datum) {
+            measureValues = this.eventValues[this.head]
             this.head++
         } else {
-            const index = this.events.indexOf(datum, this.head)
-            if (index < 0) return false
-            this.events.splice(index, 1)
+            const at = this.events.indexOf(datum, this.head)
+            if (at < 0) return false
+            measureValues = this.eventValues[at]
+            this.events.splice(at, 1)
+            this.eventValues.splice(at, 1)
         }
         // compact the events once most of the array is behind the head
         if (this.head > 1024 && this.head * 2 > this.events.length) {
             this.events = this.events.slice(this.head)
+            this.eventValues = this.eventValues.slice(this.head)
             this.head = 0
         }
-        this.measures.forEach(([name, measure]) => {
+        this.measures.forEach(([name, measure], index) => {
             if (measure.kind === 'count' || measure.kind === 'latest') return
             if (measure.kind === 'reduce') {
                 // (back to the initial state once the last event leaves, so that the reducer's
@@ -563,7 +597,7 @@ class Tally<P> {
                 this.calculated.set(name, undefined)
                 return
             }
-            const value = measure.of(datum)
+            const value = measureValues[index]
             if (!Number.isFinite(value)) return
             if (measure.kind === 'sum' || measure.kind === 'mean') {
                 // (back to 0 once the last value leaves, so that rounding errors don't pile up)
@@ -583,13 +617,14 @@ class Tally<P> {
      */
     values(): Record<string, number> {
         const values: Record<string, number> = {}
-        this.measures.forEach(([name, measure]) => {
+        this.measures.forEach(([name, measure], index) => {
             switch (measure.kind) {
                 case 'count':
                     values[name] = this.count
                     break
                 case 'sum':
-                    values[name] = this.sums.get(name) ?? 0
+                    // (no value -- rather than 0 -- when none of the events had one, as for a mean)
+                    values[name] = (this.finiteCounts.get(name) ?? 0) > 0 ? this.sums.get(name) ?? 0 : NaN
                     break
                 case 'mean':
                     values[name] = (this.finiteCounts.get(name) ?? 0) > 0 ?
@@ -597,7 +632,7 @@ class Tally<P> {
                         NaN
                     break
                 case 'latest':
-                    values[name] = this.last !== undefined ? measure.of(this.last) : NaN
+                    values[name] = this.count > 0 ? this.eventValues[this.eventValues.length - 1][index] : NaN
                     break
                 case 'reduce':
                     values[name] = measure.reducer.value(this.states.get(name))
@@ -612,7 +647,7 @@ class Tally<P> {
                     break
                 }
                 default:
-                    values[name] = this.extremeOf(name, measure)
+                    values[name] = this.extremeOf(name, measure, index)
             }
         })
         return values
@@ -621,16 +656,17 @@ class Tally<P> {
     /**
      * @param name The measure's name
      * @param measure The (min or max) measure
+     * @param index The measure's place among the measures (and so in the events' values)
      * @return The smallest or largest (finite) value of the events (`NaN` when there's none), re-found
      * when unknown
      */
-    private extremeOf(name: string, measure: GeoMeasure<P>): number {
+    private extremeOf(name: string, measure: GeoMeasure<P>, index: number): number {
         if (this.count === 0 || (measure.kind !== 'min' && measure.kind !== 'max')) return NaN
         let extreme = this.extremes.get(name)
         if (extreme === undefined) {
             extreme = measure.kind === 'min' ? Infinity : -Infinity
             for (let i = this.head; i < this.events.length; i++) {
-                const value = measure.of(this.events[i])
+                const value = this.eventValues[i][index]
                 if (!Number.isFinite(value)) continue
                 extreme = measure.kind === 'min' ? Math.min(extreme, value) : Math.max(extreme, value)
             }
@@ -705,7 +741,9 @@ class Cell<P> {
      * @param seriesName The name of the event's series (which, with its sensor's ID, is its sensor)
      */
     add(datum: GeoDatum<P>, group: string | undefined, seriesName: string): void {
-        this.all.add(datum)
+        // (the measures' values worked out once, for the cell's tally and its group's)
+        const measureValues = measureValuesOf(this.measures, datum)
+        this.all.add(datum, measureValues)
         const sensor = sensorKeyOf(seriesName, datum.sensorId)
         if (group !== undefined) {
             let tally = this.groups.get(group)
@@ -714,7 +752,7 @@ class Cell<P> {
                 this.groups.set(group, tally)
                 this.groupSensors.set(group, new Map())
             }
-            tally.add(datum)
+            tally.add(datum, measureValues)
             countSensor(this.groupSensors.get(group)!, sensor, 1)
         }
         countSensor(this.sensors, sensor, 1)

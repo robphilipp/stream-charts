@@ -221,7 +221,8 @@ describe('measures and groups', () => {
 
     it('has no value for a measure while none of the cell\'s events have one', () => {
         const [aggregate] = rolledUp(rollup, [reading('S-1', 10, 20, 1, NaN)]).aggregates()
-        expect(aggregate.values).toEqual({events: 1, total: 0, mean: NaN, smallest: NaN, peak: NaN, latest: NaN})
+        // (a sum, too: none, rather than 0, so that it's left out of the tooltip, as a mean would be)
+        expect(aggregate.values).toEqual({events: 1, total: NaN, mean: NaN, smallest: NaN, peak: NaN, latest: NaN})
     })
 
     it('takes an event out of the cell and group it was put in, even when the roll-up\'s functions have changed their minds', () => {
@@ -233,6 +234,24 @@ describe('measures and groups', () => {
         groupOf = () => 'other'
         events.forEach(event => state.remove(event))
         expect(state.aggregates()).toEqual([])
+    })
+
+    it('takes an event out by the values it was counted by, even when what its measures read has changed', () => {
+        // measures that read a setting the user changes while the events are held (e.g. a unit)
+        let scale = 1
+        const scaled = (datum: GeoDatum<Reading>): number => datum.payload.magnitude * scale
+        const state = new GeoRollupState<Reading>({
+            cellOf: byLocation(0.01),
+            measures: {total: sumOf(scaled), mean: meanOf(scaled), low: minOf(scaled), peak: maxOf(scaled), last: latestOf(scaled)},
+        })
+        const [first, second, third] = [reading('S-1', 10, 20, 1, 2), reading('S-1', 10, 20, 2, 5), reading('S-1', 10, 20, 3, 3)]
+        ;[first, second, third].forEach(event => state.add(event, 's'))
+        scale = 10
+        state.remove(second)
+        // (the values as they were counted: 2 and 3, not 20 and 30)
+        expect(state.aggregates()[0].values).toEqual({total: 5, mean: 2.5, low: 2, peak: 3, last: 3})
+        state.remove(first)
+        expect(state.aggregates()[0].values).toEqual({total: 3, mean: 3, low: 3, peak: 3, last: 3})
     })
 
     it('hands back the same aggregates until the cells change', () => {
@@ -530,17 +549,67 @@ describe('GeoDataSource roll-ups', () => {
         expect(dataSource.latestSensorEventOf('seismic', 'nobody')).toBeUndefined()
     })
 
-    it('stops keeping a filtered roll-up up to date once it\'s no longer asked for', () => {
+    it('keeps a busy sensor\'s events in order as thousands of them are dropped (compacting as it goes)', () => {
+        const {dataSource, emit} = startedSource(100)
+        // (one event a time unit, so that each batch drops the oldest: past the compaction's threshold)
+        for (let time = 1; time <= 3000; time++) {
+            emit(geoChartDataOf(new Map([['seismic', [reading('BUSY-1', 35.68, 139.69, time)]]])))
+        }
+        const times = dataSource.sensorEventsOf('seismic', 'BUSY-1').map(event => event.time)
+        expect(times).toEqual(Array.from({length: 101}, (_, index) => 2900 + index))
+        expect(dataSource.latestSensorEventOf('seismic', 'BUSY-1')?.time).toBe(3000)
+        // (and a sensor whose events have all gone is forgotten)
+        expect(dataSource.sensorEventsOf('seismic', 'TKY-1')).toEqual([])
+        expect(dataSource.latestSensorEventOf('seismic', 'TKY-1')).toBeUndefined()
+    })
+
+    /**
+     * @param dataSource A data source
+     * @return The filters of the filtered copies of its "by location" roll-up it keeps, the least
+     * recently asked for first
+     */
+    const copiesOf = (dataSource: GeoDataSource<Reading>): Array<string> => Array.from(
+        (dataSource as unknown as {filteredStates: Map<string, Map<string, unknown>>}).filteredStates.get('by location')?.keys() ?? []
+    )
+
+    it('keeps a filtered roll-up for each filter asked for, so that callers with different filters don\'t undo each other\'s', () => {
         const {dataSource, emit} = startedSource()
         emit(geoChartDataOf(new Map([['weather', [reading('LON-1', 51.51, -0.13, 10, 7)]]])))
-        const filtered = (): number => (dataSource as unknown as {filteredStates: Map<string, unknown>}).filteredStates.size
-        dataSource.aggregates('by location', /^seismic$/)
-        expect(filtered()).toBe(1)
+        const seismic = dataSource.aggregates('by location', /^seismic$/)
+        const weather = dataSource.aggregates('by location', /^weather$/)
         dataSource.aggregates('by location')
-        expect(filtered()).toBe(0)
+        // (each is the same array until its cells change: it wasn't rolled up again)
+        expect(dataSource.aggregates('by location', /^seismic$/)).toBe(seismic)
+        expect(dataSource.aggregates('by location', /^weather$/)).toBe(weather)
+        expect(copiesOf(dataSource)).toEqual(['^seismic$/', '^weather$/'])
+    })
+
+    it('keeps at most four filtered copies of a roll-up, the least recently asked for going first', () => {
+        const {dataSource} = startedSource()
+        ;['a', 'b', 'c', 'd', 'e'].forEach(name => dataSource.aggregates('by location', new RegExp(`^${name}$`)))
+        expect(copiesOf(dataSource)).toEqual(['^b$/', '^c$/', '^d$/', '^e$/'])
+        dataSource.aggregates('by location', /^b$/)
+        dataSource.aggregates('by location', /^f$/)
+        expect(copiesOf(dataSource)).toEqual(['^d$/', '^e$/', '^b$/', '^f$/'])
+    })
+
+    it('stops keeping a filtered roll-up up to date once it\'s no longer asked for', () => {
+        const {dataSource, emit} = startedSource()
+        // (with a weather series as well as the seismic one, each filter takes only some of them)
+        emit(geoChartDataOf(new Map([['weather', [reading('LON-1', 51.51, -0.13, 0, 7)]]])))
         dataSource.aggregates('by location', /^seismic$/)
-        dataSource.aggregates('by location', /./)
-        expect(filtered()).toBe(0)
+        dataSource.aggregates('by location', /^weather$/)
+        // (the weather copy is still asked for after each batch, as a plot drawing it would be)
+        const batches = (from: number, count: number): void => {
+            for (let batch = from; batch < from + count; batch++) {
+                emit(geoChartDataOf(new Map([['weather', [reading('LON-1', 51.51, -0.13, batch, 7)]]])))
+                dataSource.aggregates('by location', /^weather$/)
+            }
+        }
+        batches(1, 50)
+        expect(copiesOf(dataSource)).toEqual(['^seismic$/', '^weather$/'])
+        batches(51, 100)
+        expect(copiesOf(dataSource)).toEqual(['^weather$/'])
     })
 
     it('uses the roll-up of all the series for a filter that takes all of them', () => {
