@@ -1,18 +1,18 @@
 import {useCallback, useEffect, useRef} from 'react'
-import {useStreamingTimeAxes} from "./useStreamingTimeAxes";
+import {useStreamingTimeAxes} from "./hooks/useStreamingTimeAxes";
 import {useHoveredSeries} from "../hooks/useHoveredSeries";
 import * as d3 from "d3"
 
 import {useChart} from "../hooks/useChart"
 import {useDataSource, useDataSourceRunning, useInitialData} from "../hooks/useDataSource";
 import {usePlotDimensions} from "../hooks/usePlotDimensions"
-import {type AxesAssignment, clipToArea} from "./plot"
+import {type AxesAssignment, clipToArea} from "./plot-utils/plot"
 import type {CanvasContext} from "../d3types"
-import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting"
+import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./plot-utils/hitTesting"
 import {noop} from "../utils"
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange"
 import {extentWith, visibleExtent} from "../axes/autoScale"
-import {growAutoScaledYAxes, useAutoScaleRestart} from "./autoScaleYAxes"
+import {growAutoScaledYAxes, useAutoScaleRestart} from "./plot-utils/autoScaleYAxes"
 import {
     type BaseAxis,
     AxisType,
@@ -54,17 +54,21 @@ export interface Props {
     zoomKeyModifiersRequired?: boolean
     /**
      * Behavior for time windowing (see {@link TimeWindowBehavior}). Defaults to `SCROLL`. Ignored
-     * when `withCadenceOf` is set.
+     * with cadence (`withCadence`).
      */
     timeWindowBehavior?: TimeWindowBehavior
     /**
-     * When set, uses a cadence with the specified refresh period (in milliseconds). For plots
-     * where the updates are slow (> 100 ms) using a cadence of 10 to 25 ms smooths out the
-     * updates and makes the plot updates look cleaner. When updates are around 25 ms or less,
-     * then setting the cadence period too small will result in poor update performance. Generally
-     * at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time
-     * to the current time -- this is what causes the x-axis to keep scrolling once the data
-     * reaches the right-hand edge, even if new data hasn't arrived yet.
+     * When true, the time axes scroll smoothly between data updates: on every animation frame they
+     * move to the current time, projected from the latest data, rather than only when data arrives.
+     * Use it when the data arrives slowly or unevenly (e.g. every 50 ms or more), so the plot
+     * doesn't scroll in steps. Sets the time axes' end to the current time, which is what keeps
+     * the x-axis scrolling once the data reaches the right-hand edge, even if new data hasn't
+     * arrived yet. Defaults to `false`.
+     */
+    withCadence?: boolean
+    /**
+     * @deprecated Use `withCadence` instead. Any value turns cadence on: the time axes now move on
+     * every animation frame, so the period is no longer used.
      */
     withCadenceOf?: number
     /**
@@ -197,6 +201,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
         zoomEnabled = false,
         zoomKeyModifiersRequired = true,
         timeWindowBehavior = TimeWindowBehavior.SCROLL,
+        withCadence,
         withCadenceOf,
         bandOpacity = 0.15,
         bandOpacityStep = 0.12,
@@ -238,7 +243,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
      */
     const updatePlot = useCallback(
         (cc: CanvasContext) => {
-            const draw = (context: CanvasContext) => {
+            const draw = (context: CanvasContext): void => {
                 const {context2D} = context
 
                 context2D.save()
@@ -411,7 +416,8 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
         zoomEnabled,
         zoomKeyModifiersRequired,
         onZoomReset,
-        withCadenceOf,
+        // (`withCadenceOf` is the deprecated way of turning cadence on)
+        withCadence: withCadence ?? withCadenceOf !== undefined,
         timeWindowBehavior,
         highlightAxesOnMouseOver,
     })
@@ -429,7 +435,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
             const canvas = canvasContext.canvas
             const {context2D, dpr} = canvasContext
 
-            const handleMove = (event: MouseEvent) => {
+            const handleMove = (event: MouseEvent): void => {
                 const [x, y] = canvasLocalPoint(event, canvas)
 
                 // check outlier markers first (drawn on top of the bands)
@@ -512,7 +518,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
                 lastHoveredRef.current = current
             }
 
-            const handleLeaveCanvas = () => {
+            const handleLeaveCanvas = (): void => {
                 const previous = lastHoveredRef.current
                 if (previous !== undefined) {
                     mouseLeaveHandlerFor(`tooltip-${chartId}`)?.(previous.seriesName)
@@ -522,7 +528,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
 
             canvas.addEventListener('mousemove', handleMove)
             canvas.addEventListener('mouseleave', handleLeaveCanvas)
-            return () => {
+            return (): void => {
                 canvas.removeEventListener('mousemove', handleMove)
                 canvas.removeEventListener('mouseleave', handleLeaveCanvas)
             }
@@ -540,7 +546,7 @@ export function OutlierPlot<M extends readonly number[] = readonly number[]>(pro
     // unregister this plot's draw function on unmount
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (canvasContext) {
                     canvasContext.unregister(`outlier-plot-autoscale-${chartId}`)
                     canvasContext.unregister(`outlier-plot-${chartId}`)
@@ -635,7 +641,7 @@ function calcPointsInBand<M extends readonly number[]>(
     subtractLowerBandCount: boolean = true
 ): number {
     // function to count the points in a specific outlier band
-    const countPointsInBand = (bandIndex: number) =>
+    const countPointsInBand = (bandIndex: number): number =>
         plotData
             .filter(datum => {
                     if (bandIndex < datum.bounds.length) {

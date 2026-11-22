@@ -67,7 +67,7 @@ export function containerDimensionsFrom(plotDimensions: Dimensions, plotMargin: 
  * @param dimension2 The second dimensions
  * @return `true` when the widths and heights are equal; `false` otherwise
  */
-export function dimensionsEqual(dimension1: Dimensions, dimension2: Dimensions) {
+export function dimensionsEqual(dimension1: Dimensions, dimension2: Dimensions): boolean {
     return dimension1.height === dimension2.height && dimension1.width === dimension2.width
 }
 
@@ -77,6 +77,6 @@ export function dimensionsEqual(dimension1: Dimensions, dimension2: Dimensions) 
  * @param dimension2 The second dimensions
  * @return `true` when the widths or heights differ; `false` otherwise
  */
-export function dimensionsNotEqual(dimension1: Dimensions, dimension2: Dimensions) {
+export function dimensionsNotEqual(dimension1: Dimensions, dimension2: Dimensions): boolean {
     return !dimensionsEqual(dimension1, dimension2)
 }

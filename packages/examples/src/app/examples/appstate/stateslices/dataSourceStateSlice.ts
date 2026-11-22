@@ -70,12 +70,12 @@ export function dataSourceSlice<DS extends ManagedDataSource, S>(
         dataSource: mirrorRunning(initialDataSource),
         running: initialDataSource.running,
 
-        setInitialData: (initialData: Array<S>) => {
+        setInitialData: (initialData: Array<S>): void => {
             get().dataSource.dispose()
             set({dataSource: mirrorRunning(createDataSource(initialData)), running: false})
         },
 
-        setRunning: (running: boolean) => {
+        setRunning: (running: boolean): void => {
             const {dataSource} = get()
             if (running) dataSource.start()
             else dataSource.stop()

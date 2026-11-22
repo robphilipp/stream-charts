@@ -153,10 +153,10 @@ export function strokeColorizedLine<P>(
     if (pieces.length === 0) return
 
     // the index of the point a piece is at (for e.g. a linear curve, a segment's starting point)
-    const pointIndexOf = (pieceIndex: number) => pieces.length === 1 ?
+    const pointIndexOf = (pieceIndex: number): number => pieces.length === 1 ?
         0 :
         Math.round(pieceIndex / (pieces.length - 1) * (points.length - 2))
-    const sameSpot = (a: [number, number], b: [number, number]) => a[0] === b[0] && a[1] === b[1]
+    const sameSpot = (a: [number, number], b: [number, number]): boolean => a[0] === b[0] && a[1] === b[1]
 
     context.save()
     // (round joins and caps, so that consecutive runs of different colors meet without a notch)

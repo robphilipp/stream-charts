@@ -1,8 +1,8 @@
 import {useCallback, useEffect, useEffectEvent, useMemo, useRef} from 'react'
-import {useCanvasZoomPan} from "./useCanvasZoomPan";
+import {useCanvasZoomPan} from "./hooks/useCanvasZoomPan";
 import {type NoTooltipMetadata, useChart} from "../hooks/useChart";
 import * as d3 from "d3";
-import {clipToArea} from "./plot";
+import {clipToArea} from "./plot-utils/plot";
 import {
     axesZoomHandler,
     AxisType,
@@ -14,7 +14,7 @@ import {
     type SeriesLineStyle
 } from "../axes/axes";
 import type {CanvasContext} from "../d3types";
-import {canvasLocalPoint, seriesAt, type SeriesGeometry} from "./hitTesting";
+import {canvasLocalPoint, seriesAt, type SeriesGeometry} from "./plot-utils/hitTesting";
 import {fontStringFor, formatTime, noop, textDimensions} from "../utils";
 import type {Dimensions} from "../styling/margins";
 import {iteratesViewDriverFor} from "../subscriptions/viewDrivers";
@@ -33,7 +33,7 @@ import {
     DEFAULT_LINE_START_COLOR,
     pointColorScale,
     strokeColorizedLine
-} from "./colorizedLine";
+} from "./plot-utils/colorizedLine";
 
 // an iterate as the plot draws it: f[n](x), f[n+1](x), the iterate's time, and its index in its series
 type IteratePoint = { n: number, n_1: number, time: number, index: number }
@@ -162,14 +162,14 @@ export interface Props {
      */
     onZoomReset?: (resetZoom: () => void) => void
     /**
-     * When set, uses a cadence with the specified refresh period (in milliseconds). For plots
-     * where the updates are slow (> 100 ms) using a cadence of 10 to 25 ms smooths out the
-     * updates and makes the plot updates look cleaner. When updates are around 25 ms or less,
-     * then setting the cadence period too small will result in poor update performance. Generally
-     * at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time
-     * to the current time.
+     * When true, the time axes scroll smoothly between data updates (see the scatter plot's
+     * `withCadence`).
      *
      * Note: the Poincaré plot accepts this, but doesn't (yet) use it -- its axes don't follow time.
+     */
+    withCadence?: boolean
+    /**
+     * @deprecated Use `withCadence` instead.
      */
     withCadenceOf?: number
     /**
@@ -331,7 +331,7 @@ export function PoincarePlot(props: Props): null {
             // series (see `colorizeLines`)
             const lineColorOf = pointColorScale(lineStartColor, lineEndColor, lineColorSteps)
 
-            const draw = (context: CanvasContext) => {
+            const draw = (context: CanvasContext): void => {
                 const {context2D} = context
 
                 // create a map associating series-names to their time-series.
@@ -710,7 +710,7 @@ export function PoincarePlot(props: Props): null {
         () => {
             addAxesBoundsUpdateHandlerRef.current(`handler-${chartId}`, updatedBoundsHandler)
             const removeHandler = removeAxesBoundsUpdateHandlerRef.current
-            return () => {
+            return (): void => {
                 // closure on the function to remove the handler from this chart
                 removeHandler(`handler-${chartId}`)
             }
@@ -756,7 +756,7 @@ export function PoincarePlot(props: Props): null {
      */
     const snapToOriginalRanges = useCallback(
         (): void => {
-            const snap = (ranges: Map<string, ContinuousAxisRange>, axesState: typeof xAxesState) =>
+            const snap = (ranges: Map<string, ContinuousAxisRange>, axesState: typeof xAxesState): void =>
                 ranges.forEach((range, axisId) => {
                     ranges.set(axisId, range.update(range.original.start, range.original.end))
                     setAxisIntervalFor(axisId, range.original)
@@ -839,7 +839,7 @@ export function PoincarePlot(props: Props): null {
                 yAxis?.setHighlighted(isHighlighted, highlightColor, highlightWidth)
             }
 
-            const handleMove = (event: MouseEvent) => {
+            const handleMove = (event: MouseEvent): void => {
                 if (!allowTooltip.current || !tooltipVisible) return
 
                 const [x, y] = canvasLocalPoint(event, canvas)
@@ -883,7 +883,7 @@ export function PoincarePlot(props: Props): null {
                 canvasContext.requestRedraw()
             }
 
-            const handleLeaveCanvas = () => {
+            const handleLeaveCanvas = (): void => {
                 const previous = hoveredPointRef.current
                 if (previous !== undefined) {
                     handleMouseLeavePoint(previous.seriesName, mouseLeaveHandlerFor(`tooltip-${chartId}`))
@@ -895,7 +895,7 @@ export function PoincarePlot(props: Props): null {
 
             canvas.addEventListener('mousemove', handleMove)
             canvas.addEventListener('mouseleave', handleLeaveCanvas)
-            return () => {
+            return (): void => {
                 canvas.removeEventListener('mousemove', handleMove)
                 canvas.removeEventListener('mouseleave', handleLeaveCanvas)
             }
@@ -937,7 +937,7 @@ export function PoincarePlot(props: Props): null {
             if (dataSource === undefined || !running || canvasContext === null) return
             allowTooltip.current = false
             const driver = createViewDriver(dataSource)
-            return () => {
+            return (): void => {
                 driver.unsubscribe()
                 allowTooltip.current = true
             }
@@ -958,7 +958,7 @@ export function PoincarePlot(props: Props): null {
     // unregister this plot's draw function on unmount
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (canvasContext) {
                     canvasContext.unregister(`poincare-plot-${chartId}`)
                 }

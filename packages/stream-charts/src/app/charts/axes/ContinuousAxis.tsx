@@ -353,7 +353,7 @@ export function ContinuousAxis(props: Props): null {
     // identical cleanup effect.
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (rangeUpdateHandlerIdRef.current) {
                     removeAxesRangesUpdateHandler(rangeUpdateHandlerIdRef.current)
                 }
@@ -366,7 +366,7 @@ export function ContinuousAxis(props: Props): null {
     // this axis is swapped out for a different one)
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (canvasContext) {
                     switch (location) {
                         case AxisLocation.Bottom:

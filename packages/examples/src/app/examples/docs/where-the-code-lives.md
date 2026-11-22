@@ -7,7 +7,7 @@ The library and the example live side by side in the same repository, as two pac
 | where                                   | whose is it? | what's in it                                                    |
 |-----------------------------------------|--------------|-----------------------------------------------------------------|
 | `packages/stream-charts/src/app/charts` | the library  | the charts: `<Chart>`, the axes, plots, data sources, and so on |
-| `src/app/examples`                      | the example  | the five examples, their state, their data, and their controls  |
+| `src/app/examples`                      | the example  | the six examples, their state, their data, and their controls   |
 | `src/app/ui`                            | the example  | general-purpose UI widgets – buttons, drop-downs, the control bar |
 
 There's a simple rule that keeps the two apart: **the example uses the library, and the library never uses the example.** The example imports everything it uses from the library from one place, `"stream-charts"` – for example, `import {Chart, ContinuousAxis, ScatterPlot} from "stream-charts"` – and that's all your application needs, too. So if you're wondering whether a piece of code is "stream-charts," check where it's imported from.
@@ -18,7 +18,7 @@ Everything the library offers is exported from the package itself. Inside, its c
 
 - `Chart.tsx` – the `<Chart>` component, the container that everything else goes into
 - `axes` – `<ContinuousAxis>`, `<OrdinalAxis>`, and `<EmptyAxis>`, and the code for zooming and panning them
-- `plots` – one plot per chart type: `<ScatterPlot>`, `<RasterPlot>`, `<PoincarePlot>`, `<BarPlot>`, and `<OutlierPlot>`
+- `plots` – one plot per chart type: `<ScatterPlot>`, `<RasterPlot>`, `<PoincarePlot>`, `<BarPlot>`, `<OutlierPlot>`, and `<GeoPlot>`
 - `datasources` – the data sources, which hold a chart's data and ingest the stream (next page)
 - `subscriptions` – the view drivers, which keep a plot's view in step with its data source (also the next page)
 - `series` and `observables` – the shapes of the data, and helpers for building streams of it

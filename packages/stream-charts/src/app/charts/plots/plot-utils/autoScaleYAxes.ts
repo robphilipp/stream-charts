@@ -1,9 +1,9 @@
 import {useEffect, useRef} from "react";
 import type {Optional} from "result-fn";
-import type {BaseAxis, ContinuousNumericAxis} from "../axes/axes";
-import type {BaseAxisRange} from "../axes/BaseAxisRange";
-import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
-import {grownDomain} from "../axes/autoScale";
+import type {BaseAxis, ContinuousNumericAxis} from "../../axes/axes";
+import type {BaseAxisRange} from "../../axes/BaseAxisRange";
+import {ContinuousAxisRange} from "../../axes/ContinuousAxisRange";
+import {grownDomain} from "../../axes/autoScale";
 
 /**
  * What a plot needs from its chart's axes to auto-scale its y-axes (see `ContinuousAxis`'s

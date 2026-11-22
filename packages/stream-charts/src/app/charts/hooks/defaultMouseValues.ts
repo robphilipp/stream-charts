@@ -3,7 +3,7 @@ import type {UseMouseValues} from "./useMouse";
 /**
  * No operation function for use when a default function is needed
  */
-const noop = () => {
+const noop = (): void => {
     /* empty on purpose */
 }
 /**

@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import type {D3ZoomEvent} from "d3";
-import type {CanvasContext} from "../d3types";
+import type {CanvasContext} from "../../d3types";
 
 /**
  * A zoom gesture's step, as the plot's zoom handler gets it
@@ -222,7 +222,7 @@ export function useCanvasZoomPan(canvasContext: CanvasContext | null, options: C
                 })
             }
 
-            return () => {
+            return (): void => {
                 if (panEnabled) canvasSelection.on(".drag", null)
                 if (zoomEnabled) {
                     canvasSelection.on(".zoom", null)

@@ -44,7 +44,7 @@ export function Tabs(props: Props): JSX.Element {
 
     const [activeTab, setActiveTab] = useState(0)
 
-    function handleTabChange(newIndex: number) {
+    function handleTabChange(newIndex: number): void {
         onTabChange(newIndex, tabNames[newIndex])
         setActiveTab(newIndex)
     }

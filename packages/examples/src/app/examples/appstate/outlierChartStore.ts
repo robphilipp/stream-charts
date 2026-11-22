@@ -7,7 +7,11 @@ import {
     type OutlierChartData,
     type OutlierSeries,
 } from "stream-charts";
-import {periodicWithSeveralBandsFn, randomOutlierDataObservable} from "../dataproviders/randomOutlierData.ts";
+import {
+    type BaseDataFn,
+    periodicWithSeveralBandsFn,
+    randomOutlierDataObservable
+} from "../dataproviders/randomOutlierData.ts";
 import {DEFAULT_DROP_AFTER_100} from "../options/dropDataAfter.ts";
 import {type DataSourceSlice, dataSourceSlice} from "./stateslices/dataSourceStateSlice.ts";
 
@@ -26,7 +30,7 @@ const PERIOD_MAGNITUDE = 30
 /**
  * @return The base data function (a sum of periodic functions with noise bands) for the example
  */
-export function baseDataFnFactory() {
+export function baseDataFnFactory(): BaseDataFn<Measures> {
     return periodicWithSeveralBandsFn<Measures>(PERIODS, PERIOD_MAGNITUDE)
 }
 
@@ -81,7 +85,8 @@ type OutlierChartState = {
     filterValue: string
     dropAfterMs: number
     windowingTime: number
-    cadence: number
+    // whether the time axes scroll smoothly between data updates (the plot's `withCadence`)
+    cadence: boolean
     dataUpdatePeriod: number
     selectedInterpolationName: string
     showMarkers: boolean
@@ -100,7 +105,7 @@ const initialState: OutlierChartState = {
     dropAfterMs: DEFAULT_DROP_AFTER_100[1],
     windowingTime: 25,
     // 0 means disabled
-    cadence: 0,
+    cadence: false,
     dataUpdatePeriod: DEFAULT_DATA_UPDATE_PERIOD,
     selectedInterpolationName: 'curveLinear',
     showMarkers: true,
@@ -115,7 +120,7 @@ type OutlierChartActions = {
     setFilterValue: (filterValue: string) => void
     setDropAfterMs: (dropAfterMs: number) => void
     setWindowingTime: (windowingTime: number) => void
-    setCadence: (cadence: number) => void
+    setCadence: (cadence: boolean) => void
     setDataUpdatePeriod: (dataUpdatePeriod: number) => void
     setSelectedInterpolationName: (name: string) => void
     setShowMarkers: (show: boolean) => void
@@ -149,18 +154,18 @@ export const useOutlierChartStore: UseBoundStore<StoreApi<OutlierChartStore>> = 
         setFilterValue: filterValue => set({filterValue}),
 
         // data retention belongs to the data source, so keep it in step
-        setDropAfterMs: (dropAfterMs: number) => {
+        setDropAfterMs: (dropAfterMs: number): void => {
             get().dataSource.setDropDataAfter(dropAfterMs)
             set({dropAfterMs})
         },
 
         setWindowingTime: (windowingTime: number) => set({windowingTime}),
 
-        setCadence: (cadence: number) => set({cadence}),
+        setCadence: (cadence: boolean) => set({cadence}),
 
         // the update period is baked into the generator, so give the data source a new one (only
         // possible while stopped, which is the only time the control is enabled)
-        setDataUpdatePeriod: (dataUpdatePeriod: number) => {
+        setDataUpdatePeriod: (dataUpdatePeriod: number): void => {
             get().dataSource.setGenerator(randomData(dataUpdatePeriod))
             set({dataUpdatePeriod})
         },

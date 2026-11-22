@@ -1,6 +1,6 @@
 {
   "name": "stream-charts",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Charts for steaming data",
   "author": "Rob Philipp",
   "homepage": "https://robphilipp.github.io/stream-charts/",
@@ -41,8 +41,8 @@
     "postpack": "node -e \"for (const f of ['README.md','changes.md','LICENSE']) require('fs').rmSync(f,{force:true})\""
   },
   "peerDependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "rxjs": "^7.8.0",
     "d3": "^7.9.0"
   },
@@ -75,8 +75,8 @@
     "globals": "^17.6.0",
     "jest": "^30.0.5",
     "jest-util": "^30.5.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "rxjs": "^7.8.2",
     "ts-jest": "^29.4.15",
     "typedoc": "^0.28.20",

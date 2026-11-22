@@ -1,11 +1,11 @@
-import {type AxesAssignment, clipToArea} from "./plot";
-import {useCanvasZoomPan} from "./useCanvasZoomPan";
+import {type AxesAssignment, clipToArea} from "./plot-utils/plot";
+import {useCanvasZoomPan} from "./hooks/useCanvasZoomPan";
 import * as d3 from "d3";
 import {noop} from "../utils";
 import {useChart} from "../hooks/useChart";
 import {useCallback, useEffect, useEffectEvent, useMemo, useRef} from "react";
 import type {CanvasContext} from "../d3types";
-import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
+import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./plot-utils/hitTesting";
 import {
     axesForSeriesGen,
     type BaseAxis,
@@ -32,10 +32,10 @@ import {type BarSeriesStyle, type BarStyle, defaultBarSeriesStyle} from "../styl
 import type {TooltipData} from "../hooks/useTooltip";
 import {OrdinalAxisRange} from "../axes/OrdinalAxisRange";
 import {Optional} from "result-fn";
-import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./constants";
+import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./plot-utils/constants";
 import {AxisInterval} from "../axes/AxisInterval";
 import {extentOf, extentWith} from "../axes/autoScale";
-import {type AutoScaleAxes, growAutoScaledYAxes, useAutoScaleRestart} from "./autoScaleYAxes";
+import {type AutoScaleAxes, growAutoScaledYAxes, useAutoScaleRestart} from "./plot-utils/autoScaleYAxes";
 
 /**
  * A snapshot of the bar plot's zoom/pan state, in a form that can be held outside the plot (e.g.
@@ -313,7 +313,7 @@ export function BarPlot(props: Props): null {
      */
     const updatePlot = useCallback(
         (cc: CanvasContext) => {
-            const draw = (context: CanvasContext) => {
+            const draw = (context: CanvasContext): void => {
                 const {context2D} = context
 
                 context2D.save()
@@ -816,7 +816,7 @@ export function BarPlot(props: Props): null {
                 yAxis?.setHighlighted(isHighlighted)
             }
 
-            const handleMove = (event: MouseEvent) => {
+            const handleMove = (event: MouseEvent): void => {
                 const [x, y] = canvasLocalPoint(event, canvas)
                 const hit = seriesAt(x, y, geometryRef.current)
                 // geometry keys are "${seriesName}::${elementType}"; split back apart
@@ -875,7 +875,7 @@ export function BarPlot(props: Props): null {
                 }
             }
 
-            const handleLeaveCanvas = () => {
+            const handleLeaveCanvas = (): void => {
                 const previous = lastHoveredRef.current
                 if (previous !== undefined) {
                     handleMouseLeaveSeries(previous.seriesName, mouseLeaveHandlerFor(`tooltip-${chartId}`, PROVIDER_ID_FOR_ELEMENT_TYPE[previous.elementType]))
@@ -887,7 +887,7 @@ export function BarPlot(props: Props): null {
 
             canvas.addEventListener('mousemove', handleMove)
             canvas.addEventListener('mouseleave', handleLeaveCanvas)
-            return () => {
+            return (): void => {
                 canvas.removeEventListener('mousemove', handleMove)
                 canvas.removeEventListener('mouseleave', handleLeaveCanvas)
             }
@@ -929,7 +929,7 @@ export function BarPlot(props: Props): null {
             if (dataSource === undefined || !running || canvasContext === null) return
             allowTooltipRef.current = false
             const driver = createViewDriver(dataSource)
-            return () => {
+            return (): void => {
                 driver.unsubscribe()
                 allowTooltipRef.current = true
             }
@@ -950,7 +950,7 @@ export function BarPlot(props: Props): null {
     // unregister this plot's draw function on unmount
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (canvasContext) {
                     canvasContext.unregister(`bar-plot-autoscale-${chartId}`)
                     canvasContext.unregister(`bar-plot-${chartId}`)

@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useRef} from 'react'
-import {useStreamingTimeAxes} from "./useStreamingTimeAxes";
+import {useStreamingTimeAxes} from "./hooks/useStreamingTimeAxes";
 import {useHoveredSeries} from "../hooks/useHoveredSeries";
 import {useChart} from "../hooks/useChart";
 import {
@@ -9,7 +9,7 @@ import {
     scatterTooltipPoints
 } from "../tooltips/tooltipUtils";
 import * as d3 from "d3";
-import {type AxesAssignment, clipToArea} from "./plot";
+import {type AxesAssignment, clipToArea} from "./plot-utils/plot";
 import type {Datum, TimeSeries} from "../series/timeSeries";
 import {
     type BaseAxis,
@@ -20,15 +20,15 @@ import {
     type SeriesLineStyle
 } from "../axes/axes";
 import type {CanvasContext} from "../d3types";
-import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
+import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./plot-utils/hitTesting";
 import {firstIndexAtOrAfter, noop} from "../utils";
-import {NoCurveFactory} from "./constants";
+import {NoCurveFactory} from "./plot-utils/constants";
 import {timeSeriesAxisTimes, TimeWindowBehavior} from "../subscriptions/viewDrivers";
 import {useDataSource, useDataSourceRunning, useInitialData} from "../hooks/useDataSource";
 import type {TimeSeriesChartData} from "../series/timeSeriesChartData";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 import {extentWith, visibleExtent} from "../axes/autoScale";
-import {growAutoScaledYAxes, useAutoScaleRestart} from "./autoScaleYAxes";
+import {growAutoScaledYAxes, useAutoScaleRestart} from "./plot-utils/autoScaleYAxes";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import type {FastShiftArray} from "fast-shift-array";
 
@@ -68,12 +68,15 @@ export interface Props {
      */
     zoomKeyModifiersRequired?: boolean
     /**
-     * When set, uses a cadence with the specified refresh period (in milliseconds). For plots
-     * where the updates are slow (> 100 ms) using a cadence of 10 to 25 ms smooths out the
-     * updates and makes the plot updates look cleaner. When updates are around 25 ms or less,
-     * then setting the cadence period too small will result in poor update performance. Generally
-     * at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time
-     * to the current time.
+     * When true, the time axes scroll smoothly between data updates: on every animation frame they
+     * move to the current time, projected from the latest data, rather than only when data arrives.
+     * Use it when the data arrives slowly or unevenly (e.g. every 50 ms or more), so the plot
+     * doesn't scroll in steps. Sets the time axes' end to the current time. Defaults to `false`.
+     */
+    withCadence?: boolean
+    /**
+     * @deprecated Use `withCadence` instead. Any value turns cadence on: the time axes now move on
+     * every animation frame, so the period is no longer used.
      */
     withCadenceOf?: number
     /**
@@ -194,6 +197,7 @@ export function ScatterPlot(props: Props): null {
         panEnabled = false,
         zoomEnabled = false,
         zoomKeyModifiersRequired = true,
+        withCadence,
         withCadenceOf,
         timeWindowBehavior = TimeWindowBehavior.SCROLL,
         markerRadius,
@@ -252,7 +256,7 @@ export function ScatterPlot(props: Props): null {
          * @param cc The canvas context to register the draw function with
          */
         (cc: CanvasContext) => {
-            const draw = (context: CanvasContext) => {
+            const draw = (context: CanvasContext): void => {
                 // const __drawStart = performance.now()
                 // let __totalRetained = 0
                 // let __totalProcessed = 0
@@ -489,7 +493,8 @@ export function ScatterPlot(props: Props): null {
         zoomEnabled,
         zoomKeyModifiersRequired,
         onZoomReset,
-        withCadenceOf,
+        // (`withCadenceOf` is the deprecated way of turning cadence on)
+        withCadence: withCadence ?? withCadenceOf !== undefined,
         timeWindowBehavior,
         highlightAxesOnMouseOver,
     })
@@ -503,7 +508,7 @@ export function ScatterPlot(props: Props): null {
 
             const canvas = canvasContext.canvas
 
-            const handleMove = (event: MouseEvent) => {
+            const handleMove = (event: MouseEvent): void => {
                 if (!allowTooltip.current) return
 
                 const [x, y] = canvasLocalPoint(event, canvas)
@@ -575,7 +580,7 @@ export function ScatterPlot(props: Props): null {
                 canvasContext.requestRedraw()
             }
 
-            const handleLeaveCanvas = () => {
+            const handleLeaveCanvas = (): void => {
                 if (lastHoveredRef.current !== undefined) {
                     handleMouseLeaveSeries(lastHoveredRef.current, mouseLeaveHandlerFor(`tooltip-${chartId}`))
                     lastHoveredRef.current = undefined
@@ -585,7 +590,7 @@ export function ScatterPlot(props: Props): null {
 
             canvas.addEventListener('mousemove', handleMove)
             canvas.addEventListener('mouseleave', handleLeaveCanvas)
-            return () => {
+            return (): void => {
                 canvas.removeEventListener('mousemove', handleMove)
                 canvas.removeEventListener('mouseleave', handleLeaveCanvas)
             }
@@ -606,7 +611,7 @@ export function ScatterPlot(props: Props): null {
     // unregister this plot's draw function (and its auto-scaling step) on unmount
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (canvasContext) {
                     canvasContext.unregister(`scatter-plot-autoscale-${chartId}`)
                     canvasContext.unregister(`scatter-plot-${chartId}`)

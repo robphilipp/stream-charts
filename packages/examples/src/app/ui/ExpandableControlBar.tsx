@@ -64,14 +64,14 @@ export function ExpandableControlBar(props: Props): JSX.Element {
         if (!contentRef.current) return
 
         const element = contentRef.current
-        const updateHeight = () => setContentHeight(element.scrollHeight)
+        const updateHeight = (): void => setContentHeight(element.scrollHeight)
 
         updateHeight()
 
         const observer = new ResizeObserver(() => updateHeight())
         observer.observe(element)
 
-        return () => observer.disconnect()
+        return (): void => observer.disconnect()
     }, [children])
 
     return (
@@ -138,7 +138,9 @@ export function ExpandableControlBar(props: Props): JSX.Element {
                 flexWrap: 'nowrap',
                 alignItems: 'center',
                 gap: 8,
-                padding: '6px 16px 6px 6px',
+                // (the header's buttons keep their margins, so the bar is as tall as they are, and
+                // little more)
+                padding: '1.5px 16px 1.5px 6px',
                 minWidth: 0,
             }}>
                 <Button

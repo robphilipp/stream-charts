@@ -1,4 +1,4 @@
-import type {Series} from "../plots/plot";
+import type {Series} from "../plots/plot-utils/plot";
 import {createContext, useContext} from "react";
 
 /**

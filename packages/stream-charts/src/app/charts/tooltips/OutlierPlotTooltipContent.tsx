@@ -36,9 +36,9 @@ export function OutlierPlotTooltipContent(props: Props): ReactElement | null {
     const {
         style,
         children,
-        datumFormatter = (x: number, y: number) => `(${x}, ${y})`,
-        bandFormatter = (lower: number, upper: number) => `Band: ${lower} ⭢ ${upper}`,
-        measureFormatter = (innerProb: number, outerProb: number) => `Points have a ${(innerProb * 100).toFixed(1)}% probability of being in this band, and a ${(outerProb * 100).toFixed(1)}% probability of being outside this band`,
+        datumFormatter = (x: number, y: number): string => `(${x}, ${y})`,
+        bandFormatter = (lower: number, upper: number): string => `Band: ${lower} ⭢ ${upper}`,
+        measureFormatter = (innerProb: number, outerProb: number): string => `Points have a ${(innerProb * 100).toFixed(1)}% probability of being in this band, and a ${(outerProb * 100).toFixed(1)}% probability of being outside this band`,
     } = props
 
     // (a description given as lines is shown one per line)

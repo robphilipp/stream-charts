@@ -22,6 +22,7 @@ Each kind of chart takes its own shape of data, and each shape has its own data 
 | a sequence, plotted against itself (`x[n+1]` vs `x[n]`) | `IterateChartData` | `IteratesDataSource`  | `<PoincarePlot>`   |
 | the latest value of each category              | `OrdinalChartData`      | `OrdinalDataSource`   | `<BarPlot>`        |
 | values over time, with model bounds            | `OutlierChartData`      | `OutlierDataSource`   | `<OutlierPlot>`    |
+| events at places on the earth                  | `GeoChartData`          | `GeoDataSource`       | `<GeoPlot>`        |
 
 Temperature readings are values over time, so we'll use `TimeSeriesChartData`. Each chunk of `TimeSeriesChartData` that the observable emits holds:
 

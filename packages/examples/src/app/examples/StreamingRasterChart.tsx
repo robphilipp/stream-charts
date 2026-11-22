@@ -229,7 +229,7 @@ export function StreamingRasterChart(props: Props): JSX.Element {
         }
 
         animationFrameId = requestAnimationFrame(animate)
-        return () => cancelAnimationFrame(animationFrameId)
+        return (): void => cancelAnimationFrame(animationFrameId)
     }, [shouldShowExternalLegend])
 
     function initialDataFrom(data: Array<TimeSeries>): Array<TimeSeries> {
@@ -275,8 +275,8 @@ export function StreamingRasterChart(props: Props): JSX.Element {
         setWindowingTime(ms)
     }
 
-    function handleCadenceChange(ms: number): void {
-        setCadence(ms)
+    function handleCadenceChange(enabled: boolean): void {
+        setCadence(enabled)
     }
 
     function handleDataUpdatePeriodChange(ms: number): void {
@@ -360,7 +360,7 @@ export function StreamingRasterChart(props: Props): JSX.Element {
                         backgroundColor={theme.backgroundColor}
                         borderColor={theme.disabledBackgroundColor}
                         borderRadius={10}
-                        minHeight={55}
+                        minHeight={46}
                         autoExpandOnMouseEnter={false}
                     >
                         <CommonExecutionControls
@@ -595,7 +595,7 @@ export function StreamingRasterChart(props: Props): JSX.Element {
                         panEnabled={true}
                         zoomEnabled={true}
                         zoomKeyModifiersRequired={true}
-                        withCadenceOf={cadence > 0 ? cadence : undefined}
+                        withCadence={cadence}
                         highlightAxesOnMouseOver={visibility.highlightAxes}
                         onZoomReset={handleZoomReset}
                     />

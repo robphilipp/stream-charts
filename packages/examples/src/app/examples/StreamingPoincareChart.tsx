@@ -385,7 +385,7 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
                         backgroundColor={theme.backgroundColor}
                         borderColor={theme.disabledBackgroundColor}
                         borderRadius={10}
-                        minHeight={55}
+                        minHeight={46}
                         autoExpandOnMouseEnter={false}
                     >
                         <CommonExecutionControls
@@ -599,7 +599,7 @@ export function StreamingPoincareChart(props: Props): JSX.Element {
                         panEnabled={true}
                         zoomEnabled={true}
                         zoomKeyModifiersRequired={true}
-                        // withCadenceOf={30}
+                        // withCadence
                         highlightAxesOnMouseOver={highlightAxes}
                         colorizeLines={colorizeLines}
                         lineStartColor={lineStartColor}

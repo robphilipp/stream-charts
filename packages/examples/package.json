@@ -1,6 +1,6 @@
 {
   "name": "stream-charts-examples",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "private": true,
   "author": "Rob Philipp <rob.philipp@gmail.com> (https://github.com/robphilipp)",
   "license": "MIT",
@@ -26,11 +26,13 @@
     ]
   },
   "dependencies": {
+    "@mapbox/vector-tile": "^3.0.0",
     "@redux-devtools/extension": "^4.0.0",
     "@tanstack/react-router": "^1.170.18",
     "d3": "^7.9.0",
     "data-frame-ts": "^1.1.0",
     "fast-shift-array": "^0.1.6",
+    "pbf": "^5.1.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-markdown": "^10.1.0",
@@ -45,6 +47,9 @@
     "safe-regex": "^2.1.1",
     "stream-charts": "file:../stream-charts",
     "svg-table": "^0.2.2",
+    "topojson-client": "^3.1.0",
+    "us-atlas": "^3.0.1",
+    "world-atlas": "^2.0.2",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
@@ -63,6 +68,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/safe-regex": "^1.1.6",
+    "@types/topojson-client": "^3.1.5",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^10.8.1",
     "eslint-plugin-react-hooks": "^7.1.1",

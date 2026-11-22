@@ -24,7 +24,7 @@ export function defaultChartData(): ChartData {
  * @param data The chart data to copy
  * @return A deep copy of the chart data
  */
-export function copyChartData(data: ChartData) {
+export function copyChartData(data: ChartData): ChartData {
     return {
         seriesNames: new Set(data.seriesNames.values()),
     }

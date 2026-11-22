@@ -233,7 +233,7 @@ export function Legend<D, S extends SeriesStyle, TM, AR extends BaseAxisRange, A
     // version's positioning intent -- but via CSS `top`/`right`/`bottom`/`left` instead of a
     // manually-computed pixel (x, y), since we don't need to know the box's own width/height
     // ahead of time the way the old version's manual layout math did
-    const anchorStyle: React.CSSProperties = externalContainer ? {} : (() => {
+    const anchorStyle: React.CSSProperties = externalContainer ? {} : ((): React.CSSProperties => {
         switch (location) {
             case LegendLocation.TOP_LEFT:
                 return {position: 'absolute', top: margin.top + offset.y, left: margin.left + offset.x}

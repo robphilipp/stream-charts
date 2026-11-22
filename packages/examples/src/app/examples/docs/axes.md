@@ -85,6 +85,9 @@ Each plot needs particular kinds of axes:
 | `<PoincarePlot>` | `<ContinuousAxis>` | `<ContinuousAxis>` |
 | `<BarPlot>` | `<OrdinalAxis>` | `<ContinuousAxis>` |
 | `<OutlierPlot>` | `<ContinuousAxis>` | `<ContinuousAxis>` |
+| `<GeoPlot>` | none | none |
+
+The geo plot has no axes at all: it places its data by latitude and longitude, through a map projection.
 
 An `<EmptyAxis>` counts as a `<ContinuousAxis>` here. So it's fine as the raster chart's top x-axis, but the raster chart's series can't use one as their y-axis.
 

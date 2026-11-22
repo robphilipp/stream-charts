@@ -12,6 +12,16 @@ import {
 import {map} from "rxjs/operators";
 
 /**
+ * Calculates an outlier datum at a time: its value, with noise, and its bounds for each measure
+ * @param time The time of the datum
+ * @param sigma The amount of noise
+ * @param measures The measures (e.g. the probabilities) of the bounds
+ * @return The datum, with its bounds
+ * @template M The type of the measures (a tuple of numbers)
+ */
+export type BaseDataFn<M extends readonly number[]> = (time: number, sigma: number, measures: M) => OutlierDatum<M>
+
+/**
  * Creates the observable of outlier data for a single series: every update period, emits one datum,
  * calculated by the base function at the current time (the start time plus the wall-clock time
  * elapsed since subscribing)
@@ -26,7 +36,7 @@ import {map} from "rxjs/operators";
  */
 export function randomOutlierDataObservable<M extends readonly number[]>(
     seriesName: string,
-    baseFunction: (x: number, sigma: number, measures: M) => OutlierDatum<M>,
+    baseFunction: BaseDataFn<M>,
     measures: M,
     sigmaNoise: number = 1,
     updatePeriod: number = 25,
@@ -65,7 +75,7 @@ export function randomOutlierDataObservable<M extends readonly number[]>(
  */
 export function initialOutlierData<M extends readonly number[]>(
     seriesName: string,
-    baseFunction: (x: number, sigma: number, measures: M) => OutlierDatum<M>,
+    baseFunction: BaseDataFn<M>,
     measures: M,
     sigmaNoise: number,
     updatePeriod: number,
@@ -94,7 +104,7 @@ export function initialOutlierData<M extends readonly number[]>(
 export function periodicWithSeveralBandsFn<M extends readonly number[]>(
     periods: Array<[period: number, offset: number]>,
     magnitude: number
-): (time: number, sigma: number, measures: M) => OutlierDatum<M> {
+): BaseDataFn<M> {
     return (time: number, sigma: number, measures: M) => {
         // calculate the values for the "model" without noise. from these we add noise
         // to get the value. We also used these values to calculate the bounds for each

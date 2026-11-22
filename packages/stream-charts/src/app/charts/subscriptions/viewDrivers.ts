@@ -1,14 +1,15 @@
-import {interval, type Observable, type OperatorFunction, Subscription} from "rxjs";
+import {animationFrames, type Observable, type OperatorFunction, Subscription} from "rxjs";
 import {bufferCount, bufferTime, map, mergeAll, mergeWith} from "rxjs/operators";
 import {continuousAxisRanges, type ContinuousNumericAxis} from "../axes/axes";
 import {AxesState} from "../axes/AxesState";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
-import type {AxesAssignment} from "../plots/plot";
+import type {AxesAssignment} from "../plots/plot-utils/plot";
 import type {ChartData} from "../observables/ChartData";
 import type {TimeSeriesChartData} from "../series/timeSeriesChartData";
 import type {OutlierChartData} from "../observables/outliers";
 import type {OrdinalChartData} from "../observables/ordinals";
 import type {IterateChartData} from "../observables/iterates";
+import {type GeoChartData, geoChartDataLatestTime} from "../observables/geo";
 import type {StreamingDataSource} from "../datasources/StreamingDataSource";
 import {currentTimesByGroup, type TimeGroupFor} from "../datasources/timeSeriesDataSource";
 import {iteratesCurrentTime} from "../datasources/iteratesDataSource";
@@ -155,27 +156,66 @@ function resyncOnVisible(
  * empty chunk of chart data)
  */
 const CADENCE_TICK = Symbol('cadence-tick')
-type CadenceTick = typeof CADENCE_TICK
+
+/**
+ * A cadence tick: one per animation frame, carrying the frame's time
+ */
+interface CadenceTick {
+    readonly kind: typeof CADENCE_TICK
+    /** The animation frame's timestamp (the `performance.now()` clock) */
+    readonly frameTime: number
+}
+
+/**
+ * @param update An update from a view driver's stream
+ * @return `true` when the update is a cadence tick (rather than chart data)
+ */
+function isCadenceTick<CD>(update: CD | CadenceTick): update is CadenceTick {
+    return typeof update === 'object' && update !== null && (update as CadenceTick).kind === CADENCE_TICK
+}
 
 /**
  * The cadence ticks merged, unbuffered, with the batched data updates. Cadence ticks must not go
  * through the render batching, or each batch would deliver its cadence ticks in one burst,
- * collapsing the smooth per-tick scroll down to the batch rate. (The ticks carry no time: the
- * driver projects the stream time from its own wall-clock anchor, so throttled ticks don't make it
- * fall permanently behind.)
+ * collapsing the smooth per-tick scroll down to the batch rate.
+ *
+ * The ticks come once per animation frame, not from a timer: a timer's period rarely divides the
+ * display's frame period (a 25 ms period on a 60 Hz display ticks on two frames out of three), so
+ * the axes would move unevenly from frame to frame, which shows as jitter. Each tick carries its
+ * frame's time, from which the driver projects the stream time with its wall-clock anchor (so the
+ * axes don't fall behind when frames are skipped or paused, e.g. in a hidden tab).
  * @param updates$ The data source's updates
  * @param windowingTime The time (ms) over which the data updates are batched
- * @param cadencePeriod The time (ms) between cadence ticks
  * @return The data updates (each batch flattened back into single updates), merged with the
  * cadence ticks
  */
-function withCadence<CD>(updates$: Observable<CD>, windowingTime: number, cadencePeriod: number): Observable<CD | CadenceTick> {
-    const cadence = interval(cadencePeriod).pipe(map((): CadenceTick => CADENCE_TICK))
+function withCadence<CD>(updates$: Observable<CD>, windowingTime: number): Observable<CD | CadenceTick> {
+    const cadence = animationFrames().pipe(
+        map(({timestamp}): CadenceTick => ({kind: CADENCE_TICK, frameTime: timestamp}))
+    )
     return updates$.pipe(
         bufferTime<CD>(windowingTime),
         mergeAll(),
         mergeWith(cadence) as OperatorFunction<CD, CD | CadenceTick>
     )
+}
+
+/**
+ * A cadence driver's estimate of the current stream time (see {@link cadenceAnchor})
+ */
+interface CadenceAnchor {
+    /**
+     * @param at The (`performance.now()`) time to project to; defaults to now
+     * @return The stream time at that moment, projected from the last known time and the time since
+     */
+    now: (at?: number) => number
+    /** @return `true` when there's a known stream time to project from */
+    isKnown: () => boolean
+    /**
+     * Moves the anchor forward to a real (data) time when that's later than the projection
+     * @param realTime The latest real stream time
+     */
+    correctTo: (realTime: number) => void
 }
 
 /**
@@ -185,13 +225,12 @@ function withCadence<CD>(updates$: Observable<CD>, windowingTime: number, cadenc
  * a remount -- and corrected forward whenever real data overtakes the projection (but never
  * backward, which would make cadence stutter by the data's processing latency on every tick).
  * @param seedTime The best-known stream time to start from (`-Infinity` when there's no data yet)
- * @return The anchor: `now()` projects the current stream time, `isKnown()` says whether there's a
- * stream time to project from, and `correctTo(time)` moves the anchor forward to a later real time
+ * @return The anchor
  */
-function cadenceAnchor(seedTime: number) {
+function cadenceAnchor(seedTime: number): CadenceAnchor {
     let knownTime = seedTime
     let measuredAt = performance.now()
-    const now = (): number => knownTime + (performance.now() - measuredAt)
+    const now = (at: number = performance.now()): number => knownTime + (at - measuredAt)
     return {
         now,
         isKnown: (): boolean => isFinite(knownTime),
@@ -272,10 +311,10 @@ export interface TimeAxisViewDriverOptions {
      */
     dataUpdatePeriod?: number
     /**
-     * The time (ms) between cadence ticks, which advance the axes smoothly between data arrivals.
-     * Without one, the axes only advance as data arrives.
+     * Whether cadence ticks, one per animation frame, advance the axes smoothly between data
+     * arrivals. Without cadence, the axes only advance as data arrives. Defaults to `false`.
      */
-    cadencePeriod?: number
+    cadence?: boolean
     /**
      * Whether the time axes scroll or squeeze as data passes their ends (without cadence).
      * Defaults to SCROLL.
@@ -319,7 +358,7 @@ export function timeAxisViewDriverFor<CD extends ChartData>(
     const {
         windowingTime,
         dataUpdatePeriod,
-        cadencePeriod,
+        cadence = false,
         timeWindowBehavior = TimeWindowBehavior.SCROLL,
         initialTimes = new Map<string, number>(),
     } = options
@@ -329,7 +368,7 @@ export function timeAxisViewDriverFor<CD extends ChartData>(
     // rather than being discarded by a rebuild
     const timesWindows = continuousAxisRanges(xAxesState.axes)
 
-    if (cadencePeriod === undefined) {
+    if (!cadence) {
         return dataSource.chartDataUpdatesObservable
             .pipe(renderBatching<CD>(windowingTime, dataUpdatePeriod))
             .subscribe(dataList => dataList.forEach(data => {
@@ -361,22 +400,21 @@ export function timeAxisViewDriverFor<CD extends ChartData>(
     // noticeable while and would show up as "pause, then jump")
     catchUp()
 
-    const subscription = withCadence(dataSource.chartDataUpdatesObservable, windowingTime, cadencePeriod)
+    const subscription = withCadence(dataSource.chartDataUpdatesObservable, windowingTime)
         .subscribe(update => {
-            if (update === CADENCE_TICK) {
-                // a cadence tick: advance every axis to the projected stream time
-                const cadenceTime = anchor.now()
+            if (isCadenceTick(update)) {
+                // a cadence tick: advance every axis to the stream time projected for this frame
+                const cadenceTime = anchor.now(update.frameTime)
                 xAxesState.axisIds().forEach(axisId => {
                     advanceAxisRangeInMapTo(timesWindows, axisId, cadenceTime)
                     setCurrentTime(axisId, cadenceTime)
                 })
             } else {
-                // real data: re-sync each axis to the data's own time, and correct the cadence
-                // anchor if the data has overtaken it
-                axisTimesFor(update).forEach((currentAxisTime, axisId) => {
-                    advanceAxisRangeInMapTo(timesWindows, axisId, currentAxisTime)
-                    anchor.correctTo(currentAxisTime)
-                })
+                // real data: correct the cadence anchor if the data has overtaken it. (The axes
+                // aren't moved to the data's time here: the next frame's tick, at most a frame
+                // away, moves them to the corrected projection, whereas moving them here, between
+                // frames, would put them ahead of that frame's projection and make them stutter.)
+                axisTimesFor(update).forEach(currentAxisTime => anchor.correctTo(currentAxisTime))
             }
             updateTimingAndPlot(timesWindows)
         })
@@ -389,6 +427,36 @@ export function timeAxisViewDriverFor<CD extends ChartData>(
     subscription.add(() => cancelAnimationFrame(catchUpFrame))
 
     return subscription
+}
+
+/**
+ * The view driver for a geo plot: reports the time of the latest event and asks the plot to redraw
+ * as new events arrive. (The events are kept by the data source.) A geo plot has no time axes to
+ * advance: its view changes only through the plot's own rotation and zoom.
+ * @param dataSource The data source whose updates drive the view
+ * @param windowingTime The time (ms) over which updates are batched before redrawing
+ * @param updatePlot Redraws the plot
+ * @param setCurrentTime Records the time of the latest event
+ * @param dataUpdatePeriod The period (ms) at which the source emits, when known (see {@link renderBatching})
+ * @return The driver's subscription, to unsubscribe when the plot unmounts
+ * @template P The type of the events' payload
+ */
+export function geoViewDriverFor<P>(
+    dataSource: ViewDriverSource<GeoChartData<P>>,
+    windowingTime: number,
+    updatePlot: () => void,
+    setCurrentTime: (currentTime: number) => void,
+    dataUpdatePeriod?: number,
+): Subscription {
+    return dataSource.chartDataUpdatesObservable
+        .pipe(renderBatching<GeoChartData<P>>(windowingTime, dataUpdatePeriod))
+        .subscribe(dataList => {
+            dataList.forEach(data => {
+                const latest = geoChartDataLatestTime(data)
+                if (Number.isFinite(latest)) setCurrentTime(latest)
+            })
+            if (dataList.length > 0) updatePlot()
+        })
 }
 
 /**

@@ -367,7 +367,7 @@ export function StreamingBarChart(props: Props): JSX.Element {
                         backgroundColor={theme.backgroundColor}
                         borderColor={theme.disabledBackgroundColor}
                         borderRadius={10}
-                        minHeight={55}
+                        minHeight={46}
                         autoExpandOnMouseEnter={false}
                     >
                         <CommonExecutionControls
@@ -466,7 +466,7 @@ export function StreamingBarChart(props: Props): JSX.Element {
                         backgroundColor={theme.backgroundColor}
                         borderColor={theme.disabledBackgroundColor}
                         borderRadius={10}
-                        minHeight={55}
+                        minHeight={46}
                         autoExpandOnMouseEnter={false}
                     >
                         <ChartControlsHeader type={"header"} theme={theme}>
@@ -643,7 +643,7 @@ export function StreamingBarChart(props: Props): JSX.Element {
                         panEnabled={true}
                         zoomEnabled={true}
                         zoomKeyModifiersRequired={true}
-                        // withCadenceOf={50}
+                        // withCadence
 
                         // to have the upper axis zoom when the series zoom, we must have at
                         // least one series assigned to this axis.

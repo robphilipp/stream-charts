@@ -7,7 +7,7 @@ import {
     redirect,
 } from "@tanstack/react-router";
 import Intro from "./examples/docs/Intro";
-import {BarRoute, OutlierRoute, PoincareRoute, RasterRoute, RootLayout, ScatterRoute} from "./routeComponents";
+import {BarRoute, GeoRoute, OutlierRoute, PoincareRoute, RasterRoute, RootLayout, ScatterRoute} from "./routeComponents";
 
 /*
     Route tree
@@ -63,6 +63,12 @@ const outlierRoute = createRoute({
     component: OutlierRoute,
 })
 
+const geoRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/geo",
+    component: GeoRoute,
+})
+
 const routeTree = rootRoute.addChildren([
     indexRoute,
     introRoute,
@@ -71,6 +77,7 @@ const routeTree = rootRoute.addChildren([
     poincareRoute,
     barRoute,
     outlierRoute,
+    geoRoute,
 ])
 
 export const router = createRouter({

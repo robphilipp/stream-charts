@@ -1,8 +1,8 @@
-import type {Dimensions} from "../styling/margins";
-import type {CanvasContext, DrawFn, DrawHandle} from "../d3types";
+import type {Dimensions} from "../../styling/margins";
+import type {CanvasContext, DrawFn, DrawHandle} from "../../d3types";
 import type {FastShiftArray} from "fast-shift-array";
-import type {BaseAxisRange} from "../axes/BaseAxisRange";
-import type {AxisInterval} from "../axes/AxisInterval";
+import type {BaseAxisRange} from "../../axes/BaseAxisRange";
+import type {AxisInterval} from "../../axes/AxisInterval";
 
 /**
  * A series' data: a plain array, or the `FastShiftArray` that backs a {@link BaseSeries}

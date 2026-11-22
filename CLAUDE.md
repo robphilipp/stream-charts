@@ -69,12 +69,13 @@ Each child reads what it needs from context; `Chart.tsx` owns the SVG and subscr
 ### Key Directories
 
 - `packages/stream-charts/src/app/charts/` — All chart internals (axes, plots, hooks, providers, series, observables, legends, trackers, tooltips, subscriptions, styling)
+- `packages/stream-charts/src/app/charts/plots/` — The plot components (`ScatterPlot`, `RasterPlot`, `BarPlot`, `PoincarePlot`, `OutlierPlot`, `GeoPlot`), with their helpers in subdirectories: `plot-utils/` (shared by the plots: canvas setup and axis assignment in `plot.ts`, hit-testing, auto-scaling, colorized lines, constants), `hooks/` (the plots' zoom/pan and streaming time-axis hooks), and `geo-utils/` (the `GeoPlot`'s projections, layers, markers, pens, flashes, and scene drawing)
 - `packages/examples/src/app/examples/` — Full working chart examples (`StreamingScatterChart`, `StreamingRasterChart`, `StreamingBarChart`, `StreamingPoincareChart`) plus random data generators
 - `packages/examples/src/app/ui/` — Generic UI components (Toggle, Button, Checkbox, Tabs) and theme definitions
 
 ### D3 Integration
 
-D3 renders directly into SVG — no D3-React bindings. `GSelection` (`d3.Selection<SVGGElement, any, any, any>`) is the primary type passed through context. Scale objects (`scaleLinear`, `scaleLog`, `scaleBand`) are stored in context and accessed by plots and axes. Clip paths and plot containers are set up in `plots/plot.ts` utilities.
+D3 renders directly into SVG — no D3-React bindings. `GSelection` (`d3.Selection<SVGGElement, any, any, any>`) is the primary type passed through context. Scale objects (`scaleLinear`, `scaleLog`, `scaleBand`) are stored in context and accessed by plots and axes. Clip paths and plot containers are set up in `plots/plot-utils/plot.ts`.
 
 ### Axes System
 

@@ -1,6 +1,6 @@
 import {type JSX, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {usePlotDimensions} from "./usePlotDimensions";
-import {createCanvasContext, resizeCanvasTo} from "../plots/plot";
+import {createCanvasContext, resizeCanvasTo} from "../plots/plot-utils/plot";
 import type {CanvasContext} from "../d3types";
 import {CanvasSurfaceContext} from "./useCanvasSurface";
 import {initialSvgStyle, type SvgStyle} from "../styling/svgStyle";

@@ -9,20 +9,20 @@ import {
     defaultLineStyle,
     panHandler,
     type SeriesLineStyle,
-} from "../axes/axes";
-import {AxisInterval} from "../axes/AxisInterval";
-import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
-import type {CanvasContext} from "../d3types";
-import type {StreamingDataSource} from "../datasources/StreamingDataSource";
-import {useChart} from "../hooks/useChart";
-import {useHoveredSeries} from "../hooks/useHoveredSeries";
-import {usePlotDimensions} from "../hooks/usePlotDimensions";
-import {useStreamingSettings} from "../hooks/useDataSource";
-import type {ChartData} from "../observables/ChartData";
-import type {BaseSeries} from "../series/baseSeries";
-import {type AxisTimesFor, timeAxisViewDriverFor, TimeWindowBehavior} from "../subscriptions/viewDrivers";
-import {noop} from "../utils";
-import {type AxesAssignment, currentIntervalsFrom} from "./plot";
+} from "../../axes/axes";
+import {AxisInterval} from "../../axes/AxisInterval";
+import {ContinuousAxisRange} from "../../axes/ContinuousAxisRange";
+import type {CanvasContext} from "../../d3types";
+import type {StreamingDataSource} from "../../datasources/StreamingDataSource";
+import {useChart} from "../../hooks/useChart";
+import {useHoveredSeries} from "../../hooks/useHoveredSeries";
+import {usePlotDimensions} from "../../hooks/usePlotDimensions";
+import {useStreamingSettings} from "../../hooks/useDataSource";
+import type {ChartData} from "../../observables/ChartData";
+import type {BaseSeries} from "../../series/baseSeries";
+import {type AxisTimesFor, timeAxisViewDriverFor, TimeWindowBehavior} from "../../subscriptions/viewDrivers";
+import {noop} from "../../utils";
+import {type AxesAssignment, currentIntervalsFrom} from "../plot-utils/plot";
 import {useCanvasZoomPan} from "./useCanvasZoomPan";
 
 /**
@@ -82,9 +82,9 @@ export interface StreamingTimeAxesOptions<CD extends ChartData, D> {
      */
     onZoomReset?: (resetZoom: () => void) => void
     /**
-     * The time (ms) between cadence ticks (none, when undefined -- see `timeAxisViewDriverFor`)
+     * Whether the time axes move on every animation frame (see `timeAxisViewDriverFor`)
      */
-    withCadenceOf?: number
+    withCadence?: boolean
     /**
      * Whether the time axes scroll or squeeze as data passes their ends (defaults to SCROLL)
      */
@@ -125,7 +125,7 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
         canvasContext, dataSource, running, initialData, timeOf, axisTimesFor, axisAssignments,
         updatePlot, onDataReset, allowTooltipRef,
         panEnabled, zoomEnabled, zoomKeyModifiersRequired, onZoomReset,
-        withCadenceOf, timeWindowBehavior = TimeWindowBehavior.SCROLL,
+        withCadence = false, timeWindowBehavior = TimeWindowBehavior.SCROLL,
         highlightAxesOnMouseOver,
     } = options
 
@@ -172,7 +172,7 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
     useEffect(() => {
         notifyIntervalsRef.current = onUpdateAxesInterval === undefined ?
             noop :
-            ranges => {
+            (ranges): void => {
                 pendingRangesRef.current = ranges
                 if (notifyFrameRef.current !== 0) return
                 notifyFrameRef.current = requestAnimationFrame(() => {
@@ -182,7 +182,7 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
             }
     }, [onUpdateAxesInterval])
     // don't leave a scheduled notification pointing at an unmounted plot
-    useEffect(() => () => {
+    useEffect(() => (): void => {
         if (notifyFrameRef.current !== 0) {
             cancelAnimationFrame(notifyFrameRef.current)
             notifyFrameRef.current = 0
@@ -204,7 +204,7 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
         const {highlightColor, highlightWidth} = seriesStyles.get(hoveredSeriesName) || defaultLineStyle()
         xAxis?.setHighlighted(true, highlightColor, highlightWidth)
         yAxis?.setHighlighted(true, highlightColor, highlightWidth)
-        return () => {
+        return (): void => {
             xAxis?.setHighlighted(false)
             yAxis?.setHighlighted(false)
         }
@@ -277,8 +277,8 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
     const zoomPivotFor = useCallback(
         (offsetX: number): (axisId: string, axis: ContinuousNumericAxis) => number =>
             running ?
-                (axisId, axis) => currentTimeRef.current.get(axisId) ?? axis.scale.domain()[1] :
-                (_axisId, axis) => axis.scale.invert(offsetX - margin.left),
+                (axisId, axis): number => currentTimeRef.current.get(axisId) ?? axis.scale.domain()[1] :
+                (_axisId, axis): number => axis.scale.invert(offsetX - margin.left),
         [running, margin]
     )
 
@@ -362,7 +362,7 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
             {
                 windowingTime,
                 dataUpdatePeriod,
-                cadencePeriod: withCadenceOf,
+                cadence: withCadence,
                 timeWindowBehavior,
                 initialTimes: initialTimesRef.current,
             }
@@ -376,7 +376,7 @@ export function useStreamingTimeAxes<CD extends ChartData, D>(options: Streaming
         if (dataSource === undefined || !running || canvasContext === null || !hasXAxes) return
         if (allowTooltipRef !== undefined) allowTooltipRef.current = false
         const driver = createViewDriver(dataSource)
-        return () => {
+        return (): void => {
             driver.unsubscribe()
             if (allowTooltipRef !== undefined) allowTooltipRef.current = true
         }

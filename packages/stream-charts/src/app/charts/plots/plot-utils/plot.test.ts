@@ -1,6 +1,6 @@
 import {assignAxes, clipToArea, createCanvasContext, currentIntervalsFrom, resizeCanvasTo} from "./plot";
-import type {CanvasContext} from "../d3types";
-import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
+import type {CanvasContext} from "../../d3types";
+import {ContinuousAxisRange} from "../../axes/ContinuousAxisRange";
 
 /**
  * `createCanvasContext` reads `window.devicePixelRatio` and calls `window.requestAnimationFrame`.

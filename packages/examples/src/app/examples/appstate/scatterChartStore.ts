@@ -66,7 +66,8 @@ type ScatterChartState = {
     dropAfterMs: number
     numberOfSeries: number
     windowingTime: number
-    cadence: number
+    // whether the time axes scroll smoothly between data updates (the plot's `withCadence`)
+    cadence: boolean
     dataUpdatePeriod: number
     // whether the y-axes auto-scale (grow to fit the data)
     autoScaleYAxes: boolean
@@ -86,7 +87,7 @@ const initialState: ScatterChartState = {
     dropAfterMs: 20_000,
     numberOfSeries: 10,
     windowingTime: 50,
-    cadence: 0,
+    cadence: false,
     dataUpdatePeriod: DEFAULT_DATA_UPDATE_PERIOD,
     autoScaleYAxes: false,
     y1AutoScaledDomain: undefined,
@@ -102,7 +103,7 @@ type ScatterChartActions = {
     setDropAfterMs: (dropAfterMs: number) => void
     setNumberOfSeries: (numberOfSeries: number) => void
     setWindowingTime: (windowingTime: number) => void
-    setCadence: (cadence: number) => void
+    setCadence: (cadence: boolean) => void
     setDataUpdatePeriod: (dataUpdatePeriod: number) => void
     setAutoScaleYAxes: (autoScaleYAxes: boolean) => void
     setY1AutoScaledDomain: (domain: Range) => void
@@ -142,7 +143,7 @@ export const useScatterChartStore: UseBoundStore<StoreApi<ScatterChartStore>> = 
         setSelectedInterpolationName: name => set({selectedInterpolationName: name}),
 
         // data retention belongs to the data source, so keep it in step
-        setDropAfterMs: (dropAfterMs: number) => {
+        setDropAfterMs: (dropAfterMs: number): void => {
             get().dataSource.setDropDataAfter(dropAfterMs)
             set({dropAfterMs})
         },
@@ -151,7 +152,7 @@ export const useScatterChartStore: UseBoundStore<StoreApi<ScatterChartStore>> = 
 
         setWindowingTime: (windowingTime: number) => set({windowingTime}),
 
-        setCadence: (cadence: number) => set({cadence}),
+        setCadence: (cadence: boolean) => set({cadence}),
 
         // (turning auto-scaling on, or off, starts the axes afresh)
         setAutoScaleYAxes: (autoScaleYAxes: boolean) =>
@@ -161,14 +162,14 @@ export const useScatterChartStore: UseBoundStore<StoreApi<ScatterChartStore>> = 
 
         // the update period is baked into the generator, so give the data source a new one (only
         // possible while stopped, which is the only time the control is enabled)
-        setDataUpdatePeriod: (dataUpdatePeriod: number) => {
+        setDataUpdatePeriod: (dataUpdatePeriod: number): void => {
             get().dataSource.setGenerator(randomData(dataUpdatePeriod))
             set({dataUpdatePeriod})
         },
 
         // resets the settings, and replaces the data source with an empty one (which disposes of,
         // and so stops, the current one) -- the chart re-seeds it with its initial data
-        reset: () => {
+        reset: (): void => {
             set({...initialState, ...initialVisibilityState})
             get().setInitialData([])
         }

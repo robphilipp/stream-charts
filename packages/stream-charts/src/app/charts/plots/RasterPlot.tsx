@@ -1,5 +1,5 @@
-import {type AxesAssignment, clipToArea, type Series} from "./plot";
-import {useStreamingTimeAxes} from "./useStreamingTimeAxes";
+import {type AxesAssignment, clipToArea, type Series} from "./plot-utils/plot";
+import {useStreamingTimeAxes} from "./hooks/useStreamingTimeAxes";
 import {useHoveredSeries} from "../hooks/useHoveredSeries";
 import {noop} from "../utils";
 import {useChart} from "../hooks/useChart";
@@ -16,7 +16,7 @@ import {
     type SeriesLineStyle
 } from "../axes/axes";
 import type {CanvasContext} from "../d3types";
-import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
+import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./plot-utils/hitTesting";
 import type {Margin} from "../styling/margins";
 import {timeSeriesAxisTimes} from "../subscriptions/viewDrivers";
 import {useDataSource, useDataSourceRunning, useInitialData} from "../hooks/useDataSource";
@@ -50,12 +50,15 @@ export interface Props {
      */
     zoomKeyModifiersRequired?: boolean
     /**
-     * When set, uses a cadence with the specified refresh period (in milliseconds). For plots
-     * where the updates are slow (> 100 ms) using a cadence of 10 to 25 ms smooths out the
-     * updates and makes the plot updates look cleaner. When updates are around 25 ms or less,
-     * then setting the cadence period too small will result in poor update performance. Generally
-     * at high update speeds, the cadence is unnecessary. Finally, using cadence, sets the max time
-     * to the current time.
+     * When true, the time axes scroll smoothly between data updates: on every animation frame they
+     * move to the current time, projected from the latest data, rather than only when data arrives.
+     * Use it when the data arrives slowly or unevenly (e.g. every 50 ms or more), so the plot
+     * doesn't scroll in steps. Sets the time axes' end to the current time. Defaults to `false`.
+     */
+    withCadence?: boolean
+    /**
+     * @deprecated Use `withCadence` instead. Any value turns cadence on: the time axes now move on
+     * every animation frame, so the period is no longer used.
      */
     withCadenceOf?: number
     /**
@@ -139,6 +142,7 @@ export function RasterPlot(props: Props): null {
         panEnabled = false,
         zoomEnabled = false,
         zoomKeyModifiersRequired = true,
+        withCadence,
         withCadenceOf,
         spikeMargin = 2,
         highlightAxesOnMouseOver = false,
@@ -214,7 +218,7 @@ export function RasterPlot(props: Props): null {
      */
     const updatePlot = useCallback(
         (cc: CanvasContext) => {
-            const draw = (context: CanvasContext) => {
+            const draw = (context: CanvasContext): void => {
                 const {context2D} = context
 
                 context2D.save()
@@ -313,7 +317,8 @@ export function RasterPlot(props: Props): null {
         zoomEnabled,
         zoomKeyModifiersRequired,
         onZoomReset,
-        withCadenceOf,
+        // (`withCadenceOf` is the deprecated way of turning cadence on)
+        withCadence: withCadence ?? withCadenceOf !== undefined,
         highlightAxesOnMouseOver,
     })
 
@@ -334,7 +339,7 @@ export function RasterPlot(props: Props): null {
 
             const canvas = canvasContext.canvas
 
-            const handleMove = (event: MouseEvent) => {
+            const handleMove = (event: MouseEvent): void => {
                 if (!allowTooltipRef.current) return
 
                 const [x, y] = canvasLocalPoint(event, canvas)
@@ -372,7 +377,7 @@ export function RasterPlot(props: Props): null {
                 lastHoveredRef.current = hit?.name
             }
 
-            const handleLeaveCanvas = () => {
+            const handleLeaveCanvas = (): void => {
                 if (lastHoveredRef.current !== undefined) {
                     handleMouseLeaveSeries(lastHoveredRef.current, mouseLeaveHandlerFor(`tooltip-${chartId}`))
                     lastHoveredRef.current = undefined
@@ -381,7 +386,7 @@ export function RasterPlot(props: Props): null {
 
             canvas.addEventListener('mousemove', handleMove)
             canvas.addEventListener('mouseleave', handleLeaveCanvas)
-            return () => {
+            return (): void => {
                 canvas.removeEventListener('mousemove', handleMove)
                 canvas.removeEventListener('mouseleave', handleLeaveCanvas)
             }
@@ -402,7 +407,7 @@ export function RasterPlot(props: Props): null {
     // unregister this plot's draw function on unmount
     useEffect(
         () => {
-            return () => {
+            return (): void => {
                 if (canvasContext) {
                     canvasContext.unregister(`raster-plot-${chartId}`)
                 }

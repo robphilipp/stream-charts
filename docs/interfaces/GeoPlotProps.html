@@ -1,0 +1,489 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>GeoPlotProps | stream-charts</title><meta name="description" content="Documentation for stream-charts"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">stream-charts</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="" aria-current="page">GeoPlotProps</a></li></ul>
+<h1>Interface GeoPlotProps&lt;P&gt;</h1></div>
+<section class="tsd-panel tsd-comment">
+<div class="tsd-comment tsd-typography"><p>The properties of the <a href="../functions/GeoPlot.html" class="tsd-kind-function">GeoPlot</a></p>
+</div></section>
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GeoPlotProps</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#aggregates">aggregates</a><span class="tsd-signature-symbol">?:</span> <a href="GeoAggregateOptions.html" class="tsd-signature-type tsd-kind-interface">GeoAggregateOptions</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#autorollups">autoRollups</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#autorotate">autoRotate</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#basemap">basemap</a><span class="tsd-signature-symbol">?:</span> <a href="../types/GeoMapData.html" class="tsd-signature-type tsd-kind-type-alias">GeoMapData</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#borders">borders</a><span class="tsd-signature-symbol">?:</span> <a href="../types/GeoMapData.html" class="tsd-signature-type tsd-kind-type-alias">GeoMapData</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#center">center</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">latitude</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">longitude</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#clusterdistance">clusterDistance</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#colorof">colorOf</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">datum</span><span class="tsd-signature-symbol">:</span> <a href="GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">seriesName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#fade">fade</a><span class="tsd-signature-symbol">?:</span> <a href="GeoFadeOptions.html" class="tsd-signature-type tsd-kind-interface">GeoFadeOptions</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#fitpadding">fitPadding</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#fitto">fitTo</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">GeoPermissibleObjects</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#flash">flash</a><span class="tsd-signature-symbol">?:</span> <a href="GeoFlashOptions.html" class="tsd-signature-type tsd-kind-interface">GeoFlashOptions</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#hoveredseries">hoveredSeries</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;isolate&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;highlight&quot;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#layers">layers</a><span class="tsd-signature-symbol">?:</span> <a href="GeoLayer.html" class="tsd-signature-type tsd-kind-interface">GeoLayer</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#mapcolors">mapColors</a><span class="tsd-signature-symbol">?:</span> <a href="GeoMapColors.html" class="tsd-signature-type tsd-kind-interface">GeoMapColors</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#markeropacity">markerOpacity</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#markerradius">markerRadius</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#maxzoom">maxZoom</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#mode">mode</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;auto&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;events&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;aggregates&quot;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#onautorollupchange">onAutoRollupChange</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">rollup</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#onviewboxchange">onViewBoxChange</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><br/>        <span class="tsd-kind-parameter">box</span><span class="tsd-signature-symbol">:</span> <a href="../types/GeoViewBox.html" class="tsd-signature-type tsd-kind-type-alias">GeoViewBox</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">pixelsPerDegree</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#onviewchange">onViewChange</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">view</span><span class="tsd-signature-symbol">:</span> <a href="GeoPlotViewState.html" class="tsd-signature-type tsd-kind-interface">GeoPlotViewState</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#onzoomreset">onZoomReset</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">resetZoom</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#panenabled">panEnabled</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#projection">projection</a><span class="tsd-signature-symbol">?:</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">GeoProjection</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;orthographic&quot;</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;azimuthalEqualArea&quot;</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;azimuthalEquidistant&quot;</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;stereographic&quot;</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;equirectangular&quot;</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;mercator&quot;</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;transverseMercator&quot;</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;naturalEarth1&quot;</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;equalEarth&quot;</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;conicEqualArea&quot;</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;conicEquidistant&quot;</span><br/>        <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;albersUsa&quot;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#radiusof">radiusOf</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">datum</span><span class="tsd-signature-symbol">:</span> <a href="GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">seriesName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#resample">resample</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#rollup">rollup</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#showgraticule">showGraticule</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#viewmode">viewMode</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;shift&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;turn&quot;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#viewstate">viewState</a><span class="tsd-signature-symbol">?:</span> <a href="GeoPlotViewState.html" class="tsd-signature-type tsd-kind-interface">GeoPlotViewState</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#zoomenabled">zoomEnabled</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#zoomkeymodifiersrequired">zoomKeyModifiersRequired</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
+<section class="tsd-panel">
+<h4>Type Parameters</h4>
+<ul class="tsd-type-parameter-list">
+<li><span id="p"><span class="tsd-kind-type-parameter">P</span></span>
+<div class="tsd-comment tsd-typography"><p>The type of the events' payload</p>
+</div></li></ul></section><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L188">plots/GeoPlot.tsx:188</a></li></ul></aside>
+<section class="tsd-panel-group tsd-index-group">
+<section class="tsd-panel tsd-index-panel">
+<details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h5 class="tsd-index-heading uppercase">Index</h5></summary>
+<div class="tsd-accordion-details">
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="properties">Properties<a href="#properties" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#aggregates" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>aggregates?</span></a>
+<a href="#autorollups" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>auto<wbr/>Rollups?</span></a>
+<a href="#autorotate" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>auto<wbr/>Rotate?</span></a>
+<a href="#basemap" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>basemap?</span></a>
+<a href="#borders" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>borders?</span></a>
+<a href="#center" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>center?</span></a>
+<a href="#clusterdistance" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>cluster<wbr/>Distance?</span></a>
+<a href="#colorof" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>color<wbr/>Of?</span></a>
+<a href="#fade" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>fade?</span></a>
+<a href="#fitpadding" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>fit<wbr/>Padding?</span></a>
+<a href="#fitto" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>fit<wbr/>To?</span></a>
+<a href="#flash" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>flash?</span></a>
+<a href="#hoveredseries" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>hovered<wbr/>Series?</span></a>
+<a href="#layers" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>layers?</span></a>
+<a href="#mapcolors" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>map<wbr/>Colors?</span></a>
+<a href="#markeropacity" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>marker<wbr/>Opacity?</span></a>
+<a href="#markerradius" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>marker<wbr/>Radius?</span></a>
+<a href="#maxzoom" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>max<wbr/>Zoom?</span></a>
+<a href="#mode" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>mode?</span></a>
+<a href="#onautorollupchange" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>Auto<wbr/>Rollup<wbr/>Change?</span></a>
+<a href="#onviewboxchange" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>View<wbr/>Box<wbr/>Change?</span></a>
+<a href="#onviewchange" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>View<wbr/>Change?</span></a>
+<a href="#onzoomreset" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>Zoom<wbr/>Reset?</span></a>
+<a href="#panenabled" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>pan<wbr/>Enabled?</span></a>
+<a href="#projection" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>projection?</span></a>
+<a href="#radiusof" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>radius<wbr/>Of?</span></a>
+<a href="#resample" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>resample?</span></a>
+<a href="#rollup" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>rollup?</span></a>
+<a href="#showgraticule" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>show<wbr/>Graticule?</span></a>
+<a href="#viewmode" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>view<wbr/>Mode?</span></a>
+<a href="#viewstate" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>view<wbr/>State?</span></a>
+<a href="#zoomenabled" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>zoom<wbr/>Enabled?</span></a>
+<a href="#zoomkeymodifiersrequired" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>zoom<wbr/>Key<wbr/>Modifiers<wbr/>Required?</span></a>
+</div></section></div></details></section></section>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="properties-1">Properties<a href="#properties-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="aggregates"><code class="tsd-tag">Optional</code><span>aggregates</span><a href="#aggregates" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">aggregates</span><span class="tsd-signature-symbol">?:</span> <a href="GeoAggregateOptions.html" class="tsd-signature-type tsd-kind-interface">GeoAggregateOptions</a></div>
+<div class="tsd-comment tsd-typography"><p>How the aggregates are drawn (in the <code>aggregates</code> and <code>auto</code> modes): as circles, pies, or cells,
+sized and colored by what, and with what keys (see <a href="GeoAggregateOptions.html" class="tsd-kind-interface">GeoAggregateOptions</a>). The object
+itself, and its ranges, can be written inline; its functions (<code>colorScheme</code>, <code>groupColors</code>)
+should keep their identity from one render to the next (defined outside the component, or
+memoized), as <code>radiusOf</code> and <code>colorOf</code> should, since a new one redraws the plot.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L308">plots/GeoPlot.tsx:308</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="autorollups"><code class="tsd-tag">Optional</code><span>auto<wbr/>Rollups</span><a href="#autorollups" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">autoRollups</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></div>
+<div class="tsd-comment tsd-typography"><p>The roll-ups that the <code>auto</code> mode chooses among, by name: roll-ups of the same events whose
+cells are of different sizes (e.g. <code>byGridCell(10)</code>, <code>byGridCell(1)</code>, <code>byGridCell(0.1)</code>), so
+that it shows, at each zoom, the coarsest whose cells span at most <code>clusterDistance</code> pixels --
+or the events, once even the finest's cells span more. Defaults to all of the data source's
+roll-ups whose cells are of a size (see <code>GeoBinning</code>'s <code>cellSize</code>).</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L289">plots/GeoPlot.tsx:289</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="autorotate"><code class="tsd-tag">Optional</code><span>auto<wbr/>Rotate</span><a href="#autorotate" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">autoRotate</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
+<div class="tsd-comment tsd-typography"><p>When set, the view turns westward (the earth spins eastward) at this many degrees per second,
+pausing while the view is dragged and while an event is hovered. Defaults to no rotation. The
+plot redraws up to 60 times a second while it turns, so with many tens of thousands of events
+held, show a roll-up's aggregates instead, or keep fewer events (the data source's
+<code>dropDataAfter</code>). Not in the &quot;shift&quot; view mode.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L375">plots/GeoPlot.tsx:375</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="basemap"><code class="tsd-tag">Optional</code><span>basemap</span><a href="#basemap" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">basemap</span><span class="tsd-signature-symbol">?:</span> <a href="../types/GeoMapData.html" class="tsd-signature-type tsd-kind-type-alias">GeoMapData</a></div>
+<div class="tsd-comment tsd-typography"><p>The land (or any other areas) to draw under the events, as GeoJSON (e.g. the <code>land</code> features
+of a world atlas) -- or versions of it at different levels of detail, each drawn from its own
+zoom in (see <a href="../types/GeoMapData.html" class="tsd-kind-type-alias">GeoMapData</a>). The plot doesn't come with a map, so that the application
+chooses its level of detail. Drawn filled, in <code>landColor</code>.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L219">plots/GeoPlot.tsx:219</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="borders"><code class="tsd-tag">Optional</code><span>borders</span><a href="#borders" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">borders</span><span class="tsd-signature-symbol">?:</span> <a href="../types/GeoMapData.html" class="tsd-signature-type tsd-kind-type-alias">GeoMapData</a></div>
+<div class="tsd-comment tsd-typography"><p>The borders (or any other lines) to draw over the basemap and the layers, as GeoJSON (e.g. a
+mesh of a world atlas' country borders) -- or versions of it by zoom (see <a href="../types/GeoMapData.html" class="tsd-kind-type-alias">GeoMapData</a>).
+Drawn as lines, in <code>borderColor</code>.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L225">plots/GeoPlot.tsx:225</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="center"><code class="tsd-tag">Optional</code><span>center</span><a href="#center" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">center</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">latitude</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">longitude</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">}</span></div>
+<div class="tsd-comment tsd-typography"><p>The place (degrees) at the center of the view when the plot first shows, and after its view is
+reset, e.g. <code>{latitude: 37.77, longitude: -122.42}</code>. Defaults to <code>{latitude: 20, longitude: 0}</code>.
+Changing it re-centers the view. Not used with <code>fitTo</code>.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L200">plots/GeoPlot.tsx:200</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="clusterdistance"><code class="tsd-tag">Optional</code><span>cluster<wbr/>Distance</span><a href="#clusterdistance" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">clusterDistance</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
+<div class="tsd-comment tsd-typography"><p>In the <code>auto</code> mode, the most (px) that a roll-up's cells may span on the screen: events closer
+than about this are shown merged, as an aggregate. Defaults to 20.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L300">plots/GeoPlot.tsx:300</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="colorof"><code class="tsd-tag">Optional</code><span>color<wbr/>Of</span><a href="#colorof" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">colorOf</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">datum</span><span class="tsd-signature-symbol">:</span> <a href="GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">seriesName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
+<div class="tsd-comment tsd-typography"><p>The color of an event's marker, e.g. from a payload field (overrides the series' color);
+<code>undefined</code> means the series' color</p>
+</div>
+<div class="tsd-type-declaration">
+<h4>Type Declaration</h4>
+<ul class="tsd-parameters">
+<li class="tsd-parameter-signature">
+<ul class="tsd-signatures">
+<li class="tsd-signature"><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">datum</span><span class="tsd-signature-symbol">:</span> <a href="GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">seriesName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></li>
+<li class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">datum</span>: <a href="GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>The event</p>
+</div></li>
+<li><span><span class="tsd-kind-parameter">seriesName</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>The name of the event's series</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><p>The marker's color</p>
+</li></ul></li></ul></div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L266">plots/GeoPlot.tsx:266</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="fade"><code class="tsd-tag">Optional</code><span>fade</span><a href="#fade" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">fade</span><span class="tsd-signature-symbol">?:</span> <a href="GeoFadeOptions.html" class="tsd-signature-type tsd-kind-interface">GeoFadeOptions</a></div>
+<div class="tsd-comment tsd-typography"><p>When set, the events fade as they age, so that the newest stand out (see
+<a href="GeoFadeOptions.html" class="tsd-kind-interface">GeoFadeOptions</a>). Defaults to no fading.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L313">plots/GeoPlot.tsx:313</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="fitpadding"><code class="tsd-tag">Optional</code><span>fit<wbr/>Padding</span><a href="#fitpadding" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">fitPadding</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
+<div class="tsd-comment tsd-typography"><p>The space (px) left around the shape that the view frames (see <code>fitTo</code>). Defaults to 20.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L212">plots/GeoPlot.tsx:212</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="fitto"><code class="tsd-tag">Optional</code><span>fit<wbr/>To</span><a href="#fitto" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">fitTo</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">GeoPermissibleObjects</span></div>
+<div class="tsd-comment tsd-typography"><p>A shape (GeoJSON, e.g. a country, or a state) that the view frames when the plot first shows,
+and after its view is reset: centered on the shape, and zoomed in until it fills the plot area,
+less <code>fitPadding</code>. Changing it re-frames the view; and until the user moves the view, the view
+keeps the shape framed as the plot's size changes. (The zoom's limit is raised to the framing
+zoom, when that's past <code>maxZoom</code>.)</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L208">plots/GeoPlot.tsx:208</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="flash"><code class="tsd-tag">Optional</code><span>flash</span><a href="#flash" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">flash</span><span class="tsd-signature-symbol">?:</span> <a href="GeoFlashOptions.html" class="tsd-signature-type tsd-kind-interface">GeoFlashOptions</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span></div>
+<div class="tsd-comment tsd-typography"><p>When set, each new event flashes as it arrives: a ring grows from it and fades (see
+<a href="GeoFlashOptions.html" class="tsd-kind-interface">GeoFlashOptions</a>). Defaults to no flashes.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L318">plots/GeoPlot.tsx:318</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="hoveredseries"><code class="tsd-tag">Optional</code><span>hovered<wbr/>Series</span><a href="#hoveredseries" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">hoveredSeries</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;isolate&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;highlight&quot;</span></div>
+<div class="tsd-comment tsd-typography"><p>What hovering a series does -- its entry in the legend, or, on the map, one of its events (or
+an aggregate's wedge whose group is named for it): show that series' events alone (<code>isolate</code>,
+the default -- a map's series often overlap at the same places), or draw its events over the
+others', at full opacity, so that they stand out, with the others a little fainter, but still
+readable (<code>highlight</code>). Either way, the events and their flashes are affected (in <code>isolate</code>,
+the other series' events can't be hovered until the mouse leaves the event); and the
+aggregates' pies, when the hovered series names one of their groups, draw its wedges at full
+opacity, and the other groups' a little fainter.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L367">plots/GeoPlot.tsx:367</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="layers"><code class="tsd-tag">Optional</code><span>layers</span><a href="#layers" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">layers</span><span class="tsd-signature-symbol">?:</span> <a href="GeoLayer.html" class="tsd-signature-type tsd-kind-interface">GeoLayer</a><span class="tsd-signature-symbol">[]</span></div>
+<div class="tsd-comment tsd-typography"><p>More of the map, drawn over the basemap, in order, and under the borders (see <a href="GeoLayer.html" class="tsd-kind-interface">GeoLayer</a>):
+e.g. a country's states, colored by a value of each (a choropleth, with a <code>fill</code> function of the
+feature), its counties (only once zoomed in, see <code>minZoom</code>), its roads, or its lakes -- each
+with its own colors, line width, and opacity, versions by zoom, and labels. Only the features
+that might show in the view are drawn, and the map is clipped to the plot area, so that a
+detailed map, zoomed in, draws quickly.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L234">plots/GeoPlot.tsx:234</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="mapcolors"><code class="tsd-tag">Optional</code><span>map<wbr/>Colors</span><a href="#mapcolors" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">mapColors</span><span class="tsd-signature-symbol">?:</span> <a href="GeoMapColors.html" class="tsd-signature-type tsd-kind-interface">GeoMapColors</a></div>
+<div class="tsd-comment tsd-typography"><p>The map's colors: the oceans, the land, the borders, the graticule, and the sphere's outline.
+Each defaults to a tint of the chart's color.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L243">plots/GeoPlot.tsx:243</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="markeropacity"><code class="tsd-tag">Optional</code><span>marker<wbr/>Opacity</span><a href="#markeropacity" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">markerOpacity</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
+<div class="tsd-comment tsd-typography"><p>The opacity of the markers (0 to 1). Defaults to 0.85.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L251">plots/GeoPlot.tsx:251</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="markerradius"><code class="tsd-tag">Optional</code><span>marker<wbr/>Radius</span><a href="#markerradius" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">markerRadius</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
+<div class="tsd-comment tsd-typography"><p>The radius (px) of each event's marker. Defaults to 3.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L247">plots/GeoPlot.tsx:247</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="maxzoom"><code class="tsd-tag">Optional</code><span>max<wbr/>Zoom</span><a href="#maxzoom" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">maxZoom</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
+<div class="tsd-comment tsd-typography"><p>How far the view can be zoomed in: the most zoom, a factor of the scale that fits the whole
+earth (the same zoom as the layers' <code>minZoom</code> and <code>maxZoom</code>, and the view's <code>k</code>). Defaults to
+20. (Named for the zoom, rather than the other plots' <code>zoomMaxScaleFactor</code>, whose factor is of
+the axis' range shown, and so limits zooming out.)</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L341">plots/GeoPlot.tsx:341</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="mode"><code class="tsd-tag">Optional</code><span>mode</span><a href="#mode" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">mode</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;auto&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;events&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;aggregates&quot;</span></div>
+<div class="tsd-comment tsd-typography"><p>What the plot shows: each event (<code>events</code>, the default); the aggregates of one of the data
+source's roll-ups (<code>aggregates</code>, see <code>rollup</code>, and the <a href="../classes/GeoDataSource.html" class="tsd-kind-class">GeoDataSource</a>'s <code>rollups</code>); or,
+depending on the zoom, a roll-up whose cells are about as small on the screen as what can be
+told apart, or, zoomed in far enough, the events (<code>auto</code>, see <code>autoRollups</code> and
+<code>clusterDistance</code>) -- so that a busy map, seen from afar, shows clusters, which come apart as
+it's zoomed in. The auto mode's clusters, like its events, are of the series the chart's
+<code>seriesFilter</code> shows; a roll-up shown in the <code>aggregates</code> mode takes the events it says it
+takes (see its <code>filter</code>).</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L277">plots/GeoPlot.tsx:277</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="onautorollupchange"><code class="tsd-tag">Optional</code><span>on<wbr/>Auto<wbr/>Rollup<wbr/>Change</span><a href="#onautorollupchange" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">onAutoRollupChange</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">rollup</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
+<div class="tsd-comment tsd-typography"><p>In the <code>auto</code> mode, called when what it shows changes as the view zooms -- and when it first
+shows something: one of the <code>autoRollups</code> (clusters), or the events</p>
+</div>
+<div class="tsd-type-declaration">
+<h4>Type Declaration</h4>
+<ul class="tsd-parameters">
+<li class="tsd-parameter-signature">
+<ul class="tsd-signatures">
+<li class="tsd-signature"><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">rollup</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span></li>
+<li class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">rollup</span>: <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span>
+<div class="tsd-comment tsd-typography"><p>The name of the roll-up shown, or <code>undefined</code> when the events are shown</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4></li></ul></li></ul></div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L295">plots/GeoPlot.tsx:295</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="onviewboxchange"><code class="tsd-tag">Optional</code><span>on<wbr/>View<wbr/>Box<wbr/>Change</span><a href="#onviewboxchange" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">onViewBoxChange</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">box</span><span class="tsd-signature-symbol">:</span> <a href="../types/GeoViewBox.html" class="tsd-signature-type tsd-kind-type-alias">GeoViewBox</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">pixelsPerDegree</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
+<div class="tsd-comment tsd-typography"><p>Called with the part of the earth in view as the view settles -- when it first shows, after
+it's dragged, zoomed, or reset, when the auto-rotation pauses, and when the plot's size or
+projection changes -- e.g. to load map data for it (streets, say, at a level of detail for the
+zoom), and hand it to the plot as <code>layers</code></p>
+</div>
+<div class="tsd-type-declaration">
+<h4>Type Declaration</h4>
+<ul class="tsd-parameters">
+<li class="tsd-parameter-signature">
+<ul class="tsd-signatures">
+<li class="tsd-signature"><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">box</span><span class="tsd-signature-symbol">:</span> <a href="../types/GeoViewBox.html" class="tsd-signature-type tsd-kind-type-alias">GeoViewBox</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">pixelsPerDegree</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span></li>
+<li class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">box</span>: <a href="../types/GeoViewBox.html" class="tsd-signature-type tsd-kind-type-alias">GeoViewBox</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span>
+<div class="tsd-comment tsd-typography"><p>The longitudes and latitudes in view (a little larger, to be safe; <code>west</code> is past
+<code>east</code> across the antimeridian); <code>undefined</code> when the view shows half the earth or more</p>
+</div></li>
+<li><span><span class="tsd-kind-parameter">pixelsPerDegree</span>: <span class="tsd-signature-type">number</span></span>
+<div class="tsd-comment tsd-typography"><p>How many pixels a degree of arc spans at the view's center: e.g. for
+the zoom of web-map tiles that matches the view, <code>log2(pixelsPerDegree * 360 / 512)</code></p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4></li></ul></li></ul></div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L410">plots/GeoPlot.tsx:410</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="onviewchange"><code class="tsd-tag">Optional</code><span>on<wbr/>View<wbr/>Change</span><a href="#onviewchange" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">onViewChange</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">view</span><span class="tsd-signature-symbol">:</span> <a href="GeoPlotViewState.html" class="tsd-signature-type tsd-kind-interface">GeoPlotViewState</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
+<div class="tsd-comment tsd-typography"><p>Called with the plot's view after it's dragged, zoomed, or reset, when the auto-rotation
+pauses, and when the plot unmounts</p>
+</div>
+<div class="tsd-type-declaration">
+<h4>Type Declaration</h4>
+<ul class="tsd-parameters">
+<li class="tsd-parameter-signature">
+<ul class="tsd-signatures">
+<li class="tsd-signature"><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">view</span><span class="tsd-signature-symbol">:</span> <a href="GeoPlotViewState.html" class="tsd-signature-type tsd-kind-interface">GeoPlotViewState</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span></li>
+<li class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">view</span>: <a href="GeoPlotViewState.html" class="tsd-signature-type tsd-kind-interface">GeoPlotViewState</a></span>
+<div class="tsd-comment tsd-typography"><p>The view</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4></li></ul></li></ul></div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L399">plots/GeoPlot.tsx:399</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="onzoomreset"><code class="tsd-tag">Optional</code><span>on<wbr/>Zoom<wbr/>Reset</span><a href="#onzoomreset" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">onZoomReset</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">resetZoom</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
+<div class="tsd-comment tsd-typography"><p>Called whenever this plot (re)creates its zoom behavior, handing the caller a <code>resetZoom</code>
+function that resets the view (its rotation and zoom) -- e.g. for a &quot;Clear&quot; action. Only
+meaningful (called) while <code>zoomEnabled</code> is <code>true</code>.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L416">plots/GeoPlot.tsx:416</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="panenabled"><code class="tsd-tag">Optional</code><span>pan<wbr/>Enabled</span><a href="#panenabled" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">panEnabled</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>Whether dragging moves the view: a globe (an azimuthal projection, like the default
+<code>orthographic</code>) turns under the mouse; a flat map shifts east and west, and, zoomed in,
+north and south. Defaults to <code>true</code>.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L324">plots/GeoPlot.tsx:324</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="projection"><code class="tsd-tag">Optional</code><span>projection</span><a href="#projection" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">projection</span><span class="tsd-signature-symbol">?:</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">GeoProjection</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;orthographic&quot;</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;azimuthalEqualArea&quot;</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;azimuthalEquidistant&quot;</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;stereographic&quot;</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;equirectangular&quot;</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;mercator&quot;</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;transverseMercator&quot;</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;naturalEarth1&quot;</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;equalEarth&quot;</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;conicEqualArea&quot;</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;conicEquidistant&quot;</span><br/>    <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;albersUsa&quot;</span></div>
+<div class="tsd-comment tsd-typography"><p>The map projection: the name of one of the <a href="../variables/GeoProjections.html" class="tsd-kind-variable">GeoProjections</a> (defaults to
+<code>orthographic</code>, a globe), or a d3 projection. The plot sets a projection's scale, translation,
+and rotation itself (to fit the plot, and as the user drags and zooms).</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L194">plots/GeoPlot.tsx:194</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="radiusof"><code class="tsd-tag">Optional</code><span>radius<wbr/>Of</span><a href="#radiusof" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">radiusOf</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">datum</span><span class="tsd-signature-symbol">:</span> <a href="GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">seriesName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">number</span></div>
+<div class="tsd-comment tsd-typography"><p>The radius (px) of an event's marker, e.g. from a payload field (overrides <code>markerRadius</code>)</p>
+</div>
+<div class="tsd-type-declaration">
+<h4>Type Declaration</h4>
+<ul class="tsd-parameters">
+<li class="tsd-parameter-signature">
+<ul class="tsd-signatures">
+<li class="tsd-signature"><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">datum</span><span class="tsd-signature-symbol">:</span> <a href="GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">seriesName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></li>
+<li class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">datum</span>: <a href="GeoDatum.html" class="tsd-signature-type tsd-kind-interface">GeoDatum</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#p">P</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>The event</p>
+</div></li>
+<li><span><span class="tsd-kind-parameter">seriesName</span>: <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>The name of the event's series</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">number</span></h4><p>The marker's radius</p>
+</li></ul></li></ul></div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L258">plots/GeoPlot.tsx:258</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="resample"><code class="tsd-tag">Optional</code><span>resample</span><a href="#resample" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">resample</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>Whether the map's data -- the <code>basemap</code>, the <code>borders</code>, and the <code>layers</code> -- is resampled as it's
+projected: d3's adaptive resampling, which adds points along each line until it follows its
+curve on the screen (to within the projection's <code>precision</code>). Defaults to <code>true</code>. Turned off,
+the lines are drawn straight between the data's points, which, for map data whose points are
+close together (coastlines, borders, roads), looks the same, and is much quicker -- zoomed in on
+a detailed map, resampling every line of it, at every view, is most of the cost of drawing it.
+Leave it on for data with points far apart, whose lines should curve between them (e.g. a
+rectangle of four corners, which should follow its parallels, or a great-circle route of two
+points), or add points along them. The graticule, the sphere, the markers, and the aggregates
+are always resampled, since they're drawn with few points. (In the shift view mode, the map is
+projected once, at a starting view, and only scaled and slid after, so it's always resampled:
+it costs nothing as the view changes.)</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L356">plots/GeoPlot.tsx:356</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="rollup"><code class="tsd-tag">Optional</code><span>rollup</span><a href="#rollup" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">rollup</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span></div>
+<div class="tsd-comment tsd-typography"><p>The name of the data source's roll-up to show in the <code>aggregates</code> mode</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L281">plots/GeoPlot.tsx:281</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="showgraticule"><code class="tsd-tag">Optional</code><span>show<wbr/>Graticule</span><a href="#showgraticule" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">showGraticule</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>Whether to draw the graticule (the lines of latitude and longitude, every 10°). Defaults to <code>true</code>.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L238">plots/GeoPlot.tsx:238</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="viewmode"><code class="tsd-tag">Optional</code><span>view<wbr/>Mode</span><a href="#viewmode" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">viewMode</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;shift&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;turn&quot;</span></div>
+<div class="tsd-comment tsd-typography"><p>How the view moves: by turning the earth (<code>turn</code>, the default) -- a globe turns under a drag,
+every way, and a flat map turns east and west, and shifts north and south -- or by shifting the
+map, like a picture (<code>shift</code>): fitted to <code>fitTo</code> (or the whole sphere), a drag slides it, and
+the wheel zooms it about the mouse, the projection's own rotation left as it is (e.g. a conic
+map of one state, set up for it). A projection that can't be turned -- a composite of several,
+like <code>albersUsa</code> (the lower 48 states, with Alaska and Hawaii moved in) -- is always shown in
+the <code>shift</code> mode, and needs <code>fitTo</code> (e.g. the United States), since it can't show the whole
+sphere.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L386">plots/GeoPlot.tsx:386</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="viewstate"><code class="tsd-tag">Optional</code><span>view<wbr/>State</span><a href="#viewstate" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">viewState</span><span class="tsd-signature-symbol">?:</span> <a href="GeoPlotViewState.html" class="tsd-signature-type tsd-kind-interface">GeoPlotViewState</a></div>
+<div class="tsd-comment tsd-typography"><p>An (optional) view to restore when the plot mounts -- commonly the last view reported
+through <code>onViewChange</code> and held by the application (e.g. in a store), so that the view
+survives the plot being unmounted and remounted (e.g. navigating away and back). Only read
+once, when the plot mounts.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L393">plots/GeoPlot.tsx:393</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="zoomenabled"><code class="tsd-tag">Optional</code><span>zoom<wbr/>Enabled</span><a href="#zoomenabled" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">zoomEnabled</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>Whether the mouse wheel zooms the view, about the mouse (the place under the mouse stays
+under it). Defaults to <code>true</code>.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L329">plots/GeoPlot.tsx:329</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="zoomkeymodifiersrequired"><code class="tsd-tag">Optional</code><span>zoom<wbr/>Key<wbr/>Modifiers<wbr/>Required</span><a href="#zoomkeymodifiersrequired" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">zoomKeyModifiersRequired</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>When <code>true</code> (the default), zooming requires the shift or control key to be held down while
+scrolling (so that scrolling the page over the chart doesn't zoom it)</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/GeoPlot.tsx#L334">plots/GeoPlot.tsx:334</a></li></ul></aside></section></section></details></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details">
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
+<div><a href="#aggregates"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>aggregates</span></a><a href="#autorollups"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>auto<wbr/>Rollups</span></a><a href="#autorotate"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>auto<wbr/>Rotate</span></a><a href="#basemap"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>basemap</span></a><a href="#borders"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>borders</span></a><a href="#center"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>center</span></a><a href="#clusterdistance"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>cluster<wbr/>Distance</span></a><a href="#colorof"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>color<wbr/>Of</span></a><a href="#fade"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>fade</span></a><a href="#fitpadding"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>fit<wbr/>Padding</span></a><a href="#fitto"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>fit<wbr/>To</span></a><a href="#flash"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>flash</span></a><a href="#hoveredseries"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>hovered<wbr/>Series</span></a><a href="#layers"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>layers</span></a><a href="#mapcolors"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>map<wbr/>Colors</span></a><a href="#markeropacity"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>marker<wbr/>Opacity</span></a><a href="#markerradius"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>marker<wbr/>Radius</span></a><a href="#maxzoom"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>max<wbr/>Zoom</span></a><a href="#mode"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>mode</span></a><a href="#onautorollupchange"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>Auto<wbr/>Rollup<wbr/>Change</span></a><a href="#onviewboxchange"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>View<wbr/>Box<wbr/>Change</span></a><a href="#onviewchange"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>View<wbr/>Change</span></a><a href="#onzoomreset"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>Zoom<wbr/>Reset</span></a><a href="#panenabled"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>pan<wbr/>Enabled</span></a><a href="#projection"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>projection</span></a><a href="#radiusof"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>radius<wbr/>Of</span></a><a href="#resample"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>resample</span></a><a href="#rollup"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>rollup</span></a><a href="#showgraticule"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>show<wbr/>Graticule</span></a><a href="#viewmode"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>view<wbr/>Mode</span></a><a href="#viewstate"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>view<wbr/>State</span></a><a href="#zoomenabled"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>zoom<wbr/>Enabled</span></a><a href="#zoomkeymodifiersrequired"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>zoom<wbr/>Key<wbr/>Modifiers<wbr/>Required</span></a></div></details></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="../index.html">stream-charts</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>

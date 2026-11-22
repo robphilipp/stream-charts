@@ -195,13 +195,13 @@ A reading a second is slow, as streaming data goes. Three of the plot's props ma
     interpolation={d3.curveMonotoneX}
     markerRadius={2}
     hideMarkersWhileRunning={false}
-    withCadenceOf={25}
+    withCadence
 />
 ```
 
 - **`interpolation={d3.curveMonotoneX}`** draws a smooth curve through the points without overshooting them. (A plain smooth curve, like `d3.curveNatural`, can swing above a peak or below a dip that the sensor never measured.) Import d3 with `import * as d3 from "d3"`.
 - **`markerRadius={2}`** marks each reading, so that you can see where the measurements are – and, where a reading went missing, that the line is bridging a gap. **`hideMarkersWhileRunning={false}`** keeps them while streaming. With a reading a second, there aren't enough points for markers to get busy.
-- **`withCadenceOf={25}`** redraws the chart every 25 ms, whether or not new readings have arrived, so the time axis scrolls smoothly instead of jumping forward with each batch. A cadence is meant for exactly this: updates more than about 100 ms apart.
+- **`withCadence`** moves the time axis on every frame of the display, whether or not new readings have arrived, so it scrolls smoothly instead of jumping forward with each batch. Cadence is meant for exactly this: updates more than about 50 ms apart.
 
 #### step 6: legend, tracker, and tooltip
 
@@ -353,7 +353,7 @@ export function GreenhouseChart(): JSX.Element {
                     interpolation={d3.curveMonotoneX}
                     markerRadius={2}
                     hideMarkersWhileRunning={false}
-                    withCadenceOf={25}
+                    withCadence
                     zoomEnabled={true}
                     panEnabled={true}
                     zoomKeyModifiersRequired={true}
@@ -428,4 +428,4 @@ Real sensors bring a few things that simulated ones don't:
 - **Sensors come and go.** The data source's series are fixed when you create it. To add a sensor, create a new data source with the new set of series (and `dispose()` the old one).
 - **Gaps are real.** When a sensor goes quiet, the line bridges the gap between its readings. With the markers on, you can see where the readings stop and start again.
 
-That's the last page of the intro. Happy charting!
+Next up, the last tutorial: a geo chart, which plots sensor events on a map rather than over time.

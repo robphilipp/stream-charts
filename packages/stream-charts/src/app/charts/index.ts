@@ -54,14 +54,25 @@ export {RasterPlot, type Props as RasterPlotProps} from "./plots/RasterPlot"
 export {PoincarePlot, type Props as PoincarePlotProps, type PoincarePlotZoomState} from "./plots/PoincarePlot"
 export {BarPlot, type Props as BarPlotProps, type BarPlotZoomState, type BarChartElementId} from "./plots/BarPlot"
 export {OutlierPlot, type Props as OutlierPlotProps, type OutlierBandTooltipMetadata} from "./plots/OutlierPlot"
-export {assignAxes, type AxesAssignment, type Series} from "./plots/plot"
-export {NoCurveFactory, BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./plots/constants"
+export {
+    GeoPlot,
+    type GeoAggregateOptions,
+    type GeoFadeOptions,
+    type GeoMapColors,
+    type Props as GeoPlotProps,
+} from "./plots/GeoPlot"
+export {GeoProjections, type GeoPlotViewState, type GeoProjectionName} from "./plots/geo-utils/geoProjections"
+export {type GeoTooltipMetadata} from "./plots/geo-utils/geoMarkers"
+export {type GeoFlash, type GeoFlashOptions} from "./plots/geo-utils/geoFlashes"
+export {type GeoBox as GeoViewBox, type GeoDetail, type GeoLayer, type GeoMapData} from "./plots/geo-utils/geoLayers"
+export {assignAxes, type AxesAssignment, type Series} from "./plots/plot-utils/plot"
+export {NoCurveFactory, BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./plots/plot-utils/constants"
 export {
     DEFAULT_LINE_COLOR_STEPS,
     DEFAULT_LINE_END_COLOR,
     DEFAULT_LINE_START_COLOR,
     lineColorScale,
-} from "./plots/colorizedLine"
+} from "./plots/plot-utils/colorizedLine"
 export {TimeWindowBehavior} from "./subscriptions/viewDrivers"
 
 /*
@@ -90,6 +101,7 @@ export {RasterPlotTooltipContent, type Props as RasterPlotTooltipContentProps} f
 export {PoincarePlotTooltipContent, type Props as PoincarePlotTooltipContentProps} from "./tooltips/PoincarePlotTooltipContent"
 export {BarPlotTooltipContent, type Props as BarPlotTooltipContentProps} from "./tooltips/BarPlotTooltipContent"
 export {OutlierPlotTooltipContent, type Props as OutlierPlotTooltipContentProps} from "./tooltips/OutlierPlotTooltipContent"
+export {GeoPlotTooltipContent, type Props as GeoPlotTooltipContentProps} from "./tooltips/GeoPlotTooltipContent"
 export {DefaultOutlierTooltipContent} from "./tooltips/DefaultOutlierTooltipContent"
 export {
     useOutlierTooltip,
@@ -134,6 +146,29 @@ export {
     type TimeSeriesDataSourceOptions,
 } from "./datasources/timeSeriesDataSource"
 export {IteratesDataSource, type IteratesDataSourceOptions} from "./datasources/iteratesDataSource"
+export {GeoDataSource, type GeoDataSourceOptions} from "./datasources/geoDataSource"
+export {
+    byGridCell,
+    byLocation,
+    bySensor,
+    countOf,
+    formatMeasure,
+    latestOf,
+    maxOf,
+    meanOf,
+    measureOf,
+    minOf,
+    reduceOf,
+    sumOf,
+    type GeoAggregate,
+    type GeoAggregateGroup,
+    type GeoBinning,
+    type GeoCellBounds,
+    type GeoMeasure,
+    type GeoMeasureOptions,
+    type GeoReducer,
+    type GeoRollup,
+} from "./datasources/geoRollups"
 export {
     OrdinalDataSource,
     type OrdinalDataSourceOptions,
@@ -198,12 +233,17 @@ export {
 } from "./series/outlierSeries"
 export type {OutlierChartData} from "./observables/outliers"
 
+// geo (sensor events at places on the earth)
+export {geoDatumOf, geoSeriesFrom, type GeoDatum, type GeoSeries} from "./series/geoSeries"
+export {geoChartDataOf, type GeoChartData} from "./observables/geo"
+
 /*
  | FILTERS AND FORMATTING
  */
 export {isSafeRegex, literalFilter, regexFilter} from "./filters/regexFilter"
 export {
     formatChange,
+    formatLatLon,
     formatNumber,
     formatTime,
     formatTimeChange,

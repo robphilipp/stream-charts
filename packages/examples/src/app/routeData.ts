@@ -36,4 +36,5 @@ export const TABS: Array<TabDef> = [
     {name: "Poincare", path: "/poincare"},
     {name: "Bar", path: "/bar"},
     {name: "Outlier", path: "/outlier"},
+    {name: "Geo", path: "/geo"},
 ]

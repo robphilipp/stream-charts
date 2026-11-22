@@ -15,6 +15,6 @@ interface IntroStore {
 export const useIntroStore = create<IntroStore>()(
     set => ({
         page: 0,
-        setPage: (page: number) => set({page})
+        setPage: (page: number): void => set({page})
     })
 )

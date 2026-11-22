@@ -39,7 +39,7 @@ export function clampedDomain(
     min: number,
     max: number
 ): [min: number, max: number] {
-    const clamp = (value: number) => Math.min(max, Math.max(min, value))
+    const clamp = (value: number): number => Math.min(max, Math.max(min, value))
     return [clamp(domain[0]), clamp(domain[1])]
 }
 
@@ -172,7 +172,7 @@ export function visibleExtent<P>(
     valuesOf: (point: P) => Array<number> = point => [(point as { y: number }).y],
 ): [min: number, max: number] | undefined {
     const [start, end] = window
-    const showable = (value: number) => Number.isFinite(yScale(value))
+    const showable = (value: number): boolean => Number.isFinite(yScale(value))
     // includes the heights where the lines between the two points cross x
     const withCrossings = (
         extent: [min: number, max: number] | undefined,
