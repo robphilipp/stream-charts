@@ -94,7 +94,9 @@ What to install depends on what you'd like to do:
 npm install stream-charts react react-dom rxjs d3
 ```
 
-> This README describes version 2, whose API is different from version 1's. To upgrade from 1.x, see [migrating from 1.x](#migrating).
+> This README describes version 2.1. New in 2.1: the [&lt;GeoPlot/&gt;](#geo-plot), which plots sensor events on a globe or a map, with a `GeoDataSource` that [rolls them up](#geo-rollups) by place; and smoother scrolling with [cadence](#performance) (`withCadence`). The plots now need React 19.2 or later. See [changes.md](changes.md) for the full list.
+>
+> Version 2's API is different from version 1's. To upgrade from 1.x, see [migrating from 1.x](#migrating).
 
 `stream-charts` has four peer dependencies: React 19.2 or later (`react`, `react-dom`), [RxJS](https://rxjs.dev) 7, and [d3](https://d3js.org) 7. Your application uses them directly – to render the components, create the observables that feed the charts, and pass d3 scales and curves to the axes and plots – so the library shares your copies rather than bringing its own. TypeScript users get d3's type definitions (`@types/d3`) with the library.
 
