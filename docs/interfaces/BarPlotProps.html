@@ -15,7 +15,7 @@
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">BarPlotProps</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#axisassignments">axisAssignments</a><span class="tsd-signature-symbol">?:</span> <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map" class="tsd-signature-type external" target="_blank">Map</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <a href="AxesAssignment.html" class="tsd-signature-type tsd-kind-interface">AxesAssignment</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#barmargin">barMargin</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#barseriesstyle">barSeriesStyle</a><span class="tsd-signature-symbol">?:</span> <a href="BarSeriesStyle.html" class="tsd-signature-type tsd-kind-interface">BarSeriesStyle</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#highlightaxesonmouseover">highlightAxesOnMouseOver</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#onzoomreset">onZoomReset</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">resetZoom</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#onzoomstatechange">onZoomStateChange</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">zoomState</span><span class="tsd-signature-symbol">:</span> <a href="BarPlotZoomState.html" class="tsd-signature-type tsd-kind-interface">BarPlotZoomState</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#panenabled">panEnabled</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#showmeanvaluelines">showMeanValueLines</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#showminmaxbars">showMinMaxBars</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#showvaluelines">showValueLines</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#showwindowedmeanvaluelines">showWindowedMeanValueLines</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#showwindowedminmaxbars">showWindowedMinMaxBars</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#zoomenabled">zoomEnabled</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#zoomkeymodifiersrequired">zoomKeyModifiersRequired</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#zoomstate">zoomState</a><span class="tsd-signature-symbol">?:</span> <a href="BarPlotZoomState.html" class="tsd-signature-type tsd-kind-interface">BarPlotZoomState</a><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L77">plots/BarPlot.tsx:77</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L77">plots/BarPlot.tsx:77</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -50,7 +50,7 @@ map's key holds the series name, and the value is an <a href="AxesAssignment.htm
 object holding the ID of the assigned x-axis and y-axis.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L83">plots/BarPlot.tsx:83</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L83">plots/BarPlot.tsx:83</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="barmargin"><code class="tsd-tag">Optional</code><span>bar<wbr/>Margin</span><a href="#barmargin" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">barMargin</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
@@ -59,14 +59,14 @@ edges and its lines. Margins on individual series can also be set through the
 <a href="ChartProps.html#seriesstyles" class="tsd-kind-property">ChartProps.seriesStyles</a> property.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L122">plots/BarPlot.tsx:122</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L122">plots/BarPlot.tsx:122</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="barseriesstyle"><code class="tsd-tag">Optional</code><span>bar<wbr/>Series<wbr/>Style</span><a href="#barseriesstyle" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">barSeriesStyle</span><span class="tsd-signature-symbol">?:</span> <a href="BarSeriesStyle.html" class="tsd-signature-type tsd-kind-interface">BarSeriesStyle</a></div>
 <div class="tsd-comment tsd-typography"><p>The (optional) default style for the bar series that are used if no other styles are specified</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L126">plots/BarPlot.tsx:126</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L126">plots/BarPlot.tsx:126</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="highlightaxesonmouseover"><code class="tsd-tag">Optional</code><span>highlight<wbr/>Axes<wbr/>On<wbr/>Mouse<wbr/>Over</span><a href="#highlightaxesonmouseover" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">highlightAxesOnMouseOver</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
@@ -76,7 +76,7 @@ styles don't carry a single flat highlight color/width the way line-series style
 this doesn't attempt to match a specific element's highlight style). Defaults to <code>false</code>.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L133">plots/BarPlot.tsx:133</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L133">plots/BarPlot.tsx:133</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="onzoomreset"><code class="tsd-tag">Optional</code><span>on<wbr/>Zoom<wbr/>Reset</span><a href="#onzoomreset" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">onZoomReset</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">resetZoom</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
@@ -87,7 +87,7 @@ un-panned) ranges. See <a href="../functions/ScatterPlot.html" class="tsd-kind-f
 this is needed. Only meaningful (called) while <code>zoomEnabled</code> is true.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L154">plots/BarPlot.tsx:154</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L154">plots/BarPlot.tsx:154</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="onzoomstatechange"><code class="tsd-tag">Optional</code><span>on<wbr/>Zoom<wbr/>State<wbr/>Change</span><a href="#onzoomstatechange" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">onZoomStateChange</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">zoomState</span><span class="tsd-signature-symbol">:</span> <a href="BarPlotZoomState.html" class="tsd-signature-type tsd-kind-interface">BarPlotZoomState</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
@@ -95,56 +95,56 @@ this is needed. Only meaningful (called) while <code>zoomEnabled</code> is true.
 the end of each pan, so the application can hold on to it (see <a href="#zoomstate" class="tsd-kind-property">BarPlotProps.zoomState</a>).</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L146">plots/BarPlot.tsx:146</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L146">plots/BarPlot.tsx:146</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="panenabled"><code class="tsd-tag">Optional</code><span>pan<wbr/>Enabled</span><a href="#panenabled" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">panEnabled</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
 <div class="tsd-comment tsd-typography"><p>Enables panning (default is false)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L107">plots/BarPlot.tsx:107</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L107">plots/BarPlot.tsx:107</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="showmeanvaluelines"><code class="tsd-tag">Optional</code><span>show<wbr/>Mean<wbr/>Value<wbr/>Lines</span><a href="#showmeanvaluelines" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">showMeanValueLines</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
 <div class="tsd-comment tsd-typography"><p>Whether to show each series' lifetime mean-value line (default is true)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L99">plots/BarPlot.tsx:99</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L99">plots/BarPlot.tsx:99</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="showminmaxbars"><code class="tsd-tag">Optional</code><span>show<wbr/>Min<wbr/>Max<wbr/>Bars</span><a href="#showminmaxbars" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">showMinMaxBars</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
 <div class="tsd-comment tsd-typography"><p>Whether to show each series' lifetime min/max bar (default is true)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L87">plots/BarPlot.tsx:87</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L87">plots/BarPlot.tsx:87</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="showvaluelines"><code class="tsd-tag">Optional</code><span>show<wbr/>Value<wbr/>Lines</span><a href="#showvaluelines" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">showValueLines</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
 <div class="tsd-comment tsd-typography"><p>Whether to show each series' current-value line (default is true)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L95">plots/BarPlot.tsx:95</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L95">plots/BarPlot.tsx:95</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="showwindowedmeanvaluelines"><code class="tsd-tag">Optional</code><span>show<wbr/>Windowed<wbr/>Mean<wbr/>Value<wbr/>Lines</span><a href="#showwindowedmeanvaluelines" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">showWindowedMeanValueLines</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
 <div class="tsd-comment tsd-typography"><p>Whether to show each series' windowed mean-value line (default is true)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L103">plots/BarPlot.tsx:103</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L103">plots/BarPlot.tsx:103</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="showwindowedminmaxbars"><code class="tsd-tag">Optional</code><span>show<wbr/>Windowed<wbr/>Min<wbr/>Max<wbr/>Bars</span><a href="#showwindowedminmaxbars" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">showWindowedMinMaxBars</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
 <div class="tsd-comment tsd-typography"><p>Whether to show each series' windowed min/max bar (default is true)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L91">plots/BarPlot.tsx:91</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L91">plots/BarPlot.tsx:91</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="zoomenabled"><code class="tsd-tag">Optional</code><span>zoom<wbr/>Enabled</span><a href="#zoomenabled" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">zoomEnabled</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
 <div class="tsd-comment tsd-typography"><p>Enables zooming (default is false)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L111">plots/BarPlot.tsx:111</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L111">plots/BarPlot.tsx:111</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="zoomkeymodifiersrequired"><code class="tsd-tag">Optional</code><span>zoom<wbr/>Key<wbr/>Modifiers<wbr/>Required</span><a href="#zoomkeymodifiersrequired" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">zoomKeyModifiersRequired</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
@@ -152,7 +152,7 @@ the end of each pan, so the application can hold on to it (see <a href="#zoomsta
 in order to activate the zoom</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L116">plots/BarPlot.tsx:116</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L116">plots/BarPlot.tsx:116</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="zoomstate"><code class="tsd-tag">Optional</code><span>zoom<wbr/>State</span><a href="#zoomstate" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">zoomState</span><span class="tsd-signature-symbol">?:</span> <a href="BarPlotZoomState.html" class="tsd-signature-type tsd-kind-interface">BarPlotZoomState</a></div>
@@ -163,7 +163,7 @@ and back). Only read once, when the plot's axes are first available; later chang
 prop are ignored.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L141">plots/BarPlot.tsx:141</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/plots/BarPlot.tsx#L141">plots/BarPlot.tsx:141</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
