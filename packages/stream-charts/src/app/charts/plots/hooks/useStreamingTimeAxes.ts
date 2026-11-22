@@ -9,20 +9,20 @@ import {
     defaultLineStyle,
     panHandler,
     type SeriesLineStyle,
-} from "../axes/axes";
-import {AxisInterval} from "../axes/AxisInterval";
-import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
-import type {CanvasContext} from "../d3types";
-import type {StreamingDataSource} from "../datasources/StreamingDataSource";
-import {useChart} from "../hooks/useChart";
-import {useHoveredSeries} from "../hooks/useHoveredSeries";
-import {usePlotDimensions} from "../hooks/usePlotDimensions";
-import {useStreamingSettings} from "../hooks/useDataSource";
-import type {ChartData} from "../observables/ChartData";
-import type {BaseSeries} from "../series/baseSeries";
-import {type AxisTimesFor, timeAxisViewDriverFor, TimeWindowBehavior} from "../subscriptions/viewDrivers";
-import {noop} from "../utils";
-import {type AxesAssignment, currentIntervalsFrom} from "./plot";
+} from "../../axes/axes";
+import {AxisInterval} from "../../axes/AxisInterval";
+import {ContinuousAxisRange} from "../../axes/ContinuousAxisRange";
+import type {CanvasContext} from "../../d3types";
+import type {StreamingDataSource} from "../../datasources/StreamingDataSource";
+import {useChart} from "../../hooks/useChart";
+import {useHoveredSeries} from "../../hooks/useHoveredSeries";
+import {usePlotDimensions} from "../../hooks/usePlotDimensions";
+import {useStreamingSettings} from "../../hooks/useDataSource";
+import type {ChartData} from "../../observables/ChartData";
+import type {BaseSeries} from "../../series/baseSeries";
+import {type AxisTimesFor, timeAxisViewDriverFor, TimeWindowBehavior} from "../../subscriptions/viewDrivers";
+import {noop} from "../../utils";
+import {type AxesAssignment, currentIntervalsFrom} from "../plot-utils/plot";
 import {useCanvasZoomPan} from "./useCanvasZoomPan";
 
 /**

@@ -1,7 +1,7 @@
 import type {CanvasContext, DrawHandle} from "../d3types";
 import {containerDimensionsFrom, type Dimensions, type Margin} from "../styling/margins";
 import {fontStringFor, mouseInPlotAreaFor, textDimensions} from "../utils";
-import {canvasLocalPoint} from "../plots/hitTesting";
+import {canvasLocalPoint} from "../plots/plot-utils/hitTesting";
 import {AxisLocation, type ContinuousNumericAxis} from "../axes/axes";
 import {type TrackerAxisInfo, type TrackerAxisUpdate} from "./Tracker";
 

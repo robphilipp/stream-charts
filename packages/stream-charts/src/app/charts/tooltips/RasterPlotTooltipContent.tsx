@@ -16,7 +16,7 @@ import type {OrdinalStringAxis, SeriesLineStyle} from "../axes/axes";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import type {Datum} from "../series/timeSeries";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
-import type {Series} from "../plots/plot";
+import type {Series} from "../plots/plot-utils/plot";
 
 /**
  * Options for displaying the tooltip content. These options are specific to this

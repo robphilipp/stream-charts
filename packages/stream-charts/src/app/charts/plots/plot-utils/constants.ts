@@ -1,7 +1,7 @@
 // A sentinel that represents that no curve factory is to be used, which means
 // that no line will be drawn between the iterates (kinda gross)
 import type {CurveFactory} from "d3";
-import type {BarChartElementId} from "./BarPlot";
+import type {BarChartElementId} from "../BarPlot";
 
 export const NoCurveFactory: CurveFactory = undefined as unknown as CurveFactory; // constants identifying the bar-chart elements for which mouse-over/mouse-leave events are defined
 

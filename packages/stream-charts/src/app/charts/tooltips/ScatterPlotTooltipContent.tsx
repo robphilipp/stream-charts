@@ -1,6 +1,6 @@
 import type {CSSProperties, ReactElement} from "react";
 import * as d3 from "d3";
-import {type Series} from "../plots/plot";
+import {type Series} from "../plots/plot-utils/plot";
 import {
     autocorrelation,
     boundingPoints,

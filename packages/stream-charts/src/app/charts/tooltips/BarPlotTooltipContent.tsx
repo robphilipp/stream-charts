@@ -6,7 +6,7 @@ import {emptyOrdinalDatum, type OrdinalDatum} from "../series/ordinalSeries";
 import type {TooltipData} from "../hooks/useTooltip";
 import type {WindowedOrdinalStats} from "../datasources/ordinalDataSource";
 import {defaultOrdinalValueStats} from "../observables/ordinals";
-import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "../plots/constants";
+import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "../plots/plot-utils/constants";
 
 /**
  * Properties for rendering the tooltip content

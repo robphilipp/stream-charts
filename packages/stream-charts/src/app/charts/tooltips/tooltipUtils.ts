@@ -1,4 +1,4 @@
-import type {Series} from "../plots/plot";
+import type {Series} from "../plots/plot-utils/plot";
 import type {Dimensions, Margin} from "../styling/margins";
 import type {OrdinalStringAxis} from "../axes/axes";
 import type {ScaleContinuousNumeric} from "d3";

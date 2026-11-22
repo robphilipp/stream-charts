@@ -4,7 +4,7 @@ import {BaseAxisRange} from "../axes/BaseAxisRange";
 import type {BaseAxis} from "../axes/axes";
 import {usePlotDimensions} from "./usePlotDimensions";
 import {AxesState} from "../axes/AxesState";
-import type {AxesAssignment} from "../plots/plot";
+import type {AxesAssignment} from "../plots/plot-utils/plot";
 import type {Dimensions} from "../styling/margins";
 import {Optional} from "result-fn";
 import {AxesContext, type UseAxesValues} from "./useAxes";

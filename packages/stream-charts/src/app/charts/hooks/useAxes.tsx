@@ -1,6 +1,6 @@
 import {AxesState} from "../axes/AxesState";
 import type {BaseAxis} from "../axes/axes";
-import type {AxesAssignment} from "../plots/plot";
+import type {AxesAssignment} from "../plots/plot-utils/plot";
 import {createContext, useContext} from "react";
 import type {Dimensions} from "../styling/margins";
 import {BaseAxisRange} from "../axes/BaseAxisRange";

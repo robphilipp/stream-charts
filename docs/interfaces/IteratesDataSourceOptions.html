@@ -12,7 +12,7 @@
 <h1>Interface IteratesDataSourceOptions</h1></div>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">IteratesDataSourceOptions</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#dropdataafter">dropDataAfter</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#generator">generator</a><span class="tsd-signature-symbol">:</span> <a href="../types/DataGenerator.html" class="tsd-signature-type tsd-kind-type-alias">DataGenerator</a><span class="tsd-signature-symbol">&lt;</span><a href="IterateChartData.html" class="tsd-signature-type tsd-kind-interface">IterateChartData</a><span class="tsd-signature-symbol">,</span> <a href="../types/IterateSeries.html" class="tsd-signature-type tsd-kind-type-alias">IterateSeries</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#initialdata">initialData</a><span class="tsd-signature-symbol">:</span> <a href="../types/IterateSeries.html" class="tsd-signature-type tsd-kind-type-alias">IterateSeries</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#onupdatedata">onUpdateData</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">seriesName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">data</span><span class="tsd-signature-symbol">:</span> <a href="IterateDatum.html" class="tsd-signature-type tsd-kind-interface">IterateDatum</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/iteratesDataSource.ts#L24">datasources/iteratesDataSource.ts:24</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/iteratesDataSource.ts#L24">datasources/iteratesDataSource.ts:24</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -35,28 +35,28 @@
 Defaults to <code>Infinity</code> (never drop).</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/iteratesDataSource.ts#L37">datasources/iteratesDataSource.ts:37</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/iteratesDataSource.ts#L37">datasources/iteratesDataSource.ts:37</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="generator"><span>generator</span><a href="#generator" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">generator</span><span class="tsd-signature-symbol">:</span> <a href="../types/DataGenerator.html" class="tsd-signature-type tsd-kind-type-alias">DataGenerator</a><span class="tsd-signature-symbol">&lt;</span><a href="IterateChartData.html" class="tsd-signature-type tsd-kind-interface">IterateChartData</a><span class="tsd-signature-symbol">,</span> <a href="../types/IterateSeries.html" class="tsd-signature-type tsd-kind-type-alias">IterateSeries</a><span class="tsd-signature-symbol">&gt;</span></div>
 <div class="tsd-comment tsd-typography"><p>Creates the observable of chart data each time the source starts</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/iteratesDataSource.ts#L32">datasources/iteratesDataSource.ts:32</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/iteratesDataSource.ts#L32">datasources/iteratesDataSource.ts:32</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="initialdata"><span>initial<wbr/>Data</span><a href="#initialdata" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">initialData</span><span class="tsd-signature-symbol">:</span> <a href="../types/IterateSeries.html" class="tsd-signature-type tsd-kind-type-alias">IterateSeries</a><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>The initial series, owned (and mutated in place) by the source from here on</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/iteratesDataSource.ts#L28">datasources/iteratesDataSource.ts:28</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/iteratesDataSource.ts#L28">datasources/iteratesDataSource.ts:28</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="onupdatedata"><code class="tsd-tag">Optional</code><span>on<wbr/>Update<wbr/>Data</span><a href="#onupdatedata" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">onUpdateData</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">seriesName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">data</span><span class="tsd-signature-symbol">:</span> <a href="IterateDatum.html" class="tsd-signature-type tsd-kind-interface">IterateDatum</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
 <div class="tsd-comment tsd-typography"><p>Called with each series' new data as it arrives</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/iteratesDataSource.ts#L41">datasources/iteratesDataSource.ts:41</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/iteratesDataSource.ts#L41">datasources/iteratesDataSource.ts:41</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

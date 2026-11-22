@@ -1,6 +1,6 @@
 import * as d3 from "d3"
-import type {GeoDatum} from "../series/geoSeries"
-import type {GeoAggregate, GeoAggregateGroup} from "../datasources/geoRollups"
+import type {GeoDatum} from "../../series/geoSeries"
+import type {GeoAggregate, GeoAggregateGroup} from "../../datasources/geoRollups"
 
 /*
     What a GeoPlot draws for its events and aggregates, and finds under the mouse: the markers (as

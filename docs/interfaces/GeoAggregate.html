@@ -15,7 +15,7 @@
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GeoAggregate</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#bounds">bounds</a><span class="tsd-signature-symbol">?:</span> <a href="GeoCellBounds.html" class="tsd-signature-type tsd-kind-interface">GeoCellBounds</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#count">count</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#firsttime">firstTime</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#groups">groups</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="GeoAggregateGroup.html" class="tsd-signature-type tsd-kind-interface">GeoAggregateGroup</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#id">id</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#lasttime">lastTime</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#latitude">latitude</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#longitude">longitude</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#measures">measures</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Readonly</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <a href="GeoMeasureOptions.html" class="tsd-signature-type tsd-kind-interface">GeoMeasureOptions</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#sensorcount">sensorCount</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#values">values</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Readonly</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L396">datasources/geoRollups.ts:396</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L396">datasources/geoRollups.ts:396</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -44,56 +44,56 @@
 <div class="tsd-comment tsd-typography"><p>The cell's bounds, when cells are areas (e.g. <a href="../functions/byGridCell.html" class="tsd-kind-function">byGridCell</a>)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L412">datasources/geoRollups.ts:412</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L412">datasources/geoRollups.ts:412</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="count"><code class="tsd-tag">Readonly</code><span>count</span><a href="#count" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">count</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>The number of the cell's events</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L416">datasources/geoRollups.ts:416</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L416">datasources/geoRollups.ts:416</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="firsttime"><code class="tsd-tag">Readonly</code><span>first<wbr/>Time</span><a href="#firsttime" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">firstTime</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>The time of the cell's earliest event</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L433">datasources/geoRollups.ts:433</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L433">datasources/geoRollups.ts:433</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="groups"><code class="tsd-tag">Readonly</code><span>groups</span><a href="#groups" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">groups</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="GeoAggregateGroup.html" class="tsd-signature-type tsd-kind-interface">GeoAggregateGroup</a><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>The cell's events by group, the largest group first (empty without a <code>groupBy</code>)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L429">datasources/geoRollups.ts:429</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L429">datasources/geoRollups.ts:429</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="id"><code class="tsd-tag">Readonly</code><span>id</span><a href="#id" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">id</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>The cell's ID (e.g. the sensor ID, for <a href="../functions/bySensor.html" class="tsd-kind-function">bySensor</a>)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L400">datasources/geoRollups.ts:400</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L400">datasources/geoRollups.ts:400</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="lasttime"><code class="tsd-tag">Readonly</code><span>last<wbr/>Time</span><a href="#lasttime" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">lastTime</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>The time of the cell's latest event</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L437">datasources/geoRollups.ts:437</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L437">datasources/geoRollups.ts:437</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="latitude"><code class="tsd-tag">Readonly</code><span>latitude</span><a href="#latitude" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">latitude</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>The latitude (degrees) where the cell is drawn</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L404">datasources/geoRollups.ts:404</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L404">datasources/geoRollups.ts:404</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="longitude"><code class="tsd-tag">Readonly</code><span>longitude</span><a href="#longitude" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">longitude</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>The longitude (degrees) where the cell is drawn</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L408">datasources/geoRollups.ts:408</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L408">datasources/geoRollups.ts:408</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="measures"><code class="tsd-tag">Readonly</code><span>measures</span><a href="#measures" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">measures</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Readonly</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <a href="GeoMeasureOptions.html" class="tsd-signature-type tsd-kind-interface">GeoMeasureOptions</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></div>
@@ -101,7 +101,7 @@
 <a href="../functions/formatMeasure.html" class="tsd-kind-function">formatMeasure</a>) -- the same for every aggregate of the roll-up</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L442">datasources/geoRollups.ts:442</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L442">datasources/geoRollups.ts:442</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="sensorcount"><code class="tsd-tag">Readonly</code><span>sensor<wbr/>Count</span><a href="#sensorcount" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">sensorCount</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
@@ -109,14 +109,14 @@
 ID: two series' sensors with the same ID are two sensors)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L421">datasources/geoRollups.ts:421</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L421">datasources/geoRollups.ts:421</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="values"><code class="tsd-tag">Readonly</code><span>values</span><a href="#values" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">values</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Readonly</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></div>
 <div class="tsd-comment tsd-typography"><p>The cell's measures, by name (see <a href="GeoRollup.html#measures" class="tsd-kind-property">GeoRollup.measures</a>)</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/4f842620249b675fd09e2cdd8bfcb3c054cb53b4/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L425">datasources/geoRollups.ts:425</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/robphilipp/stream-charts/blob/1c0d765e5af4834581fb9c12f7d99f720399ef77/packages/stream-charts/src/app/charts/datasources/geoRollups.ts#L425">datasources/geoRollups.ts:425</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

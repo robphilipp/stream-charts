@@ -1,7 +1,7 @@
 import * as d3 from "d3";
-import {defaultLineStyle, type SeriesLineStyle} from "../axes/axes";
-import type {GeoAggregate} from "../datasources/geoRollups";
-import {geoDatumOf, type GeoDatum, geoSeriesFrom} from "../series/geoSeries";
+import {defaultLineStyle, type SeriesLineStyle} from "../../axes/axes";
+import type {GeoAggregate} from "../../datasources/geoRollups";
+import {geoDatumOf, type GeoDatum, geoSeriesFrom} from "../../series/geoSeries";
 import {type DrawnMarker, markerKeyOf} from "./geoMarkers";
 import {setUpProjection, viewCenteredOn} from "./geoProjections";
 import {

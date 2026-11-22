@@ -43,7 +43,7 @@ import {AxisInterval} from "./AxisInterval";
 import type {Dimensions, Margin} from "../styling/margins";
 import type {CanvasContext} from "../d3types";
 import {seriesFrom} from "../series/baseSeries";
-import type {AxesAssignment} from "../plots/plot";
+import type {AxesAssignment} from "../plots/plot-utils/plot";
 
 /**
  * These tests guard against a regression of a bug where the ordinal (categorical) axis pan/zoom

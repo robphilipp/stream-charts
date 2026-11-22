@@ -1,5 +1,5 @@
-import {type AxesAssignment, clipToArea, type Series} from "./plot";
-import {useStreamingTimeAxes} from "./useStreamingTimeAxes";
+import {type AxesAssignment, clipToArea, type Series} from "./plot-utils/plot";
+import {useStreamingTimeAxes} from "./hooks/useStreamingTimeAxes";
 import {useHoveredSeries} from "../hooks/useHoveredSeries";
 import {noop} from "../utils";
 import {useChart} from "../hooks/useChart";
@@ -16,7 +16,7 @@ import {
     type SeriesLineStyle
 } from "../axes/axes";
 import type {CanvasContext} from "../d3types";
-import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
+import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./plot-utils/hitTesting";
 import type {Margin} from "../styling/margins";
 import {timeSeriesAxisTimes} from "../subscriptions/viewDrivers";
 import {useDataSource, useDataSourceRunning, useInitialData} from "../hooks/useDataSource";

@@ -1,12 +1,12 @@
 import {useCallback, useEffect, useEffectEvent, useMemo, useRef} from 'react'
 import * as d3 from "d3"
 import {useChart} from "../hooks/useChart"
-import {useCanvasZoomPan} from "./useCanvasZoomPan"
-import {clipToArea} from "./plot"
+import {useCanvasZoomPan} from "./hooks/useCanvasZoomPan"
+import {clipToArea} from "./plot-utils/plot"
 import {type BaseAxis, type SeriesLineStyle} from "../axes/axes"
 import type {BaseAxisRange} from "../axes/BaseAxisRange"
 import type {CanvasContext} from "../d3types"
-import {canvasLocalPoint} from "./hitTesting"
+import {canvasLocalPoint} from "./plot-utils/hitTesting"
 import {noop} from "../utils"
 import {useLatest} from "../hooks/useLatest"
 import {withAlpha} from "../styling/canvasStyle"
@@ -19,7 +19,7 @@ import {isGeoDataSource} from "../datasources/geoDataSource"
 import type {GeoDatum, GeoSeries} from "../series/geoSeries"
 import {usePlotDimensions} from "../hooks/usePlotDimensions"
 import {type TooltipData, useTooltip} from "../hooks/useTooltip"
-import {type GeoBox as GeoViewBox, type GeoLayer, type GeoMapData, viewBoxOf} from "./geoLayers"
+import {type GeoBox as GeoViewBox, type GeoLayer, type GeoMapData, viewBoxOf} from "./geo-utils/geoLayers"
 import {
     type GeoPlotViewState,
     type GeoProjectionName,
@@ -35,7 +35,7 @@ import {
     viewFitting,
     zoomShiftedViewAbout,
     zoomViewAbout,
-} from "./geoProjections"
+} from "./geo-utils/geoProjections"
 import {
     autoLevelOf,
     type DrawnMarker,
@@ -45,9 +45,9 @@ import {
     markerAt,
     markerKeyOf,
     wedgeGroupAt,
-} from "./geoMarkers"
-import {type GeoFlashOptions, resolvedFlashes} from "./geoFlashes"
-import {ReferenceShapes} from "./geoPens"
+} from "./geo-utils/geoMarkers"
+import {type GeoFlashOptions, resolvedFlashes} from "./geo-utils/geoFlashes"
+import {ReferenceShapes} from "./geo-utils/geoPens"
 import {
     drawAggregates,
     drawEvents,
@@ -62,7 +62,7 @@ import {
     type MarkerGeometry,
     type ShowingFlash,
     SPHERE,
-} from "./geoScene"
+} from "./geo-utils/geoScene"
 
 /**
  * The colors of a {@link GeoPlot}'s map (see its `mapColors`). Each defaults to a tint of the chart's

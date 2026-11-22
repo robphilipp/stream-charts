@@ -1,11 +1,11 @@
-import {type AxesAssignment, clipToArea} from "./plot";
-import {useCanvasZoomPan} from "./useCanvasZoomPan";
+import {type AxesAssignment, clipToArea} from "./plot-utils/plot";
+import {useCanvasZoomPan} from "./hooks/useCanvasZoomPan";
 import * as d3 from "d3";
 import {noop} from "../utils";
 import {useChart} from "../hooks/useChart";
 import {useCallback, useEffect, useEffectEvent, useMemo, useRef} from "react";
 import type {CanvasContext} from "../d3types";
-import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
+import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./plot-utils/hitTesting";
 import {
     axesForSeriesGen,
     type BaseAxis,
@@ -32,10 +32,10 @@ import {type BarSeriesStyle, type BarStyle, defaultBarSeriesStyle} from "../styl
 import type {TooltipData} from "../hooks/useTooltip";
 import {OrdinalAxisRange} from "../axes/OrdinalAxisRange";
 import {Optional} from "result-fn";
-import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./constants";
+import {BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./plot-utils/constants";
 import {AxisInterval} from "../axes/AxisInterval";
 import {extentOf, extentWith} from "../axes/autoScale";
-import {type AutoScaleAxes, growAutoScaledYAxes, useAutoScaleRestart} from "./autoScaleYAxes";
+import {type AutoScaleAxes, growAutoScaledYAxes, useAutoScaleRestart} from "./plot-utils/autoScaleYAxes";
 
 /**
  * A snapshot of the bar plot's zoom/pan state, in a form that can be held outside the plot (e.g.
