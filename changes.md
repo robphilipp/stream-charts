@@ -1,6 +1,6 @@
 # change history
 
-## next release
+## version 2.1.0 (geo plot, smooth cadence scrolling)
 
 **Fixed**
 1. With cadence, the time axes of the scatter, raster, and outlier plots scrolled unevenly: they moved on each cadence tick (e.g. every 25 ms), which rarely lines up with the display's frames, so on a 60 Hz display they moved on two frames out of three. They now move on every frame of the display.
