@@ -1,4 +1,4 @@
-import type {GeoDatum} from "../series/geoSeries"
+import type {GeoDatum} from "../../series/geoSeries"
 
 /*
     The flashes of a GeoPlot's new events: which flash, and how (see the plot's `flash`), each

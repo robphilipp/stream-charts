@@ -3,7 +3,7 @@ import {bufferCount, bufferTime, map, mergeAll, mergeWith} from "rxjs/operators"
 import {continuousAxisRanges, type ContinuousNumericAxis} from "../axes/axes";
 import {AxesState} from "../axes/AxesState";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
-import type {AxesAssignment} from "../plots/plot";
+import type {AxesAssignment} from "../plots/plot-utils/plot";
 import type {ChartData} from "../observables/ChartData";
 import type {TimeSeriesChartData} from "../series/timeSeriesChartData";
 import type {OutlierChartData} from "../observables/outliers";

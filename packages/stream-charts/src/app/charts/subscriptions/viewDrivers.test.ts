@@ -13,7 +13,7 @@ import {
 import {AxesState} from "../axes/AxesState";
 import {AxisLocation, AxisType, type ContinuousNumericAxis} from "../axes/axes";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
-import {type AxesAssignment, assignAxes} from "../plots/plot";
+import {type AxesAssignment, assignAxes} from "../plots/plot-utils/plot";
 import {datumOf, type Datum, type TimeSeries} from "../series/timeSeries";
 import {seriesFrom} from "../series/baseSeries";
 import type {TimeSeriesChartData} from "../series/timeSeriesChartData";

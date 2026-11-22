@@ -61,18 +61,18 @@ export {
     type GeoMapColors,
     type Props as GeoPlotProps,
 } from "./plots/GeoPlot"
-export {GeoProjections, type GeoPlotViewState, type GeoProjectionName} from "./plots/geoProjections"
-export {type GeoTooltipMetadata} from "./plots/geoMarkers"
-export {type GeoFlash, type GeoFlashOptions} from "./plots/geoFlashes"
-export {type GeoBox as GeoViewBox, type GeoDetail, type GeoLayer, type GeoMapData} from "./plots/geoLayers"
-export {assignAxes, type AxesAssignment, type Series} from "./plots/plot"
-export {NoCurveFactory, BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./plots/constants"
+export {GeoProjections, type GeoPlotViewState, type GeoProjectionName} from "./plots/geo-utils/geoProjections"
+export {type GeoTooltipMetadata} from "./plots/geo-utils/geoMarkers"
+export {type GeoFlash, type GeoFlashOptions} from "./plots/geo-utils/geoFlashes"
+export {type GeoBox as GeoViewBox, type GeoDetail, type GeoLayer, type GeoMapData} from "./plots/geo-utils/geoLayers"
+export {assignAxes, type AxesAssignment, type Series} from "./plots/plot-utils/plot"
+export {NoCurveFactory, BAR_CHART_TOOLTIP_PROVIDER_IDS} from "./plots/plot-utils/constants"
 export {
     DEFAULT_LINE_COLOR_STEPS,
     DEFAULT_LINE_END_COLOR,
     DEFAULT_LINE_START_COLOR,
     lineColorScale,
-} from "./plots/colorizedLine"
+} from "./plots/plot-utils/colorizedLine"
 export {TimeWindowBehavior} from "./subscriptions/viewDrivers"
 
 /*

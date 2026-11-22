@@ -1,14 +1,14 @@
 import * as d3 from "d3"
-import {defaultLineStyle, type SeriesLineStyle} from "../axes/axes"
-import {withAlpha} from "../styling/canvasStyle"
-import {formatMeasure, type GeoAggregate, type GeoAggregateGroup} from "../datasources/geoRollups"
-import type {GeoDatum, GeoSeries} from "../series/geoSeries"
+import {defaultLineStyle, type SeriesLineStyle} from "../../axes/axes"
+import {withAlpha} from "../../styling/canvasStyle"
+import {formatMeasure, type GeoAggregate, type GeoAggregateGroup} from "../../datasources/geoRollups"
+import type {GeoDatum, GeoSeries} from "../../series/geoSeries"
 import {detailOf, drawLayerLabels, drawLayerShapes, type GeoLayer, type GeoMapData, labelledOf, layerShownAt, viewBoxOf, visibleOf} from "./geoLayers"
 import {canTurn, isGlobe, type GeoPlotViewState, shiftOf} from "./geoProjections"
 import {type DrawnMarker, markerEllipseAt, type MarkerEllipse, markerKeyOf, pieGroupsOf, wedgeBearingsOf, wedgeOf} from "./geoMarkers"
 import {flashGroupsOf, flashRingOf, type ResolvedGeoFlash} from "./geoFlashes"
 import {directPen, type ReferenceShapes, shiftedPen} from "./geoPens"
-import type {GeoAggregateOptions, GeoFadeOptions} from "./GeoPlot"
+import type {GeoAggregateOptions, GeoFadeOptions} from "../GeoPlot"
 
 /*
     How a GeoPlot draws a frame: the map, and over it the events (or a roll-up's aggregates, with

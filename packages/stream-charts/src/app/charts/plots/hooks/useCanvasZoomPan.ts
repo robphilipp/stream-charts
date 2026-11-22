@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useRef} from "react";
 import * as d3 from "d3";
 import type {D3ZoomEvent} from "d3";
-import type {CanvasContext} from "../d3types";
+import type {CanvasContext} from "../../d3types";
 
 /**
  * A zoom gesture's step, as the plot's zoom handler gets it

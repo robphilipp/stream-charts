@@ -1,18 +1,18 @@
 import {useCallback, useEffect, useRef} from 'react'
-import {useStreamingTimeAxes} from "./useStreamingTimeAxes";
+import {useStreamingTimeAxes} from "./hooks/useStreamingTimeAxes";
 import {useHoveredSeries} from "../hooks/useHoveredSeries";
 import * as d3 from "d3"
 
 import {useChart} from "../hooks/useChart"
 import {useDataSource, useDataSourceRunning, useInitialData} from "../hooks/useDataSource";
 import {usePlotDimensions} from "../hooks/usePlotDimensions"
-import {type AxesAssignment, clipToArea} from "./plot"
+import {type AxesAssignment, clipToArea} from "./plot-utils/plot"
 import type {CanvasContext} from "../d3types"
-import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting"
+import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./plot-utils/hitTesting"
 import {noop} from "../utils"
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange"
 import {extentWith, visibleExtent} from "../axes/autoScale"
-import {growAutoScaledYAxes, useAutoScaleRestart} from "./autoScaleYAxes"
+import {growAutoScaledYAxes, useAutoScaleRestart} from "./plot-utils/autoScaleYAxes"
 import {
     type BaseAxis,
     AxisType,

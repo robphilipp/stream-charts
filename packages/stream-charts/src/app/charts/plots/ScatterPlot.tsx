@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useRef} from 'react'
-import {useStreamingTimeAxes} from "./useStreamingTimeAxes";
+import {useStreamingTimeAxes} from "./hooks/useStreamingTimeAxes";
 import {useHoveredSeries} from "../hooks/useHoveredSeries";
 import {useChart} from "../hooks/useChart";
 import {
@@ -9,7 +9,7 @@ import {
     scatterTooltipPoints
 } from "../tooltips/tooltipUtils";
 import * as d3 from "d3";
-import {type AxesAssignment, clipToArea} from "./plot";
+import {type AxesAssignment, clipToArea} from "./plot-utils/plot";
 import type {Datum, TimeSeries} from "../series/timeSeries";
 import {
     type BaseAxis,
@@ -20,15 +20,15 @@ import {
     type SeriesLineStyle
 } from "../axes/axes";
 import type {CanvasContext} from "../d3types";
-import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./hitTesting";
+import {seriesAt, canvasLocalPoint, type SeriesGeometry} from "./plot-utils/hitTesting";
 import {firstIndexAtOrAfter, noop} from "../utils";
-import {NoCurveFactory} from "./constants";
+import {NoCurveFactory} from "./plot-utils/constants";
 import {timeSeriesAxisTimes, TimeWindowBehavior} from "../subscriptions/viewDrivers";
 import {useDataSource, useDataSourceRunning, useInitialData} from "../hooks/useDataSource";
 import type {TimeSeriesChartData} from "../series/timeSeriesChartData";
 import {ContinuousAxisRange} from "../axes/ContinuousAxisRange";
 import {extentWith, visibleExtent} from "../axes/autoScale";
-import {growAutoScaledYAxes, useAutoScaleRestart} from "./autoScaleYAxes";
+import {growAutoScaledYAxes, useAutoScaleRestart} from "./plot-utils/autoScaleYAxes";
 import {usePlotDimensions} from "../hooks/usePlotDimensions";
 import type {FastShiftArray} from "fast-shift-array";
 

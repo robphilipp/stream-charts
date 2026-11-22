@@ -1,8 +1,8 @@
 import {useCallback, useEffect, useEffectEvent, useMemo, useRef} from 'react'
-import {useCanvasZoomPan} from "./useCanvasZoomPan";
+import {useCanvasZoomPan} from "./hooks/useCanvasZoomPan";
 import {type NoTooltipMetadata, useChart} from "../hooks/useChart";
 import * as d3 from "d3";
-import {clipToArea} from "./plot";
+import {clipToArea} from "./plot-utils/plot";
 import {
     axesZoomHandler,
     AxisType,
@@ -14,7 +14,7 @@ import {
     type SeriesLineStyle
 } from "../axes/axes";
 import type {CanvasContext} from "../d3types";
-import {canvasLocalPoint, seriesAt, type SeriesGeometry} from "./hitTesting";
+import {canvasLocalPoint, seriesAt, type SeriesGeometry} from "./plot-utils/hitTesting";
 import {fontStringFor, formatTime, noop, textDimensions} from "../utils";
 import type {Dimensions} from "../styling/margins";
 import {iteratesViewDriverFor} from "../subscriptions/viewDrivers";
@@ -33,7 +33,7 @@ import {
     DEFAULT_LINE_START_COLOR,
     pointColorScale,
     strokeColorizedLine
-} from "./colorizedLine";
+} from "./plot-utils/colorizedLine";
 
 // an iterate as the plot draws it: f[n](x), f[n+1](x), the iterate's time, and its index in its series
 type IteratePoint = { n: number, n_1: number, time: number, index: number }

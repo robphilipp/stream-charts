@@ -17,8 +17,8 @@ import {
     wedgeOf,
     legendSeriesOf,
 } from "./geoMarkers";
-import type {GeoAggregate} from "../datasources/geoRollups";
-import {geoDatumOf} from "../series/geoSeries";
+import type {GeoAggregate} from "../../datasources/geoRollups";
+import {geoDatumOf} from "../../series/geoSeries";
 
 const WIDTH = 800
 const HEIGHT = 500
