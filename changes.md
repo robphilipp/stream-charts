@@ -6,7 +6,19 @@
 1. With cadence, the time axes of the scatter, raster, and outlier plots scrolled unevenly: they moved on each cadence tick (e.g. every 25 ms), which rarely lines up with the display's frames, so on a 60 Hz display they moved on two frames out of three. They now move on every frame of the display.
 
 **New**
-1. The scatter, raster, outlier, and Poincaré plots take `withCadence` (`boolean`) to turn cadence on. `withCadenceOf` (a period, in ms) is deprecated: any value still turns cadence on, but the period is no longer used.
+1. The scatter, raster, outlier, and Poincaré plots take `withCadence` (`boolean`) to turn cadence on.
+2. Added the `<GeoPlot>`, which plots events from sensors at places on the earth (`GeoDatum`: a sensor ID, latitude, longitude, time, and payload, held by a `GeoDataSource`) on a globe or a map:
+   - **Projections and views.** Any d3-geo projection, by name (`GeoProjections`, from `orthographic` to `albersUsa`) or as a projection. Dragging turns the earth, or, in the `shift` view mode (always, for a composite projection like Albers USA), slides the map; the wheel zooms about the mouse (`panEnabled`, `zoomEnabled`). The view can frame a shape (`fitTo`, `fitPadding`) or a `center` (`{latitude, longitude}`), zoom in as far as `maxZoom`, turn by itself (`autoRotate`), be kept across remounts (`viewState`, `onViewChange`), and report the part of the earth it shows as it settles (`onViewBoxChange`), e.g. to load map data for it.
+   - **The map.** An application-supplied `basemap` and `borders`, and `layers` – each with its own fill (a color, or a feature's, for a choropleth), outline, opacity, zooms, labels, and points drawn as dots (e.g. cities) – each at levels of detail by zoom (`GeoMapData`), in `mapColors`. Only what might show in the view is drawn, and the map's data can be drawn without resampling (`resample={false}`), which keeps zooming in on a detailed map smooth.
+   - **Events.** Each event's marker, sized and colored by the event (`radiusOf`, `colorOf`), fading as it ages (`fade`), and flashing as it arrives (`flash`: a ring that grows and fades, with flashes of your own for each event, merged when close together).
+   - **Aggregates.** A `GeoDataSource` keeps roll-ups of its events by place (`byLocation`, `bySensor`, `byGridCell`), broken down by group, with measures (`countOf`, `sumOf`, `meanOf`, `minOf`, `maxOf`, `latestOf`, and your own with `reduceOf` and `measureOf`), each with its units and format (`formatMeasure`), kept up to date as events arrive and are dropped (and, for the series a filter takes, when asked: `aggregates(name, seriesFilter)`); it keeps each sensor's events, too (`sensorEventsOf`). The plot shows each event (`mode="events"`), a roll-up's aggregates (`mode="aggregates"`), or, by the zoom, clusters that come apart into the events as the view zooms in (`mode="auto"`, reporting what it shows through `onAutoRollupChange`; its clusters, like its events, follow the chart's series filter). The aggregates are drawn as circles, grid cells, or pies – a wedge per group – sized and colored by their measures, with keys (`aggregates`).
+   - **Hovering.** `<GeoPlotTooltipContent>` shows an event's or an aggregate's details – shown while the data source runs, too – with sparklines of the sensors' readings (`sparklineValueOf`). Hovering a series, in the legend or on the map, shows its events alone or highlights them (`hoveredSeries`).
+
+**Deprecated**
+1. `withCadenceOf` (a period, in ms): any value still turns cadence on, but the period is no longer used. Use `withCadence`.
+
+**Changed**
+1. The library's peer dependencies on React (`react`, `react-dom`) are now `^19.2.0`: the plots use `useEffectEvent`, which React has had since 19.2.
 
 ## version 2.0.0 (data sources, canvas rendering, outlier plot)
 

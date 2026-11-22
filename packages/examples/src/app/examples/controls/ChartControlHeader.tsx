@@ -21,7 +21,9 @@ export function ChartControlsHeader(props: Props): JSX.Element {
         <div style={{
             display: 'flex',
             alignItems: 'center',
-            height: 40,
+            // (as tall as the run and reset buttons, with their margins, so that the bars side
+            // by side are the same height)
+            height: 42,
             color: props.theme.color,
             gap: 10
         }}>

@@ -149,3 +149,15 @@ export function firstIndexAtOrAfter<D>(data: {length: number, [index: number]: D
     }
     return lo
 }
+
+/**
+ * Formats a latitude and longitude as, e.g., `37.77° N, 122.42° W`
+ * @param latitude The latitude (degrees)
+ * @param longitude The longitude (degrees)
+ * @return The formatted position
+ */
+export function formatLatLon(latitude: number, longitude: number): string {
+    const north = `${Math.abs(latitude).toFixed(2)}° ${latitude < 0 ? 'S' : 'N'}`
+    const east = `${Math.abs(longitude).toFixed(2)}° ${longitude < 0 ? 'W' : 'E'}`
+    return `${north}, ${east}`
+}

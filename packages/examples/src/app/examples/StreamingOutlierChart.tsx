@@ -318,7 +318,7 @@ export function StreamingOutlierChart(props: Props): JSX.Element {
                         backgroundColor={theme.backgroundColor}
                         borderColor={theme.disabledBackgroundColor}
                         borderRadius={10}
-                        minHeight={55}
+                        minHeight={46}
                         autoExpandOnMouseEnter={false}
                     >
                         <CommonExecutionControls

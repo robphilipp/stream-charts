@@ -1,5 +1,14 @@
 import type {Theme} from "../../ui/Themes.ts";
-import {type ComponentProps, type CSSProperties, type JSX, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
+import {
+    type ComponentProps,
+    type CSSProperties,
+    type JSX,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState
+} from "react";
 import {getRouteApi, useElementScrollRestoration, useNavigate} from "@tanstack/react-router";
 import {Button} from "../../ui/Button.tsx"
 import intro_page from "./intro.md?raw"
@@ -12,6 +21,7 @@ import raster_chart_page from "./raster-chart.md?raw";
 import poincare_chart_page from "./poincare-chart.md?raw";
 import bar_chart_page from "./bar-chart.md?raw";
 import outlier_chart_page from "./outlier-chart.md?raw";
+import geo_chart_page from "./geo-chart.md?raw";
 import axes_page from "./axes.md?raw";
 import legends_page from "./legends.md?raw";
 import theming_page from "./theming.md?raw";
@@ -21,6 +31,7 @@ import how_the_data_flows_page from "./how-the-data-flows.md?raw";
 import adding_a_data_source_page from "./adding-a-data-source.md?raw";
 import scatter_chart_from_sensor_data_page from "./scatter-chart-from-sensor-data.md?raw";
 import writing_tooltips_page from "./writing-tooltips.md?raw";
+import geo_chart_tutorial_page from "./geo-chart-tutorial.md?raw";
 import ReactMarkdown, {type Components, type ExtraProps, type Options} from "react-markdown";
 import rehypeRaw from 'rehype-raw';
 import rehypeHighlight from "rehype-highlight";
@@ -53,6 +64,7 @@ const pages = [
     poincare_chart_page,
     bar_chart_page,
     outlier_chart_page,
+    geo_chart_page,
     axes_page,
     legends_page,
     theming_page,
@@ -62,6 +74,7 @@ const pages = [
     adding_a_data_source_page,
     writing_tooltips_page,
     scatter_chart_from_sensor_data_page,
+    geo_chart_tutorial_page,
 ]
 
 /**
@@ -96,9 +109,9 @@ function style(theme: Theme, height: number): CSSProperties {
         backgroundColor: theme.backgroundColor,
         color: theme.color,
         width: 'auto',
-        paddingRight: 140,
+        paddingRight: 40,
         paddingLeft: 40,
-        maxWidth: 750,
+        maxWidth: 1100,
         maxHeight: height,
         overflowY: 'auto',
         overflowX: 'hidden',
@@ -363,7 +376,13 @@ function TableOfContents(props: TableOfContentsProps): JSX.Element {
  */
 
 const hoverLinkStyle: CSSProperties = {textDecoration: 'underline', textDecorationStyle: 'solid'}
-const linkStyle: CSSProperties = {textDecoration: 'underline', textDecorationStyle: 'dashed'}
+const linkStyle: (theme: Theme) => CSSProperties =
+    (theme: Theme) => ({
+        textDecoration: 'underline',
+        textDecorationStyle: 'dotted',
+        textDecorationThickness: '1px',
+        textDecorationColor: theme.disabledColor
+    })
 
 /**
  * A link, which opens in a new tab, and whose underline goes from dashed to solid while hovered
@@ -381,7 +400,7 @@ function MarkdownLink(props: ComponentProps<'a'> & ExtraProps): JSX.Element {
             rel="noopener noreferrer"
             onMouseOver={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            style={{...style, color: theme.color, ...(hovered ? hoverLinkStyle : linkStyle)}}
+            style={{...style, color: theme.color, ...(hovered ? hoverLinkStyle : linkStyle(theme))}}
         >
             {children}
         </a>

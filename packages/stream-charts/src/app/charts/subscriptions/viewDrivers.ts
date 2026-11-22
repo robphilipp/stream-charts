@@ -9,6 +9,7 @@ import type {TimeSeriesChartData} from "../series/timeSeriesChartData";
 import type {OutlierChartData} from "../observables/outliers";
 import type {OrdinalChartData} from "../observables/ordinals";
 import type {IterateChartData} from "../observables/iterates";
+import {type GeoChartData, geoChartDataLatestTime} from "../observables/geo";
 import type {StreamingDataSource} from "../datasources/StreamingDataSource";
 import {currentTimesByGroup, type TimeGroupFor} from "../datasources/timeSeriesDataSource";
 import {iteratesCurrentTime} from "../datasources/iteratesDataSource";
@@ -426,6 +427,36 @@ export function timeAxisViewDriverFor<CD extends ChartData>(
     subscription.add(() => cancelAnimationFrame(catchUpFrame))
 
     return subscription
+}
+
+/**
+ * The view driver for a geo plot: reports the time of the latest event and asks the plot to redraw
+ * as new events arrive. (The events are kept by the data source.) A geo plot has no time axes to
+ * advance: its view changes only through the plot's own rotation and zoom.
+ * @param dataSource The data source whose updates drive the view
+ * @param windowingTime The time (ms) over which updates are batched before redrawing
+ * @param updatePlot Redraws the plot
+ * @param setCurrentTime Records the time of the latest event
+ * @param dataUpdatePeriod The period (ms) at which the source emits, when known (see {@link renderBatching})
+ * @return The driver's subscription, to unsubscribe when the plot unmounts
+ * @template P The type of the events' payload
+ */
+export function geoViewDriverFor<P>(
+    dataSource: ViewDriverSource<GeoChartData<P>>,
+    windowingTime: number,
+    updatePlot: () => void,
+    setCurrentTime: (currentTime: number) => void,
+    dataUpdatePeriod?: number,
+): Subscription {
+    return dataSource.chartDataUpdatesObservable
+        .pipe(renderBatching<GeoChartData<P>>(windowingTime, dataUpdatePeriod))
+        .subscribe(dataList => {
+            dataList.forEach(data => {
+                const latest = geoChartDataLatestTime(data)
+                if (Number.isFinite(latest)) setCurrentTime(latest)
+            })
+            if (dataList.length > 0) updatePlot()
+        })
 }
 
 /**

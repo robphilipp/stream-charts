@@ -8,10 +8,10 @@
 
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/charts-collage-dark.gif">
-    <img src="packages/examples/public/images/charts-collage-light.gif" alt="the five stream-charts plots: a scatter chart streaming live, scrolling smoothly with cadence, with two x-axes, a linear and a logarithmic y-axis, and a legend whose hovered entry highlights its series; a raster chart of neuron spikes with a legend and a tooltip; a bar chart with windowed statistics and a tooltip; a Poincaré plot of an iterated map with a tooltip; and an outlier chart with confidence bands, flagged outliers, and a tooltip">
+    <img src="packages/examples/public/images/charts-collage-light.gif" alt="the six stream-charts plots: a scatter chart streaming live, scrolling smoothly with cadence, with two x-axes, a linear and a logarithmic y-axis, and a legend whose hovered entry highlights its series; a raster chart of neuron spikes with a legend and a tooltip; a bar chart with windowed statistics and a tooltip; a Poincaré plot of an iterated map with a tooltip; an outlier chart with confidence bands, flagged outliers, and a tooltip; and a geo chart of cell-tower pings and phones' locations flashing on a turning globe">
 </picture>
 
-*Scatter, streaming (two x-axes, linear and log y-axes, hovering the legend highlights a series, cadence) · raster (legend, tooltip) · bar (running and windowed statistics, tooltip) · Poincaré (tooltip) · outlier (confidence bands, flagged outliers, tooltip)*
+*Scatter, streaming (two x-axes, linear and log y-axes, hovering the legend highlights a series, cadence) · raster (legend, tooltip) · bar (running and windowed statistics, tooltip) · Poincaré (tooltip) · outlier (confidence bands, flagged outliers, tooltip) · geo (sensor events on a turning globe)*
 
 **The library** charts data that never stops arriving. You hand it an [RxJS](https://rxjs.dev) observable of new data, and it buffers the updates, scrolls the time axes, and redraws – on a single canvas, so plotting new data for about 100 series every 25 ms isn't generally a problem. Along the way:
 
@@ -19,9 +19,9 @@
 - **The charts stay usable while the data streams**: zoom and pan without losing "now", filter the series with a regular expression, and hover for tooltips (with statistics and sparklines), trackers, and legends that highlight the hovered series.
 - **The charts are built from React components** – axes, a plot, and the extras you want – with up to two x-axes and two y-axes per chart, linear or logarithmic scales, and y-axes that can grow to fit the data.
 
-**The demo app** (in [`packages/examples`](#run-demo)) has a tab for each chart type, each with a control bar for trying out the chart's options while the data streams – buffering, update rates, markers, interpolation, legends, and so on. Its intro walks through the charts and the library's design, with tutorials on adding your own data source, writing your own tooltips, and building a scatter chart from sensor data.
+**The demo app** (in [`packages/examples`](#run-demo)) has a tab for each chart type, each with a control bar for trying out the chart's options while the data streams – buffering, update rates, markers, interpolation, legends, and so on. Its intro walks through the charts and the library's design, with tutorials on adding your own data source, writing your own tooltips, building a scatter chart from sensor data, and building a geo chart of sensor events.
 
-Five plot types are available:
+Six plot types are available:
 
 | plot | for | example |
 |---|---|---|
@@ -30,6 +30,7 @@ Five plot types are available:
 | [&lt;BarPlot/&gt;](#bar-plot) | the current value and running statistics of each category | min, max, mean, and windowed min/max/mean |
 | [&lt;PoincarePlot/&gt;](#poincare-plot) | a sequence plotted against itself (`f[n+m](x)` vs `f[n](x)`) | iterated maps, chaotic systems |
 | [&lt;OutlierPlot/&gt;](#outlier-plot) | values over time, with confidence bands that flag outliers | a price index with 1σ, 2σ, 3σ bands |
+| [&lt;GeoPlot/&gt;](#geo-plot) | events at places on the earth, one by one or rolled up by place, on a globe or a map | seismic stations, weather stations, and vessels at sea |
 
 > Try the demo app online: [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/robphilipp/stream-charts?quickstart=1)
 >
@@ -63,6 +64,7 @@ Five plot types are available:
   - [&lt;BarPlot/&gt;](#bar-plot)
   - [&lt;PoincarePlot/&gt;](#poincare-plot)
   - [&lt;OutlierPlot/&gt;](#outlier-plot)
+  - [&lt;GeoPlot/&gt;](#geo-plot)
 - [&lt;Tracker/&gt;](#tracker)
 - [&lt;Legend/&gt;](#legend)
 - [&lt;Tooltip/&gt; and tooltip content](#tooltip)
@@ -94,7 +96,7 @@ npm install stream-charts react react-dom rxjs d3
 
 > This README describes version 2, whose API is different from version 1's. To upgrade from 1.x, see [migrating from 1.x](#migrating).
 
-`stream-charts` has four peer dependencies: React 19 (`react`, `react-dom`), [RxJS](https://rxjs.dev) 7, and [d3](https://d3js.org) 7. Your application uses them directly – to render the components, create the observables that feed the charts, and pass d3 scales and curves to the axes and plots – so the library shares your copies rather than bringing its own. TypeScript users get d3's type definitions (`@types/d3`) with the library.
+`stream-charts` has four peer dependencies: React 19.2 or later (`react`, `react-dom`), [RxJS](https://rxjs.dev) 7, and [d3](https://d3js.org) 7. Your application uses them directly – to render the components, create the observables that feed the charts, and pass d3 scales and curves to the axes and plots – so the library shares your copies rather than bringing its own. TypeScript users get d3's type definitions (`@types/d3`) with the library.
 
 ### <span id="quick-start">quick start</span> [↑](#content "back to contents")
 
@@ -302,6 +304,7 @@ A data source owns the stream. It holds the series, subscribes to the generator 
 | a sequence plotted against itself | `IteratesDataSource` | `IterateChartData` | `IterateDatum` (`{time, iterateN, iterateN_1}`) | `<PoincarePlot>` |
 | the latest value of each category | `OrdinalDataSource` | `OrdinalChartData` | `OrdinalDatum` (`{time, ordinal, value}`) | `<BarPlot>` |
 | values over time, with confidence bounds | `OutlierDataSource` | `OutlierChartData` | `OutlierDatum` (`{datum, bounds}`) | `<OutlierPlot>` |
+| events at places on the earth | `GeoDataSource` | `GeoChartData` | `GeoDatum` (`{sensorId, latitude, longitude, time, payload}`) | `<GeoPlot>` |
 
 Every data source is created with an options object:
 
@@ -316,10 +319,11 @@ const dataSource = new TimeSeriesDataSource({
 
 | option | description |
 |---|---|
-| `initialData` | The series to start with. The data source takes ownership of these series, and changes them in place as data arrives. For the time-series, iterates, and ordinal data sources, **the initial data decides the series**: points for a series that isn't in the initial data are ignored. So start with one (possibly empty) series for each series you expect. The outlier data source is the exception: it adds a series the first time it appears in the stream. |
+| `initialData` | The series to start with. The data source takes ownership of these series, and changes them in place as data arrives. For the time-series, iterates, and ordinal data sources, **the initial data decides the series**: points for a series that isn't in the initial data are ignored. So start with one (possibly empty) series for each series you expect. The outlier and geo data sources are the exceptions: they add a series the first time it appears in the stream. |
 | `generator` | A [generator](#generators): the function that creates the observable of chart data each time the data source starts. |
 | `dropDataAfter` | Optional time-to-live (ms, in data time, not wall-clock time) for the data. As new data arrives, points older than this, relative to the latest time, are dropped. Defaults to `Infinity` (keep everything). See [performance](#performance). |
 | `onUpdateData` | Optional callback that is handed each series' new points as they arrive, for example to store the data elsewhere before it's dropped. |
+| `rollups` | `GeoDataSource` only, optional. The roll-ups to keep, by name: aggregates of the events, by place. See [roll-ups](#geo-rollups). |
 | `timeGroupFor` | `TimeSeriesDataSource` only, optional. Assigns each series to a "time group" whose latest time `dropDataAfter` is measured against. Use it when series on different x-axes run on different clocks, for example `name => axisAssignments.get(name)?.xAxis ?? 'x-axis-1'`. By default, all series share one clock. |
 
 Every data source has the same lifecycle and the same read-only view of its data:
@@ -337,9 +341,10 @@ Every data source has the same lifecycle and the same read-only view of its data
 | `setGenerator(generator)` | Replaces the generator, for example when the update period changes. Only allowed while the data source is stopped; the next `start()` uses it. |
 | `dispose()` | Stops the data source and completes its observables. A disposed data source can't be started again. To start over with new data (a "Reset"), dispose of the old data source and create a new one. |
 
-Two data sources keep extra state that their plots use:
+Three data sources keep extra state that their plots use:
 - `OrdinalDataSource.stats` holds the lifetime and windowed statistics (min, max, mean) of each category, which keep accumulating while no plot is mounted.
 - `IteratesDataSource.droppedCountFor(seriesName)` counts the points dropped from a series, so that the Poincaré plot's colorized lines keep their colors as old points are dropped.
+- `GeoDataSource` keeps its [roll-ups](#geo-rollups) up to date as events arrive and are dropped: read them with `aggregates(rollupName, seriesFilter?)` (of only the series a filter takes, when given), `eventsOf(rollupName, cellId, group?, seriesFilter?)`, `rollupCellSize(rollupName)`, and `rollupNames()`, and replace them with `setRollups(rollups)`. It keeps each sensor's events, too: `sensorEventsOf(seriesName, sensorId)` and `latestSensorEventOf(seriesName, sensorId)`.
 
 To build a data source for some other shape of data, extend `BaseStreamingDataSource` and implement `ingest(data)` and `latestTime()`.
 
@@ -416,6 +421,23 @@ interface OutlierChartData<M extends readonly number[]> {
 ```
 `M` is a tuple of *measures*, the confidence level of each band, for example `[0.68, 0.95, 0.997] as const` for 1σ, 2σ, and 3σ. Each `OutlierDatum<M>` holds the point (`datum: {x, y}`) and one `{lower, upper}` bound for each measure (`bounds`). Create them with `outlierDatumFor(datum, measures, bounds)` and `outlierBoundsFor(lower, upper)`. Both check that there's one bound for each measure, and return a `Result`.
 
+**`GeoChartData<P>`** (geo plot)
+```ts
+interface GeoChartData<P> {
+    seriesNames: Set<string>
+    newPoints: Map<string, Array<GeoDatum<P>>>   // each series' new events, in time order
+}
+
+interface GeoDatum<P> {
+    sensorId: string    // the sensor that reported the event
+    latitude: number    // degrees, -90 to 90
+    longitude: number   // degrees, -180 to 180
+    time: number        // ms, on the same clock as the rest of the data
+    payload: P          // whatever the sensor reported, e.g. {magnitude: number, status: string}
+}
+```
+`P` is your payload's type. A series is a group of sensors (with one style and legend entry), and each event's `sensorId` says which sensor in the group reported it. Create the chart data with `geoChartDataOf(newPoints)`, which fills in the `seriesNames`, and the events with `geoDatumOf(sensorId, latitude, longitude, time, payload)`.
+
 ### <span id="series-helpers">series and datum helpers</span> [↑](#content "back to contents")
 
 A series is a named array of data. Its data is held in a `FastShiftArray`, so that dropping the oldest points is cheap.
@@ -428,7 +450,8 @@ A series is a named array of data. Its data is held in a `FastShiftArray`, so th
 | `iterateSeriesFromTuples(name, [[time, iterateN, iterateN_1], ...])` | an iterate series (Poincaré) |
 | `ordinateSeriesFromTuples(name, [[time, ordinal, value], ...])` | an ordinal series (bar) |
 | `outlierSeriesFor(name, measures, [[time, value, bounds], ...])`, `outlierSeriesFrom(name, data, measures)` | an outlier series |
-| `datumOf(time, value)`, `iterateDatumOf(...)`, `ordinalDatumOf(...)` | a single datum |
+| `geoSeriesFrom<P>(name, events)` | a series of sensor events (geo) |
+| `datumOf(time, value)`, `iterateDatumOf(...)`, `ordinalDatumOf(...)`, `geoDatumOf(...)` | a single datum |
 | `initialTimeSeriesChartData(series)`, `initialOrdinalChartData(series)` | chart data to start a stream from |
 
 > **Ownership:** `seriesFrom` wraps the array you hand it *by reference*. As data streams in and ages out, the library changes that array in place. If you keep your own reference to it, pass a copy (`data.slice()`) instead.
@@ -542,7 +565,9 @@ Each plot needs particular kinds of axes:
 | `<PoincarePlot>` | `<ContinuousAxis>` | `<ContinuousAxis>` |
 | `<BarPlot>` | `<OrdinalAxis>` | `<ContinuousAxis>` |
 | `<OutlierPlot>` | `<ContinuousAxis>` | `<ContinuousAxis>` |
+| `<GeoPlot>` | none | none |
 
+- **The geo plot has no axes.** It places its data by latitude and longitude, through a map projection.
 - **An `<EmptyAxis>` counts as a continuous axis.** It's fine as a raster chart's top x-axis, but a raster chart's series can't use one as their y-axis.
 - **The order of the axes matters.** Unassigned series use the *first* x-axis and the *first* y-axis, so put the axes your series use before any `<EmptyAxis>`. In a raster chart with an `<EmptyAxis>` on the right, list the `<OrdinalAxis>` first; otherwise the empty (continuous) axis becomes the default y-axis.
 - **The Poincaré plot only uses the first x-axis and the first y-axis** (it has no `axisAssignments`). Any others just mirror them.
@@ -607,6 +632,8 @@ A plain line where an axis would be, without ticks or a label. Use it to frame t
 The plot draws the data. It reads the series from the chart's data source and the scales from its sibling axes. A chart holds one plot.
 
 #### <span id="plot-common">properties common to the plots</span>
+
+The geo plot has no axes and no time axis, so of these it only takes `zoomEnabled`, `zoomKeyModifiersRequired`, and `onZoomReset` (and `panEnabled`, for dragging). See [&lt;GeoPlot/&gt;](#geo-plot).
 
 | prop | type | plots | description |
 |---|---|---|---|
@@ -816,6 +843,147 @@ type Measures = typeof MEASURES
 </Chart>
 ```
 
+#### <span id="geo-plot">&lt;GeoPlot/&gt;</span>
+
+Events from sensors at places on the earth, drawn on a globe or a map with [d3-geo](https://d3js.org/d3-geo). It shows each event as it arrives (`mode="events"`, the default), or the aggregates of one of the data source's [roll-ups](#geo-rollups) (`mode="aggregates"`). It needs no axes. Uses a `GeoDataSource`. ([full example](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/StreamingGeoChart.tsx), [walkthrough](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/geo-chart.md), [tutorial](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/geo-chart-tutorial.md))
+
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/geo-chart-dark.png">
+    <img src="packages/examples/public/images/geo-chart-light.png" alt="the geo chart example, zoomed into central London over the demo's street map: six carriers' cell towers as colored dots, the trails of the phones' estimated locations between them, the older ones fading, and rings flashing out from the newest">
+</picture>
+
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="packages/examples/public/images/geo-aggregates-dark.png">
+    <img src="packages/examples/public/images/geo-aggregates-light.png" alt="the geo chart showing aggregates over the demo's street map of central London: a circle at each cell tower, sized by its number of pings and colored by their mean signal strength, from red (weak) to yellow (strong), with a size and a color key">
+</picture>
+
+[▶ watch it stream](packages/examples/public/images/geo-chart-streaming.gif) (animated)
+
+**The map.** The plot doesn't come with one: hand it the land and borders you want, as GeoJSON, at the level of detail you want. The demo uses [world-atlas](https://github.com/topojson/world-atlas) (Natural Earth's 1:110m countries), converted with [topojson-client](https://github.com/topojson/topojson-client):
+
+```ts
+import {feature, mesh} from "topojson-client"
+import countries from "world-atlas/countries-110m.json"
+
+const land = feature(countries, countries.objects.land)
+const borders = mesh(countries, countries.objects.countries, (a, b) => a !== b)
+```
+
+Map data can also be loaded for the view as it settles: `onViewBoxChange` reports the part of the earth in view and its zoom, so you can fetch what's there and hand it to the plot as `layers`. The demo's street map does this, with OpenStreetMap's roads – and coasts as detailed as the roads – from [OpenFreeMap](https://openfreemap.org)'s vector tiles, more detailed the further you zoom in.
+
+**Latitude and longitude.** The library's own props, functions, and fields name them (`center={{latitude: 37.77, longitude: -122.42}}`, `aggregate.latitude`) or take latitude first (`geoDatumOf(sensorId, latitude, longitude, …)`, `formatLatLon(latitude, longitude)`). GeoJSON, and so `basemap`, `borders`, `layers`, and `fitTo`, is `[longitude, latitude]`, as the standard says.
+
+**Moving around.** Dragging turns a globe under the mouse; a flat map shifts east and west, and, once zoomed in, north and south. The wheel zooms about the mouse (hold shift or ctrl, by default). The markers are circles on the earth, drawn through the projection, so they flatten toward a globe's edge and stretch toward a Mercator map's poles, like the land. Unlike the other plots, the geo plot's tooltips show while the data source is running.
+
+| prop | type | description |
+|---|---|---|
+| `projection` | `GeoProjectionName \| d3.GeoProjection` | The projection: a name from `GeoProjections` (`orthographic`, the default, a globe; `azimuthalEqualArea`, `azimuthalEquidistant`, `stereographic`, `equirectangular`, `mercator`, `transverseMercator`, `naturalEarth1`, `equalEarth`, `conicEqualArea`, `conicEquidistant`, and `albersUsa`, a composite of the lower 48 states with Alaska and Hawaii moved in), or any d3 projection. The plot sets its scale and translation, and, in the `turn` view mode, its rotation. |
+| `viewMode` | `'turn' \| 'shift'` | How the view moves: by turning the earth (`turn`, the default: a globe turns every way under a drag, a flat map turns east and west and shifts north and south), or by shifting the map like a picture (`shift`: fitted to `fitTo`, or the whole sphere, a drag slides it, and the wheel zooms it about the mouse, the projection's own rotation left as it is – e.g. a conic map of one state). A projection that can't be turned – a composite, like `albersUsa`, or one of `d3-composite-projections`' – is always shown shifting, and needs `fitTo` (e.g. the United States). No `autoRotate` when shifting. Shifting is quick however detailed the map: the map is projected once, and each view only scales and slides it. |
+| `center` | `{latitude, longitude}` | The view's center when the plot first shows, and after a reset (default `{latitude: 20, longitude: 0}`). Not used with `fitTo`. |
+| `fitTo`, `fitPadding` | GeoJSON, `number` | A shape for the view to frame (e.g. a country, or a state): centered on it, and zoomed in until it fills the plot area, less `fitPadding` px (default 20), when the plot first shows and after a reset. Changing it re-frames the view, and until the user moves the view, it stays framed as the plot's size changes. The zoom's limit is raised to the framing zoom when needed. |
+| `basemap`, `borders` | `GeoMapData` | The land (drawn filled) and the borders (drawn as lines, over the layers): GeoJSON, or versions of it at different levels of detail, `[{minZoom, data}, ...]`, each drawn from its own zoom in – e.g. 1:110m from 1, and 1:50m from 6. |
+| `layers` | `GeoLayer[]` | More of the map, drawn over the basemap, in order, and under the borders: each with its `data` (GeoJSON, or versions by zoom), `fill` and `stroke` (a color, or a function of the feature – a choropleth), `lineWidth`, `opacity`, the zooms it shows at (`minZoom`, `maxZoom` – e.g. counties only zoomed in), and a `label` function (labels show where a feature is wholly in view, and its label fits inside it). Points (`Point` features, e.g. cities) are drawn as dots, `pointRadius` px across whatever the zoom, labelled beside the dot unless the label would overlap one of the layer's labels drawn before it – so put the most important points first. |
+| `showGraticule` | `boolean` | Draws the lines of latitude and longitude, every 10° (default `true`). |
+| `mapColors` | `GeoMapColors` | The map's colors – `ocean`, `land`, `borders`, `graticule`, and `outline` (default: tints of the chart's `color`). |
+| `markerRadius`, `markerOpacity` | `number` | Each event's marker radius (px, default 3) and opacity (default 0.85). |
+| `radiusOf`, `colorOf` | `(datum, seriesName) => number`, `(datum, seriesName) => string \| undefined` | An event's radius and color, for example from its payload. A color of `undefined` means the series' color. |
+| `fade` | `{duration, opacity?}` (`GeoFadeOptions`) | Fades events as they age: to `opacity` (a fraction of `markerOpacity`, default 0.15) once they're `duration` ms older than the latest event. Aggregates fade by their latest event. Off by default. |
+| `flash` | `{duration, radius?, which?, mergeDistance?}` (`GeoFlashOptions`) | Flashes each new event as it arrives: a ring, in its marker's color, grows to `radius` px (default 20) and fades over `duration` ms – in every mode. The ring is a circle on the earth, shaped by the projection like the markers. `which` picks which events flash (all, by default): `true` or `false`, or a list of flashes, each with its own `latitude`, `longitude`, `radius`, `duration`, and `color` (a `GeoFlash`) – for example, a second flash at a place the event is about. Flashes of the same color and length that start within one flash's length of each other, within `mergeDistance` px on the screen (default 20; 0 never merges them), are drawn as one ring, wider the more it stands for – so a place with many new events pulses steadily. The plot redraws up to 60 times a second while a ring shows. Off by default. |
+| `panEnabled`, `zoomEnabled` | `boolean` | Whether dragging moves the view, and the wheel zooms it (both default `true`). |
+| `zoomKeyModifiersRequired` | `boolean` | Whether zooming needs shift or ctrl held down (default `true`). |
+| `maxZoom` | `number` | How far the view can zoom in: a factor of the scale that fits the whole earth, the same zoom as the layers' `minZoom` and `maxZoom` (default 20). Unlike the other plots' `zoomMaxScaleFactor`, which limits zooming out. |
+| `resample` | `boolean` | Whether the map's data (`basemap`, `borders`, `layers`) is resampled as it's projected: d3's adaptive resampling, which adds points along each line so that it follows its curve on the screen. On by default. Turned off, lines are drawn straight between the data's points, which looks the same for data whose points are close together (coastlines, borders, roads), and is much quicker zoomed in on a detailed map. Leave it on (or add points) for data whose points are far apart, like a rectangle of four corners that should follow its parallels. The graticule, sphere, markers and aggregates are always resampled; in the `shift` view mode the map is projected once, so it's always resampled there. |
+| `hoveredSeries` | `'isolate' \| 'highlight'` | What hovering a series does – its legend entry, or, on the map, one of its events (or a pie's wedge whose group is named for it): show only that series' events (and their flashes), `isolate`, the default – a map's series often overlap – or draw its events over the others', at full opacity, with the others a little fainter but still readable, `highlight`. Either way, when the hovered series names one of the aggregates' groups, the pies draw its wedges at full opacity, and the other groups' a little fainter. |
+| `autoRotate` | `number` | Turns the globe by itself, at this many degrees per second, pausing while it's dragged or an event is hovered. The plot redraws up to 60 times a second while it turns (the demo's few thousand events take about 8 ms a redraw), so with many tens of thousands of events held, show a roll-up instead, or keep fewer events. |
+| `viewState`, `onViewChange` | `GeoPlotViewState`, `(view) => void` | Keep the view (rotation, zoom, and a flat map's offset) across remounts: store what `onViewChange` hands you, and pass it back as `viewState`. |
+| `onViewBoxChange` | `(box, pixelsPerDegree) => void` | Called with the part of the earth in view as the view settles – when it first shows, after it's dragged, zoomed, or reset, when the auto-rotation pauses, and when the plot's size or projection changes: its longitudes and latitudes (a `GeoViewBox`, `undefined` when the view shows half the earth or more), and how many pixels a degree spans at its center – e.g. to load map data for the view (streets, say, from web-map tiles at the zoom `log2(pixelsPerDegree * 360 / 512)`) and hand it to the plot as `layers`. The demo's street map does this. |
+| `onZoomReset` | `(resetZoom: () => void) => void` | Hands you a function that resets the view, for example for a **Reset** button. |
+| `mode` | `'events' \| 'aggregates' \| 'auto'` | Each event (the default); a roll-up's aggregates; or, by the zoom, clusters that come apart into the events as the view zooms in (`auto`): the coarsest of `autoRollups` whose cells span at most `clusterDistance` px on the screen, or the events once even the finest's cells span more. In `auto`, the clusters, like the events, are of the series the chart's `seriesFilter` shows. |
+| `autoRollups`, `clusterDistance` | `string[]`, `number` | For the `auto` mode: the roll-ups to choose among – roll-ups of the same events, with cells of different sizes (e.g. `byGridCell(10)`, `byGridCell(1)`, `byGridCell(0.1)`) – and how far apart (px, default 20) events need to be on the screen to be shown apart. Default: all of the data source's roll-ups whose cells have a size. |
+| `onAutoRollupChange` | `(rollup) => void` | In the `auto` mode, called when what's shown changes as the view zooms (and when something is first shown): a roll-up's name, for its clusters, or `undefined`, for the events – e.g. to gray out the controls that apply only to the events. |
+| `rollup` | `string` | The name of the data source's roll-up to show, in the aggregates mode. |
+| `aggregates` | `GeoAggregateOptions` | How the aggregates are drawn, all optional. The object, and its ranges, can be written inline; keep its functions (and `radiusOf` and `colorOf`) the same from one render to the next – defined outside the component, or memoized – since a new one redraws the plot: |
+| &nbsp;&nbsp;`shape` | `'circles' \| 'pies' \| 'cells'` | `circles` (the default): a circle per cell. `pies`: a circle per cell, divided into a wedge per group (the roll-up's `groupBy`), each wedge's angle its group's share of the cell's events, and its color the group's own `colorBy` value – for example, each sensor's mean delay, within each area. `cells`: a grid roll-up's cells, as filled areas. |
+| &nbsp;&nbsp;`sizeBy`, `colorBy` | `string` | What an aggregate's size (`count`, the default, or a measure's name) and color (a measure's name, or `count`) show. The circles' areas are proportional to `sizeBy`. |
+| &nbsp;&nbsp;`sizeDomain`, `colorDomain` | `[number, number]` | Fixed ranges for the sizes and colors. The sizes span `sizeDomain` (default: 0 to the largest value shown) over `radius`; the colors span `colorDomain` (default: the range of the values shown). Aggregates without a `colorBy` value are drawn in `color`, which the key shows as "no value". |
+| &nbsp;&nbsp;`radius` | `[smallest, largest]` | The circles' radii (px, default `[2, 20]`). |
+| &nbsp;&nbsp;`colorScheme`, `color`, `opacity` | | The colors of the `colorBy` values (default `d3.interpolateYlOrRd`), the color without `colorBy`, and the opacity (default 0.6). |
+| &nbsp;&nbsp;`groupColors` | `(group) => string \| undefined` | The color of a group's wedges, with `pies` and no `colorBy` (default: one of d3's ten categorical colors, handed out in the order the groups first show up, so a group keeps its color; beyond ten groups, the colors repeat). |
+| &nbsp;&nbsp;`showKeys` | `boolean` | Draws keys for the aggregates' sizes and colors in the bottom-right corner (default `true`). |
+
+The map is drawn quickly when it's detailed and zoomed in: only the features – and the parts of a multi-polygon, like a world's land – that might show in the view are projected, and the map is clipped to the plot area. (Each feature's and part's bounds are found once, the first time they're needed.) A detailed view of a US state, say, is the state's outline as `fitTo`, its counties as a layer, `us-atlas`' borders, and a conic projection. Or, for the usual map of the United States, `projection="albersUsa"`, with the country's outline as `fitTo` and its states as a layer: the view shifts and zooms, rather than turns, since a composite projection can't be turned.
+
+##### <span id="geo-rollups">roll-ups</span>
+
+A roll-up aggregates the events by place. It puts each event into a *cell*, and keeps, for each cell, the count of its events and sensors, the values of its measures, and a breakdown by group. The data source keeps its roll-ups up to date as events arrive *and* as they're dropped, so a roll-up always covers exactly the events the data source holds, and keeps up while the chart is off screen.
+
+```ts
+const dataSource = new GeoDataSource<Reading>({
+    initialData: [geoSeriesFrom('seismic'), geoSeriesFrom('weather')],
+    generator,
+    dropDataAfter: 60_000,
+    rollups: {
+        // all the events at a place, whichever sensor reported them, broken down by sensor
+        "by location": {cellOf: byLocation(0.01), groupBy: datum => datum.sensorId, measures: {peak: maxOf(d => d.payload.magnitude)}},
+        // each sensor's events, where the sensor last was
+        "by sensor": {cellOf: bySensor({position: 'latest'}), measures: {mean: meanOf(d => d.payload.magnitude)}},
+        // only the alarms, in the cells of a 10° grid
+        "alarms": {cellOf: byGridCell(10), filter: datum => datum.payload.status === 'alarm'},
+    },
+})
+```
+
+| roll-up option | description |
+|---|---|
+| `cellOf` | **Required.** How events are put into cells (`byLocation` and `byGridCell` also say how large their cells are, for the plot's `auto` mode): `byLocation(precision)` (events at the same place, the latitude and longitude rounded to `precision` degrees, whichever sensor reported them), `bySensor({position})` (each sensor's events, drawn at the sensor's `'latest'` or `'mean'` position), `byGridCell(degrees)` (the cells of a latitude-longitude grid, which can be drawn as areas), or a function `datum => ({id, latitude, longitude})`. |
+| `filter` | `(datum, seriesName) => boolean`: which events are rolled up (all, by default). Like `cellOf` and `groupBy`, it's called once for each event, as it arrives; when the event is dropped, it's taken out of the cell and group it went into then. |
+| `groupBy` | `(datum, seriesName) => string`: a group for each event, for a breakdown of each cell (for example by sensor, by series, or by a payload field). |
+| `measures` | The measures of each cell (and group), by name: `countOf()`, `sumOf(of)`, `meanOf(of)`, `minOf(of)`, `maxOf(of)`, or `latestOf(of)`, where `of` gives an event's value, for example `d => d.payload.magnitude` (a value that isn't a finite number, such as a missing reading's `NaN`, is left out of the sum, mean, minimum, and maximum, and a cell with no such values has none, `NaN`, for them, the sum included); or one of your own (see below). Each event is counted by its values as they were when it arrived, and taken back out by the same ones, even should what `of` reads change while it's held. Each takes its units and format as its last argument (see below). |
+
+**Measures of your own.** When none of the library's measures is what you need, write your own, in one of two ways. Both are measures like any other: the tooltip lists them, the groups have them, and `sizeBy` and `colorBy` can use them.
+
+- **`reduceOf(reducer)`**, for a measure that can take an event back out: its `initial()` state, `add(state, datum)` and `remove(state, datum)`, which return the new state, and `value(state)`. It's kept incrementally, so it costs the same however many events a cell holds. Use it for anything you can undo: a standard deviation (from the count, the sum, and the sum of the squares), a weighted mean, or the share of events with some payload value.
+- **`measureOf(events => value)`**, for a measure that can't, such as a median, a percentile, or a count of distinct values. It's handed all of a cell's events at once, and recalculated only for a cell that changed, when the cell's aggregate is next read (at most once per redraw), but then over all of the cell's events.
+
+```ts
+measures: {
+    // the share of the events that are alarms, kept as events come and go
+    alarms: reduceOf<Reading, {all: number, alarms: number}>({
+        initial: () => ({all: 0, alarms: 0}),
+        add: ({all, alarms}, d) => ({all: all + 1, alarms: alarms + (d.payload.status === 'alarm' ? 1 : 0)}),
+        remove: ({all, alarms}, d) => ({all: all - 1, alarms: alarms - (d.payload.status === 'alarm' ? 1 : 0)}),
+        value: ({all, alarms}) => all > 0 ? alarms / all : NaN,
+    }),
+    // the median magnitude, from all of the cell's events
+    median: measureOf<Reading>(events => d3.median(events, d => d.payload.magnitude) ?? NaN),
+}
+```
+
+**Units.** Every measure takes `{units, format}` as its last argument: `meanOf(d => d.payload.meanDelayTime, {units: 'ms', format: ',.1f'})`. The tooltip then shows the measure's values with them ("mean delay: **12.3 ms**", for the cell and for each group), and the keys label it "mean delay (ms)". `format` is a d3-format specifier or a function, and units are shown after a space, except those starting with `%` or `°`. Each aggregate carries its roll-up's measures' units and formats (`aggregate.measures`), and `formatMeasure(value, options)` formats a value the same way, for your own displays. A measure without a value in a cell (`NaN`) is left out of the cell's tooltip. The library shows what you measure, in the units you give it, so keep each measure to one quantity: a measure that mixes, say, milliseconds and seconds can't be fixed by its units.
+
+**Aggregating over more than one field.** The cell, the group, and the measures are three different fields: for example, the events in each 5° area (`cellOf: byGridCell(5)`), broken down by sensor (`groupBy: d => d.sensorId`), with the mean of a payload field (`measures: {"mean delay": meanOf(d => d.payload.meanDelayTime)}`). Each area's aggregate then has the mean over all its events, and each of its groups (sensors) its own. With `aggregates={{shape: 'pies', colorBy: 'mean delay'}}`, each area's circle shows them: a wedge per sensor, sized by its share of the area's events, and colored by its own mean delay. To group by more than one field, combine them into the group's name (`` d => `${d.sensorId} · ${d.payload.route}` ``), banding a continuous field first. To keep only one area, `filter` the events (`d => d3.geoContains(region, [d.longitude, d.latitude])`).
+
+Each `GeoAggregate` has the cell's `id`, `latitude`, `longitude`, and (for a grid) `bounds`; its `count` and `sensorCount` (a sensor is its series and its ID, so two series' sensors with the same ID count as two); its `values` (the measures, by name); its `groups` (each `{group, count, sensorCount, values}`, the largest first); and its `firstTime` and `lastTime`. Read them with `dataSource.aggregates(name, seriesFilter?)`, for example to list them outside the chart, and a cell's events (or one of its groups') with `dataSource.eventsOf(name, cellId, group?, seriesFilter?)`. With a `seriesFilter` (a `RegExp` of the series' names), they're of only the series it takes: that roll-up is rolled up from the events held when it's first asked for, and kept up to date from then on, for each filter asked for (so that two plots of one data source, with different filters, each keep theirs): up to four for each roll-up, the least recently asked for dropped first, and any not asked for in 100 batches of events. A sensor's own events, in its series, are kept too: `dataSource.sensorEventsOf(seriesName, sensorId)` (oldest first), and `latestSensorEventOf(seriesName, sensorId)`.
+
+```tsx
+<Chart chartId={6} width={width} height={height} dataSource={dataSource} seriesStyles={styles} windowingTime={50}>
+    <GeoPlot<Reading>
+        projection="orthographic"
+        basemap={land}
+        borders={borders}
+        radiusOf={datum => 1 + datum.payload.magnitude}
+        fade={{duration: 30_000}}
+        mode={showAggregates ? 'aggregates' : 'events'}
+        rollup="by location"
+        aggregates={{colorBy: 'peak'}}
+    />
+    <Legend visible={!showAggregates} location={LegendLocation.TOP_LEFT}/>
+    <Tooltip visible={true}>
+        <GeoPlotTooltipContent<Reading> payloadFormatter={({magnitude, status}) => `${magnitude} (${status})`}/>
+    </Tooltip>
+</Chart>
+```
+
 ### <span id="tracker">&lt;Tracker/&gt;</span> [↑](#content "back to contents")
 
 The tracker follows the mouse over the plot with a line, and labels the axes' values at the mouse. By default it's a vertical line that tracks the x-axes. Use `trackerAxis={AxisLocation.Left}` (or `Right`) for a horizontal line that tracks the y-axes, and add two trackers to track both.
@@ -915,6 +1083,18 @@ Each content component also takes a `style` that overrides parts of the `<Toolti
 | `measureFormatter` | `(innerProb, outerProb) => string \| JSX.Element \| Array<string>`: describes the probabilities of a point being inside and outside the band. |
 | `children` | Optional custom content. Inside it, `useOutlierTooltip()` hands you the hovered point and band (`tooltipContent`), the style, and the formatters. Defaults to `<DefaultOutlierTooltipContent/>`. |
 
+**&lt;GeoPlotTooltipContent/&gt;** shows the event under the mouse (its series, sensor, position, time, and payload), or, in the aggregates mode, the aggregate (its roll-up, its counts of events and sensors, its position or cell, its time span, its measures, and its largest groups). With pies, the group whose wedge is under the mouse is highlighted, with its own measures.
+
+| prop | description |
+|---|---|
+| `positionFormatter` | `(latitude, longitude) => ReactNode` (default `formatLatLon`, e.g. `37.77° N, 122.42° W`). |
+| `timeFormatter` | `(time) => ReactNode` (default: the time in ms). |
+| `payloadFormatter` | `(payload, datum) => ReactNode` (default: one line per field of the payload). |
+| `valueFormatter` | `(name, value) => ReactNode`: an aggregate's measures. |
+| `maxGroups` | The most groups to list for an aggregate (default 6). |
+| `aggregateFormatter` | `(aggregate, rollup, group?) => ReactNode`: replaces the whole content for an aggregate (`group` is the hovered wedge's group, with pies). |
+| `sparklineValueOf` | `(datum) => number`: the value to draw in sparklines of the sensors' readings over time, from the events the data source holds. For an event, its sensor's (the event marked); for an aggregate, a one-sensor cell's, and each listed group's whose events are one sensor's (on its line, and larger for the hovered group). The larger sparklines have axes: the readings' values, and the seconds before the latest reading. A sparkline is only ever one sensor's, so it never mixes the quantities different sensors measure. No sparklines without it. |
+
 #### <span id="custom-tooltip">writing your own tooltip content</span>
 
 All of the content components above are built on `<TooltipContent>`, and so can yours. It does the plumbing (it registers with the chart, hides when the mouse leaves, and places the box next to the mouse, flipping it to stay on the chart). You supply two functions:
@@ -949,6 +1129,7 @@ What `tooltipData` holds (`{series, metadata}`) depends on the plot:
 | raster | the spike under the mouse (`series[0]`) | `RasterTooltipMetadata`: `spikes`, all of the series' spikes |
 | bar | the category's data | `WindowedOrdinalStats`, the lifetime and windowed statistics. `providerId` says which element is under the mouse (see `BAR_CHART_TOOLTIP_PROVIDER_IDS`). |
 | outlier | the series' data | `OutlierBandTooltipMetadata`: the `datum`, the band's `upperMeasure` and `lowerMeasure`, its `bandIndex`, and `pointsInBand` |
+| geo | the event under the mouse (empty for an aggregate) | `GeoTooltipMetadata`: either `{kind: 'event', seriesName, datum}` or `{kind: 'aggregate', rollup, aggregate, group?}`, where `group` is the group whose wedge is under the mouse (with `pies`) |
 
 Other props: `style` overrides the tooltip's style, `boxStyle` adds CSS to the box, and `topFor(content, height)` places the box's top yourself. The tutorial [writing your own tooltips](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/writing-tooltips.md) builds a custom tooltip for each plot.
 
@@ -1009,7 +1190,7 @@ The full API, including the formatting helpers (`formatNumber`, `formatTime`, `f
 The [demo app](#run-demo) in `packages/examples` has one tab for each plot type, and a set of guide pages (shown in the app's intro, and readable on GitHub):
 
 - **Getting oriented:** [intro](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/intro.md), [what the pages cover](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/contents.md), [anatomy of an example](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/anatomy-of-example.md), and [the common controls](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/common-controls.md), which says which library option each control is wired to.
-- **The plots:** [scatter](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/scatter-chart.md), [raster](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/raster-chart.md), [Poincaré](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/poincare-chart.md), [bar](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/bar-chart.md), and [outlier](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/outlier-chart.md).
+- **The plots:** [scatter](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/scatter-chart.md), [raster](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/raster-chart.md), [Poincaré](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/poincare-chart.md), [bar](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/bar-chart.md), [outlier](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/outlier-chart.md), and [geo](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/geo-chart.md).
 - **The extras:** [axes](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/axes.md) (the kinds of axes, their options, and which plots take which), [legends](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/legends.md), [theming](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/theming.md), and [tooltips and trackers](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/tooltips-and-trackers.md).
 - **Under the hood:** [some context](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/some-context.md) (which supporting libraries you need, sizing charts, and keeping state), [where the code lives](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/where-the-code-lives.md), and [how the data flows](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/how-the-data-flows.md).
-- **Tutorials:** [adding your own data source](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/adding-a-data-source.md), from an RxJS observable to a chart; [writing your own tooltips](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/writing-tooltips.md), one for each plot; and [your own scatter chart, from sensor data](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/scatter-chart-from-sensor-data.md), with irregular readings, two y-axes, and a legend, tracker, and tooltip.
+- **Tutorials:** [adding your own data source](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/adding-a-data-source.md), from an RxJS observable to a chart; [writing your own tooltips](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/writing-tooltips.md), one for each plot; [your own scatter chart, from sensor data](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/scatter-chart-from-sensor-data.md), with irregular readings, two y-axes, and a legend, tracker, and tooltip; and [your own geo chart](https://github.com/robphilipp/stream-charts/blob/master/packages/examples/src/app/examples/docs/geo-chart-tutorial.md), from sensor events to a globe with roll-ups.

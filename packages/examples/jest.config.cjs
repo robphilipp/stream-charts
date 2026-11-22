@@ -9,6 +9,7 @@ module.exports = {
     '^.+\\.[jt]sx?$': ['babel-jest', {rootMode: 'upward'}],
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!d3|d3-array|internmap|delaunator|robust-predicates)',
+    // (the street map's vector-tile decoders, too: @mapbox/vector-tile, its point-geometry, and pbf)
+    '/node_modules/(?!d3|d3-array|internmap|delaunator|robust-predicates|@mapbox|pbf)',
   ],
 };
